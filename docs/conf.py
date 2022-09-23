@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'SDN Simulator'
-copyright = '2022, Arash Rezaee and Ryan McCann'
+copyright = '2022, Arash Rezaee and Ryan McCann'  # pylint: disable=redefined-builtin
 author = 'Arash Rezaee and Ryan McCann'
 release = '1.0.0'
 
