@@ -9,18 +9,18 @@ blocking = {}
 sim_input = load_input()
 
 
-def create_PT(sim_input):
+def create_PT(pt_input):
     G = nx.Graph()
     spectrum_DB = {}
-    for node in sim_input['physical_topology']['nodes']:
+    for node in pt_input['physical_topology']['nodes']:
         G.add_node(node)
-    for link_no in sim_input['physical_topology']['links']:
-        spectrum_DB.update({(sim_input['physical_topology']['links'][link_no]['source'],
-                             sim_input['physical_topology']['links'][link_no]['destination']): np.zeros(
-            sim_input['number_of_slot_per_lisnk'])})
-        G.add_edge(sim_input['physical_topology']['links'][link_no]['source'],
-                   sim_input['physical_topology']['links'][link_no]['destination'],
-                   length=sim_input['physical_topology']['links'][link_no]['length'])
+    for link_no in pt_input['physical_topology']['links']:
+        spectrum_DB.update({(pt_input['physical_topology']['links'][link_no]['source'],
+                             pt_input['physical_topology']['links'][link_no]['destination']): np.zeros(
+            pt_input['number_of_slot_per_lisnk'])})
+        G.add_edge(pt_input['physical_topology']['links'][link_no]['source'],
+                   pt_input['physical_topology']['links'][link_no]['destination'],
+                   length=pt_input['physical_topology']['links'][link_no]['length'])
     return G, spectrum_DB
 
 
@@ -47,10 +47,11 @@ for i in range(sim_input['NO_iteration']):
                                       slot_NO=None,
                                       path=None
                                       )
-            if rsa_res == False:
+            if rsa_res is False:
                 blocking_iter += 1
             else:
                 # for item in rsa_res[0]:
+                # TODO: A starting NO reserved slot will not exist for the "arrival" case
                 requests_status.update({sorted_request[time]['id']: {
                     "slots": rsa_res[0]['starting_NO_reserved_slot'],
                     "path": rsa_res[0]['path']
