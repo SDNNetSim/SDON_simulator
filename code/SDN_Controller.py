@@ -25,17 +25,15 @@ def controller_main(request_type,
                                       )
         # TODO: No ras output var assigned
         return network_spectrum_DB, Physical_topology
-    else:
-        selected_path = routing()
-        if selected_path is not False:
-            selected_sp = spectrum_assignment()
-            if selected_sp is not False:
-                ras_output = {
-                    'path': selected_path,
-                    'starting_NO_reserved_slot': selected_sp,
-                }
-                return ras_output, network_spectrum_DB, Physical_topology
-            else:
-                return False
-        else:
-            return False
+    # TODO: No arguments given
+    selected_path = routing()  # pylint: disable=no-value-for-parameter
+    if selected_path is not False:
+        selected_sp = spectrum_assignment()
+        if selected_sp is not False:
+            ras_output = {
+                'path': selected_path,
+                'starting_NO_reserved_slot': selected_sp,
+            }
+            return ras_output, network_spectrum_DB, Physical_topology
+        return False
+    return False
