@@ -1,16 +1,16 @@
-# import random
 import numpy as np
-import math
 
 
-def Generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no, slot_list):
+def Generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
+             slot_list):
     np.random.seed(seed_no)
     requests = {}
     current = 0
     for i in range(0, req_no):
         current = current + np.random.normal(loc=inter_arrival_time_mean)
         new_hold = current + np.random.normal(loc=holding_time_mean)
-        np.random.RandomState.randint
+        # TODO: Ask Arash about this
+        # np.random.RandomState.randint
         src = np.random.choice(nodes, size=1)
         des = np.random.choice(nodes, size=1)
         while src == des:
@@ -44,6 +44,7 @@ def Generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
 
             }})
         else:
+            # TODO: shouldn't we raise a class here?
             print("Check")
-            raise "rep"
+            raise "rep"  # pylint: disable=raising-bad-type
     return requests
