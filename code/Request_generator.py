@@ -1,5 +1,6 @@
 import numpy as np
 
+
 # TODO: What is the holding time mean?
 # TODO: What is the arrival time mean?
 # TODO: What is the slot list?
@@ -71,5 +72,5 @@ def Generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
             # TODO: Shouldn't we raise a class here?
             print("Check")
             raise "rep"  # pylint: disable=raising-bad-type
-        
+
     return requests

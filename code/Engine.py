@@ -34,7 +34,7 @@ def create_PT(pt_input):
     for link_no in pt_input['physical_topology']['links']:
         spectrum_DB.update({(pt_input['physical_topology']['links'][link_no]['source'],
                              pt_input['physical_topology']['links'][link_no]['destination']):
-                            np.zeros(pt_input['number_of_slot_per_lisnk'])})
+                                np.zeros(pt_input['number_of_slot_per_lisnk'])})
         G.add_edge(pt_input['physical_topology']['links'][link_no]['source'],
                    pt_input['physical_topology']['links'][link_no]['destination'],
                    length=pt_input['physical_topology']['links'][link_no]['length'])

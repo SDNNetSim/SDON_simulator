@@ -11,8 +11,8 @@ copyright = '2022, Arash Rezaee and Ryan McCann'  # pylint: disable=redefined-bu
 author = 'Arash Rezaee and Ryan McCann'
 release = '1.0.0'
 
-import os
-import sys
+import os  # pylint: disable=wrong-import-position
+import sys  # pylint: disable=wrong-import-position
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
