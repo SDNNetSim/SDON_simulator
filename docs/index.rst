@@ -3,14 +3,19 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to SDN Simulator's documentation!
+SDN Simulator documentation
 =========================================
+A Software Defined Networking (SDN) simulator created for the purposes of aiding in the research of elastic-optical
+networking.
+
+:Authors: Arash Rezaee and Ryan McCann
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-
+   code/code_modules.rst
+   tests/test_modules.rst
 
 Indices and tables
 ==================

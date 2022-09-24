@@ -154,11 +154,10 @@ disable=raw-checker-failed,
         useless-suppression,
         deprecated-pragma,
         use-symbolic-message-instead,
-        W0511,
-        C0114,
-        C0103,
-        C0116,
-        R0913,
+        fixme,
+        missing-module-docstring,
+        invalid-name,
+        too-many-arguments,
 
 
 # Enable the message, report, category or checker with the given id(s). You can

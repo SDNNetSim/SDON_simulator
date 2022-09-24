@@ -11,10 +11,23 @@ copyright = '2022, Arash Rezaee and Ryan McCann'  # pylint: disable=redefined-bu
 author = 'Arash Rezaee and Ryan McCann'
 release = '1.0.0'
 
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../code'))
+sys.path.insert(0, os.path.abspath('../tests'))
+
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx_rtd_theme']
+extensions = [
+    'sphinx_rtd_theme',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.viewcode',
+]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
