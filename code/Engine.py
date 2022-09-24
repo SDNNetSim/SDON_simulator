@@ -22,8 +22,8 @@ def create_PT(pt_input):
 
     :param pt_input: Desired information to run the simulation
     :type pt_input: dict
-    :return: Graph and spectrum database
-    :rtype: class and dict
+    :return: (Graph, spectrum database)
+    :rtype: (class, dict)
     """
     G = nx.Graph()
     spectrum_DB = {}
