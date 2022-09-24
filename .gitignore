@@ -3,4 +3,4 @@
 .idea/
 
 # sphinx
-./docs/_build/
+docs/_build/*
