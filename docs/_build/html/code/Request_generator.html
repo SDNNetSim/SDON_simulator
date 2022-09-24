@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Engine &mdash; SDN Simulator 1.0.0 documentation</title>
+  <title>Request Generator &mdash; SDN Simulator 1.0.0 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -19,7 +19,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Test Module Documentation" href="../tests/test_modules.html" />
-    <link rel="prev" title="Code Module Documentation" href="code_modules.html" /> 
+    <link rel="prev" title="Engine" href="Engine.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,7 +40,8 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="code_modules.html">Code Module Documentation</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Engine.html">Engine</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Request Generator</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tests/test_modules.html">Test Module Documentation</a></li>
@@ -61,9 +62,9 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="code_modules.html">Code Module Documentation</a> &raquo;</li>
-      <li>Engine</li>
+      <li>Request Generator</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/code/Engine.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/code/Request_generator.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -71,31 +72,30 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="module-Engine">
-<span id="engine"></span><h1>Engine<a class="headerlink" href="#module-Engine" title="Permalink to this heading"></a></h1>
+  <div class="section" id="module-Request_generator">
+<span id="request-generator"></span><h1>Request Generator<a class="headerlink" href="#module-Request_generator" title="Permalink to this heading"></a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="Engine.create_PT">
-<span class="sig-prename descclassname"><span class="pre">Engine.</span></span><span class="sig-name descname"><span class="pre">create_PT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pt_input</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Engine.html#create_PT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Engine.create_PT" title="Permalink to this definition"></a></dt>
-<dd><p>Creates the physical topology for the simulation. Adds nodes to the graph, updates the spectrum
-database with the source, destination, and slots per link, and adds the designated source and
-destination to the graph as edges.</p>
+<dt class="sig sig-object py" id="Request_generator.Generate">
+<span class="sig-prename descclassname"><span class="pre">Request_generator.</span></span><span class="sig-name descname"><span class="pre">Generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed_no</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">holding_time_mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inter_arrival_time_mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">req_no</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slot_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Request_generator.html#Generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Request_generator.Generate" title="Permalink to this definition"></a></dt>
+<dd><p>Generates every request with the necessary information inside each request.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>pt_input</strong> (<em>dict</em>) – Desired information to run the simulation</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seed_no</strong> (<em>int</em>) – The simulation seed number</p></li>
+<li><p><strong>nodes</strong> (<em>list</em>) – A list of nodes</p></li>
+<li><p><strong>holding_time_mean</strong> (<em>int</em>) – The holding time mean</p></li>
+<li><p><strong>inter_arrival_time_mean</strong> (<em>int</em>) – The arrival time mean</p></li>
+<li><p><strong>req_no</strong> (<em>int</em>) – Number of requests to be created</p></li>
+<li><p><strong>slot_list</strong> – The slot list</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Graph and spectrum database</p>
+<dd class="field-even"><p>Every request generated</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>class and dict</p>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="Engine.main">
-<span class="sig-prename descclassname"><span class="pre">Engine.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Engine.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Engine.main" title="Permalink to this definition"></a></dt>
-<dd><p>Executes the simulation.</p>
 </dd></dl>
 
 </div>
@@ -104,7 +104,7 @@ destination to the graph as edges.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="code_modules.html" class="btn btn-neutral float-left" title="Code Module Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Engine.html" class="btn btn-neutral float-left" title="Engine" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="../tests/test_modules.html" class="btn btn-neutral float-right" title="Test Module Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

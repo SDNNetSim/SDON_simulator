@@ -84,8 +84,9 @@
 
 <div class="viewcode-block" id="create_PT"><a class="viewcode-back" href="../code/Engine.html#Engine.create_PT">[docs]</a><span class="k">def</span> <span class="nf">create_PT</span><span class="p">(</span><span class="n">pt_input</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Creates the physical topology for the simulation. Adds nodes to the graph, updates the spectrum database with the</span>
-<span class="sd">    source, destination, and slots per link, and adds the designated source and destination to the graph as edges.</span>
+<span class="sd">    Creates the physical topology for the simulation. Adds nodes to the graph, updates the spectrum</span>
+<span class="sd">    database with the source, destination, and slots per link, and adds the designated source and</span>
+<span class="sd">    destination to the graph as edges.</span>
 
 <span class="sd">    :param pt_input: Desired information to run the simulation</span>
 <span class="sd">    :type pt_input: dict</span>
@@ -101,7 +102,7 @@
     <span class="k">for</span> <span class="n">link_no</span> <span class="ow">in</span> <span class="n">pt_input</span><span class="p">[</span><span class="s1">&#39;physical_topology&#39;</span><span class="p">][</span><span class="s1">&#39;links&#39;</span><span class="p">]:</span>
         <span class="n">spectrum_DB</span><span class="o">.</span><span class="n">update</span><span class="p">({(</span><span class="n">pt_input</span><span class="p">[</span><span class="s1">&#39;physical_topology&#39;</span><span class="p">][</span><span class="s1">&#39;links&#39;</span><span class="p">][</span><span class="n">link_no</span><span class="p">][</span><span class="s1">&#39;source&#39;</span><span class="p">],</span>
                              <span class="n">pt_input</span><span class="p">[</span><span class="s1">&#39;physical_topology&#39;</span><span class="p">][</span><span class="s1">&#39;links&#39;</span><span class="p">][</span><span class="n">link_no</span><span class="p">][</span><span class="s1">&#39;destination&#39;</span><span class="p">]):</span>
-                            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">pt_input</span><span class="p">[</span><span class="s1">&#39;number_of_slot_per_lisnk&#39;</span><span class="p">])})</span>
+                                <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">pt_input</span><span class="p">[</span><span class="s1">&#39;number_of_slot_per_lisnk&#39;</span><span class="p">])})</span>
         <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">pt_input</span><span class="p">[</span><span class="s1">&#39;physical_topology&#39;</span><span class="p">][</span><span class="s1">&#39;links&#39;</span><span class="p">][</span><span class="n">link_no</span><span class="p">][</span><span class="s1">&#39;source&#39;</span><span class="p">],</span>
                    <span class="n">pt_input</span><span class="p">[</span><span class="s1">&#39;physical_topology&#39;</span><span class="p">][</span><span class="s1">&#39;links&#39;</span><span class="p">][</span><span class="n">link_no</span><span class="p">][</span><span class="s1">&#39;destination&#39;</span><span class="p">],</span>
                    <span class="n">length</span><span class="o">=</span><span class="n">pt_input</span><span class="p">[</span><span class="s1">&#39;physical_topology&#39;</span><span class="p">][</span><span class="s1">&#39;links&#39;</span><span class="p">][</span><span class="n">link_no</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">])</span>
@@ -139,7 +140,6 @@
                 <span class="k">if</span> <span class="n">rsa_res</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
                     <span class="n">blocking_iter</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="c1"># for item in rsa_res[0]:</span>
                     <span class="c1"># TODO: A starting NO reserved slot will not exist for the &quot;arrival&quot; case above</span>
                     <span class="n">requests_status</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">sorted_request</span><span class="p">[</span><span class="n">time</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]:</span> <span class="p">{</span>
                         <span class="s2">&quot;slots&quot;</span><span class="p">:</span> <span class="n">rsa_res</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;starting_NO_reserved_slot&#39;</span><span class="p">],</span>
