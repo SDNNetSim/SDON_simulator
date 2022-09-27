@@ -63,7 +63,9 @@ def main():
         sorted_request = dict(sorted(requests.items()))
         for time in sorted_request:
             if sorted_request[time]['request_type'] == "Arrival":
-                rsa_res = controller_main(request_type="Release",
+                rsa_res = controller_main(src=sorted_request[time]["source"][0],
+                                          dest=sorted_request[time]["destination"][0],
+                                          request_type="Arrival",
                                           Physical_topology=Physical_topology,
                                           network_spectrum_DB=network_spectrum_DB,
                                           slot_NO=None,
@@ -72,7 +74,6 @@ def main():
                 if rsa_res is False:
                     blocking_iter += 1
                 else:
-                    # TODO: A starting NO reserved slot will not exist for the "arrival" case above
                     requests_status.update({sorted_request[time]['id']: {
                         "slots": rsa_res[0]['starting_NO_reserved_slot'],
                         "path": rsa_res[0]['path']
@@ -81,11 +82,13 @@ def main():
                     Physical_topology = rsa_res[2]
             elif sorted_request[time]['request_type'] == "Release":
                 if sorted_request[time]['id'] in requests_status:
-                    controller_main(request_type="Release",
+                    controller_main(src=sorted_request[time]["source"][0],
+                                    dest=sorted_request[time]["destination"][0],
+                                    request_type="Release",
                                     Physical_topology=Physical_topology,
                                     network_spectrum_DB=network_spectrum_DB,
-                                    slot_NO=sorted_request[requests_status[time]['id']]['slots'],
-                                    path=sorted_request[requests_status[time]['id']]['path']
+                                    slot_NO=requests_status[sorted_request[time]['id']]['slots'],
+                                    path=requests_status[sorted_request[time]['id']]['path']
                                     )
 
         blocking.update({i: blocking_iter / sim_input['number_of_request']})
@@ -93,3 +96,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    print("Finished")

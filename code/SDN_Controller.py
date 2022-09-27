@@ -18,17 +18,16 @@ def release(network_spectrum_DB, path, slot_NO, No_occupied_slots):
     :return: The updated network spectrum database
     :rtype: dict
     """
-    # TODO: Ask Arash about this (If path is not None)
-    if path is not None:
-        for cnt in range(len(path) - 1):
-            for slt in range(No_occupied_slots):
-                network_spectrum_DB[(path[cnt], path[cnt + 1])][slot_NO + slt] = 0
+    for cnt in range(len(path) - 1):
+        for slt in range(No_occupied_slots):
+            network_spectrum_DB[(path[cnt], path[cnt + 1])][slot_NO + slt] = 0
 
     return network_spectrum_DB
 
 
 # TODO: Update return value in the docstring
-def controller_main(request_type, Physical_topology, network_spectrum_DB, slot_NO, path=None):
+def controller_main(src, dest, request_type, Physical_topology, network_spectrum_DB, slot_NO,
+                    path=None):
     """
     Either releases spectrum from the database, assigns a spectrum, or returns False otherwise.
 
@@ -52,8 +51,7 @@ def controller_main(request_type, Physical_topology, network_spectrum_DB, slot_N
         # TODO: No ras output var assigned
         return network_spectrum_DB, Physical_topology
 
-    # TODO: No arguments given
-    selected_path = routing()  # pylint: disable=no-value-for-parameter
+    selected_path = routing(src, dest, Physical_topology, network_spectrum_DB)
     if selected_path is not False:
         selected_sp = spectrum_assignment()
         if selected_sp is not False:
