@@ -13,6 +13,9 @@ from SDN_Controller import controller_main
 blocking = {}
 sim_input = load_input()
 
+# TODO: Reformat code
+# TODO: Update doc strings
+
 
 def create_PT(pt_input):
     """
@@ -25,6 +28,8 @@ def create_PT(pt_input):
     :return: (Graph, spectrum database)
     :rtype: (class, dict)
     """
+    # TODO: Create based on number of cores
+
     G = nx.Graph()
     spectrum_DB = {}
 
@@ -34,7 +39,9 @@ def create_PT(pt_input):
     for link_no in pt_input['physical_topology']['links']:
         spectrum_DB.update({(pt_input['physical_topology']['links'][link_no]['source'],
                              pt_input['physical_topology']['links'][link_no]['destination']):
-                                np.zeros(pt_input['number_of_slot_per_lisnk'])})
+                            np.zeros((pt_input['physical_topology']['links'][link_no]['fiber']['num_cores'],
+                                      pt_input['number_of_slot_per_lisnk']))})
+
         G.add_edge(pt_input['physical_topology']['links'][link_no]['source'],
                    pt_input['physical_topology']['links'][link_no]['destination'],
                    length=pt_input['physical_topology']['links'][link_no]['length'])
@@ -68,6 +75,7 @@ def main():
                                           request_type="Arrival",
                                           Physical_topology=Physical_topology,
                                           network_spectrum_DB=network_spectrum_DB,
+                                          slots_needed=requests[time]['number_of_slot'][0],
                                           slot_NO=None,
                                           path=None
                                           )
@@ -96,4 +104,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    print("Finished")
