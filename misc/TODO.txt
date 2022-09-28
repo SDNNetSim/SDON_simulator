@@ -1,0 +1,7 @@
+
+Ryan:
+    - Add files to run pylint
+    - Set up continuous integration on GitHub
+    - Add testing modules
+    - Add documentation with sphinx
+    - Check on __init__.py files

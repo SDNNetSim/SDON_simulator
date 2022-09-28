@@ -1,0 +1,6 @@
+
+# Pycharm
+.idea/
+
+# sphinx
+docs/_build/*
