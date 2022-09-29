@@ -2,7 +2,7 @@ import numpy as np
 
 
 class SpectrumAssignment:
-    def __init__(self, src_dest: tuple, slots_needed, network_spectrum_DB):
+    def __init__(self, src_dest: tuple = None, slots_needed=None, network_spectrum_DB=None):
         self.src_dest = src_dest
         self.slots_needed = slots_needed
         self.network_spectrum_DB = network_spectrum_DB
