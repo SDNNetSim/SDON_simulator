@@ -52,6 +52,7 @@ def controller_main(src, dest, request_type, Physical_topology, network_spectrum
 
     selected_path = routing(src, dest, Physical_topology, network_spectrum_DB)
     if selected_path is not False:
+        # TODO: Selected spectrum will now be of type dictionary
         selected_sp = spectrum_assignment((src, dest), slots_needed, network_spectrum_DB)
         if selected_sp is not False:
             ras_output = {
