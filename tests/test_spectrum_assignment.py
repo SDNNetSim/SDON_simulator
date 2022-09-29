@@ -3,27 +3,49 @@ import numpy as np
 
 from scripts.spectrum_assignment import SpectrumAssignment
 
+
 # TODO: Add tests for all methods in spectrum_assignment.py
 
 
 class TestSpectrumAssignment(unittest.TestCase):
+    """
+    Update
+    """
     def setUp(self):
+        """
+        Update
+        :return:
+        """
         self.spec_assign = SpectrumAssignment()
 
         self.spec_assign.slots_needed = 100
         self.spec_assign.num_slots = 256
 
     def test_zeros_arr(self):
+        """
+        Update
+        :return:
+        """
         zeros_arr = np.zeros((1, self.spec_assign.num_slots))
         response = self.spec_assign.find_spectrum_slots(cores_matrix=zeros_arr)
-        self.assertEqual(response, {'core_num': 0, 'start_slot': 0, 'end_slot': 99}, 'Incorrect assignment received')
+        self.assertEqual(response, {'core_num': 0, 'start_slot': 0, 'end_slot': 99},
+                         'Incorrect assignment received')
 
     def test_ones_arr(self):
+        """
+        Update
+        :return:
+        """
         ones_arr = np.ones((1, self.spec_assign.num_slots))
-        response = self.spec_assign.find_spectrum_slots(cores_matrix=ones_arr)
-        self.assertFalse(response, 'Assignment found in a core that has no available spectrum slots.')
+        response = self.spec_assign.find_spectrum_slots(cores_matrix=ones_arr)  # pylint: disable=line-too-long
+        self.assertFalse(response,
+                         'Assignment found in a core that has no available spectrum slots.')
 
     def test_one_core(self):
+        """
+        Update
+        :return:
+        """
         test_arr_one = np.zeros((1, self.spec_assign.num_slots))
         test_arr_two = np.zeros((1, self.spec_assign.num_slots))
         test_arr_three = np.zeros((1, self.spec_assign.num_slots))
@@ -44,6 +66,10 @@ class TestSpectrumAssignment(unittest.TestCase):
                          'Incorrect assignment received')
 
     def test_multiple_cores(self):
+        """
+        Update
+        :return:
+        """
         test_arr_one = np.zeros((5, self.spec_assign.num_slots))
         test_arr_two = np.zeros((5, self.spec_assign.num_slots))
         test_arr_two[0][0:] = 1
@@ -59,5 +85,3 @@ class TestSpectrumAssignment(unittest.TestCase):
                          'Incorrect assignment received')
         self.assertEqual(response_two, {'core_num': 3, 'start_slot': 65, 'end_slot': 164},
                          'Incorrect assignment received')
-
-
