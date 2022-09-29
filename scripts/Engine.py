@@ -6,12 +6,13 @@ import networkx as nx
 import numpy as np
 
 # Project imports
-from Request_generator import Generate
-from load_input import load_input
-from SDN_Controller import controller_main
+from .Request_generator import Generate
+from .load_input import load_input
+from .SDN_Controller import controller_main
 
 blocking = {}
 sim_input = load_input()
+
 
 # TODO: Reformat code
 # TODO: Update doc strings
@@ -39,7 +40,8 @@ def create_PT(pt_input):
     for link_no in pt_input['physical_topology']['links']:
         spectrum_DB.update({(pt_input['physical_topology']['links'][link_no]['source'],
                              pt_input['physical_topology']['links'][link_no]['destination']):
-                            np.zeros((pt_input['physical_topology']['links'][link_no]['fiber']['num_cores'],
+                            np.zeros((pt_input['physical_topology']['links']
+                                      [link_no]['fiber']['num_cores'],
                                       pt_input['number_of_slot_per_lisnk']))})
 
         G.add_edge(pt_input['physical_topology']['links'][link_no]['source'],
