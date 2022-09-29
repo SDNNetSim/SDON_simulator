@@ -158,6 +158,10 @@ disable=raw-checker-failed,
         missing-module-docstring,
         invalid-name,
         too-many-arguments,
+        line-too-long,
+        too-many-instance-attributes,
+        use-dict-literal,
+        use-list-literal,
 
 
 # Enable the message, report, category or checker with the given id(s). You can
