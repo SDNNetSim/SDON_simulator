@@ -2,7 +2,16 @@ import numpy as np
 
 
 class SpectrumAssignment:
+    """
+    Update
+    """
     def __init__(self, src_dest: tuple = None, slots_needed=None, network_spectrum_DB=None):
+        """
+
+        :param src_dest:
+        :param slots_needed:
+        :param network_spectrum_DB:
+        """
         self.src_dest = src_dest
         self.slots_needed = slots_needed
         self.network_spectrum_DB = network_spectrum_DB
@@ -10,6 +19,11 @@ class SpectrumAssignment:
         self.num_slots = None
 
     def find_spectrum_slots(self, cores_matrix):
+        """
+
+        :param cores_matrix:
+        :return:
+        """
         start_slot = 0
         end_slot = self.slots_needed - 1
 
@@ -27,7 +41,8 @@ class SpectrumAssignment:
                     break
 
                 # TODO: This will check zero twice potentially
-                # Jump to next available slot, assume window will shift therefore we can never pick index 0
+                # Jump to next available slot, assume window will shift therefore we can never
+                # pick index 0
                 start_slot = open_slots_arr[0]
                 # Remove prior slots
                 open_slots_arr = open_slots_arr[1:]
@@ -36,14 +51,22 @@ class SpectrumAssignment:
         return False
 
     def find_src_dest(self):
+        """
+
+        :return:
+        """
         try:
             cores_matrix = self.network_spectrum_DB[self.src_dest]
-        except KeyError:
-            raise KeyError('Source to destination does not exist in the network spectrum database.')
+        except KeyError as exc:
+            raise KeyError('Path does not exist in the network spectrum database.') from exc
 
         self.num_slots = np.shape(cores_matrix)[1]
         return cores_matrix
 
     def find_free_spectrum(self):
+        """
+        Update
+        :return:
+        """
         cores_matrix = self.find_src_dest()
         return self.find_spectrum_slots(cores_matrix=cores_matrix)
