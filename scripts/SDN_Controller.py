@@ -1,5 +1,5 @@
 from routing import routing
-from spectrum_assignment import spectrum_assignment
+from spectrum_assignment import SpectrumAssignment
 
 
 def release(network_spectrum_DB, path, slot_NO, No_occupied_slots):
@@ -53,11 +53,14 @@ def controller_main(src, dest, request_type, Physical_topology, network_spectrum
     selected_path = routing(src, dest, Physical_topology, network_spectrum_DB)
     if selected_path is not False:
         # TODO: Selected spectrum will now be of type dictionary
-        selected_sp = spectrum_assignment((src, dest), slots_needed, network_spectrum_DB)
+        spectrum_assignment = SpectrumAssignment((src, dest), slots_needed, network_spectrum_DB)
+        selected_sp = spectrum_assignment.find_free_spectrum()
         if selected_sp is not False:
             ras_output = {
                 'path': selected_path,
-                'starting_NO_reserved_slot': selected_sp,
+                'core_num': selected_sp['core_num'],
+                'starting_NO_reserved_slot': selected_sp['start_slot'],
+                'ending_NO_reserved_slot': selected_sp['end_slot'],
             }
             return ras_output, network_spectrum_DB, Physical_topology
 

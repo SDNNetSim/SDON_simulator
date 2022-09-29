@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from code.spectrum_assignment import SpectrumAssignment
+from scripts.spectrum_assignment import SpectrumAssignment
 
 # TODO: Add tests for all methods in spectrum_assignment.py
 
@@ -28,9 +28,9 @@ class TestSpectrumAssignment(unittest.TestCase):
         test_arr_two = np.zeros((1, self.spec_assign.num_slots))
         test_arr_three = np.zeros((1, self.spec_assign.num_slots))
 
-        test_arr_one[33:75] = 1
-        test_arr_two[0:20] = 1
-        test_arr_three[0:156] = 1
+        test_arr_one[0][33:75] = 1
+        test_arr_two[0][0:20] = 1
+        test_arr_three[0][0:156] = 1
 
         response_one = self.spec_assign.find_spectrum_slots(cores_matrix=test_arr_one)
         response_two = self.spec_assign.find_spectrum_slots(cores_matrix=test_arr_two)
@@ -45,7 +45,3 @@ class TestSpectrumAssignment(unittest.TestCase):
 
     def test_multiple_cores(self):
         pass
-
-
-if __name__ == '__main__':
-    pass

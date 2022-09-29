@@ -46,4 +46,4 @@ class SpectrumAssignment:
 
     def find_free_spectrum(self):
         cores_matrix = self.find_src_dest()
-        self.find_spectrum_slots(cores_matrix=cores_matrix)
+        return self.find_spectrum_slots(cores_matrix=cores_matrix)

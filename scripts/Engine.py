@@ -95,6 +95,7 @@ def main():
                                     request_type="Release",
                                     Physical_topology=Physical_topology,
                                     network_spectrum_DB=network_spectrum_DB,
+                                    slots_needed=requests[time]['number_of_slot'][0],
                                     slot_NO=requests_status[sorted_request[time]['id']]['slots'],
                                     path=requests_status[sorted_request[time]['id']]['path']
                                     )
