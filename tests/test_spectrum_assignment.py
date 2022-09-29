@@ -44,4 +44,20 @@ class TestSpectrumAssignment(unittest.TestCase):
                          'Incorrect assignment received')
 
     def test_multiple_cores(self):
-        pass
+        test_arr_one = np.zeros((5, self.spec_assign.num_slots))
+        test_arr_two = np.zeros((5, self.spec_assign.num_slots))
+        test_arr_two[0][0:] = 1
+        test_arr_two[1][0:] = 1
+        test_arr_two[2][0:] = 1
+        test_arr_two[3][40:65] = 1
+        test_arr_two[4][0:] = 1
+
+        response_one = self.spec_assign.find_spectrum_slots(cores_matrix=test_arr_one)
+        response_two = self.spec_assign.find_spectrum_slots(cores_matrix=test_arr_two)
+
+        self.assertEqual(response_one, {'core_num': 0, 'start_slot': 0, 'end_slot': 99},
+                         'Incorrect assignment received')
+        self.assertEqual(response_two, {'core_num': 3, 'start_slot': 65, 'end_slot': 164},
+                         'Incorrect assignment received')
+
+
