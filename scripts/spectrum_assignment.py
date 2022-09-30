@@ -5,16 +5,17 @@ class SpectrumAssignment:
     """
     Update
     """
-    def __init__(self, src_dest: tuple = None, slots_needed=None, network_spectrum_DB=None):
+
+    def __init__(self, src_dest: tuple = None, slots_needed=None, network_spec_db=None):
         """
 
         :param src_dest:
         :param slots_needed:
-        :param network_spectrum_DB:
+        :param network_spec_db:
         """
         self.src_dest = src_dest
         self.slots_needed = slots_needed
-        self.network_spectrum_DB = network_spectrum_DB
+        self.network_spec_db = network_spec_db
 
         self.num_slots = None
 
@@ -56,7 +57,7 @@ class SpectrumAssignment:
         :return:
         """
         try:
-            cores_matrix = self.network_spectrum_DB[self.src_dest]
+            cores_matrix = self.network_spec_db[self.src_dest]
         except KeyError as exc:
             raise KeyError('Path does not exist in the network spectrum database.') from exc
 
