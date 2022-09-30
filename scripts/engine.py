@@ -5,7 +5,7 @@ import numpy as np
 # Project imports
 from request_generator import generate
 from load_input import load_input
-from SDN_Controller import controller_main
+from sdn_controller import controller_main
 
 
 class Engine:
@@ -42,10 +42,10 @@ class Engine:
         rsa_res = controller_main(src=self.sorted_requests[time]["source"][0],
                                   dest=self.sorted_requests[time]["destination"][0],
                                   request_type="Arrival",
-                                  Physical_topology=self.physical_topology,
-                                  network_spectrum_DB=self.network_spec_db,
+                                  physical_topology=self.physical_topology,
+                                  network_spec_db=self.network_spec_db,
                                   slots_needed=self.requests[time]['number_of_slot'][0],
-                                  slot_NO=-1,
+                                  slot_num=-1,
                                   path=list()
                                   )
         if rsa_res is False:
@@ -68,10 +68,10 @@ class Engine:
             controller_main(src=self.sorted_requests[time]["source"][0],
                             dest=self.sorted_requests[time]["destination"][0],
                             request_type="Release",
-                            Physical_topology=self.physical_topology,
-                            network_spectrum_DB=self.network_spec_db,
+                            physical_topology=self.physical_topology,
+                            network_spec_db=self.network_spec_db,
                             slots_needed=self.requests[time]['number_of_slot'][0],
-                            slot_NO=self.requests_status[self.sorted_requests[time]['id']]['slots'],
+                            slot_num=self.requests_status[self.sorted_requests[time]['id']]['slots'],
                             path=self.requests_status[self.sorted_requests[time]['id']]['path']
                             )
 

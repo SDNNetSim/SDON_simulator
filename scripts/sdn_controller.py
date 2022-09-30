@@ -2,7 +2,7 @@ from routing import routing
 from spectrum_assignment import SpectrumAssignment
 
 
-def release(network_spectrum_DB, path, slot_NO, No_occupied_slots):
+def release(network_spec_db, path, slot_num, num_occ_slots):
     """
     Releases the slots in the network spectrum database e.g. sets them back to zero.
 
@@ -18,15 +18,15 @@ def release(network_spectrum_DB, path, slot_NO, No_occupied_slots):
     :rtype: dict
     """
     for cnt in range(len(path) - 1):
-        for slt in range(No_occupied_slots):
-            network_spectrum_DB[(path[cnt], path[cnt + 1])][slot_NO + slt] = 0
+        for slt in range(num_occ_slots):
+            network_spec_db[(path[cnt], path[cnt + 1])][slot_num + slt] = 0
 
-    return network_spectrum_DB
+    return network_spec_db
 
 
 # TODO: Update return value in the docstring
-def controller_main(src, dest, request_type, Physical_topology, network_spectrum_DB, slots_needed,
-                    slot_NO, path=None):
+def controller_main(src, dest, request_type, physical_topology, network_spec_db, slots_needed,
+                    slot_num, path=None):
     """
     Either releases spectrum from the database, assigns a spectrum, or returns False otherwise.
 
@@ -43,17 +43,17 @@ def controller_main(src, dest, request_type, Physical_topology, network_spectrum
     """
     if request_type == "Release":
         # TODO: Factor in core# for release
-        network_spectrum_DB = release(network_spectrum_DB=network_spectrum_DB,
-                                      path=path,
-                                      slot_NO=slot_NO,
-                                      No_occupied_slots=1
-                                      )
-        return network_spectrum_DB, Physical_topology
+        network_spec_db = release(network_spec_db=network_spec_db,
+                                  path=path,
+                                  slot_num=slot_num,
+                                  num_occ_slots=1
+                                  )
+        return network_spec_db, physical_topology
 
-    selected_path = routing(src, dest, Physical_topology, network_spectrum_DB)
+    selected_path = routing(src, dest, physical_topology, network_spec_db)
     if selected_path is not False:
         # TODO: Selected spectrum will now be of type dictionary
-        spectrum_assignment = SpectrumAssignment((src, dest), slots_needed, network_spectrum_DB)
+        spectrum_assignment = SpectrumAssignment((src, dest), slots_needed, network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
         if selected_sp is not False:
             ras_output = {
@@ -62,7 +62,7 @@ def controller_main(src, dest, request_type, Physical_topology, network_spectrum
                 'starting_NO_reserved_slot': selected_sp['start_slot'],
                 'ending_NO_reserved_slot': selected_sp['end_slot'],
             }
-            return ras_output, network_spectrum_DB, Physical_topology
+            return ras_output, network_spec_db, physical_topology
 
         return False
 
