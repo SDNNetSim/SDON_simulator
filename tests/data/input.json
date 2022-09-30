@@ -1,0 +1,36 @@
+{
+  "seed": 9,
+  "holding_time_mean": 100,
+  "inter_arrival_time": 10,
+  "number_of_request": 1,
+  "BW_type": [
+    100,
+    400
+  ],
+  "NO_iteration": 10,
+  "number_of_slot_per_lisnk": 256,
+  "physical_topology": {
+    "nodes": {
+      "Lowell": {
+        "type": "CDC"
+      },
+      "Boston": {
+        "type": "CDC"
+      }
+    },
+    "links": {
+      "1": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 3
+        },
+        "length": 40,
+        "source": "Lowell",
+        "destination": "Boston"
+      }
+    }
+  }
+}

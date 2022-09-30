@@ -129,7 +129,6 @@ class Engine:
                     self.handle_arrival(time)
 
             self.update_blocking(i)
-            print("Here")
 
 
 if __name__ == '__main__':
