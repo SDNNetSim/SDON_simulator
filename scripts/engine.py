@@ -3,9 +3,9 @@ import networkx as nx
 import numpy as np
 
 # Project imports
-from .Request_generator import Generate
-from .load_input import load_input
-from .SDN_Controller import controller_main
+from Request_generator import Generate
+from load_input import load_input
+from SDN_Controller import controller_main
 
 
 class Engine:
@@ -18,10 +18,8 @@ class Engine:
         self.blocking_iter = 0
         self.sim_input = None
 
-        self.graph = nx.Graph()
-        self.spectrum_db = dict()
-        self.network_spec_db = None
-        self.physical_topology = None
+        self.network_spec_db = dict()
+        self.physical_topology = nx.Graph()
 
         self.requests = None
         self.sorted_requests = None
@@ -83,18 +81,18 @@ class Engine:
         :return:
         """
         for node in self.sim_input['physical_topology']['nodes']:
-            self.graph.add_node(node)
+            self.physical_topology.add_node(node)
 
         for link_no in self.sim_input['physical_topology']['links']:
-            self.spectrum_db.update({(self.sim_input['physical_topology']['links'][link_no]['source'],
-                                      self.sim_input['physical_topology']['links'][link_no]['destination']):
-                                         np.zeros((self.sim_input['physical_topology']['links']
-                                                   [link_no]['fiber']['num_cores'],
-                                                   self.sim_input['number_of_slot_per_lisnk']))})
+            self.network_spec_db.update({(self.sim_input['physical_topology']['links'][link_no]['source'],
+                                          self.sim_input['physical_topology']['links'][link_no]['destination']):
+                                             np.zeros((self.sim_input['physical_topology']['links']
+                                                       [link_no]['fiber']['num_cores'],
+                                                       self.sim_input['number_of_slot_per_lisnk']))})
 
-            self.graph.add_edge(self.sim_input['physical_topology']['links'][link_no]['source'],
-                                self.sim_input['physical_topology']['links'][link_no]['destination'],
-                                length=self.sim_input['physical_topology']['links'][link_no]['length'])
+            self.physical_topology.add_edge(self.sim_input['physical_topology']['links'][link_no]['source'],
+                                            self.sim_input['physical_topology']['links'][link_no]['destination'],
+                                            length=self.sim_input['physical_topology']['links'][link_no]['length'])
 
     def load_input(self):
         """
@@ -108,6 +106,8 @@ class Engine:
         Update
         :return:
         """
+        self.load_input()
+
         for i in range(self.sim_input['NO_iteration']):
             self.blocking_iter = 0
             self.requests_status = dict()
@@ -129,7 +129,9 @@ class Engine:
                     self.handle_arrival(time)
 
             self.update_blocking(i)
+            print("Here")
 
 
 if __name__ == '__main__':
-    pass
+    obj_one = Engine()
+    obj_one.run()

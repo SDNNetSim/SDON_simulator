@@ -1,5 +1,5 @@
-from .routing import routing
-from .spectrum_assignment import SpectrumAssignment
+from routing import routing
+from spectrum_assignment import SpectrumAssignment
 
 
 def release(network_spectrum_DB, path, slot_NO, No_occupied_slots):
