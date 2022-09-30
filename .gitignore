@@ -4,3 +4,6 @@
 
 # sphinx
 docs/_build/*
+
+# My stuff
+misc/
