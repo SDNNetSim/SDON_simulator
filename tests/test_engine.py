@@ -2,5 +2,12 @@ import unittest
 
 
 class TestEngine(unittest.TestCase):
+    """
+    Update
+    """
     def setUp(self):
-        pass
+        """
+        Update
+        :return:
+        """
+        self.random = None

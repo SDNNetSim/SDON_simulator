@@ -7,12 +7,12 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'SDN Simulator'
-copyright = '2022, Arash Rezaee and Ryan McCann'  # pylint: disable=redefined-builtin
+copyright = '2022, Arash Rezaee and Ryan McCann'
 author = 'Arash Rezaee and Ryan McCann'
 release = '1.0.0'
 
-import os  # pylint: disable=wrong-import-position
-import sys  # pylint: disable=wrong-import-position
+import os
+import sys
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
