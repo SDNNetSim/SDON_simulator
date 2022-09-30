@@ -3,7 +3,7 @@ import networkx as nx
 import numpy as np
 
 # Project imports
-from Request_generator import Generate
+from request_generator import generate
 from load_input import load_input
 from SDN_Controller import controller_main
 
@@ -113,7 +113,7 @@ class Engine:
             self.requests_status = dict()
             self.create_pt()
 
-            self.requests = Generate(seed_no=self.sim_input['seed'],
+            self.requests = generate(seed_no=self.sim_input['seed'],
                                      nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
                                      holding_time_mean=self.sim_input['holding_time_mean'],
                                      inter_arrival_time_mean=self.sim_input['inter_arrival_time'],

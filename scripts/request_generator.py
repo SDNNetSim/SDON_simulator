@@ -1,12 +1,7 @@
 import numpy as np
 
 
-# TODO: What is the holding time mean?
-# TODO: What is the arrival time mean?
-# TODO: What is the slot list?
-
-
-def Generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
+def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
              slot_list):
     """
     Generates every request with the necessary information inside each request.
@@ -32,8 +27,6 @@ def Generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
     for i in range(0, req_no):
         current = current + np.random.normal(loc=inter_arrival_time_mean)
         new_hold = current + np.random.normal(loc=holding_time_mean)
-        # TODO: Ask Arash about this
-        # np.random.RandomState.randint
         src = np.random.choice(nodes, size=1)
         des = np.random.choice(nodes, size=1)
 
@@ -70,7 +63,6 @@ def Generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
             }})
         else:
             # TODO: Shouldn't we raise a class here?
-            print("Check")
             raise "rep"  # pylint: disable=raising-bad-type
 
     return requests
