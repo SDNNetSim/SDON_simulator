@@ -1,8 +1,7 @@
-from routing import routing
-from spectrum_assignment import spectrum_assignment
+from .routing import routing
+from .spectrum_assignment import SpectrumAssignment
 
 
-# TODO: Is slot_NO the starting slot number taken?
 def release(network_spectrum_DB, path, slot_NO, No_occupied_slots):
     """
     Releases the slots in the network spectrum database e.g. sets them back to zero.
@@ -26,8 +25,8 @@ def release(network_spectrum_DB, path, slot_NO, No_occupied_slots):
 
 
 # TODO: Update return value in the docstring
-def controller_main(src, dest, request_type, Physical_topology, network_spectrum_DB, slot_NO,
-                    path=None):
+def controller_main(src, dest, request_type, Physical_topology, network_spectrum_DB, slots_needed,
+                    slot_NO, path=None):
     """
     Either releases spectrum from the database, assigns a spectrum, or returns False otherwise.
 
@@ -43,21 +42,25 @@ def controller_main(src, dest, request_type, Physical_topology, network_spectrum
     :type path: list
     """
     if request_type == "Release":
+        # TODO: Factor in core# for release
         network_spectrum_DB = release(network_spectrum_DB=network_spectrum_DB,
                                       path=path,
                                       slot_NO=slot_NO,
                                       No_occupied_slots=1
                                       )
-        # TODO: No ras output var assigned
         return network_spectrum_DB, Physical_topology
 
     selected_path = routing(src, dest, Physical_topology, network_spectrum_DB)
     if selected_path is not False:
-        selected_sp = spectrum_assignment()
+        # TODO: Selected spectrum will now be of type dictionary
+        spectrum_assignment = SpectrumAssignment((src, dest), slots_needed, network_spectrum_DB)
+        selected_sp = spectrum_assignment.find_free_spectrum()
         if selected_sp is not False:
             ras_output = {
                 'path': selected_path,
-                'starting_NO_reserved_slot': selected_sp,
+                'core_num': selected_sp['core_num'],
+                'starting_NO_reserved_slot': selected_sp['start_slot'],
+                'ending_NO_reserved_slot': selected_sp['end_slot'],
             }
             return ras_output, network_spectrum_DB, Physical_topology
 
