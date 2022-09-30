@@ -156,8 +156,12 @@ disable=raw-checker-failed,
         use-symbolic-message-instead,
         fixme,
         missing-module-docstring,
-        invalid-name,
         too-many-arguments,
+        line-too-long,
+        too-many-instance-attributes,
+        use-dict-literal,
+        use-list-literal,
+        import-error
 
 
 # Enable the message, report, category or checker with the given id(s). You can
