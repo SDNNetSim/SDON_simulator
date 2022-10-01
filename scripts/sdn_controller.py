@@ -1,7 +1,5 @@
-import numpy as np
-
-from .routing import routing
-from .spectrum_assignment import SpectrumAssignment
+from scripts.routing import routing
+from scripts.spectrum_assignment import SpectrumAssignment
 
 
 def release(network_spec_db, path, slot_num, num_occ_slots, core_num=0):

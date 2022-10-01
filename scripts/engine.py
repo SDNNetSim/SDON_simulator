@@ -3,9 +3,10 @@ import networkx as nx
 import numpy as np
 
 # Project imports
-from request_generator import generate
-from load_input import load_input
-from sdn_controller import controller_main
+from scripts.request_generator import generate
+from scripts.load_input import load_input
+from scripts.sdn_controller import controller_main
+
 
 # TODO: This will break on multi-hop routing
 
@@ -81,7 +82,6 @@ class Engine:
                             num_slots=self.sorted_requests[time]['number_of_slot'][0],
                             slot_num=self.requests_status[self.sorted_requests[time]['id']]['slots'],
                             path=self.requests_status[self.sorted_requests[time]['id']]['path'],
-                            num_cores=None
                             )
 
     def create_pt(self):
