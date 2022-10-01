@@ -1,6 +1,6 @@
 Routing
 =======
 
-.. automodule:: scripts/routing
+.. automodule:: scripts.routing
     :members:
     :undoc-members:

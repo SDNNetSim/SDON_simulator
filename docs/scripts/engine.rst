@@ -1,6 +1,6 @@
 Engine
 ======
 
-.. automodule:: scripts/engine
+.. automodule:: scripts.engine
     :members:
     :undoc-members:
