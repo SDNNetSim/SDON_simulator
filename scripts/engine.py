@@ -10,7 +10,7 @@ from sdn_controller import controller_main
 
 class Engine:
     """
-    Update this
+    Controls the SDN simulation.
     """
 
     def __init__(self):
@@ -27,17 +27,21 @@ class Engine:
 
     def update_blocking(self, i):
         """
-        Update
-        :param i:
-        :return:
+        Updates the blocking dictionary based on number of iterations blocked divided by the number of requests.
+
+        :param i: The iteration number completed
+        :type i: int
+        :return: None
         """
         self.blocking.update({i: self.blocking_iter / self.sim_input['number_of_request']})
 
     def handle_arrival(self, time):
         """
-        Update
-        :param time:
-        :return:
+        Calls the controller to handle an arrival request.
+
+        :param time: The arrival time of the request
+        :type time: float
+        :return: None
         """
         rsa_res = controller_main(src=self.sorted_requests[time]["source"][0],
                                   dest=self.sorted_requests[time]["destination"][0],
@@ -60,9 +64,11 @@ class Engine:
 
     def handle_release(self, time):
         """
-        Update
-        :param time:
-        :return:
+        Calls the controller to handle a release request.
+
+        :param time: The arrival time of the request
+        :type time: float
+        :return: None
         """
         if self.sorted_requests[time]['id'] in self.requests_status:
             controller_main(src=self.sorted_requests[time]["source"][0],
@@ -77,8 +83,9 @@ class Engine:
 
     def create_pt(self):
         """
-        Update
-        :return:
+        Creates the physical topology for the simulation.
+
+        :return: None
         """
         for node in self.sim_input['physical_topology']['nodes']:
             self.physical_topology.add_node(node)
@@ -96,15 +103,17 @@ class Engine:
 
     def load_input(self):
         """
-        Update
-        :return:
+        Loads the simulation JSON file.
+
+        :return: None
         """
         self.sim_input = load_input()
 
     def run(self):
         """
-        Update
-        :return:
+        Controls the SDN simulation.
+
+        :return: None
         """
         self.load_input()
 
