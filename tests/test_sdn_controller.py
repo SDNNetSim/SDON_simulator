@@ -5,7 +5,14 @@ from scripts.sdn_controller import release
 
 
 class TestSDNController(unittest.TestCase):
+    """
+    Tests the SDN controller module.
+    """
+
     def setUp(self):
+        """
+        The constructor.
+        """
         self.single_core_arr = np.zeros((1, 256))
         self.multi_core_arr = np.zeros((5, 256))
 
@@ -14,6 +21,9 @@ class TestSDNController(unittest.TestCase):
         self.path = ['Lowell', 'Boston']
 
     def test_single_core_release(self):
+        """
+        Test that a single core fiber is released properly.
+        """
         slot_num = 50
         num_occ_slots = 100
         self.single_core_db[('Lowell', 'Boston')][slot_num:num_occ_slots - 1] = 1
@@ -25,6 +35,9 @@ class TestSDNController(unittest.TestCase):
                          'Single core fiber was not released properly.')
 
     def test_multi_core_release(self):
+        """
+        Test that a multicore fiber is released properly.
+        """
         core_num = 4
         slot_num = 110
         num_occ_slots = 50
