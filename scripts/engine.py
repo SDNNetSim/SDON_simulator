@@ -99,7 +99,7 @@ class Engine:
                                           self.sim_input['physical_topology']['links'][link_no]['destination']):
                                              np.zeros((self.sim_input['physical_topology']['links']
                                                        [link_no]['fiber']['num_cores'],
-                                                       self.sim_input['number_of_slot_per_lisnk']))})
+                                                       self.sim_input['number_of_slot_per_link']))})
 
             self.physical_topology.add_edge(self.sim_input['physical_topology']['links'][link_no]['source'],
                                             self.sim_input['physical_topology']['links'][link_no]['destination'],
