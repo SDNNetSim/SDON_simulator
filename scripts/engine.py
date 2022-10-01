@@ -1,10 +1,10 @@
 # Third party imports
 import networkx as nx
 import numpy as np
+import json
 
 # Project imports
 from scripts.request_generator import generate
-from scripts.load_input import load_input
 from scripts.sdn_controller import controller_main
 
 
@@ -20,6 +20,7 @@ class Engine:
         self.blocking = dict()
         self.blocking_iter = 0
         self.sim_input = None
+        self.sim_input_fp = '../data/input.json'
 
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
@@ -106,11 +107,10 @@ class Engine:
 
     def load_input(self):
         """
-        Loads the simulation JSON file.
-
-        :return: None
+        Load and return the simulation input JSON file.
         """
-        self.sim_input = load_input()
+        with open(self.sim_input_fp, encoding='utf-8') as json_file:
+            self.sim_input = json.load(json_file)
 
     def run(self):
         """

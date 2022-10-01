@@ -3,6 +3,8 @@ import numpy as np
 
 from scripts.sdn_controller import release
 
+# TODO: These tests don't support multi-hop routing!
+
 
 class TestSDNController(unittest.TestCase):
     """
