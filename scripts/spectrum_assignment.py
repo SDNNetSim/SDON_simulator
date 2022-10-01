@@ -3,15 +3,19 @@ import numpy as np
 
 class SpectrumAssignment:
     """
-    Update
+    Finds spectrum slots for a given request.
     """
 
     def __init__(self, src_dest: tuple = None, slots_needed=None, network_spec_db=None):
         """
+        The constructor.
 
-        :param src_dest:
-        :param slots_needed:
-        :param network_spec_db:
+        :param src_dest: The source and destination of the request
+        :type src_dest: tuple
+        :param slots_needed: The number of spectrum slots the request needs
+        :type slots_needed: int
+        :param network_spec_db: The network spectrum database
+        :type network_spec_db: dict
         """
         self.src_dest = src_dest
         self.slots_needed = slots_needed
@@ -21,9 +25,12 @@ class SpectrumAssignment:
 
     def find_spectrum_slots(self, cores_matrix):
         """
+        Loops through each core and find the starting and ending indexes of where the request
+        can be assigned.
 
-        :param cores_matrix:
-        :return:
+        :param cores_matrix: Contains the array of slots for each core
+        :type cores_matrix: list
+        :return: A dictionary of the free core number along with the starting and ending indexes. False otherwise.
         """
         start_slot = 0
         end_slot = self.slots_needed - 1
@@ -42,8 +49,7 @@ class SpectrumAssignment:
                     break
 
                 # TODO: This will check zero twice potentially
-                # Jump to next available slot, assume window will shift therefore we can never
-                # pick index 0
+                # Jump to next available slot, assume window will shift therefore we can never pick index 0
                 start_slot = open_slots_arr[0]
                 # Remove prior slots
                 open_slots_arr = open_slots_arr[1:]
@@ -53,8 +59,10 @@ class SpectrumAssignment:
 
     def find_src_dest(self):
         """
+        Determines if the source and destination exists in the network.
 
-        :return:
+        :return: The cores matrix containing spectrum information.
+        :rtype: list
         """
         try:
             cores_matrix = self.network_spec_db[self.src_dest]
@@ -66,8 +74,10 @@ class SpectrumAssignment:
 
     def find_free_spectrum(self):
         """
-        Update
-        :return:
+        Controls the methods in this class.
+
+        :return: The available core, starting index, and ending index.
+        :rtype: dict
         """
         cores_matrix = self.find_src_dest()
         return self.find_spectrum_slots(cores_matrix=cores_matrix)
