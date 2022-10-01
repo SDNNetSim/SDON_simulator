@@ -1,7 +1,9 @@
+# Standard imports
+import json
+
 # Third party imports
 import networkx as nx
 import numpy as np
-import json
 
 # Project imports
 from scripts.request_generator import generate
