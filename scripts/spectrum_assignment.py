@@ -1,12 +1,16 @@
 import numpy as np
 
 
+# TODO: What if spectrum is full
+# TODO: Can it be in different cores?
+# TODO: Update docs
+
 class SpectrumAssignment:
     """
     Finds spectrum slots for a given request.
     """
 
-    def __init__(self, src_dest: tuple = None, slots_needed=None, network_spec_db=None):
+    def __init__(self, path, slots_needed=None, network_spec_db=None):
         """
         The constructor.
 
@@ -17,13 +21,36 @@ class SpectrumAssignment:
         :param network_spec_db: The network spectrum database
         :type network_spec_db: dict
         """
-        self.src_dest = src_dest
+        self.is_free = True
+        self.path = path
+
         self.slots_needed = slots_needed
         self.network_spec_db = network_spec_db
-
+        self.cores_matrix = None
         self.num_slots = None
 
-    def find_spectrum_slots(self, cores_matrix):
+        self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
+
+    def check_other_links(self, core_num, start_slot, end_slot):
+
+        for i, node in enumerate(self.path):
+            if i == len(self.path) - 1:
+                break
+            # Ignore the first link since we check it in the method that calls this one
+            if i == 0:
+                continue
+
+            # Contains source and destination names
+            sub_path = (self.path[i], self.path[i + 1])
+            spectrum = self.network_spec_db[sub_path][core_num][start_slot:end_slot]
+
+            if set(spectrum) != {0}:
+                self.is_free = False
+                return
+
+            self.is_free = True
+
+    def find_spectrum_slots(self):
         """
         Loops through each core and find the starting and ending indexes of where the request
         can be assigned.
@@ -35,14 +62,20 @@ class SpectrumAssignment:
         start_slot = 0
         end_slot = self.slots_needed - 1
 
-        for core_num, core_arr in enumerate(cores_matrix):
+        for core_num, core_arr in enumerate(self.cores_matrix):
             open_slots_arr = np.where(core_arr == 0)[0]
             # Look for a super spectrum in the current core
             while end_slot < self.num_slots:
                 spectrum_set = set(core_arr[start_slot:end_slot])
                 # Spectrum is free
                 if spectrum_set == {0}:
-                    return {'core_num': core_num, 'start_slot': start_slot, 'end_slot': end_slot}
+                    if len(self.path) > 2:
+                        self.check_other_links(core_num, start_slot, end_slot)
+
+                    # Other links spectrum slots are also available
+                    if self.is_free is not False or len(self.path) <= 2:
+                        self.response = {'core_num': core_num, 'start_slot': start_slot, 'end_slot': end_slot}
+                        return
 
                 # No more open slots
                 if len(open_slots_arr) == 0:
@@ -55,23 +88,6 @@ class SpectrumAssignment:
                 open_slots_arr = open_slots_arr[1:]
                 end_slot = start_slot + (self.slots_needed - 1)
 
-        return False
-
-    def find_src_dest(self):
-        """
-        Determines if the source and destination exists in the network.
-
-        :return: The cores matrix containing spectrum information.
-        :rtype: ndarray
-        """
-        try:
-            cores_matrix = self.network_spec_db[self.src_dest]
-        except KeyError as exc:
-            raise KeyError('Path does not exist in the network spectrum database.') from exc
-
-        self.num_slots = np.shape(cores_matrix)[1]
-        return cores_matrix
-
     def find_free_spectrum(self):
         """
         Controls the methods in this class.
@@ -79,5 +95,12 @@ class SpectrumAssignment:
         :return: The available core, starting index, and ending index.
         :rtype: dict
         """
-        cores_matrix = self.find_src_dest()
-        return self.find_spectrum_slots(cores_matrix=cores_matrix)
+        self.cores_matrix = self.network_spec_db[(self.path[0], self.path[1])]
+        self.num_slots = np.shape(self.cores_matrix)[1]
+
+        self.find_spectrum_slots()
+
+        if self.is_free:
+            return self.response
+        else:
+            return False

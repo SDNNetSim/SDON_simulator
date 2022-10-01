@@ -59,7 +59,7 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
 
     selected_path = routing(src, dest, physical_topology, network_spec_db)
     if selected_path is not False:
-        spectrum_assignment = SpectrumAssignment((src, dest), num_slots, network_spec_db)
+        spectrum_assignment = SpectrumAssignment(selected_path, num_slots, network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
 
         if selected_sp is not False:

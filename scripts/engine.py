@@ -22,7 +22,7 @@ class Engine:
         self.blocking = dict()
         self.blocking_iter = 0
         self.sim_input = None
-        self.sim_input_fp = '../data/input.json'
+        self.sim_input_fp = '../data/input2.json'
 
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
