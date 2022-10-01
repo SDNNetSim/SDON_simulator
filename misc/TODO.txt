@@ -1,7 +1,7 @@
 
 Ryan:
-    - Add files to run pylint
-    - Set up continuous integration on GitHub
-    - Add testing modules
-    - Add documentation with sphinx
-    - Check on __init__.py files
+    - Complete all documentation and get sphinx running
+    - Complete all testing modules
+    - Remove or fix all TODOs
+    - Run simulation and plot results
+        - Setup plot scripts

@@ -62,7 +62,6 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
 
             }})
         else:
-            # TODO: Shouldn't we raise a class here?
-            raise "rep"  # pylint: disable=raising-bad-type
+            raise NotImplementedError('This line of code should not be reached.')
 
     return requests

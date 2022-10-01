@@ -1,6 +1,6 @@
 Spectrum Assignment
 ===================
 
-.. automodule:: spectrum_assignment
+.. automodule:: scripts.spectrum_assignment
     :members:
     :undoc-members:

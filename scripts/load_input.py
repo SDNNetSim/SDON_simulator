@@ -1,6 +1,9 @@
 import json
 
 
+# TODO: Move this to the engine class
+
+
 def load_input():
     """
     Load and return the simulation input JSON file.

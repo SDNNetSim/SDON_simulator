@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 SDN Simulator documentation
-=========================================
+===========================
 A Software Defined Networking (SDN) simulator created for the purposes of aiding in the research of elastic-optical
 networking.
 
@@ -14,7 +14,7 @@ networking.
    :maxdepth: 2
    :caption: Contents:
 
-   code/code_modules.rst
+   scripts/script_modules.rst
    tests/test_modules.rst
 
 Indices and tables
