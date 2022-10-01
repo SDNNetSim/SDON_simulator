@@ -10,9 +10,6 @@ from scripts.request_generator import generate
 from scripts.sdn_controller import controller_main
 
 
-# TODO: This will break on multi-hop routing!
-
-
 class Engine:
     """
     Controls the SDN simulation.

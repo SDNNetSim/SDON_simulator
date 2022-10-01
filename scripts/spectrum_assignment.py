@@ -1,10 +1,6 @@
 import numpy as np
 
 
-# TODO: What if spectrum is full
-# TODO: Can it be in different cores?
-# TODO: Update docs
-
 class SpectrumAssignment:
     """
     Finds spectrum slots for a given request.
@@ -14,8 +10,8 @@ class SpectrumAssignment:
         """
         The constructor.
 
-        :param src_dest: The source and destination of the request
-        :type src_dest: tuple
+        :param path: The selected pathway of a request
+        :type path: list
         :param slots_needed: The number of spectrum slots the request needs
         :type slots_needed: int
         :param network_spec_db: The network spectrum database
@@ -32,8 +28,18 @@ class SpectrumAssignment:
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
 
     def check_other_links(self, core_num, start_slot, end_slot):
+        """
+        Given that one link is available, check all other links in the path. Core and spectrum assignments
+        MUST be the same.
 
-        for i, node in enumerate(self.path):
+        :param core_num: The core in which to look for the free spectrum
+        :type core_num: int
+        :param start_slot: The starting index of the potentially free spectrum
+        :type start_slot: int
+        :param end_slot: The ending index
+        :type end_slot: int
+        """
+        for i, node in enumerate(self.path):  # pylint: disable=unused-variable
             if i == len(self.path) - 1:
                 break
             # Ignore the first link since we check it in the method that calls this one
@@ -54,10 +60,6 @@ class SpectrumAssignment:
         """
         Loops through each core and find the starting and ending indexes of where the request
         can be assigned.
-
-        :param cores_matrix: Contains the array of slots for each core
-        :type cores_matrix: ndarray
-        :return: A dictionary of the free core number along with the starting and ending indexes. False otherwise.
         """
         start_slot = 0
         end_slot = self.slots_needed - 1
@@ -90,10 +92,10 @@ class SpectrumAssignment:
 
     def find_free_spectrum(self):
         """
-        Controls the methods in this class.
+        Controls this class.
 
-        :return: The available core, starting index, and ending index.
-        :rtype: dict
+        :return: The available core, starting index, and ending index. False otherwise.
+        :rtype: dict or bool
         """
         self.cores_matrix = self.network_spec_db[(self.path[0], self.path[1])]
         self.num_slots = np.shape(self.cores_matrix)[1]
@@ -102,5 +104,5 @@ class SpectrumAssignment:
 
         if self.is_free:
             return self.response
-        else:
-            return False
+
+        return False
