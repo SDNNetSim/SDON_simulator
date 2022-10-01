@@ -4,13 +4,11 @@ import numpy as np
 from scripts.spectrum_assignment import SpectrumAssignment
 
 
-# TODO: Add tests for all methods in spectrum_assignment.py
-
-
 class TestSpectrumAssignment(unittest.TestCase):
     """
     Update
     """
+
     def setUp(self):
         """
         Update

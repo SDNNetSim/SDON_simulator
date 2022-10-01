@@ -14,7 +14,7 @@ networking.
    :maxdepth: 2
    :caption: Contents:
 
-   code/code_modules.rst
+   scripts/script_modules.rst
    tests/test_modules.rst
 
 Indices and tables
