@@ -29,7 +29,7 @@ class SpectrumAssignment:
         can be assigned.
 
         :param cores_matrix: Contains the array of slots for each core
-        :type cores_matrix: list
+        :type cores_matrix: ndarray
         :return: A dictionary of the free core number along with the starting and ending indexes. False otherwise.
         """
         start_slot = 0
@@ -62,7 +62,7 @@ class SpectrumAssignment:
         Determines if the source and destination exists in the network.
 
         :return: The cores matrix containing spectrum information.
-        :rtype: list
+        :rtype: ndarray
         """
         try:
             cores_matrix = self.network_spec_db[self.src_dest]

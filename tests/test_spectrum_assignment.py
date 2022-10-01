@@ -6,13 +6,12 @@ from scripts.spectrum_assignment import SpectrumAssignment
 
 class TestSpectrumAssignment(unittest.TestCase):
     """
-    Update
+    Tests the spectrum assignment methods.
     """
 
     def setUp(self):
         """
-        Update
-        :return:
+        Sets up the class for testing.
         """
         self.spec_assign = SpectrumAssignment()
 
@@ -21,8 +20,7 @@ class TestSpectrumAssignment(unittest.TestCase):
 
     def test_zeros_arr(self):
         """
-        Update
-        :return:
+        Test a single core where all spectrum slots are available.
         """
         zeros_arr = np.zeros((1, self.spec_assign.num_slots))
         response = self.spec_assign.find_spectrum_slots(cores_matrix=zeros_arr)
@@ -31,8 +29,7 @@ class TestSpectrumAssignment(unittest.TestCase):
 
     def test_ones_arr(self):
         """
-        Update
-        :return:
+        Test a single core where all spectrum slots are taken.
         """
         ones_arr = np.ones((1, self.spec_assign.num_slots))
         response = self.spec_assign.find_spectrum_slots(cores_matrix=ones_arr)  # pylint: disable=line-too-long
@@ -41,8 +38,7 @@ class TestSpectrumAssignment(unittest.TestCase):
 
     def test_one_core(self):
         """
-        Update
-        :return:
+        Test multiple single core fibers where a random amount of spectrum slots are taken.
         """
         test_arr_one = np.zeros((1, self.spec_assign.num_slots))
         test_arr_two = np.zeros((1, self.spec_assign.num_slots))
@@ -65,8 +61,7 @@ class TestSpectrumAssignment(unittest.TestCase):
 
     def test_multiple_cores(self):
         """
-        Update
-        :return:
+        Test multiple multicore fibers where a random amount of spectrum slots are taken.
         """
         test_arr_one = np.zeros((5, self.spec_assign.num_slots))
         test_arr_two = np.zeros((5, self.spec_assign.num_slots))
