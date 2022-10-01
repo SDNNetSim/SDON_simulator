@@ -7,6 +7,8 @@ from request_generator import generate
 from load_input import load_input
 from sdn_controller import controller_main
 
+# TODO: This will break on multi-hop routing
+
 
 class Engine:
     """
@@ -48,7 +50,7 @@ class Engine:
                                   request_type="Arrival",
                                   physical_topology=self.physical_topology,
                                   network_spec_db=self.network_spec_db,
-                                  slots_needed=self.requests[time]['number_of_slot'][0],
+                                  num_slots=self.sorted_requests[time]['number_of_slot'][0],
                                   slot_num=-1,
                                   path=list()
                                   )
@@ -76,9 +78,10 @@ class Engine:
                             request_type="Release",
                             physical_topology=self.physical_topology,
                             network_spec_db=self.network_spec_db,
-                            slots_needed=self.requests[time]['number_of_slot'][0],
+                            num_slots=self.sorted_requests[time]['number_of_slot'][0],
                             slot_num=self.requests_status[self.sorted_requests[time]['id']]['slots'],
-                            path=self.requests_status[self.sorted_requests[time]['id']]['path']
+                            path=self.requests_status[self.sorted_requests[time]['id']]['path'],
+                            num_cores=None
                             )
 
     def create_pt(self):
@@ -135,7 +138,7 @@ class Engine:
                 if self.sorted_requests[time]['request_type'] == "Arrival":
                     self.handle_arrival(time)
                 elif self.sorted_requests[time]['request_type'] == "Release":
-                    self.handle_arrival(time)
+                    self.handle_release(time)
 
             self.update_blocking(i)
 
