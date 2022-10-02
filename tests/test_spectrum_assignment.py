@@ -13,68 +13,57 @@ class TestSpectrumAssignment(unittest.TestCase):
         """
         Sets up the class for testing.
         """
-        self.spec_assign = SpectrumAssignment()
+        path = ['Lowell', 'Boston', 'Miami', 'Chicago', 'San Francisco']
+        network_spec_db = dict()
 
-        self.spec_assign.slots_needed = 100
-        self.spec_assign.num_slots = 256
+        for i in range(len(path) - 1):
+            curr_tuple = (path[i], path[i + 1])
+            num_cores = np.random.randint(1, 5)
 
-    def test_zeros_arr(self):
+            core_matrix = np.zeros((num_cores, 256))
+            network_spec_db[curr_tuple] = core_matrix
+
+        self.spec_assign = SpectrumAssignment(path=path, slots_needed=100, network_spec_db=network_spec_db)
+
+    def test_free_spectrum(self):
         """
-        Test a single core where all spectrum slots are available.
+        Test where all spectrum slots are available.
         """
-        zeros_arr = np.zeros((1, self.spec_assign.num_slots))
-        response = self.spec_assign.find_spectrum_slots(cores_matrix=zeros_arr)
-        self.assertEqual(response, {'core_num': 0, 'start_slot': 0, 'end_slot': 99},
+        response = self.spec_assign.find_free_spectrum()
+        self.assertEqual({'core_num': 0, 'start_slot': 0, 'end_slot': 99}, response,
                          'Incorrect assignment received')
 
-    def test_ones_arr(self):
+    def test_full_spectrum(self):
         """
-        Test a single core where all spectrum slots are taken.
+        Test where all spectrum slots in one link are full.
         """
-        ones_arr = np.ones((1, self.spec_assign.num_slots))
-        response = self.spec_assign.find_spectrum_slots(cores_matrix=ones_arr)  # pylint: disable=line-too-long
-        self.assertFalse(response,
-                         'Assignment found in a core that has no available spectrum slots.')
+        core_matrix = self.spec_assign.network_spec_db[('Chicago', 'San Francisco')]
+        num_cores = np.shape(core_matrix)[0]
 
-    def test_one_core(self):
+        for i in range(num_cores):
+            core_matrix[i][0:] = 1
+
+        response = self.spec_assign.find_free_spectrum()
+        self.assertEqual(False, response)
+
+    def test_forced_spectrum_assignment(self):
         """
-        Test multiple single core fibers where a random amount of spectrum slots are taken.
+        Make only one spectrum big enough available in one of the links, forcing the simulator to choose that one.
         """
-        test_arr_one = np.zeros((1, self.spec_assign.num_slots))
-        test_arr_two = np.zeros((1, self.spec_assign.num_slots))
-        test_arr_three = np.zeros((1, self.spec_assign.num_slots))
+        core_matrix = self.spec_assign.network_spec_db[('Miami', 'Chicago')]
+        num_cores = np.shape(core_matrix)[0]
 
-        test_arr_one[0][33:75] = 1
-        test_arr_two[0][0:20] = 1
-        test_arr_three[0][0:156] = 1
+        for i in range(num_cores):
+            if i == 0:
+                core_matrix[i][0:50] = 1
+                core_matrix[i][150:] = 1
+            else:
+                core_matrix[i][0:] = 1
 
-        response_one = self.spec_assign.find_spectrum_slots(cores_matrix=test_arr_one)
-        response_two = self.spec_assign.find_spectrum_slots(cores_matrix=test_arr_two)
-        response_three = self.spec_assign.find_spectrum_slots(cores_matrix=test_arr_three)
-
-        self.assertEqual(response_one, {'core_num': 0, 'start_slot': 75, 'end_slot': 174},
+        response = self.spec_assign.find_free_spectrum()
+        self.assertEqual({'core_num': 0, 'start_slot': 50, 'end_slot': 149}, response,
                          'Incorrect assignment received')
-        self.assertEqual(response_two, {'core_num': 0, 'start_slot': 20, 'end_slot': 119},
-                         'Incorrect assignment received')
-        self.assertEqual(response_three, {'core_num': 0, 'start_slot': 156, 'end_slot': 255},
-                         'Incorrect assignment received')
 
-    def test_multiple_cores(self):
-        """
-        Test multiple multicore fibers where a random amount of spectrum slots are taken.
-        """
-        test_arr_one = np.zeros((5, self.spec_assign.num_slots))
-        test_arr_two = np.zeros((5, self.spec_assign.num_slots))
-        test_arr_two[0][0:] = 1
-        test_arr_two[1][0:] = 1
-        test_arr_two[2][0:] = 1
-        test_arr_two[3][40:65] = 1
-        test_arr_two[4][0:] = 1
 
-        response_one = self.spec_assign.find_spectrum_slots(cores_matrix=test_arr_one)
-        response_two = self.spec_assign.find_spectrum_slots(cores_matrix=test_arr_two)
-
-        self.assertEqual(response_one, {'core_num': 0, 'start_slot': 0, 'end_slot': 99},
-                         'Incorrect assignment received')
-        self.assertEqual(response_two, {'core_num': 3, 'start_slot': 65, 'end_slot': 164},
-                         'Incorrect assignment received')
+if __name__ == '__main__':
+    unittest.main()

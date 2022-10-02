@@ -2,7 +2,7 @@ from scripts.routing import routing
 from scripts.spectrum_assignment import SpectrumAssignment
 
 
-def release(network_spec_db, path, slot_num, num_occ_slots, core_num=0):
+def release(network_spec_db, path, start_slot, num_slots, core_num=0):
     """
     Releases the slots in the network spectrum database e.g. sets them back to zero.
 
@@ -10,19 +10,17 @@ def release(network_spec_db, path, slot_num, num_occ_slots, core_num=0):
     :type network_spec_db: dict
     :param path: The shortest path computed
     :type path: list
-    :param slot_num: The first slot number taken
-    :type slot_num: int
-    :param num_occ_slots: The total number of slots occupied
-    :type num_occ_slots: int
+    :param start_slot: The first slot number taken
+    :type start_slot: int
+    :param num_slots: The number of slots occupied
+    :type num_slots: int
     :param core_num: Index of the core to be released
     :type core_num: int
     :return: The updated network spectrum database
     :rtype: dict
     """
-    for cnt in range(len(path) - 1):
-        cores_matrix = network_spec_db[(path[cnt], path[cnt + 1])]
-        cores_matrix[core_num][slot_num:num_occ_slots - 1] = 0
-        network_spec_db[(path[cnt], path[cnt + 1])][core_num][slot_num:num_occ_slots - 1] = 0
+    for i in range(len(path) - 1):
+        network_spec_db[(path[i], path[i + 1])][core_num][start_slot:start_slot + num_slots] = 0
 
     return network_spec_db
 
@@ -52,14 +50,14 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
     if request_type == "Release":
         network_spec_db = release(network_spec_db=network_spec_db,
                                   path=path,
-                                  slot_num=slot_num,
-                                  num_occ_slots=num_slots,
+                                  start_slot=slot_num,
+                                  num_slots=num_slots,
                                   )
         return network_spec_db, physical_topology
 
     selected_path = routing(src, dest, physical_topology, network_spec_db)
     if selected_path is not False:
-        spectrum_assignment = SpectrumAssignment((src, dest), num_slots, network_spec_db)
+        spectrum_assignment = SpectrumAssignment(selected_path, num_slots, network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
 
         if selected_sp is not False:

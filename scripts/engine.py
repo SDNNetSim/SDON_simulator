@@ -1,14 +1,13 @@
+# Standard imports
+import json
+
 # Third party imports
 import networkx as nx
 import numpy as np
 
 # Project imports
 from scripts.request_generator import generate
-from scripts.load_input import load_input
 from scripts.sdn_controller import controller_main
-
-
-# TODO: This will break on multi-hop routing
 
 
 class Engine:
@@ -20,6 +19,7 @@ class Engine:
         self.blocking = dict()
         self.blocking_iter = 0
         self.sim_input = None
+        self.sim_input_fp = '../data/input2.json'
 
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
@@ -98,7 +98,7 @@ class Engine:
                                           self.sim_input['physical_topology']['links'][link_no]['destination']):
                                              np.zeros((self.sim_input['physical_topology']['links']
                                                        [link_no]['fiber']['num_cores'],
-                                                       self.sim_input['number_of_slot_per_lisnk']))})
+                                                       self.sim_input['number_of_slot_per_link']))})
 
             self.physical_topology.add_edge(self.sim_input['physical_topology']['links'][link_no]['source'],
                                             self.sim_input['physical_topology']['links'][link_no]['destination'],
@@ -106,11 +106,10 @@ class Engine:
 
     def load_input(self):
         """
-        Loads the simulation JSON file.
-
-        :return: None
+        Load and return the simulation input JSON file.
         """
-        self.sim_input = load_input()
+        with open(self.sim_input_fp, encoding='utf-8') as json_file:
+            self.sim_input = json.load(json_file)
 
     def run(self):
         """

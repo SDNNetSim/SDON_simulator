@@ -11,40 +11,32 @@ class TestSDNController(unittest.TestCase):
 
     def setUp(self):
         """
-        The constructor.
+        Set up the class for testing.
         """
-        self.single_core_arr = np.zeros((1, 256))
-        self.multi_core_arr = np.zeros((5, 256))
+        self.path = ['Lowell', 'Boston', 'Miami', 'Chicago', 'San Francisco']
+        self.network_spec_db = dict()
 
-        self.single_core_db = {('Lowell', 'Boston'): self.single_core_arr}
-        self.multi_core_db = {('Lowell', 'Boston'): self.multi_core_arr}
-        self.path = ['Lowell', 'Boston']
+        for i in range(len(self.path) - 1):
+            curr_tuple = (self.path[i], self.path[i + 1])
+            num_cores = np.random.randint(1, 5)
 
-    def test_single_core_release(self):
+            core_matrix = np.zeros((num_cores, 512))
+            self.network_spec_db[curr_tuple] = core_matrix
+
+    def test_release(self):
         """
-        Test that a single core fiber is released properly.
+        Test that a link has been released of its resources properly.
         """
-        slot_num = 50
-        num_occ_slots = 100
-        self.single_core_db[('Lowell', 'Boston')][slot_num:num_occ_slots - 1] = 1
+        for i in range(len(self.path) - 1):
+            curr_tuple = (self.path[i], self.path[i + 1])
+            self.network_spec_db[curr_tuple][0][50:100] = 1
 
-        response = release(network_spec_db=self.single_core_db, path=self.path,
-                           slot_num=slot_num, num_occ_slots=num_occ_slots)
+        response = release(network_spec_db=self.network_spec_db, path=self.path, start_slot=50, num_slots=50,
+                           core_num=0)
 
-        self.assertEqual(response[('Lowell', 'Boston')][0].all(), 0,
-                         'Single core fiber was not released properly.')
+        for nodes, link in response.items():  # pylint: disable=unused-variable
+            self.assertNotEqual(1, link[0].any(), 'Spectrum slots were not released correctly.')
 
-    def test_multi_core_release(self):
-        """
-        Test that a multicore fiber is released properly.
-        """
-        core_num = 4
-        slot_num = 110
-        num_occ_slots = 50
-        self.multi_core_db[('Lowell', 'Boston')][core_num][slot_num:num_occ_slots] = 1
 
-        response = release(network_spec_db=self.multi_core_db, path=self.path, slot_num=slot_num,
-                           num_occ_slots=num_occ_slots)
-
-        self.assertEqual(response[('Lowell', 'Boston')][core_num].all(), 0,
-                         'Multi core fiber was not released properly.')
+if __name__ == '__main__':
+    unittest.main()
