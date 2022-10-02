@@ -98,8 +98,10 @@ class SpectrumAssignment:
         :rtype: dict or bool
         """
         self.cores_matrix = self.network_spec_db[(self.path[0], self.path[1])]
-        self.num_slots = np.shape(self.cores_matrix)[1]
+        if self.cores_matrix is None:
+            raise ValueError('Link not found in network spectrum database.')
 
+        self.num_slots = np.shape(self.cores_matrix)[1]
         self.find_spectrum_slots()
 
         if self.is_free:
