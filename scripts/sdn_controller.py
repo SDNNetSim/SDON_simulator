@@ -50,8 +50,8 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
     if request_type == "Release":
         network_spec_db = release(network_spec_db=network_spec_db,
                                   path=path,
-                                  slot_num=slot_num,
-                                  num_occ_slots=num_slots,
+                                  start_slot=slot_num,
+                                  num_slots=num_slots,
                                   )
         return network_spec_db, physical_topology
 

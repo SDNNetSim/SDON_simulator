@@ -44,7 +44,7 @@ class TestSpectrumAssignment(unittest.TestCase):
             core_matrix[i][0:] = 1
 
         response = self.spec_assign.find_free_spectrum()
-        self.assertFalse(False, response)
+        self.assertEqual(False, response)
 
     def test_forced_spectrum_assignment(self):
         """

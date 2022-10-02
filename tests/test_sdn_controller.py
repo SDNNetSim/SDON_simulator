@@ -34,7 +34,7 @@ class TestSDNController(unittest.TestCase):
         response = release(network_spec_db=self.network_spec_db, path=self.path, start_slot=50, num_slots=50,
                            core_num=0)
 
-        for nodes, link in response.items():
+        for nodes, link in response.items():  # pylint: disable=unused-variable
             self.assertNotEqual(1, link[0].any(), 'Spectrum slots were not released correctly.')
 
 
