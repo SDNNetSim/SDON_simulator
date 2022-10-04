@@ -13,7 +13,7 @@ class TestRouting(unittest.TestCase):
         """
         Sets up the class for testing.
         """
-        self.engine = Engine(sim_input_fp='../tests/data/input2.json')
+        self.engine = Engine()
         self.engine.load_input()
         self.engine.create_pt()
 
