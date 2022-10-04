@@ -37,7 +37,7 @@
           "attenuation": 0,
           "dispersion": 0,
           "nonlinearity": 0,
-          "num_cores": 1
+          "num_cores": 3
         },
         "length": 40,
         "source": "Lowell",
@@ -73,7 +73,7 @@
           "attenuation": 0,
           "dispersion": 0,
           "nonlinearity": 0,
-          "num_cores": 1
+          "num_cores": 5
         },
         "length": 50,
         "source": "Chicago",
@@ -85,7 +85,7 @@
           "attenuation": 0,
           "dispersion": 0,
           "nonlinearity": 0,
-          "num_cores": 1
+          "num_cores": 2
         },
         "length": 100,
         "source": "Lowell",
@@ -97,7 +97,7 @@
           "attenuation": 0,
           "dispersion": 0,
           "nonlinearity": 0,
-          "num_cores": 1
+          "num_cores": 3
         },
         "length": 20,
         "source": "Las Vegas",

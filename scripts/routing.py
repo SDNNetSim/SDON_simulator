@@ -21,19 +21,18 @@ class Routing:
         return sorted_paths_list[0]['path']
 
     def find_most_cong_link(self, path):
-        # Would just be comparing the lengths of finding the non-zero slots of numpy arrays
-        res_dict = {'link': None, 'core': None, 'slots_taken': -1}
+        res_dict = {'link': None, 'slots_taken': -1}
 
         for i in range(len(path) - 1):
             cores_matrix = self.network_spec_db[(path[i]), path[i + 1]]['cores_matrix']
             link_num = self.network_spec_db[(path[i]), path[i + 1]]['link_num']
+            slots_taken = 0
 
             for core_num, core_arr in enumerate(cores_matrix):
-                slots_taken = len(np.where(core_arr == 1)[0])
-                if slots_taken > res_dict['slots_taken']:
-                    res_dict['slots_taken'] = slots_taken
-                    res_dict['core'] = core_num
-                    res_dict['link'] = link_num
+                slots_taken += len(np.where(core_arr == 1)[0])
+            if slots_taken > res_dict['slots_taken']:
+                res_dict['slots_taken'] = slots_taken
+                res_dict['link'] = link_num
 
         # Link info is information about the most congested link found
         self.paths_list.append({'path': path, 'link_info': res_dict})

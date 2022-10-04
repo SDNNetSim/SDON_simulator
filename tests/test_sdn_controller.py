@@ -21,7 +21,8 @@ class TestSDNController(unittest.TestCase):
             num_cores = np.random.randint(1, 5)
 
             core_matrix = np.zeros((num_cores, 512))
-            self.network_spec_db[curr_tuple] = core_matrix
+            self.network_spec_db['path'] = curr_tuple
+            self.network_spec_db['cores_matrix'] = core_matrix
 
     def test_release(self):
         """
@@ -29,7 +30,7 @@ class TestSDNController(unittest.TestCase):
         """
         for i in range(len(self.path) - 1):
             curr_tuple = (self.path[i], self.path[i + 1])
-            self.network_spec_db[curr_tuple][0][50:100] = 1
+            self.network_spec_db[curr_tuple]['cores_matrix'][0][50:100] = 1
 
         response = release(network_spec_db=self.network_spec_db, path=self.path, start_slot=50, num_slots=50,
                            core_num=0)
