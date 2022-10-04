@@ -48,7 +48,7 @@ class SpectrumAssignment:
 
             # Contains source and destination names
             sub_path = (self.path[i], self.path[i + 1])
-            spectrum = self.network_spec_db[sub_path][core_num][start_slot:end_slot]
+            spectrum = self.network_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot]
 
             if set(spectrum) != {0}:
                 self.is_free = False
@@ -97,7 +97,7 @@ class SpectrumAssignment:
         :return: The available core, starting index, and ending index. False otherwise.
         :rtype: dict or bool
         """
-        self.cores_matrix = self.network_spec_db[(self.path[0], self.path[1])]
+        self.cores_matrix = self.network_spec_db[(self.path[0], self.path[1])]['cores_matrix']
         if self.cores_matrix is None:
             raise ValueError('Link not found in network spectrum database.')
 

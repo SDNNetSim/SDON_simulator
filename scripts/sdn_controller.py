@@ -20,7 +20,7 @@ def release(network_spec_db, path, start_slot, num_slots, core_num=0):
     :rtype: dict
     """
     for i in range(len(path) - 1):
-        network_spec_db[(path[i], path[i + 1])][core_num][start_slot:start_slot + num_slots] = 0
+        network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = 0
 
     return network_spec_db
 
@@ -47,7 +47,6 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
     :param path: The shortest path found
     :type path: list
     """
-    # TODO: Fix release
     if request_type == "Release":
         network_spec_db = release(network_spec_db=network_spec_db,
                                   path=path,
