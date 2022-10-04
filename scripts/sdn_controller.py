@@ -1,4 +1,4 @@
-from scripts.routing import routing
+from scripts.routing import Routing
 from scripts.spectrum_assignment import SpectrumAssignment
 
 
@@ -55,7 +55,8 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
                                   )
         return network_spec_db, physical_topology
 
-    selected_path = routing(src, dest, physical_topology, network_spec_db)
+    routing_obj = Routing(source=src, destination=dest, physical_topology=physical_topology)
+    selected_path = routing_obj.nx_shortest_path()
     if selected_path is not False:
         spectrum_assignment = SpectrumAssignment(selected_path, num_slots, network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()

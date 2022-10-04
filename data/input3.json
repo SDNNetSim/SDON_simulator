@@ -23,6 +23,9 @@
       "Chicago": {
         "type": "CDC"
       },
+      "Las Vegas": {
+        "type": "CDC"
+      },
       "San Francisco": {
         "type": "CDC"
       }
@@ -74,6 +77,30 @@
         },
         "length": 50,
         "source": "Chicago",
+        "destination": "San Francisco"
+      },
+      "5": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 1
+        },
+        "length": 100,
+        "source": "Lowell",
+        "destination": "Las Vegas"
+      },
+      "6": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 1
+        },
+        "length": 20,
+        "source": "Las Vegas",
         "destination": "San Francisco"
       }
     }
