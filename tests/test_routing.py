@@ -1,5 +1,4 @@
 import unittest
-import numpy as np
 
 from scripts.routing import Routing
 from scripts.engine import Engine
@@ -7,7 +6,7 @@ from scripts.engine import Engine
 
 class TestRouting(unittest.TestCase):
     """
-    Tests the routing methods.
+    Tests the routing methods class.
     """
 
     def setUp(self):
@@ -25,6 +24,9 @@ class TestRouting(unittest.TestCase):
                                network_spec_db=self.network_spec_db)
 
     def test_least_cong_route(self):
+        """
+        Test the least congested route method.
+        """
         test_dict0 = {'path': ['Lowell', 'Las Vegas', 'Austin'], 'link_info': {'slots_taken': 10}}
         test_dict1 = {'path': ['Chicago', 'Houston', 'Richmond', 'Los Angeles'], 'link_info': {'slots_taken': 2}}
         test_dict2 = {'path': ['Boston', 'Miami'], 'link_info': {'slots_taken': 15}}
@@ -36,6 +38,9 @@ class TestRouting(unittest.TestCase):
         self.assertEqual(['Chicago', 'Houston', 'Richmond', 'Los Angeles'], check_list, 'Incorrect path chosen.')
 
     def test_find_most_cong_link(self):
+        """
+        Tests the find most congested link method by forcing the simulation to choose a specific link.
+        """
         path1 = ['Lowell', 'Miami', 'Chicago', 'San Francisco']
         path2 = ['Lowell', 'Las Vegas', 'San Francisco']
         # Congest link 1
@@ -52,6 +57,9 @@ class TestRouting(unittest.TestCase):
         self.assertEqual({'path': path2, 'link_info': {'link': '5', 'slots_taken': 1500}}, self.routing.paths_list[1])
 
     def test_least_congested_path(self):
+        """
+        Tests the least congested path method. Force the simulation to choose a path by congested the other one.
+        """
         # Force simulation to pick a path (completely congest one path of the two)
         self.network_spec_db[('Lowell', 'Miami')]['cores_matrix'][0][0:] = 1
         self.network_spec_db[('Miami', 'Chicago')]['cores_matrix'][0][0:] = 1
