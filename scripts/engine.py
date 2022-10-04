@@ -17,11 +17,11 @@ class Engine:
     Controls the SDN simulation.
     """
 
-    def __init__(self):
+    def __init__(self, sim_input_fp='../../data/input3.json'):
         self.blocking = dict()
         self.blocking_iter = 0
         self.sim_input = None
-        self.sim_input_fp = '../data/input3.json'
+        self.sim_input_fp = sim_input_fp
 
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
