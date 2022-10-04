@@ -37,25 +37,13 @@
           "attenuation": 0,
           "dispersion": 0,
           "nonlinearity": 0,
-          "num_cores": 3
-        },
-        "length": 40,
-        "source": "Lowell",
-        "destination": "Boston"
-      },
-      "2": {
-        "fiber": {
-          "fiber_type": 0,
-          "attenuation": 0,
-          "dispersion": 0,
-          "nonlinearity": 0,
           "num_cores": 1
         },
         "length": 95,
-        "source": "Boston",
+        "source": "Lowell",
         "destination": "Miami"
       },
-      "3": {
+      "2": {
         "fiber": {
           "fiber_type": 0,
           "attenuation": 0,
@@ -67,7 +55,7 @@
         "source": "Miami",
         "destination": "Chicago"
       },
-      "4": {
+      "3": {
         "fiber": {
           "fiber_type": 0,
           "attenuation": 0,
@@ -79,7 +67,7 @@
         "source": "Chicago",
         "destination": "San Francisco"
       },
-      "5": {
+      "4": {
         "fiber": {
           "fiber_type": 0,
           "attenuation": 0,
@@ -91,7 +79,7 @@
         "source": "Lowell",
         "destination": "Las Vegas"
       },
-      "6": {
+      "5": {
         "fiber": {
           "fiber_type": 0,
           "attenuation": 0,

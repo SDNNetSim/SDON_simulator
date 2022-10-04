@@ -36,13 +36,11 @@ class TestRouting(unittest.TestCase):
         self.assertEqual(['Chicago', 'Houston', 'Richmond', 'Los Angeles'], check_list, 'Incorrect path chosen.')
 
     def test_find_most_cong_link(self):
-        # For the first path let's do link number 2
-        # For the second path let's do link 6
-        path1 = ['Lowell', 'Boston', 'Miami', 'Chicago', 'San Francisco']
+        path1 = ['Lowell', 'Miami', 'Chicago', 'San Francisco']
         path2 = ['Lowell', 'Las Vegas', 'San Francisco']
-        # Congest link 2
-        self.network_spec_db[('Boston', 'Miami')]['cores_matrix'][0][10:20] = 1
-        # Congest link 6
+        # Congest link 1
+        self.network_spec_db[('Lowell', 'Miami')]['cores_matrix'][0][10:20] = 1
+        # Congest link 5
         self.network_spec_db[('Las Vegas', 'San Francisco')]['cores_matrix'][0][0:] = 1
         self.network_spec_db[('Las Vegas', 'San Francisco')]['cores_matrix'][1][0:] = 1
         self.network_spec_db[('Las Vegas', 'San Francisco')]['cores_matrix'][2][0:] = 1
@@ -50,8 +48,19 @@ class TestRouting(unittest.TestCase):
         self.routing.find_most_cong_link(path=path1)
         self.routing.find_most_cong_link(path=path2)
 
-        self.assertEqual({'path': path1, 'link_info': {'link': '2', 'slots_taken': 10}}, self.routing.paths_list[0])
-        self.assertEqual({'path': path2, 'link_info': {'link': '6', 'slots_taken': 1500}}, self.routing.paths_list[1])
+        self.assertEqual({'path': path1, 'link_info': {'link': '1', 'slots_taken': 10}}, self.routing.paths_list[0])
+        self.assertEqual({'path': path2, 'link_info': {'link': '5', 'slots_taken': 1500}}, self.routing.paths_list[1])
 
     def test_least_congested_path(self):
-        pass
+        # Force simulation to pick a path (completely congest one path of the two)
+        self.network_spec_db[('Lowell', 'Miami')]['cores_matrix'][0][0:] = 1
+        self.network_spec_db[('Miami', 'Chicago')]['cores_matrix'][0][0:] = 1
+        self.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix'][0][0:] = 1
+        self.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix'][1][0:] = 1
+        self.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix'][2][0:] = 1
+        self.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix'][3][0:] = 1
+        self.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix'][4][0:] = 1
+
+        response = self.routing.least_congested_path()
+
+        self.assertEqual(['Lowell', 'Las Vegas', 'San Francisco'], list(response), 'Incorrect path chosen.')
