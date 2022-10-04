@@ -22,10 +22,16 @@ class TestRouting(unittest.TestCase):
         self.network_spec_db = self.engine.network_spec_db
 
     def test_find_least_cong_route(self):
-        pass
+        self.routing.find_least_cong_route()
+        # Test the return value here
 
     def test_find_most_cong_link(self):
-        pass
+        self.routing.find_most_cong_link(path=None)
+        # Check paths list
 
     def test_least_congested_path(self):
-        pass
+        # Force a selected correct answer, check if selected path is False too (probably have to change routing code)
+        self.routing = Routing(source='Lowell', destination='San Francisco', physical_topology=self.physical_topology,
+                               network_spec_db=self.network_spec_db)
+
+
