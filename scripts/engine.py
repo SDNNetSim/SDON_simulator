@@ -10,6 +10,8 @@ from scripts.request_generator import generate
 from scripts.sdn_controller import controller_main
 
 
+# TODO: Account for change of network spectrum db dictionary
+
 class Engine:
     """
     Controls the SDN simulation.
@@ -94,11 +96,13 @@ class Engine:
             self.physical_topology.add_node(node)
 
         for link_no in self.sim_input['physical_topology']['links']:
-            self.network_spec_db.update({(self.sim_input['physical_topology']['links'][link_no]['source'],
-                                          self.sim_input['physical_topology']['links'][link_no]['destination']):
-                                             np.zeros((self.sim_input['physical_topology']['links']
-                                                       [link_no]['fiber']['num_cores'],
-                                                       self.sim_input['number_of_slot_per_link']))})
+            source = self.sim_input['physical_topology']['links'][link_no]['source']
+            dest = self.sim_input['physical_topology']['links'][link_no]['destination']
+            cores_matrix = np.zeros((self.sim_input['physical_topology']['links']
+                                     [link_no]['fiber']['num_cores'],
+                                     self.sim_input['number_of_slot_per_link']))
+
+            self.network_spec_db[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': link_no}
 
             self.physical_topology.add_edge(self.sim_input['physical_topology']['links'][link_no]['source'],
                                             self.sim_input['physical_topology']['links'][link_no]['destination'],

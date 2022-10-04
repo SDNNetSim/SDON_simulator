@@ -47,6 +47,7 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
     :param path: The shortest path found
     :type path: list
     """
+    # TODO: Fix release
     if request_type == "Release":
         network_spec_db = release(network_spec_db=network_spec_db,
                                   path=path,
@@ -55,8 +56,10 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
                                   )
         return network_spec_db, physical_topology
 
-    routing_obj = Routing(source=src, destination=dest, physical_topology=physical_topology)
-    selected_path = routing_obj.nx_shortest_path()
+    routing_obj = Routing(source=src, destination=dest, physical_topology=physical_topology,
+                          network_spec_db=network_spec_db)
+    selected_path = routing_obj.least_congested_path()
+
     if selected_path is not False:
         spectrum_assignment = SpectrumAssignment(selected_path, num_slots, network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
