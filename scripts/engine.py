@@ -10,8 +10,6 @@ from scripts.request_generator import generate
 from scripts.sdn_controller import controller_main
 
 
-# TODO: Account for change of network spectrum db dictionary
-
 class Engine:
     """
     Controls the SDN simulation.
