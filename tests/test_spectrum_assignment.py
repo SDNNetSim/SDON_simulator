@@ -21,7 +21,8 @@ class TestSpectrumAssignment(unittest.TestCase):
             num_cores = np.random.randint(1, 5)
 
             core_matrix = np.zeros((num_cores, 256))
-            network_spec_db[curr_tuple] = core_matrix
+            network_spec_db[curr_tuple] = {}
+            network_spec_db[curr_tuple]['cores_matrix'] = core_matrix
 
         self.spec_assign = SpectrumAssignment(path=path, slots_needed=100, network_spec_db=network_spec_db)
 
@@ -37,7 +38,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         """
         Test where all spectrum slots in one link are full.
         """
-        core_matrix = self.spec_assign.network_spec_db[('Chicago', 'San Francisco')]
+        core_matrix = self.spec_assign.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix']
         num_cores = np.shape(core_matrix)[0]
 
         for i in range(num_cores):
@@ -50,7 +51,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         """
         Make only one spectrum big enough available in one of the links, forcing the simulator to choose that one.
         """
-        core_matrix = self.spec_assign.network_spec_db[('Miami', 'Chicago')]
+        core_matrix = self.spec_assign.network_spec_db[('Miami', 'Chicago')]['cores_matrix']
         num_cores = np.shape(core_matrix)[0]
 
         for i in range(num_cores):
