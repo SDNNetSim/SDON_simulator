@@ -1,4 +1,4 @@
-from scripts.routing import routing
+from scripts.routing import Routing
 from scripts.spectrum_assignment import SpectrumAssignment
 
 
@@ -20,7 +20,7 @@ def release(network_spec_db, path, start_slot, num_slots, core_num=0):
     :rtype: dict
     """
     for i in range(len(path) - 1):
-        network_spec_db[(path[i], path[i + 1])][core_num][start_slot:start_slot + num_slots] = 0
+        network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = 0
 
     return network_spec_db
 
@@ -55,7 +55,10 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
                                   )
         return network_spec_db, physical_topology
 
-    selected_path = routing(src, dest, physical_topology, network_spec_db)
+    routing_obj = Routing(source=src, destination=dest, physical_topology=physical_topology,
+                          network_spec_db=network_spec_db)
+    selected_path = routing_obj.least_congested_path()
+
     if selected_path is not False:
         spectrum_assignment = SpectrumAssignment(selected_path, num_slots, network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()

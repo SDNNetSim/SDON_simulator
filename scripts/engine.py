@@ -15,11 +15,11 @@ class Engine:
     Controls the SDN simulation.
     """
 
-    def __init__(self):
+    def __init__(self, sim_input_fp='../data/input3.json'):
         self.blocking = dict()
         self.blocking_iter = 0
         self.sim_input = None
-        self.sim_input_fp = '../data/input2.json'
+        self.sim_input_fp = sim_input_fp
 
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
@@ -94,11 +94,13 @@ class Engine:
             self.physical_topology.add_node(node)
 
         for link_no in self.sim_input['physical_topology']['links']:
-            self.network_spec_db.update({(self.sim_input['physical_topology']['links'][link_no]['source'],
-                                          self.sim_input['physical_topology']['links'][link_no]['destination']):
-                                             np.zeros((self.sim_input['physical_topology']['links']
-                                                       [link_no]['fiber']['num_cores'],
-                                                       self.sim_input['number_of_slot_per_link']))})
+            source = self.sim_input['physical_topology']['links'][link_no]['source']
+            dest = self.sim_input['physical_topology']['links'][link_no]['destination']
+            cores_matrix = np.zeros((self.sim_input['physical_topology']['links']
+                                     [link_no]['fiber']['num_cores'],
+                                     self.sim_input['number_of_slot_per_link']))
+
+            self.network_spec_db[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': link_no}
 
             self.physical_topology.add_edge(self.sim_input['physical_topology']['links'][link_no]['source'],
                                             self.sim_input['physical_topology']['links'][link_no]['destination'],

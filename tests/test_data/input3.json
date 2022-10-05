@@ -23,6 +23,9 @@
       "Chicago": {
         "type": "CDC"
       },
+      "Las Vegas": {
+        "type": "CDC"
+      },
       "San Francisco": {
         "type": "CDC"
       }
@@ -36,23 +39,11 @@
           "nonlinearity": 0,
           "num_cores": 1
         },
-        "length": 40,
-        "source": "Lowell",
-        "destination": "Boston"
-      },
-      "2": {
-        "fiber": {
-          "fiber_type": 0,
-          "attenuation": 0,
-          "dispersion": 0,
-          "nonlinearity": 0,
-          "num_cores": 1
-        },
         "length": 95,
-        "source": "Boston",
+        "source": "Lowell",
         "destination": "Miami"
       },
-      "3": {
+      "2": {
         "fiber": {
           "fiber_type": 0,
           "attenuation": 0,
@@ -64,16 +55,40 @@
         "source": "Miami",
         "destination": "Chicago"
       },
+      "3": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 5
+        },
+        "length": 50,
+        "source": "Chicago",
+        "destination": "San Francisco"
+      },
       "4": {
         "fiber": {
           "fiber_type": 0,
           "attenuation": 0,
           "dispersion": 0,
           "nonlinearity": 0,
-          "num_cores": 1
+          "num_cores": 2
         },
-        "length": 50,
-        "source": "Chicago",
+        "length": 100,
+        "source": "Lowell",
+        "destination": "Las Vegas"
+      },
+      "5": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 3
+        },
+        "length": 20,
+        "source": "Las Vegas",
         "destination": "San Francisco"
       }
     }
