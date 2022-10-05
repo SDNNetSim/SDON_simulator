@@ -2,7 +2,7 @@ import numpy as np
 
 
 def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
-             slot_list):
+             slot_dict):
     """
     Generates every request with the necessary information inside each request.
 
@@ -16,7 +16,7 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
     :type inter_arrival_time_mean: int
     :param req_no: Number of requests to be created
     :type req_no: int
-    :param slot_list: The slot list
+    :param slot_dict: A dictionary mapping bandwidths to slot numbers
     :return: Every request generated
     :rtype: dict
     """
@@ -30,9 +30,14 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
         src = np.random.choice(nodes, size=1)
         des = np.random.choice(nodes, size=1)
 
+        # TODO: Will break on one link, are links bi-directional?
         while src == des:
             des = np.random.choice(nodes, size=1)
-        slot_no = np.random.choice(slot_list, size=1)
+
+        # TODO: Make sure this randomly chooses a band
+        bands_list = list(slot_dict.keys())
+        chosen_band = np.random.choice(bands_list, size=1)
+        slot_num = slot_dict[chosen_band[0]]['DP-QPSK']
 
         if current not in requests and new_hold not in requests:
             requests.update({current: {
@@ -42,7 +47,7 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
                 "arrive": current,
                 "depart": new_hold,
                 "request_type": "Arrival",
-                "number_of_slot": slot_no,
+                "number_of_slot": slot_num,
                 "start_slot_NO": None,
                 "working_path": None,
                 "protection_path": None
@@ -55,7 +60,7 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
                 "arrive": current,
                 "depart": new_hold,
                 "request_type": "Release",
-                "number_of_slot": slot_no,
+                "number_of_slot": slot_num,
                 "start_slot_NO": None,
                 "working_path": None,
                 "protection_path": None
