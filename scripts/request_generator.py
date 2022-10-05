@@ -30,7 +30,6 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
         src = np.random.choice(nodes, size=1)
         des = np.random.choice(nodes, size=1)
 
-        # TODO: Will break on one link, are links bi-directional?
         while src == des:
             des = np.random.choice(nodes, size=1)
 
