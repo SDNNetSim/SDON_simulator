@@ -1,13 +1,22 @@
-
 class RunSim:
+    """
+    Runs the simulations for this project.
+    """
+
     def __init__(self):
         pass
 
     def create_input(self):
-        pass
+        """
+        Creates input data.
+        """
+        pass  # pylint: disable=unnecessary-pass
 
     def run(self):
-        pass
+        """
+        Controls the class.
+        """
+        pass  # pylint: disable=unnecessary-pass
 
 
 # TODO: Find a better way to organize data directories and name them
