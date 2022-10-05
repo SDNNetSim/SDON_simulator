@@ -22,7 +22,7 @@ class Engine:
     Controls the SDN simulation.
     """
 
-    def __init__(self, sim_input_fp='../data/first_sim_input.json'):
+    def __init__(self, sim_input_fp='../data/input/first_sim_input.json'):
         self.blocking = dict()
         self.blocking_iter = 0
         self.sim_input = None
