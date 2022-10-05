@@ -6,6 +6,7 @@ class Routing:
     """
     Contains the routing methods for the simulation.
     """
+
     def __init__(self, source, destination, physical_topology, network_spec_db, slots_needed=None):
         self.path = None
 

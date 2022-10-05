@@ -1,0 +1,52 @@
+{
+  "seed": [],
+  "holding_time_mean": 3600,
+  "inter_arrival_time": 10,
+  "number_of_request": 1000,
+  "BW_type": {
+    "100 Gbps": {
+      "DP-QPSK": 3
+    },
+    "400 Gbps": {
+      "DP-QPSK": 10
+    }
+  },
+  "NO_iteration": 10,
+  "number_of_slot_per_core": 256,
+  "physical_topology": {
+    "nodes": {
+      "Lowell": {
+        "type": "CDC"
+      },
+      "Boston": {
+        "type": "CDC"
+      }
+    },
+    "links": {
+      "1": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 1
+        },
+        "length": 40,
+        "source": "Lowell",
+        "destination": "Boston"
+      },
+      "2": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 1
+        },
+        "length": 40,
+        "source": "Boston",
+        "destination": "Lowell"
+      }
+    }
+  }
+}

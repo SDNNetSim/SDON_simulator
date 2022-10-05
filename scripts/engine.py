@@ -10,16 +10,24 @@ from scripts.request_generator import generate
 from scripts.sdn_controller import controller_main
 
 
+# TODO: Data structure has changed
+# TODO: Update fiber
+# TODO: Slots needed is now by number of core!
+# TODO: Load network distance stuff and update simulation to that (Slack)
+# TODO: Change number of iterations to 5,000
+
+
 class Engine:
     """
     Controls the SDN simulation.
     """
 
-    def __init__(self, sim_input_fp='../data/input3.json'):
+    def __init__(self, sim_input_fp='../data/first_sim_input.json'):
         self.blocking = dict()
         self.blocking_iter = 0
         self.sim_input = None
         self.sim_input_fp = sim_input_fp
+        self.seed = 1
 
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
@@ -51,7 +59,7 @@ class Engine:
                                   request_type="Arrival",
                                   physical_topology=self.physical_topology,
                                   network_spec_db=self.network_spec_db,
-                                  num_slots=self.sorted_requests[time]['number_of_slot'][0],
+                                  num_slots=self.sorted_requests[time]['number_of_slot'],
                                   slot_num=-1,
                                   path=list()
                                   )
@@ -79,7 +87,7 @@ class Engine:
                             request_type="Release",
                             physical_topology=self.physical_topology,
                             network_spec_db=self.network_spec_db,
-                            num_slots=self.sorted_requests[time]['number_of_slot'][0],
+                            num_slots=self.sorted_requests[time]['number_of_slot'],
                             slot_num=self.requests_status[self.sorted_requests[time]['id']]['slots'],
                             path=self.requests_status[self.sorted_requests[time]['id']]['path'],
                             )
@@ -98,7 +106,7 @@ class Engine:
             dest = self.sim_input['physical_topology']['links'][link_no]['destination']
             cores_matrix = np.zeros((self.sim_input['physical_topology']['links']
                                      [link_no]['fiber']['num_cores'],
-                                     self.sim_input['number_of_slot_per_link']))
+                                     self.sim_input['number_of_slot_per_core']))
 
             self.network_spec_db[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': link_no}
 
@@ -126,12 +134,17 @@ class Engine:
             self.requests_status = dict()
             self.create_pt()
 
-            self.requests = generate(seed_no=self.sim_input['seed'],
+            if len(self.sim_input['seed']) == 0:
+                self.seed = i + 1
+            else:
+                self.seed = self.sim_input['seed'][i]
+
+            self.requests = generate(seed_no=self.seed,
                                      nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
                                      holding_time_mean=self.sim_input['holding_time_mean'],
                                      inter_arrival_time_mean=self.sim_input['inter_arrival_time'],
                                      req_no=self.sim_input['number_of_request'],
-                                     slot_list=self.sim_input['BW_type'])
+                                     slot_dict=self.sim_input['BW_type'])
 
             self.sorted_requests = dict(sorted(self.requests.items()))
 

@@ -1,4 +1,5 @@
 import unittest
+import os
 
 from scripts.routing import Routing
 from scripts.engine import Engine
@@ -13,7 +14,14 @@ class TestRouting(unittest.TestCase):
         """
         Sets up the class for testing.
         """
-        self.engine = Engine(sim_input_fp='../tests/test_data/input3.json')
+        # TODO: Find a better way to do this
+        working_dir = os.getcwd().split('/')
+        if working_dir[-1] == 'tests':
+            file_path = '../tests/test_data/input3.json'
+        else:
+            file_path = './tests/test_data/input3.json'
+
+        self.engine = Engine(sim_input_fp=file_path)
         self.engine.load_input()
         self.engine.create_pt()
 
