@@ -7,3 +7,7 @@ docs/_build/*
 
 # My stuff
 misc/
+
+# Data files
+data/input/*
+data/output/*

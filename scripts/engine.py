@@ -10,20 +10,17 @@ from scripts.request_generator import generate
 from scripts.sdn_controller import controller_main
 
 
-# TODO: Load other network (not European)
-# TODO: Find interval time mean for all Erlangs for nsfnet
-
-
 class Engine:
     """
     Controls the SDN simulation.
     """
 
-    def __init__(self, sim_input_fp='../data/input/simulation_input.json'):
+    def __init__(self, sim_input_fp='../data/input/simulation_input.json', erlang=None):
         self.blocking = dict()
         self.blocking_iter = 0
         self.sim_input = None
         self.sim_input_fp = sim_input_fp
+        self.erlang = erlang
         self.seed = 1
 
         self.network_spec_db = dict()
@@ -33,6 +30,10 @@ class Engine:
         self.sorted_requests = None
         self.requests_status = dict()
 
+    def save_sim_results(self):
+        with open(f'../data/output/{self.erlang}_erlang.json', 'w') as file_path:
+            json.dump(self.blocking, file_path)
+
     def calc_blocking_stats(self, simulation_number):
         """
         Determines if the confidence interval is high enough to stop the simulation.
@@ -41,6 +42,7 @@ class Engine:
         :type simulation_number: int
         :return: None
         """
+        # TODO: Blocking percent could be zero for some
         block_percent_arr = np.array(list(self.blocking.values()))
         if len(block_percent_arr) == 1:
             return
@@ -51,8 +53,8 @@ class Engine:
         ci_percent = ((2 * ci_rate) / np.mean(block_percent_arr)) * 100
         if ci_percent <= 5:
             print(f'Confidence interval of {round(ci_percent, 2)}% reached on simulation {simulation_number + 1}, '
-                  f'ending and saving results.')
-            # TODO: Save results to files
+                  f'ending and saving results for Erlang: {self.erlang}')
+            self.save_sim_results()
 
     def update_blocking(self, i):
         """
@@ -179,8 +181,11 @@ class Engine:
             self.calc_blocking_stats(i)
 
             if (i + 1) % 5 == 0 or i == 0:
-                print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed.')
+                print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed for Erlang: {self.erlang}')
                 print(self.blocking)
+
+        print(f'Simulation for Erlang: {self.erlang} finished.')
+        self.save_sim_results()
 
 
 if __name__ == '__main__':

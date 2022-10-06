@@ -1,8 +1,12 @@
 import math
 import json
 
-from scripts.structure_raw_data import structure_data
+from scripts.structure_raw_data import structure_data, map_erlang_times
 from scripts.engine import Engine
+
+# TODO: Load other network (not European)
+# TODO: Change requests to 5000
+# TODO: Number of iterations?
 
 
 class RunSim:
@@ -10,7 +14,7 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5000, num_iteration=20,
+    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=50, num_iteration=1,
                  num_core_slots=256):
         self.seed = list()
         self.hold_time_mean = hold_time_mean
@@ -32,10 +36,10 @@ class RunSim:
         self.link_num = 1
 
         self.data = structure_data()
+        self.inter_arrive_dict = map_erlang_times()
+
         self.response = None
         self.output_file_name = None
-
-        self.engine = Engine()
 
     def save_input(self):
         """
@@ -95,10 +99,17 @@ class RunSim:
         """
         Controls the class.
         """
-        self.create_input()
-        self.save_input()
+        for erlang, inter_arrival_time in self.inter_arrive_dict.items():
+            self.inter_arrival_time = inter_arrival_time
+            self.create_input()
 
-        self.engine.run()
+            self.output_file_name = f'{erlang}_erlang.json'
+            self.save_input()
+
+        # TODO: Multi-thread? (Give chunks of lists)
+        for erlang in self.inter_arrive_dict.keys():
+            engine = Engine(sim_input_fp=f'../data/input/{erlang}_erlang.json', erlang=erlang)
+            engine.run()
 
 
 if __name__ == '__main__':

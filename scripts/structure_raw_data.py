@@ -1,7 +1,23 @@
 import pandas as pd
+import numpy as np
 
 PAIRINGS_FILE_PATH = '../data/raw/europe_network.xlsx'
-LINK_LEN_FILE_PATH = '../data/raw/network_distance.txt'
+LINK_LEN_FILE_PATH = '../data/raw/europe_network_distance.txt'
+
+
+def map_erlang_times(network='europe'):
+    if network == 'europe':
+        response_dict = {
+            '10': np.exp(3.7037037037037037037037037037037),
+            '20': np.exp(7.4074074074074074074074074074074),
+            '30': np.exp(11.111111111111111111111111111111),
+            '40': np.exp(14.814814814814814814814814814815),
+            '50': np.exp(18.518518518518518518518518518519),
+        }
+    else:
+        raise NotImplementedError
+
+    return response_dict
 
 
 def assign_link_lengths(node_pairings=None):
