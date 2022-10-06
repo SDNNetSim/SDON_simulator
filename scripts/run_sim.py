@@ -5,6 +5,9 @@ from scripts.structure_raw_data import structure_data, map_erlang_times
 from scripts.engine import Engine
 
 # TODO: Load other network (not European)
+# TODO: Number of request is 1,000
+# TODO: Holding time mean is 3600
+# TODO: Number of core slots is 256
 
 
 class RunSim:
@@ -12,8 +15,8 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=1000, num_iteration=5000,
-                 num_core_slots=256):
+    def __init__(self, hold_time_mean=5000, inter_arrival_time=10, number_of_request=5000, num_iteration=5000,
+                 num_core_slots=10):
         self.seed = list()
         self.hold_time_mean = hold_time_mean
         self.inter_arrival_time = inter_arrival_time
@@ -107,7 +110,8 @@ class RunSim:
 
         # TODO: Multi-thread? (Give chunks of lists)
         for erlang in self.inter_arrive_dict.keys():  # pylint: disable=consider-iterating-dictionary
-            if erlang == '600':
+            # TODO: Change to 600
+            if erlang == '10':
                 engine = Engine(sim_input_fp=f'../data/input/{erlang}_erlang.json', erlang=erlang)
                 engine.run()
 

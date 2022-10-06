@@ -70,6 +70,7 @@ class SpectrumAssignment:
 
         for core_num, core_arr in enumerate(self.cores_matrix):
             open_slots_arr = np.where(core_arr == 0)[0]
+
             # Look for a super spectrum in the current core
             while end_slot < self.num_slots:
                 spec_set = set(core_arr[start_slot:end_slot])
@@ -115,7 +116,8 @@ class SpectrumAssignment:
         self.num_slots = np.shape(self.cores_matrix)[1]
         self.find_spectrum_slots()
 
-        if self.is_free:
+        # TODO: Find a better way for this
+        if self.response['start_slot'] is not None:
             return self.response
 
         return False

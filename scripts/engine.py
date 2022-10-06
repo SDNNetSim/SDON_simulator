@@ -168,7 +168,7 @@ class Engine:
 
         for i in range(self.sim_input['NO_iteration']):
             if i == 0:
-                print("Simulation started.")
+                print(f"Simulation started for Erlang: {self.erlang}.")
 
             self.blocking_iter = 0
             self.requests_status = dict()
