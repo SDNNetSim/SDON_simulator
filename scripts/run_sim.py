@@ -2,6 +2,7 @@ import math
 import json
 
 from scripts.structure_raw_data import structure_data
+from scripts.engine import Engine
 
 
 # TODO: Change number of requests to 5000
@@ -12,7 +13,7 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5, num_iteration=1,
+    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5000, num_iteration=1,
                  num_core_slots=256):
         self.seed = list()
         self.hold_time_mean = hold_time_mean
@@ -36,6 +37,8 @@ class RunSim:
         self.data = structure_data()
         self.response = None
         self.output_file_name = None
+
+        self.engine = Engine()
 
     def save_input(self):
         """
@@ -98,6 +101,8 @@ class RunSim:
         """
         self.create_input()
         self.save_input()
+
+        self.engine.run()
 
 
 if __name__ == '__main__':
