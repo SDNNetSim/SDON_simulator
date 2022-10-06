@@ -30,11 +30,8 @@ def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, 
         raise TypeError('Expected release or arrival, got None.')
 
     for i in range(len(path) - 1):
-        try:
-            network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = value
-            network_spec_db[(path[i + 1], path[i])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = value
-        except TypeError:
-            print("Here")
+        network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = value
+        network_spec_db[(path[i + 1], path[i])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = value
 
     return network_spec_db
 
