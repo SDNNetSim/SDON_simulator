@@ -33,7 +33,6 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
         while src == des:
             des = np.random.choice(nodes, size=1)
 
-        # TODO: Make sure this randomly chooses a band
         bands_list = list(slot_dict.keys())
         chosen_band = np.random.choice(bands_list, size=1)
         slot_num = slot_dict[chosen_band[0]]['DP-QPSK']

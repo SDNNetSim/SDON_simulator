@@ -2,31 +2,42 @@ from scripts.routing import Routing
 from scripts.spectrum_assignment import SpectrumAssignment
 
 
-def release(network_spec_db, path, start_slot, num_slots, core_num=0):
+# TODO: Re-test this function
+def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, req_type=None):
     """
-    Releases the slots in the network spectrum database e.g. sets them back to zero.
+    Releases or fills slots in the network spectrum database arrays.
 
     :param network_spec_db: The current network spectrum database
     :type network_spec_db: dict
     :param path: The shortest path computed
     :type path: list
-    :param start_slot: The first slot number taken
+    :param start_slot: The first slot number taken or desired
     :type start_slot: int
-    :param num_slots: The number of slots occupied
+    :param num_slots: The number of slots occupied or to be occupied
     :type num_slots: int
-    :param core_num: Index of the core to be released
+    :param core_num: Index of the core to be released or taken
     :type core_num: int
+    :param req_type: Indicates whether it's an arrival or release
+    :type req_type: str
     :return: The updated network spectrum database
     :rtype: dict
     """
+    if req_type == 'Arrival':
+        value = 1
+    elif req_type == 'Release':
+        value = 0
+    else:
+        raise TypeError('Expected release or arrival, got None.')
+
     for i in range(len(path) - 1):
-        network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = 0
+        network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = value
+        network_spec_db[(path[i + 1], path[i])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = value
 
     return network_spec_db
 
 
 def controller_main(src, dest, request_type, physical_topology, network_spec_db, num_slots,
-                    slot_num, path=None):
+                    slot_num=None, path=None):
     """
     Either releases spectrum from the database, assigns a spectrum, or returns False otherwise.
 
@@ -48,11 +59,12 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
     :type path: list
     """
     if request_type == "Release":
-        network_spec_db = release(network_spec_db=network_spec_db,
-                                  path=path,
-                                  start_slot=slot_num,
-                                  num_slots=num_slots,
-                                  )
+        network_spec_db = handle_arrive_rel(network_spec_db=network_spec_db,
+                                            path=path,
+                                            start_slot=slot_num,
+                                            num_slots=num_slots,
+                                            req_type='Release'
+                                            )
         return network_spec_db, physical_topology
 
     routing_obj = Routing(source=src, destination=dest, physical_topology=physical_topology,
@@ -70,6 +82,12 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
                 'starting_NO_reserved_slot': selected_sp['start_slot'],
                 'ending_NO_reserved_slot': selected_sp['end_slot'],
             }
+            network_spec_db = handle_arrive_rel(network_spec_db=network_spec_db,
+                                                path=selected_path,
+                                                start_slot=selected_sp['start_slot'],
+                                                num_slots=num_slots,
+                                                req_type='Arrival'
+                                                )
             return ras_output, network_spec_db, physical_topology
 
         return False

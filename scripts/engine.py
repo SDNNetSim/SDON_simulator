@@ -10,11 +10,8 @@ from scripts.request_generator import generate
 from scripts.sdn_controller import controller_main
 
 
-# TODO: Data structure has changed
-# TODO: Update fiber
-# TODO: Slots needed is now by number of core!
-# TODO: Load network distance stuff and update simulation to that (Slack)
-# TODO: Change number of iterations to 5,000
+# TODO: Load other network (not European)
+# TODO: Find interval time mean for all Erlangs for nsfnet
 
 
 class Engine:
@@ -54,16 +51,17 @@ class Engine:
         :type time: float
         :return: None
         """
+        # TODO: Start slot is negative 1?
         rsa_res = controller_main(src=self.sorted_requests[time]["source"][0],
                                   dest=self.sorted_requests[time]["destination"][0],
                                   request_type="Arrival",
                                   physical_topology=self.physical_topology,
                                   network_spec_db=self.network_spec_db,
                                   num_slots=self.sorted_requests[time]['number_of_slot'],
-                                  slot_num=-1,
                                   path=list()
                                   )
 
+        # TODO: Never changes arrays to be equal to one (Didn't change pt or network db
         if rsa_res is False:
             self.blocking_iter += 1
         else:
@@ -131,6 +129,9 @@ class Engine:
         self.load_input()
 
         for i in range(self.sim_input['NO_iteration']):
+            if i == 0:
+                print("Simulation started.")
+
             self.blocking_iter = 0
             self.requests_status = dict()
             self.create_pt()
@@ -157,8 +158,9 @@ class Engine:
 
             self.update_blocking(i)
 
-            if i % 20 == 0:
+            if (i + 1) % 5 == 0 or i == 0:
                 print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed.')
+                print(self.blocking)
 
 
 if __name__ == '__main__':

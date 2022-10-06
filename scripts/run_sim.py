@@ -7,6 +7,9 @@ from scripts.engine import Engine
 
 # TODO: Change number of requests to 5000
 # TODO: Change number of iterations to 10
+# TODO: Number of core slots is 256
+# TODO: Change number of slots to 3 and 10
+# TODO: Change holding time to 3600
 
 class RunSim:
     """
@@ -14,7 +17,7 @@ class RunSim:
     """
 
     def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5000, num_iteration=1,
-                 num_core_slots=256):
+                 num_core_slots=10):
         self.seed = list()
         self.hold_time_mean = hold_time_mean
         self.inter_arrival_time = inter_arrival_time
@@ -22,7 +25,7 @@ class RunSim:
 
         self.bw_type = {
             "100 Gbps": {
-                "DP-QPSK": 3
+                "DP-QPSK": 10
             },
             "400 Gbps": {
                 "DP-QPSK": 10

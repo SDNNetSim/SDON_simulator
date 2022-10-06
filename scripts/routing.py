@@ -74,7 +74,7 @@ class Routing:
                 if num_hops <= min_hops + 1:
                     self.find_most_cong_link(path)
                 else:
-                    # TODO: This no longer returns a numpy array?
+                    # TODO: This no longer returns a numpy array
                     return self.find_least_cong_route()
 
         return False
