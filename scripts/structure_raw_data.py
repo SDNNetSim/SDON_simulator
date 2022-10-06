@@ -1,22 +1,39 @@
 import pandas as pd
 import numpy as np
+import configparser
 
 PAIRINGS_FILE_PATH = '../data/raw/europe_network.xlsx'
 LINK_LEN_FILE_PATH = '../data/raw/europe_network_distance.txt'
 
 
 def map_erlang_times(network='europe'):
+    """
+    Map the Erlang values to the inter arrival rate from a configuration file.
+
+    :param network: The type of network
+    :type network: str
+    :return: The Erlang number is mapped to each value
+    :rtype: dict
+    """
+    response_dict = dict()
+
     if network == 'europe':
-        response_dict = {
-            '10': np.exp(3.7037037037037037037037037037037),
-            '20': np.exp(7.4074074074074074074074074074074),
-            '30': np.exp(11.111111111111111111111111111111),
-            '40': np.exp(14.814814814814814814814814814815),
-            '50': np.exp(18.518518518518518518518518518519),
-        }
+        conf_file_path = '../data/raw/europe_omnetpp.ini'
     else:
         raise NotImplementedError
 
+    arr_one = np.arange(10, 100, 10)
+    arr_two = np.arange(100, 850, 50)
+    erlang_arr = np.concatenate((arr_one, arr_two))
+
+    config_file = configparser.ConfigParser()
+    config_file.read(conf_file_path)
+    for erlang in erlang_arr:
+        raw_value = config_file[f'Config Erlang_{erlang}']['**.holding_time']
+        exponent = float(raw_value.split('(')[1][:-2])
+        exponential = np.exp(exponent)
+
+    exit()
     return response_dict
 
 
