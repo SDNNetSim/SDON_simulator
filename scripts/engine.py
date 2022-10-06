@@ -156,7 +156,9 @@ class Engine:
                     self.handle_release(time)
 
             self.update_blocking(i)
-            print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed.')
+
+            if i % 20 == 0:
+                print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed.')
 
 
 if __name__ == '__main__':

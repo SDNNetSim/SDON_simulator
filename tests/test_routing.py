@@ -50,13 +50,13 @@ class TestRouting(unittest.TestCase):
         Tests the find most congested link method by forcing the simulation to choose a specific link.
         """
         path1 = ['Lowell', 'Miami', 'Chicago', 'San Francisco']
-        path2 = ['Lowell', 'Las Vegas', 'San Francisco']
+        path2 = ['Lowell', 'Las Vegas', 'Portland', 'San Francisco']
         # Congest link 1
         self.network_spec_db[('Lowell', 'Miami')]['cores_matrix'][0][10:20] = 1
         # Congest link 5
-        self.network_spec_db[('Las Vegas', 'San Francisco')]['cores_matrix'][0][0:] = 1
-        self.network_spec_db[('Las Vegas', 'San Francisco')]['cores_matrix'][1][0:] = 1
-        self.network_spec_db[('Las Vegas', 'San Francisco')]['cores_matrix'][2][0:] = 1
+        self.network_spec_db[('Las Vegas', 'Portland')]['cores_matrix'][0][0:] = 1
+        self.network_spec_db[('Las Vegas', 'Portland')]['cores_matrix'][1][0:] = 1
+        self.network_spec_db[('Las Vegas', 'Portland')]['cores_matrix'][2][0:] = 1
 
         self.routing.find_most_cong_link(path=path1)
         self.routing.find_most_cong_link(path=path2)
@@ -66,7 +66,7 @@ class TestRouting(unittest.TestCase):
 
     def test_least_congested_path(self):
         """
-        Tests the least congested path method. Force the simulation to choose a path by congested the other one.
+        Tests the least congested path method. Force the simulation to choose a path by congesting the other one.
         """
         # Force simulation to pick a path (completely congest one path of the two)
         self.network_spec_db[('Lowell', 'Miami')]['cores_matrix'][0][0:] = 1
@@ -79,4 +79,4 @@ class TestRouting(unittest.TestCase):
 
         response = self.routing.least_congested_path()
 
-        self.assertEqual(['Lowell', 'Las Vegas', 'San Francisco'], list(response), 'Incorrect path chosen.')
+        self.assertEqual(['Lowell', 'Las Vegas', 'Portland', 'San Francisco'], response, 'Incorrect path chosen.')
