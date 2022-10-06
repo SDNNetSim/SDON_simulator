@@ -1,6 +1,7 @@
+import configparser
+
 import pandas as pd
 import numpy as np
-import configparser
 
 PAIRINGS_FILE_PATH = '../data/raw/europe_network.xlsx'
 LINK_LEN_FILE_PATH = '../data/raw/europe_network_distance.txt'

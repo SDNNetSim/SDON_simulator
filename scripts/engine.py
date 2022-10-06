@@ -30,8 +30,22 @@ class Engine:
         self.sorted_requests = None
         self.requests_status = dict()
 
+        self.mean = None
+        self.variance = None
+        self.ci_rate = None
+        self.ci_percent = None
+
     def save_sim_results(self):
-        with open(f'../data/output/{self.erlang}_erlang.json', 'w') as file_path:
+        """
+        Saves the simulation results to a file like #_erlang.json.
+        """
+        # TODO: If it's zero it isn't calculated!
+        self.blocking['mean'] = self.mean
+        self.blocking['variance'] = self.variance
+        self.blocking['ci_rate'] = self.ci_rate
+        self.blocking['ci_percent'] = self.ci_percent
+
+        with open(f'../data/output/{self.erlang}_erlang.json', 'w', encoding='utf-8') as file_path:
             json.dump(self.blocking, file_path)
 
     def calc_blocking_stats(self, simulation_number):
@@ -42,17 +56,20 @@ class Engine:
         :type simulation_number: int
         :return: None
         """
-        # TODO: Blocking percent could be zero for some
         block_percent_arr = np.array(list(self.blocking.values()))
         if len(block_percent_arr) == 1:
             return
 
-        variance = np.var(block_percent_arr)
+        self.mean = np.mean(block_percent_arr)
+        if self.mean == 0:
+            return
+        self.variance = np.var(block_percent_arr)
         # Confidence interval rate
-        ci_rate = 1.645 * (np.sqrt(variance) / np.sqrt(len(block_percent_arr)))
-        ci_percent = ((2 * ci_rate) / np.mean(block_percent_arr)) * 100
-        if ci_percent <= 5:
-            print(f'Confidence interval of {round(ci_percent, 2)}% reached on simulation {simulation_number + 1}, '
+        self.ci_rate = 1.645 * (np.sqrt(self.variance) / np.sqrt(len(block_percent_arr)))
+        self.ci_percent = ((2 * self.ci_rate) / np.mean(block_percent_arr)) * 100
+
+        if self.ci_percent <= 5:
+            print(f'Confidence interval of {round(self.ci_percent, 2)}% reached on simulation {simulation_number + 1}, '
                   f'ending and saving results for Erlang: {self.erlang}')
             self.save_sim_results()
 
