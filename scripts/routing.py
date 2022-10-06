@@ -76,3 +76,5 @@ class Routing:
                 else:
                     # TODO: This no longer returns a numpy array?
                     return self.find_least_cong_route()
+
+        return False

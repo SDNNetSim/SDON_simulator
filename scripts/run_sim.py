@@ -45,10 +45,10 @@ class RunSim:
         Saves simulation input data.
         """
         if self.output_file_name is None:
-            with open('../data/input/simulation_input.json', 'w') as file_path:
+            with open('../data/input/simulation_input.json', 'w', encoding='utf-8') as file_path:
                 json.dump(self.response, file_path)
         else:
-            with open(f'../data/input/{self.output_file_name}', 'w') as file_path:
+            with open(f'../data/input/{self.output_file_name}', 'w', encoding='utf-8') as file_path:
                 json.dump(self.response, file_path)
 
     def create_pt(self):
