@@ -5,19 +5,13 @@ from scripts.structure_raw_data import structure_data
 from scripts.engine import Engine
 
 
-# TODO: Change number of requests to 5000
-# TODO: Change number of iterations to 10
-# TODO: Number of core slots is 256
-# TODO: Change number of slots to 3 and 10
-# TODO: Change holding time to 3600
-
 class RunSim:
     """
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5000, num_iteration=1,
-                 num_core_slots=10):
+    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5000, num_iteration=20,
+                 num_core_slots=256):
         self.seed = list()
         self.hold_time_mean = hold_time_mean
         self.inter_arrival_time = inter_arrival_time
@@ -25,7 +19,7 @@ class RunSim:
 
         self.bw_type = {
             "100 Gbps": {
-                "DP-QPSK": 10
+                "DP-QPSK": 3
             },
             "400 Gbps": {
                 "DP-QPSK": 10
@@ -58,7 +52,7 @@ class RunSim:
         """
         Creates the physical topology.
         """
-        # TODO: This may change in the future, hence creating the same dictionary for all fibers in a link right now
+        # This may change in the future, hence creating the same dictionary for all fibers in a link right now
         tmp_dict = dict()
         tmp_dict['attenuation'] = (0.2 / 4.343) * (math.e ** -3)
         tmp_dict['nonlinearity'] = 1.3 * (math.e ** -3)
@@ -76,7 +70,6 @@ class RunSim:
             self.physical_topology['links'][self.link_num] = {'fiber': tmp_dict, 'length': link_len, 'source': source,
                                                               'destination': dest}
             self.link_num += 1
-            # TODO: Should this even be created? Or accounted for in the simulation?
             # Create a path from destination to source (bi-directional)
             self.physical_topology['links'][self.link_num] = {'fiber': tmp_dict, 'length': link_len, 'source': dest,
                                                               'destination': source}

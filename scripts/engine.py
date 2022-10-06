@@ -33,6 +33,27 @@ class Engine:
         self.sorted_requests = None
         self.requests_status = dict()
 
+    def calc_blocking_stats(self, simulation_number):
+        """
+        Determines if the confidence interval is high enough to stop the simulation.
+
+        :param simulation_number: The current iteration of the simulation
+        :type simulation_number: int
+        :return: None
+        """
+        block_percent_arr = np.array(list(self.blocking.values()))
+        if len(block_percent_arr) == 1:
+            return
+
+        variance = np.var(block_percent_arr)
+        # Confidence interval rate
+        ci_rate = 1.645 * (np.sqrt(variance) / np.sqrt(len(block_percent_arr)))
+        ci_percent = ((2 * ci_rate) / np.mean(block_percent_arr)) * 100
+        if ci_percent <= 5:
+            print(f'Confidence interval of {round(ci_percent, 2)}% reached on simulation {simulation_number + 1}, '
+                  f'ending and saving results.')
+            # TODO: Save results to files
+
     def update_blocking(self, i):
         """
         Updates the blocking dictionary based on number of iterations blocked divided by the number of requests.
@@ -155,6 +176,7 @@ class Engine:
                     self.handle_release(time)
 
             self.update_blocking(i)
+            self.calc_blocking_stats(i)
 
             if (i + 1) % 5 == 0 or i == 0:
                 print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed.')
