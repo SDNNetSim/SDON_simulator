@@ -87,6 +87,7 @@ class SpectrumAssignment:
 
                 # No more open slots
                 if len(open_slots_arr) == 0:
+                    self.is_free = False
                     break
 
                 # TODO: This will check zero twice potentially
