@@ -51,7 +51,6 @@ class Engine:
         :type time: float
         :return: None
         """
-        # TODO: Start slot is negative 1?
         rsa_res = controller_main(src=self.sorted_requests[time]["source"][0],
                                   dest=self.sorted_requests[time]["destination"][0],
                                   request_type="Arrival",
@@ -61,7 +60,6 @@ class Engine:
                                   path=list()
                                   )
 
-        # TODO: Never changes arrays to be equal to one (Didn't change pt or network db
         if rsa_res is False:
             self.blocking_iter += 1
         else:

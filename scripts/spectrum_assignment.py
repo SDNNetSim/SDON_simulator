@@ -86,6 +86,7 @@ class SpectrumAssignment:
                         return
 
                 # No more open slots
+                # TODO: Test given a full array
                 if len(open_slots_arr) == 0:
                     self.is_free = False
                     break
