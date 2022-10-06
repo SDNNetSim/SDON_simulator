@@ -105,6 +105,7 @@ class RunSim:
 
             self.output_file_name = f'{erlang}_erlang.json'
             self.save_input()
+            self.link_num = 1
 
         # TODO: Multi-thread? (Give chunks of lists)
         for erlang in self.inter_arrive_dict.keys():

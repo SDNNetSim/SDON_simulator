@@ -31,9 +31,10 @@ def map_erlang_times(network='europe'):
     for erlang in erlang_arr:
         raw_value = config_file[f'Config Erlang_{erlang}']['**.holding_time']
         exponent = float(raw_value.split('(')[1][:-2])
-        exponential = np.exp(exponent)
+        # e^x
+        final_value = np.exp(exponent)
+        response_dict[str(erlang)] = final_value
 
-    exit()
     return response_dict
 
 
