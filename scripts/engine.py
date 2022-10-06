@@ -22,7 +22,7 @@ class Engine:
     Controls the SDN simulation.
     """
 
-    def __init__(self, sim_input_fp='../data/input/first_sim_input.json'):
+    def __init__(self, sim_input_fp='../data/input/simulation_input.json'):
         self.blocking = dict()
         self.blocking_iter = 0
         self.sim_input = None
@@ -63,6 +63,7 @@ class Engine:
                                   slot_num=-1,
                                   path=list()
                                   )
+
         if rsa_res is False:
             self.blocking_iter += 1
         else:
@@ -155,6 +156,7 @@ class Engine:
                     self.handle_release(time)
 
             self.update_blocking(i)
+            print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed.')
 
 
 if __name__ == '__main__':

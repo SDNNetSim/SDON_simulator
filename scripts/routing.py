@@ -62,12 +62,10 @@ class Routing:
         :return: The least congested path
         :rtype: list
         """
-        paths_obj = nx.all_simple_paths(G=self.physical_topology, source=self.source, target=self.destination)
-        # Sort sub-arrays by length
-        paths_matrix = np.array([np.array(y) for x, y in sorted([(len(x), x) for x in paths_obj])], dtype=object)
+        paths_obj = nx.shortest_simple_paths(G=self.physical_topology, source=self.source, target=self.destination)
         min_hops = None
 
-        for i, path in enumerate(paths_matrix):
+        for i, path in enumerate(paths_obj):
             num_hops = len(path)
             if i == 0:
                 min_hops = num_hops
@@ -75,6 +73,6 @@ class Routing:
             else:
                 if num_hops <= min_hops + 1:
                     self.find_most_cong_link(path)
-
-        # TODO: Remember that this returns a numpy array (can change)
-        return self.find_least_cong_route()
+                else:
+                    # TODO: This no longer returns a numpy array?
+                    return self.find_least_cong_route()

@@ -11,7 +11,7 @@
       "DP-QPSK": 10
     }
   },
-  "NO_iteration": 10,
+  "NO_iteration": 1,
   "number_of_slot_per_core": 256,
   "physical_topology": {
     "nodes": {

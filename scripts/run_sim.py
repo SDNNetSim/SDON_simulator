@@ -5,13 +5,14 @@ from scripts.structure_raw_data import structure_data
 
 
 # TODO: Change number of requests to 5000
+# TODO: Change number of iterations to 10
 
 class RunSim:
     """
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5, num_iteration=10,
+    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5, num_iteration=1,
                  num_core_slots=256):
         self.seed = list()
         self.hold_time_mean = hold_time_mean
@@ -99,7 +100,6 @@ class RunSim:
         self.save_input()
 
 
-# TODO: Update documentation
 if __name__ == '__main__':
     test_obj = RunSim()
     test_obj.run()
