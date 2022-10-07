@@ -104,7 +104,7 @@ class RunSim:
             if not self.save:
                 self.save_input()
 
-            if erlang == '10':
+            if erlang == '600':
                 engine = Engine(self.sim_input, erlang=erlang)
                 engine.run()
 

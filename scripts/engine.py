@@ -40,7 +40,6 @@ class Engine:
         """
         Saves the simulation results to a file like #_erlang.json.
         """
-        # TODO: If it's zero it isn't calculated!
         self.blocking['stats'] = {
             'mean': self.mean,
             'variance': self.variance,
@@ -50,7 +49,6 @@ class Engine:
 
         with open(f'../data/output/{self.erlang}_erlang.json', 'w', encoding='utf-8') as file_path:
             json.dump(self.blocking, file_path)
-        sys.exit(0)
 
     def calc_blocking_stats(self, simulation_number):
         """
@@ -76,6 +74,7 @@ class Engine:
             print(f'Confidence interval of {round(self.ci_percent, 2)}% reached on simulation {simulation_number + 1}, '
                   f'ending and saving results for Erlang: {self.erlang}')
             self.save_sim_results()
+            sys.exit(0)
 
     def update_blocking(self, i):
         """
@@ -208,7 +207,7 @@ class Engine:
 
             if (i + 1) % 100 == 0 or i == 0:
                 print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed for Erlang: {self.erlang}')
-                print(self.blocking)
+                self.save_sim_results()
 
         print(f'Simulation for Erlang: {self.erlang} finished.')
         self.save_sim_results()
