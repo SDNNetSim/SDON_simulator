@@ -1,10 +1,11 @@
 import configparser
+import os
 
 import pandas as pd
 import numpy as np
 
-PAIRINGS_FILE_PATH = '../data/raw/europe_network.xlsx'
-LINK_LEN_FILE_PATH = '../data/raw/europe_network_distance.txt'
+PAIRINGS_FILE_PATH = 'data/raw/europe_network.xlsx'
+LINK_LEN_FILE_PATH = 'data/raw/europe_network_distance.txt'
 
 
 def map_erlang_times(network='europe'):
@@ -19,8 +20,8 @@ def map_erlang_times(network='europe'):
     response_dict = dict()
 
     if network == 'europe':
-        hold_conf_fp = '../data/raw/europe_omnetpp_hold.ini'
-        inter_conf_fp = '../data/raw/europe_omnetpp_inter.ini'
+        hold_conf_fp = 'data/raw/europe_omnetpp_hold.ini'
+        inter_conf_fp = 'data/raw/europe_omnetpp_inter.ini'
     else:
         raise NotImplementedError
 
