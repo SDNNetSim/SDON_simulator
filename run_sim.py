@@ -51,7 +51,7 @@ class RunSim:
                 os.mkdir('data/output')
 
             with open('data/input/simulation_input.json', 'w', encoding='utf-8') as file_path:
-                json.dump(self.sim_input, file_path)
+                json.dump(self.sim_input, file_path, indent=4)
         else:
             raise NotImplementedError
 
