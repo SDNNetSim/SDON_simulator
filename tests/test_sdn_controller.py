@@ -41,8 +41,29 @@ class TestSDNController(unittest.TestCase):
 
         test_matrix = response[('Lowell', 'Miami')]['cores_matrix'][0]
         test_rev_matrix = response[('Miami', 'Lowell')]['cores_matrix'][0]
-        self.assertEqual({0.0}, set(test_matrix), 'Spectrum slots were not released correctly from nodes A to B.')
-        self.assertEqual({0.0}, set(test_rev_matrix), 'Spectrum slots were not released correctly from nodes B to A.')
+        self.assertEqual({0.0}, set(test_matrix),
+                         'Spectrum slots were not released correctly from nodes Lowell to Miami.')
+        self.assertEqual({0.0}, set(test_rev_matrix),
+                         'Spectrum slots were not released correctly from nodes Miami to Lowelll.')
+
+    def test_arrival(self):
+        """
+        Test that a link has allocated its resources properly.
+        """
+        response = handle_arrive_rel(network_spec_db=self.network_spec_db, path=self.path, start_slot=50, num_slots=50,
+                                     core_num=0, req_type='Arrival')
+
+        for i in range(len(self.path) - 1):
+            curr_array = response[(self.path[i], self.path[i + 1])]['cores_matrix'][0][50:100]
+            rev_array = response[(self.path[i + 1], self.path[i])]['cores_matrix'][0][50:100]
+
+            test_set = set(curr_array)
+            test_rev_set = set(rev_array)
+
+            self.assertEqual({1}, test_set,
+                             f'Resources not allocated properly from nodes {self.path[i]} to {self.path[i + 1]}')
+            self.assertEqual({1}, test_rev_set,
+                             f'Resources not allocated properly from nodes {self.path[i + 1]} to {self.path[i]}')
 
 
 if __name__ == '__main__':

@@ -2,7 +2,6 @@ from scripts.routing import Routing
 from scripts.spectrum_assignment import SpectrumAssignment
 
 
-# TODO: Re-test here
 def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, req_type=None):
     """
     Releases or fills slots in the network spectrum database arrays.

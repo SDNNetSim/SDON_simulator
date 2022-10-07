@@ -87,7 +87,6 @@ class SpectrumAssignment:
                         return
 
                 # No more open slots
-                # TODO: Test given a full array
                 if len(open_slots_arr) == 0:
                     self.is_free = False
                     break
@@ -116,7 +115,7 @@ class SpectrumAssignment:
         self.num_slots = np.shape(self.cores_matrix)[1]
         self.find_spectrum_slots()
 
-        # TODO: Find a better way for this
+        # TODO: Find a better way for this (potentially remove is_free variable)
         if self.response['start_slot'] is not None:
             return self.response
 
