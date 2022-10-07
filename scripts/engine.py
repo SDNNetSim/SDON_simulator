@@ -208,6 +208,7 @@ class Engine:
             self.update_blocking(i)
             self.calc_blocking_stats(i)
 
+            # TODO: Print the mean of the blocking
             if (i + 1) % 10 == 0 or i == 0:
                 print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed for Erlang: {self.erlang}')
                 self.save_sim_results()

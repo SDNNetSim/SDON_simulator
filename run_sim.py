@@ -37,7 +37,7 @@ class RunSim:
 
         self.sim_input = None
         self.output_file_name = None
-        self.save = False
+        self.save = True
 
     def save_input(self):
         """
@@ -51,6 +51,8 @@ class RunSim:
 
             with open('data/input/simulation_input.json', 'w', encoding='utf-8') as file_path:
                 json.dump(self.sim_input, file_path)
+        else:
+            raise NotImplementedError
 
     def create_pt(self):
         """
@@ -107,7 +109,7 @@ class RunSim:
             self.inter_arrival_time = obj['inter_arrival_time']
             self.create_input()
 
-            if not self.save:
+            if self.save:
                 self.save_input()
 
             if erlang == '600':
