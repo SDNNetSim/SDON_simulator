@@ -97,8 +97,8 @@ class Engine:
         :type time: float
         :return: None
         """
-        rsa_res = controller_main(src=self.sorted_requests[time]["source"][0],
-                                  dest=self.sorted_requests[time]["destination"][0],
+        rsa_res = controller_main(src=self.sorted_requests[time]["source"],
+                                  dest=self.sorted_requests[time]["destination"],
                                   request_type="Arrival",
                                   physical_topology=self.physical_topology,
                                   network_spec_db=self.network_spec_db,
@@ -125,8 +125,8 @@ class Engine:
         :return: None
         """
         if self.sorted_requests[time]['id'] in self.requests_status:
-            controller_main(src=self.sorted_requests[time]["source"][0],
-                            dest=self.sorted_requests[time]["destination"][0],
+            controller_main(src=self.sorted_requests[time]["source"],
+                            dest=self.sorted_requests[time]["destination"],
                             request_type="Release",
                             physical_topology=self.physical_topology,
                             network_spec_db=self.network_spec_db,

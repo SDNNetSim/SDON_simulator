@@ -28,15 +28,15 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
         current = current + np.random.exponential(inter_arrival_time_mean)
         # TODO: Here
         new_hold = current + np.random.exponential(holding_time_mean)
-        src = np.random.choice(nodes, size=1)
-        des = np.random.choice(nodes, size=1)
+        src = nodes[np.random.randint(0, len(nodes))]
+        des = nodes[np.random.randint(0, len(nodes))]
 
         while src == des:
-            des = np.random.choice(nodes, size=1)
+            des = nodes[np.random.randint(0, len(nodes))]
 
         bands_list = list(slot_dict.keys())
-        chosen_band = np.random.choice(bands_list, size=1)
-        slot_num = slot_dict[chosen_band[0]]['DP-QPSK']
+        chosen_band = bands_list[np.random.randint(0, len(bands_list))]
+        slot_num = slot_dict[chosen_band]['DP-QPSK']
 
         if current not in requests and new_hold not in requests:
             requests.update({current: {
