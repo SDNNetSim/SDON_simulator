@@ -17,7 +17,10 @@ class Engine:
     """
 
     def __init__(self, sim_input=None, erlang=None, sim_input_fp=None):
-        self.blocking = dict()
+        self.blocking = {
+            'simulations': dict(),
+            'stats': dict()
+        }
         self.blocking_iter = 0
         self.sim_input_fp = sim_input_fp
         self.sim_input = sim_input
@@ -47,7 +50,7 @@ class Engine:
             'ci_percent': self.ci_percent
         }
 
-        with open(f'../data/output/{self.erlang}_erlang.json', 'w', encoding='utf-8') as file_path:
+        with open(f'data/output/{self.erlang}_erlang.json', 'w', encoding='utf-8') as file_path:
             json.dump(self.blocking, file_path)
 
     def calc_blocking_stats(self, simulation_number):
@@ -58,7 +61,7 @@ class Engine:
         :type simulation_number: int
         :return: None
         """
-        block_percent_arr = np.array(list(self.blocking.values()))
+        block_percent_arr = np.array(list(self.blocking['simulations'].values()))
         if len(block_percent_arr) == 1:
             return
 
@@ -84,7 +87,7 @@ class Engine:
         :type i: int
         :return: None
         """
-        self.blocking.update({i: self.blocking_iter / self.sim_input['number_of_request']})
+        self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
 
     def handle_arrival(self, time):
         """
@@ -205,7 +208,7 @@ class Engine:
             self.update_blocking(i)
             self.calc_blocking_stats(i)
 
-            if (i + 1) % 100 == 0 or i == 0:
+            if (i + 1) % 10 == 0 or i == 0:
                 print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed for Erlang: {self.erlang}')
                 self.save_sim_results()
 

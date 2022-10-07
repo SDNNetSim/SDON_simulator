@@ -1,5 +1,6 @@
 import math
 import json
+import os
 
 from scripts.structure_raw_data import structure_data, map_erlang_times
 from scripts.engine import Engine
@@ -43,6 +44,11 @@ class RunSim:
         Saves simulation input data.
         """
         if self.output_file_name is None:
+            if not os.path.exists('data/input'):
+                os.mkdir('data/input')
+            if not os.path.exists('data/output'):
+                os.mkdir('data/output')
+
             with open('data/input/simulation_input.json', 'w', encoding='utf-8') as file_path:
                 json.dump(self.sim_input, file_path)
 
