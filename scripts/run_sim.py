@@ -6,6 +6,7 @@ from scripts.engine import Engine
 
 
 # TODO: Number of iterations is 1000
+# TODO: Number of core slots is 256
 
 
 class RunSim:
@@ -13,8 +14,8 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5000, num_iteration=1,
-                 num_core_slots=256):
+    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5000, num_iteration=5,
+                 num_core_slots=10):
         self.seed = list()
         self.hold_time_mean = hold_time_mean
         self.inter_arrival_time = inter_arrival_time
@@ -106,7 +107,7 @@ class RunSim:
             if not self.save:
                 self.save_input()
 
-            if erlang == '600':
+            if erlang == '10':
                 engine = Engine(self.sim_input, erlang=erlang)
                 engine.run()
 

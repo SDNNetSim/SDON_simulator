@@ -1,5 +1,6 @@
 # Standard imports
 import json
+import sys
 
 # Third party imports
 import networkx as nx
@@ -40,13 +41,16 @@ class Engine:
         Saves the simulation results to a file like #_erlang.json.
         """
         # TODO: If it's zero it isn't calculated!
-        self.blocking['mean'] = self.mean
-        self.blocking['variance'] = self.variance
-        self.blocking['ci_rate'] = self.ci_rate
-        self.blocking['ci_percent'] = self.ci_percent
+        self.blocking['stats'] = {
+            'mean': self.mean,
+            'variance': self.variance,
+            'ci_rate': self.ci_rate,
+            'ci_percent': self.ci_percent
+        }
 
         with open(f'../data/output/{self.erlang}_erlang.json', 'w', encoding='utf-8') as file_path:
             json.dump(self.blocking, file_path)
+        sys.exit(0)
 
     def calc_blocking_stats(self, simulation_number):
         """
@@ -135,6 +139,10 @@ class Engine:
 
         :return: None
         """
+        # Reset physical topology and network spectrum from previous iterations
+        self.physical_topology = nx.Graph()
+        self.network_spec_db = dict()
+
         for node in self.sim_input['physical_topology']['nodes']:
             self.physical_topology.add_node(node)
 
