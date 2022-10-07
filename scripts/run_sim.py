@@ -4,9 +4,8 @@ import json
 from scripts.structure_raw_data import structure_data, map_erlang_times
 from scripts.engine import Engine
 
-# TODO: Load other network (not European)
-# TODO: Number of request is 1000
-# TODO: Num core slots is 256
+
+# TODO: Number of iterations is 1000
 
 
 class RunSim:
@@ -14,8 +13,8 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5000, num_iteration=1000,
-                 num_core_slots=10):
+    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5000, num_iteration=1,
+                 num_core_slots=256):
         self.seed = list()
         self.hold_time_mean = hold_time_mean
         self.inter_arrival_time = inter_arrival_time
@@ -36,10 +35,11 @@ class RunSim:
         self.link_num = 1
 
         self.data = structure_data()
-        self.inter_arrive_dict = map_erlang_times()
+        self.hold_time_dict = map_erlang_times()
 
-        self.response = None
+        self.sim_input = None
         self.output_file_name = None
+        self.save = False
 
     def save_input(self):
         """
@@ -47,10 +47,7 @@ class RunSim:
         """
         if self.output_file_name is None:
             with open('../data/input/simulation_input.json', 'w', encoding='utf-8') as file_path:
-                json.dump(self.response, file_path)
-        else:
-            with open(f'../data/input/{self.output_file_name}', 'w', encoding='utf-8') as file_path:
-                json.dump(self.response, file_path)
+                json.dump(self.sim_input, file_path)
 
     def create_pt(self):
         """
@@ -78,13 +75,15 @@ class RunSim:
             self.physical_topology['links'][self.link_num] = {'fiber': tmp_dict, 'length': link_len, 'source': dest,
                                                               'destination': source}
             self.link_num += 1
+        # Reset link numbers
+        self.link_num = 1
 
     def create_input(self):
         """
         Creates simulation input data.
         """
         self.create_pt()
-        self.response = {
+        self.sim_input = {
             'seed': self.seed,
             'holding_time_mean': self.hold_time_mean,
             'inter_arrival_time': self.inter_arrival_time,
@@ -99,18 +98,16 @@ class RunSim:
         """
         Controls the class.
         """
-        for erlang, inter_arrival_time in self.inter_arrive_dict.items():
-            self.inter_arrival_time = inter_arrival_time
+        # TODO: Multi-thread? (Give chunks of lists)
+        for erlang, hold_time in self.hold_time_dict.items():
+            self.hold_time_mean = hold_time
             self.create_input()
 
-            self.output_file_name = f'{erlang}_erlang.json'
-            self.save_input()
-            self.link_num = 1
+            if not self.save:
+                self.save_input()
 
-        # TODO: Multi-thread? (Give chunks of lists)
-        for erlang in self.inter_arrive_dict.keys():  # pylint: disable=consider-iterating-dictionary
-            if erlang == '30':
-                engine = Engine(sim_input_fp=f'../data/input/{erlang}_erlang.json', erlang=erlang)
+            if erlang == '600':
+                engine = Engine(self.sim_input, erlang=erlang)
                 engine.run()
 
 

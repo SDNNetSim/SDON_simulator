@@ -31,10 +31,10 @@ def map_erlang_times(network='europe'):
     config_file.read(conf_file_path)
     for erlang in erlang_arr:
         raw_value = config_file[f'Config Erlang_{erlang}']['**.holding_time']
-        exponent = float(raw_value.split('(')[1][:-2])
-        # e^x
-        final_value = np.exp(exponent)
-        response_dict[str(erlang)] = final_value
+        value = float(raw_value.split('(')[1][:-2])
+
+        random_value = np.random.exponential(value)
+        response_dict[str(erlang)] = random_value
 
     return response_dict
 

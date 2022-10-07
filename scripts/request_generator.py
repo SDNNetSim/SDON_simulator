@@ -24,7 +24,6 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
     requests = {}
     current = 0
 
-    # TODO: Here, arrive and depart are essentially the same value for large numbers?
     for i in range(0, req_no):
         current = current + np.random.normal(loc=inter_arrival_time_mean)
         new_hold = current + np.random.normal(loc=holding_time_mean)

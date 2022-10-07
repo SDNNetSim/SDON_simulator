@@ -15,11 +15,10 @@ class Engine:
     Controls the SDN simulation.
     """
 
-    def __init__(self, sim_input_fp='../data/input/simulation_input.json', erlang=None):
+    def __init__(self, sim_input, erlang=None):
         self.blocking = dict()
         self.blocking_iter = 0
-        self.sim_input = None
-        self.sim_input_fp = sim_input_fp
+        self.sim_input = sim_input
         self.erlang = erlang
         self.seed = 1
 
@@ -151,21 +150,12 @@ class Engine:
                                             self.sim_input['physical_topology']['links'][link_no]['destination'],
                                             length=self.sim_input['physical_topology']['links'][link_no]['length'])
 
-    def load_input(self):
-        """
-        Load and return the simulation input JSON file.
-        """
-        with open(self.sim_input_fp, encoding='utf-8') as json_file:
-            self.sim_input = json.load(json_file)
-
     def run(self):
         """
         Controls the SDN simulation.
 
         :return: None
         """
-        self.load_input()
-
         for i in range(self.sim_input['NO_iteration']):
             if i == 0:
                 print(f"Simulation started for Erlang: {self.erlang}.")
