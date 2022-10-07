@@ -51,7 +51,7 @@ class Engine:
         }
 
         with open(f'data/output/{self.erlang}_erlang.json', 'w', encoding='utf-8') as file_path:
-            json.dump(self.blocking, file_path)
+            json.dump(self.blocking, file_path, indent=4)
 
     def calc_blocking_stats(self, simulation_number):
         """

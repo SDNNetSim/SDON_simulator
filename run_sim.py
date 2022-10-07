@@ -14,6 +14,7 @@ class RunSim:
     def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=1000, num_iteration=5000,
                  num_core_slots=256):
         self.seed = list()
+        self.constant_hold = True
         self.hold_time_mean = hold_time_mean
         self.inter_arrival_time = inter_arrival_time
         self.number_of_request = number_of_request
@@ -105,7 +106,8 @@ class RunSim:
         """
         # TODO: Multi-thread? (Give chunks of lists)
         for erlang, obj in self.hold_inter_dict.items():
-            self.hold_time_mean = obj['holding_time_mean']
+            if not self.constant_hold:
+                self.hold_time_mean = obj['holding_time_mean']
             self.inter_arrival_time = obj['inter_arrival_time']
             self.create_input()
 

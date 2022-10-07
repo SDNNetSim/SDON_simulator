@@ -26,6 +26,7 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
 
     for i in range(0, req_no):
         current = current + np.random.exponential(inter_arrival_time_mean)
+        # TODO: Here
         new_hold = current + np.random.exponential(holding_time_mean)
         src = np.random.choice(nodes, size=1)
         des = np.random.choice(nodes, size=1)
