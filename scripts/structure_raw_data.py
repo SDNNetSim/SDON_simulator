@@ -9,17 +9,18 @@ LINK_LEN_FILE_PATH = '../data/raw/europe_network_distance.txt'
 
 def map_erlang_times(network='europe'):
     """
-    Map the Erlang values to the inter arrival rate from a configuration file.
+    Map the Erlang values to the inter arrival rate and holding time from a configuration file.
 
     :param network: The type of network
     :type network: str
-    :return: The Erlang number is mapped to each value
+    :return: The Erlang number is mapped to the values
     :rtype: dict
     """
     response_dict = dict()
 
     if network == 'europe':
-        conf_file_path = '../data/raw/europe_omnetpp.ini'
+        hold_conf_fp = '../data/raw/europe_omnetpp_hold.ini'
+        inter_conf_fp = '../data/raw/europe_omnetpp_inter.ini'
     else:
         raise NotImplementedError
 
@@ -27,14 +28,18 @@ def map_erlang_times(network='europe'):
     arr_two = np.arange(100, 850, 50)
     erlang_arr = np.concatenate((arr_one, arr_two))
 
-    config_file = configparser.ConfigParser()
-    config_file.read(conf_file_path)
-    for erlang in erlang_arr:
-        raw_value = config_file[f'Config Erlang_{erlang}']['**.holding_time']
-        value = float(raw_value.split('(')[1][:-2])
+    hold_config_file = configparser.ConfigParser()
+    hold_config_file.read(hold_conf_fp)
+    inter_config_file = configparser.ConfigParser()
+    inter_config_file.read(inter_conf_fp)
 
-        random_value = np.random.exponential(value)
-        response_dict[str(erlang)] = random_value
+    for erlang in erlang_arr:
+        raw_hold_value = hold_config_file[f'Config Erlang_{erlang}']['**.holding_time']
+        hold_value = float(raw_hold_value.split('(')[1][:-2])
+        raw_inter_value = inter_config_file[f'Config Erlang_{erlang}']['**.interarrival_time']
+        inter_value = float(raw_inter_value.split('(')[1][:-2])
+
+        response_dict[str(erlang)] = {'holding_time_mean': hold_value, 'inter_arrival_time': inter_value}
 
     return response_dict
 

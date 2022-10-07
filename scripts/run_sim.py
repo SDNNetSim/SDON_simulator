@@ -5,17 +5,13 @@ from scripts.structure_raw_data import structure_data, map_erlang_times
 from scripts.engine import Engine
 
 
-# TODO: Number of iterations is 1000
-# TODO: Number of core slots is 256
-
-
 class RunSim:
     """
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=5000, num_iteration=5,
-                 num_core_slots=10):
+    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=1000, num_iteration=5000,
+                 num_core_slots=256):
         self.seed = list()
         self.hold_time_mean = hold_time_mean
         self.inter_arrival_time = inter_arrival_time
@@ -36,7 +32,7 @@ class RunSim:
         self.link_num = 1
 
         self.data = structure_data()
-        self.hold_time_dict = map_erlang_times()
+        self.hold_inter_dict = map_erlang_times()
 
         self.sim_input = None
         self.output_file_name = None
@@ -100,8 +96,9 @@ class RunSim:
         Controls the class.
         """
         # TODO: Multi-thread? (Give chunks of lists)
-        for erlang, hold_time in self.hold_time_dict.items():
-            self.hold_time_mean = hold_time
+        for erlang, obj in self.hold_inter_dict.items():
+            self.hold_time_mean = obj['holding_time_mean']
+            self.inter_arrival_time = obj['inter_arrival_time']
             self.create_input()
 
             if not self.save:
