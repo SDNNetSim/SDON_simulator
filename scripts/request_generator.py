@@ -35,7 +35,7 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
             des = nodes[np.random.randint(0, len(nodes))]
 
         bands_list = list(slot_dict.keys())
-        chosen_band = bands_list[np.random.randint(0, len(bands_list))]
+        chosen_band = bands_list[np.random.randint(0, len(bands_list))]  # pylint: disable=invalid-sequence-index
         slot_num = slot_dict[chosen_band]['DP-QPSK']
 
         if current not in requests and new_hold not in requests:
