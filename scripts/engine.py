@@ -197,6 +197,8 @@ class Engine:
                                      req_no=self.sim_input['number_of_request'],
                                      slot_dict=self.sim_input['BW_type'])
 
+            # TODO: Time between arrivals looks ok?
+            # TODO: Arrival and departure time differences make sense?
             self.sorted_requests = dict(sorted(self.requests.items()))
 
             for time in self.sorted_requests:

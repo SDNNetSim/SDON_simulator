@@ -11,8 +11,8 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=1000, num_iteration=5000,
-                 num_core_slots=256):
+    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=1000, num_iteration=1,
+                 num_core_slots=1):
         self.seed = list()
         self.constant_hold = True
         self.hold_time_mean = hold_time_mean
@@ -60,6 +60,7 @@ class RunSim:
         Creates the physical topology.
         """
         # This may change in the future, hence creating the same dictionary for all fibers in a link right now
+        # TODO: Are these exponents or 'e'?
         tmp_dict = dict()
         tmp_dict['attenuation'] = (0.2 / 4.343) * (math.e ** -3)
         tmp_dict['nonlinearity'] = 1.3 * (math.e ** -3)
