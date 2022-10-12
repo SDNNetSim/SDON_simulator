@@ -12,7 +12,7 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=4.5, number_of_request=1000, num_iteration=1,
+    def __init__(self, hold_time_mean=3600, inter_arrival_time=4.5, number_of_request=5000, num_iteration=5,
                  num_core_slots=256):
         self.seed = list()
         self.constant_hold = True
@@ -127,18 +127,21 @@ class RunSim:
         for erlang, obj in self.hold_inter_dict.items():
             if not self.constant_hold:
                 self.hold_time_mean = obj['holding_time_mean']
-            self.inter_arrival_time = obj['inter_arrival_time']
-            # TODO: Constant inter arrival time from before?
+            # self.inter_arrival_time = obj['inter_arrival_time']
+            # TODO: Eventually change this
+            self.inter_arrival_time = 121.6
             self.create_input()
 
             if self.save:
                 self.save_input()
 
-            if erlang in erlang_list[start_erlang:end_erlang] or start_erlang is None:
-                engine = Engine(self.sim_input, erlang=erlang)
-                engine.run()
+            if erlang == '800':
+                if erlang in erlang_list[start_erlang:end_erlang] or start_erlang is None:
+                    engine = Engine(self.sim_input, erlang=erlang)
+                    engine.run()
 
 
 if __name__ == '__main__':
     test_obj = RunSim()
-    test_obj.thread_runs()
+    # test_obj.thread_runs()
+    test_obj.run()

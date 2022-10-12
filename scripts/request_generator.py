@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import expon
+from scipy.stats import expon, uniform
 
 
 def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
@@ -26,19 +26,24 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
     current = 0
 
     for i in range(0, req_no):
-        current = current + np.random.exponential(inter_arrival_time_mean)
-        # current = current + np.random.poisson(inter_arrival_time_mean)
+        # current = current + np.random.exponential(inter_arrival_time_mean)
+        current = current + expon.rvs(inter_arrival_time_mean)
         # TODO: Here
-        new_hold = current + np.random.exponential(holding_time_mean)
-        # new_hold = current + np.random.poisson(holding_time_mean)
-        src = nodes[np.random.randint(0, len(nodes))]
-        des = nodes[np.random.randint(0, len(nodes))]
+        # new_hold = current + np.random.exponential(holding_time_mean)
+        new_hold = current + expon.rvs(holding_time_mean)
+        # src = nodes[np.random.randint(0, len(nodes))]
+        # des = nodes[np.random.randint(0, len(nodes))]
+
+        src = nodes[int(uniform.rvs(0, len(nodes)))]
+        des = nodes[int(uniform.rvs(0, len(nodes)))]
 
         while src == des:
-            des = nodes[np.random.randint(0, len(nodes))]
+            # des = nodes[np.random.randint(0, len(nodes))]
+            des = nodes[int(uniform.rvs(0, len(nodes)))]
 
         bands_list = list(slot_dict.keys())
-        chosen_band = bands_list[np.random.randint(0, len(bands_list))]  # pylint: disable=invalid-sequence-index
+        # chosen_band = bands_list[np.random.randint(0, len(bands_list))]  # pylint: disable=invalid-sequence-index
+        chosen_band = bands_list[int(uniform.rvs(0, len(bands_list)))]  # pylint: disable=invalid-sequence-index
         slot_num = slot_dict[chosen_band]['DP-QPSK']
 
         if current not in requests and new_hold not in requests:
