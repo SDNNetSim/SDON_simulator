@@ -27,16 +27,17 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
     counter_id = 0
 
     while len(requests) < (req_no * 2):
-        # current = current + np.random.exponential(inter_arrival_time_mean)
-        current = current + np.random.poisson(inter_arrival_time_mean)
+        current = current + np.random.exponential(inter_arrival_time_mean)
+        # current = current + np.random.poisson(inter_arrival_time_mean)
         # current = current + expon.rvs(inter_arrival_time_mean)
         # TODO: Here
-        # new_hold = current + np.random.exponential(holding_time_mean)
-        new_hold = current + np.random.poisson(holding_time_mean)
+        new_hold = current + np.random.exponential(holding_time_mean)
+        # new_hold = current + np.random.poisson(holding_time_mean)
         # new_hold = current + expon.rvs(holding_time_mean)
         src = nodes[np.random.randint(0, len(nodes))]
         des = nodes[np.random.randint(0, len(nodes))]
-
+        # src = 'Madrid'
+        # des = 'Brussels'
         # src = nodes[int(uniform.rvs(0, len(nodes)))]
         # des = nodes[int(uniform.rvs(0, len(nodes)))]
 
