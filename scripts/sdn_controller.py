@@ -69,7 +69,9 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
     routing_obj = Routing(source=src, destination=dest, physical_topology=physical_topology,
                           network_spec_db=network_spec_db)
     selected_path = routing_obj.least_congested_path()
-
+    
+    # TODO: Routing only return the min hop path, least congested path does not work
+    
     if selected_path is not False:
         spectrum_assignment = SpectrumAssignment(selected_path, num_slots, network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
