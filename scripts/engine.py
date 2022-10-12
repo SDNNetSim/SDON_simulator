@@ -156,6 +156,7 @@ class Engine:
                                      self.sim_input['number_of_slot_per_core']))
 
             self.network_spec_db[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': link_no}
+            self.network_spec_db[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': link_no}
 
             self.physical_topology.add_edge(self.sim_input['physical_topology']['links'][link_no]['source'],
                                             self.sim_input['physical_topology']['links'][link_no]['destination'],

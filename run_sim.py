@@ -79,10 +79,6 @@ class RunSim:
             self.physical_topology['links'][self.link_num] = {'fiber': tmp_dict, 'length': link_len, 'source': source,
                                                               'destination': dest}
             self.link_num += 1
-            # Create a path from destination to source (bi-directional)
-            self.physical_topology['links'][self.link_num] = {'fiber': tmp_dict, 'length': link_len, 'source': dest,
-                                                              'destination': source}
-            self.link_num += 1
         # Reset link numbers
         self.link_num = 1
 

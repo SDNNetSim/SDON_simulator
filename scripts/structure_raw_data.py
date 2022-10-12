@@ -64,6 +64,10 @@ def assign_link_lengths(node_pairings=None):
             link_len = tmp_list[2].strip('\n').strip()
 
             src_dest_tuple = (node_pairings[src], node_pairings[dest])
+            rev_tuple = (node_pairings[dest], node_pairings[src])
+            # TODO: Change to implement in text file and not in structure code
+            if rev_tuple in response_dict.keys() or src_dest_tuple in response_dict.keys():
+                continue
             response_dict[src_dest_tuple] = int(link_len)
 
     return response_dict
