@@ -24,8 +24,9 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
     np.random.seed(seed_no)
     requests = {}
     current = 0
+    counter_id = 0
 
-    for i in range(0, req_no):
+    while len(requests) < (req_no * 2):
         # current = current + np.random.exponential(inter_arrival_time_mean)
         current = current + np.random.poisson(inter_arrival_time_mean)
         # current = current + expon.rvs(inter_arrival_time_mean)
@@ -50,7 +51,7 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
 
         if current not in requests and new_hold not in requests:
             requests.update({current: {
-                "id": i,
+                "id": counter_id,
                 "source": src,
                 "destination": des,
                 "arrive": current,
@@ -63,7 +64,7 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
 
             }})
             requests.update({new_hold: {
-                "id": i,
+                "id": counter_id,
                 "source": src,
                 "destination": des,
                 "arrive": current,
@@ -75,7 +76,9 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
                 "protection_path": None
 
             }})
+            counter_id += 1
         else:
-            raise NotImplementedError('This line of code should not be reached.')
+            continue
+            # raise NotImplementedError('This line of code should not be reached.')
 
     return requests
