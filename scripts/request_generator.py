@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import expon
 
 
 def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
@@ -26,8 +27,10 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
 
     for i in range(0, req_no):
         current = current + np.random.exponential(inter_arrival_time_mean)
+        # current = current + np.random.poisson(inter_arrival_time_mean)
         # TODO: Here
         new_hold = current + np.random.exponential(holding_time_mean)
+        # new_hold = current + np.random.poisson(holding_time_mean)
         src = nodes[np.random.randint(0, len(nodes))]
         des = nodes[np.random.randint(0, len(nodes))]
 

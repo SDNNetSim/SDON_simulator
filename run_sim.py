@@ -1,6 +1,7 @@
 import math
 import json
 import os
+import threading
 
 from scripts.structure_raw_data import structure_data, map_erlang_times
 from scripts.engine import Engine
@@ -11,8 +12,8 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=10, number_of_request=1000, num_iteration=1,
-                 num_core_slots=1):
+    def __init__(self, hold_time_mean=3600, inter_arrival_time=4.5, number_of_request=1000, num_iteration=1,
+                 num_core_slots=256):
         self.seed = list()
         self.constant_hold = True
         self.hold_time_mean = hold_time_mean
@@ -101,25 +102,43 @@ class RunSim:
             'physical_topology': self.physical_topology
         }
 
-    def run(self):
+    def thread_runs(self):
+        """
+        Executes the run method using threads.
+        """
+        t1 = threading.Thread(target=self.run, args=(0, 8))
+        t2 = threading.Thread(target=self.run, args=(8, 16))
+        t3 = threading.Thread(target=self.run, args=(16, 24))
+
+        t1.start()
+        t2.start()
+        t3.start()
+
+        t1.join()
+        t2.join()
+        t3.join()
+
+    def run(self, start_erlang=None, end_erlang=None):
         """
         Controls the class.
         """
-        # TODO: Multi-thread? (Give chunks of lists)
+        erlang_list = list(self.hold_inter_dict.keys())
+
         for erlang, obj in self.hold_inter_dict.items():
             if not self.constant_hold:
                 self.hold_time_mean = obj['holding_time_mean']
             self.inter_arrival_time = obj['inter_arrival_time']
+            # TODO: Constant inter arrival time from before?
             self.create_input()
 
             if self.save:
                 self.save_input()
 
-            if erlang == '600':
+            if erlang in erlang_list[start_erlang:end_erlang] or start_erlang is None:
                 engine = Engine(self.sim_input, erlang=erlang)
                 engine.run()
 
 
 if __name__ == '__main__':
     test_obj = RunSim()
-    test_obj.run()
+    test_obj.thread_runs()

@@ -213,6 +213,8 @@ class Engine:
             # TODO: Print the mean of the blocking
             if (i + 1) % 10 == 0 or i == 0:
                 print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed for Erlang: {self.erlang}')
+                block_percent_arr = np.array(list(self.blocking['simulations'].values()))
+                print(f'Mean of blocking: {np.mean(block_percent_arr)}')
                 self.save_sim_results()
 
         print(f'Simulation for Erlang: {self.erlang} finished.')
