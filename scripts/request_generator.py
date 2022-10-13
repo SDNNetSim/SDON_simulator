@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import expon, uniform
+from scipy.stats import expon, uniform  # pylint: disable=unused-import
 
 
 def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,

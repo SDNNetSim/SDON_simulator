@@ -66,7 +66,7 @@ def assign_link_lengths(node_pairings=None):
             src_dest_tuple = (node_pairings[src], node_pairings[dest])
             rev_tuple = (node_pairings[dest], node_pairings[src])
             # TODO: Change to implement in text file and not in structure code
-            if rev_tuple in response_dict.keys() or src_dest_tuple in response_dict.keys():
+            if rev_tuple in response_dict.keys() or src_dest_tuple in response_dict.keys():  # pylint: disable=consider-iterating-dictionary
                 continue
             response_dict[src_dest_tuple] = int(link_len)
 
