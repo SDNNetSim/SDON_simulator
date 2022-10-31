@@ -7,10 +7,10 @@ from scripts.structure_raw_data import structure_data, map_erlang_times
 from scripts.engine import Engine
 
 
-# TODO: Add one, four, and seven cores
-# TODO: Change requests to match Yue's ratios
+# TODO: Try one, four, and seven cores
+# TODO: Change request generation to match Yue's ratios
 # TODO: Also considering reachability
-# TODO: Consider guard band (1 slot)
+# TODO: Consider guard band variable
 
 
 class RunSim:
@@ -168,7 +168,7 @@ class RunSim:
                 self.hold_time_mean = obj['holding_time_mean']
             # self.inter_arrival_time = obj['inter_arrival_time']
             # TODO: Eventually change this
-            self.inter_arrival_time = 121.6
+            self.inter_arrival_time = 17.14285714285714
             self.create_input()
 
             if self.save:

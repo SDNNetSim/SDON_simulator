@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.stats import expon, uniform  # pylint: disable=unused-import
 
 
 def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
@@ -25,29 +24,30 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
     requests = {}
     current = 0
     counter_id = 0
+    num_requests = len(requests)
 
-    while len(requests) < (req_no * 2):
+    # TODO: Split number of requests length by these margins, make sure everything is included!
+    #  (Correct number of requests)
+    # Determines the ratio of requests allocated to each bandwidth
+    bw_req_nums = {
+        "10": {"max": num_requests / 3, "current": 0},
+        "50": {"max": num_requests / 5, "current": 0},
+        "400": {"max": num_requests / 2, "current": 0},
+    }
+
+    while num_requests < (req_no * 2):
         current = current + np.random.exponential(inter_arrival_time_mean)
-        # current = current + np.random.poisson(inter_arrival_time_mean)
-        # current = current + expon.rvs(inter_arrival_time_mean)
-        # TODO: Here
         new_hold = current + np.random.exponential(holding_time_mean)
-        # new_hold = current + np.random.poisson(holding_time_mean)
-        # new_hold = current + expon.rvs(holding_time_mean)
+
         src = nodes[np.random.randint(0, len(nodes))]
         des = nodes[np.random.randint(0, len(nodes))]
-        # src = 'Madrid'
-        # des = 'Brussels'
-        # src = nodes[int(uniform.rvs(0, len(nodes)))]
-        # des = nodes[int(uniform.rvs(0, len(nodes)))]
 
         while src == des:
             des = nodes[np.random.randint(0, len(nodes))]
-            # des = nodes[int(uniform.rvs(0, len(nodes)))]
 
+        # TODO: Here
         bands_list = list(slot_dict.keys())
         chosen_band = bands_list[np.random.randint(0, len(bands_list))]  # pylint: disable=invalid-sequence-index
-        # chosen_band = bands_list[int(uniform.rvs(0, len(bands_list)))]  # pylint: disable=invalid-sequence-index
         slot_num = slot_dict[chosen_band]['DP-QPSK']
 
         if current not in requests and new_hold not in requests:
