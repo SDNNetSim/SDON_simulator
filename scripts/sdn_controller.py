@@ -68,7 +68,8 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
 
     routing_obj = Routing(source=src, destination=dest, physical_topology=physical_topology,
                           network_spec_db=network_spec_db)
-    selected_path = routing_obj.least_congested_path()
+    # selected_path = routing_obj.least_congested_path()
+    selected_path = routing_obj.shortest_path()
 
     if selected_path is not False:
         spectrum_assignment = SpectrumAssignment(selected_path, num_slots, network_spec_db)

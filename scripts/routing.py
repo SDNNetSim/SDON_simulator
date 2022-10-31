@@ -2,6 +2,9 @@ import networkx as nx
 import numpy as np
 
 
+# TODO: Write a method to only consider the shortest available path
+
+
 class Routing:
     """
     Contains the routing methods for the simulation.
@@ -77,3 +80,15 @@ class Routing:
                     return self.find_least_cong_route()
 
         return False
+
+    def shortest_path(self):
+        """
+        Given a graph with a desired source and destination, find the shortest path with respect to link lengths.
+
+        :return: The shortest path
+        :rtype: list
+        """
+        paths_obj = nx.shortest_simple_paths(G=self.physical_topology, source=self.source, target=self.destination,
+                                             weight='length')
+        for path in paths_obj:
+            return path
