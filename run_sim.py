@@ -7,26 +7,69 @@ from scripts.structure_raw_data import structure_data, map_erlang_times
 from scripts.engine import Engine
 
 
+# TODO: Add one, four, and seven cores
+# TODO: Change requests to match Yue's ratios
+# TODO: Also considering reachability
+# TODO: Consider guard band (1 slot)
+
+
 class RunSim:
     """
     Runs the simulations for this project.
     """
 
     def __init__(self, hold_time_mean=3600, inter_arrival_time=4.5, number_of_request=5000, num_iteration=5,
-                 num_core_slots=256):
+                 num_core_slots=128):
         self.seed = list()
         self.constant_hold = True
         self.hold_time_mean = hold_time_mean
         self.inter_arrival_time = inter_arrival_time
         self.number_of_request = number_of_request
 
+        # TODO: Eventually move to a file to be read
         self.bw_type = {
-            "100 Gbps": {
-                "DP-QPSK": 3
+            "50": {
+                "QPSK": {
+                    "slots_needed": 2,
+                    "max_length": 11080,
+                },
+                "16-QAM": {
+                    "slots_needed": 1,
+                    "max_length": 4750,
+                },
+                "64-QAM": {
+                    "slots_needed": 1,
+                    "max_length": 1832,
+                },
             },
-            "400 Gbps": {
-                "DP-QPSK": 10
-            }
+            "100": {
+                "QPSK": {
+                    "slots_needed": 4,
+                    "max_length": 5540,
+                },
+                "16-QAM": {
+                    "slots_needed": 2,
+                    "max_length": 2375,
+                },
+                "64-QAM": {
+                    "slots_needed": 2,
+                    "max_length": 916,
+                },
+            },
+            "400": {
+                "QPSK": {
+                    "slots_needed": 16,
+                    "max_length": 1385,
+                },
+                "16-QAM": {
+                    "slots_needed": 8,
+                    "max_length": 594,
+                },
+                "64-QAM": {
+                    "slots_needed": 6,
+                    "max_length": 229,
+                },
+            },
         }
 
         self.num_iteration = num_iteration
