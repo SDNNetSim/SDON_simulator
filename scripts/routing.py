@@ -81,8 +81,6 @@ class Routing:
 
         return False
 
-    # TODO: Start with modulation method with shortest length and see if it can fit
-    # TODO: Choose modulation format based on length (ranked by highest modulation format)
     def shortest_path(self):
         """
         Given a graph with a desired source and destination, find the shortest path with respect to link lengths.
@@ -107,5 +105,5 @@ class Routing:
                 mod_format = 'QPSK'
             else:
                 # TODO: Should we look for other paths or block? Block for now.
-                return False
+                return False, False
             return path, mod_format
