@@ -12,65 +12,27 @@ from scripts.engine import Engine
 # TODO: Also considering reachability
 # TODO: Consider guard band variable
 
+# TODO: Update docs
+# TODO: Update tests
+# TODO: GitHub pipelines
+
 
 class RunSim:
     """
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=4.5, number_of_request=5000, num_iteration=5,
-                 num_core_slots=128):
+    def __init__(self, hold_time_mean=3600, inter_arrival_time=17.14285714285714, number_of_request=5000,
+                 num_iteration=5, num_core_slots=128, num_cores=1):
         self.seed = list()
         self.constant_hold = True
-        self.hold_time_mean = hold_time_mean
-        self.inter_arrival_time = inter_arrival_time
         self.number_of_request = number_of_request
+        self.num_cores = num_cores
+        self.hold_time_mean = hold_time_mean * self.num_cores
+        self.inter_arrival_time = inter_arrival_time / self.num_cores
 
-        # TODO: Eventually move to a file to be read
-        self.bw_type = {
-            "50": {
-                "QPSK": {
-                    "slots_needed": 2,
-                    "max_length": 11080,
-                },
-                "16-QAM": {
-                    "slots_needed": 1,
-                    "max_length": 4750,
-                },
-                "64-QAM": {
-                    "slots_needed": 1,
-                    "max_length": 1832,
-                },
-            },
-            "100": {
-                "QPSK": {
-                    "slots_needed": 4,
-                    "max_length": 5540,
-                },
-                "16-QAM": {
-                    "slots_needed": 2,
-                    "max_length": 2375,
-                },
-                "64-QAM": {
-                    "slots_needed": 2,
-                    "max_length": 916,
-                },
-            },
-            "400": {
-                "QPSK": {
-                    "slots_needed": 16,
-                    "max_length": 1385,
-                },
-                "16-QAM": {
-                    "slots_needed": 8,
-                    "max_length": 594,
-                },
-                "64-QAM": {
-                    "slots_needed": 6,
-                    "max_length": 229,
-                },
-            },
-        }
+        with open('./data/input/bandwidth_info.json', 'r') as fp:
+            self.bw_types = json.load(fp)
 
         self.num_iteration = num_iteration
         self.num_core_slots = num_core_slots
@@ -110,7 +72,7 @@ class RunSim:
         tmp_dict['nonlinearity'] = 1.3 * (math.e ** -3)
         tmp_dict['dispersion'] = (16 * math.e ** -6) * ((1550 * math.e ** -9) ** 2) / (
                 2 * math.pi * 3 * math.e ** 8)
-        tmp_dict['num_cores'] = 1
+        tmp_dict['num_cores'] = self.num_cores
         tmp_dict['fiber_type'] = 0
 
         for nodes, link_len in self.data.items():
@@ -135,8 +97,8 @@ class RunSim:
             'holding_time_mean': self.hold_time_mean,
             'inter_arrival_time': self.inter_arrival_time,
             'number_of_request': self.number_of_request,
-            'BW_type': self.bw_type,
-            'NO_iteration': self.num_iteration,
+            'bandwidth_types': self.bw_types,
+            'num_iters': self.num_iteration,
             'number_of_slot_per_core': self.num_core_slots,
             'physical_topology': self.physical_topology
         }
@@ -166,9 +128,7 @@ class RunSim:
         for erlang, obj in self.hold_inter_dict.items():
             if not self.constant_hold:
                 self.hold_time_mean = obj['holding_time_mean']
-            # self.inter_arrival_time = obj['inter_arrival_time']
-            # TODO: Eventually change this
-            self.inter_arrival_time = 17.14285714285714
+            self.inter_arrival_time = obj['inter_arrival_time']
             self.create_input()
 
             if self.save:

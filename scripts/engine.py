@@ -102,7 +102,7 @@ class Engine:
                                   request_type="Arrival",
                                   physical_topology=self.physical_topology,
                                   network_spec_db=self.network_spec_db,
-                                  num_slots=self.sorted_requests[time]['number_of_slot'],
+                                  mod_formats=self.sorted_requests[time]['mod_formats'],
                                   path=list()
                                   )
 
@@ -110,7 +110,8 @@ class Engine:
             self.blocking_iter += 1
         else:
             self.requests_status.update({self.sorted_requests[time]['id']: {
-                "slots": rsa_res[0]['starting_NO_reserved_slot'],
+                "mod_format": rsa_res[0]['mod_format'],
+                "slots": rsa_res[0]['start_res_slot'],
                 "path": rsa_res[0]['path']
             }})
             self.network_spec_db = rsa_res[1]
@@ -130,7 +131,8 @@ class Engine:
                             request_type="Release",
                             physical_topology=self.physical_topology,
                             network_spec_db=self.network_spec_db,
-                            num_slots=self.sorted_requests[time]['number_of_slot'],
+                            mod_formats=self.sorted_requests[time]['mod_formats'],
+                            chosen_mod=self.requests_status[self.sorted_requests[time]['id']]['mod_format'],
                             slot_num=self.requests_status[self.sorted_requests[time]['id']]['slots'],
                             path=self.requests_status[self.sorted_requests[time]['id']]['path'],
                             )
@@ -178,7 +180,7 @@ class Engine:
         if self.sim_input_fp is not None:
             self.load_input()
 
-        for i in range(self.sim_input['NO_iteration']):
+        for i in range(self.sim_input['num_iters']):
             if i == 0:
                 print(f"Simulation started for Erlang: {self.erlang}.")
 
@@ -196,10 +198,8 @@ class Engine:
                                      holding_time_mean=self.sim_input['holding_time_mean'],
                                      inter_arrival_time_mean=self.sim_input['inter_arrival_time'],
                                      req_no=self.sim_input['number_of_request'],
-                                     slot_dict=self.sim_input['BW_type'])
+                                     slot_dict=self.sim_input['bandwidth_types'])
 
-            # TODO: Time between arrivals looks ok?
-            # TODO: Arrival and departure time differences make sense?
             self.sorted_requests = dict(sorted(self.requests.items()))
 
             for time in self.sorted_requests:
@@ -211,9 +211,8 @@ class Engine:
             self.update_blocking(i)
             self.calc_blocking_stats(i)
 
-            # TODO: Print the mean of the blocking
             if (i + 1) % 10 == 0 or i == 0:
-                print(f'Iteration {i + 1} out of {self.sim_input["NO_iteration"]} completed for Erlang: {self.erlang}')
+                print(f'Iteration {i + 1} out of {self.sim_input["num_iters"]} completed for Erlang: {self.erlang}')
                 block_percent_arr = np.array(list(self.blocking['simulations'].values()))
                 print(f'Mean of blocking: {np.mean(block_percent_arr)}')
                 self.save_sim_results()

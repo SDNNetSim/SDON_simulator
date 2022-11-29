@@ -1,5 +1,7 @@
 import numpy as np
 
+# TODO: Update docs
+
 
 def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
              slot_dict):
@@ -24,18 +26,24 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
     requests = {}
     current = 0
     counter_id = 0
-    num_requests = len(requests)
 
-    # TODO: Split number of requests length by these margins, make sure everything is included!
-    #  (Correct number of requests)
-    # Determines the ratio of requests allocated to each bandwidth
-    bw_req_nums = {
-        "10": {"max": num_requests / 3, "current": 0},
-        "50": {"max": num_requests / 5, "current": 0},
-        "400": {"max": num_requests / 2, "current": 0},
-    }
+    # TODO: What to do when these don't evenly distribute?
+    # We want to create requests in a 3:5:2 fashion
+    bw_ratio_one = 3
+    bw_ratio_two = 5
+    bw_ratio_three = 2
+    req_per_ratio = req_no / (bw_ratio_one + bw_ratio_two + bw_ratio_three)
 
-    while num_requests < (req_no * 2):
+    # Number of requests allocated for each bandwidth
+    bw_one_req = bw_ratio_one * req_per_ratio
+    bw_two_req = bw_ratio_two * req_per_ratio
+    bw_three_req = bw_ratio_three * req_per_ratio
+
+    # Monitor the number of requests allocated for each bandwidth
+    bands_dict = {'50': bw_one_req, '100': bw_two_req, '400': bw_three_req}
+    # List of all possible bandwidths
+    bands_list = list(slot_dict.keys())
+    while len(requests) < (req_no * 2):
         current = current + np.random.exponential(inter_arrival_time_mean)
         new_hold = current + np.random.exponential(holding_time_mean)
 
@@ -45,10 +53,13 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
         while src == des:
             des = nodes[np.random.randint(0, len(nodes))]
 
-        # TODO: Here
-        bands_list = list(slot_dict.keys())
-        chosen_band = bands_list[np.random.randint(0, len(bands_list))]  # pylint: disable=invalid-sequence-index
-        slot_num = slot_dict[chosen_band]['DP-QPSK']
+        while True:
+            chosen_band = bands_list[np.random.randint(0, len(bands_list))]  # pylint: disable=invalid-sequence-index
+            if bands_dict[chosen_band] != 0:
+                bands_dict[chosen_band] -= 1
+                break
+            else:
+                continue
 
         if current not in requests and new_hold not in requests:
             requests.update({current: {
@@ -58,7 +69,8 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
                 "arrive": current,
                 "depart": new_hold,
                 "request_type": "Arrival",
-                "number_of_slot": slot_num,
+                "bandwidth": chosen_band,
+                "mod_formats": slot_dict[chosen_band],
                 "start_slot_NO": None,
                 "working_path": None,
                 "protection_path": None
@@ -71,7 +83,8 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
                 "arrive": current,
                 "depart": new_hold,
                 "request_type": "Release",
-                "number_of_slot": slot_num,
+                "bandwidth": chosen_band,
+                "mod_formats": slot_dict[chosen_band],
                 "start_slot_NO": None,
                 "working_path": None,
                 "protection_path": None
@@ -79,7 +92,6 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
             }})
             counter_id += 1
         else:
-            continue
-            # raise NotImplementedError('This line of code should not be reached.')
+            raise NotImplementedError('This line of code should not be reached.')
 
     return requests

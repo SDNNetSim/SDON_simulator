@@ -35,8 +35,8 @@ def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, 
     return network_spec_db
 
 
-def controller_main(src, dest, request_type, physical_topology, network_spec_db, num_slots,
-                    slot_num=None, path=None):
+def controller_main(src, dest, request_type, physical_topology, network_spec_db, mod_formats,
+                    slot_num=None, path=None, chosen_mod=None):
     """
     Either releases spectrum from the database, assigns a spectrum, or returns False otherwise.
 
@@ -61,31 +61,31 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
         network_spec_db = handle_arrive_rel(network_spec_db=network_spec_db,
                                             path=path,
                                             start_slot=slot_num,
-                                            num_slots=num_slots,
+                                            num_slots=mod_formats[chosen_mod]['slots_needed'],
                                             req_type='Release'
                                             )
         return network_spec_db, physical_topology
 
     routing_obj = Routing(source=src, destination=dest, physical_topology=physical_topology,
-                          network_spec_db=network_spec_db)
-    # selected_path = routing_obj.least_congested_path()
-    selected_path = routing_obj.shortest_path()
+                          network_spec_db=network_spec_db, mod_formats=mod_formats)
+    selected_path, path_mod = routing_obj.shortest_path()
 
     if selected_path is not False:
-        spectrum_assignment = SpectrumAssignment(selected_path, num_slots, network_spec_db)
+        spectrum_assignment = SpectrumAssignment(selected_path, mod_formats[path_mod]['slots_needed'], network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
 
         if selected_sp is not False:
             ras_output = {
                 'path': selected_path,
+                'mod_format': path_mod,
                 'core_num': selected_sp['core_num'],
-                'starting_NO_reserved_slot': selected_sp['start_slot'],
-                'ending_NO_reserved_slot': selected_sp['end_slot'],
+                'start_res_slot': selected_sp['start_slot'],
+                'end_res_slot': selected_sp['end_slot'],
             }
             network_spec_db = handle_arrive_rel(network_spec_db=network_spec_db,
                                                 path=selected_path,
                                                 start_slot=selected_sp['start_slot'],
-                                                num_slots=num_slots,
+                                                num_slots=mod_formats[path_mod]['slots_needed'],
                                                 req_type='Arrival'
                                                 )
             return ras_output, network_spec_db, physical_topology

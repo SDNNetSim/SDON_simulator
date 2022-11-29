@@ -2,15 +2,13 @@ import networkx as nx
 import numpy as np
 
 
-# TODO: Write a method to only consider the shortest available path
-
-
 class Routing:
     """
     Contains the routing methods for the simulation.
     """
 
-    def __init__(self, source, destination, physical_topology, network_spec_db, slots_needed=None):
+    def __init__(self, source, destination, physical_topology, network_spec_db, mod_formats,
+                 slots_needed=None):
         self.path = None
 
         self.source = source
@@ -18,6 +16,8 @@ class Routing:
         self.physical_topology = physical_topology
         self.network_spec_db = network_spec_db
         self.slots_needed = slots_needed
+
+        self.mod_formats = mod_formats
 
         self.paths_list = list()
 
@@ -81,8 +81,8 @@ class Routing:
 
         return False
 
-    # TODO: Write a test for this method
     # TODO: Start with modulation method with shortest length and see if it can fit
+    # TODO: Choose modulation format based on length (ranked by highest modulation format)
     def shortest_path(self):
         """
         Given a graph with a desired source and destination, find the shortest path with respect to link lengths.
@@ -92,5 +92,20 @@ class Routing:
         """
         paths_obj = nx.shortest_simple_paths(G=self.physical_topology, source=self.source, target=self.destination,
                                              weight='length')
+        path_len = 0
         for path in paths_obj:
-            return path
+            for i in range(0, len(path) - 1):
+                path_len += self.physical_topology[path[i]][path[i + 1]]['length']
+
+            # TODO: Can they be equal?
+            # It's important to check modulation formats in this order
+            if self.mod_formats['64-QAM']['max_length'] > path_len:
+                mod_format = '64-QAM'
+            elif self.mod_formats['16-QAM']['max_length'] > path_len:
+                mod_format = '16-QAM'
+            elif self.mod_formats['QPSK']['max_length'] > path_len:
+                mod_format = 'QPSK'
+            else:
+                # TODO: Should we look for other paths or block? Block for now.
+                return False
+            return path, mod_format

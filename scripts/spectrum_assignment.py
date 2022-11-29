@@ -6,7 +6,7 @@ class SpectrumAssignment:
     Finds spectrum slots for a given request.
     """
 
-    def __init__(self, path, slots_needed=None, network_spec_db=None):
+    def __init__(self, path, slots_needed=None, network_spec_db=None, guard_band=1):
         """
         The constructor.
 
@@ -21,6 +21,7 @@ class SpectrumAssignment:
         self.path = path
 
         self.slots_needed = slots_needed
+        self.guard_band = guard_band
         self.network_spec_db = network_spec_db
         self.cores_matrix = None
         self.rev_cores_matrix = None
@@ -73,17 +74,29 @@ class SpectrumAssignment:
 
             # Look for a super spectrum in the current core
             while end_slot < self.num_slots:
-                spec_set = set(core_arr[start_slot:end_slot])
-                rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot])
+                # Ensure guard band is NOT considered at the end of the array
+                if end_slot == self.num_slots - 1:
+                    spec_set = set(core_arr[start_slot:end_slot])
+                    rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot])
+                else:
+                    spec_set = set(core_arr[start_slot:end_slot + self.guard_band])
+                    rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot + self.guard_band])
 
                 # Spectrum is free
                 if (spec_set, rev_spec_set) == ({0}, {0}):
                     if len(self.path) > 2:
-                        self.check_other_links(core_num, start_slot, end_slot)
+                        if end_slot == self.num_slots - 1:
+                            self.check_other_links(core_num, start_slot, end_slot)
+                        else:
+                            self.check_other_links(core_num, start_slot, end_slot + self.guard_band)
 
                     # Other links spectrum slots are also available
                     if self.is_free is not False or len(self.path) <= 2:
-                        self.response = {'core_num': core_num, 'start_slot': start_slot, 'end_slot': end_slot}
+                        if end_slot == self.num_slots - 1:
+                            self.response = {'core_num': core_num, 'start_slot': start_slot, 'end_slot': end_slot}
+                        else:
+                            self.response = {'core_num': core_num, 'start_slot': start_slot,
+                                             'end_slot': end_slot + self.guard_band}
                         return
 
                 # No more open slots
