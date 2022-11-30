@@ -28,7 +28,7 @@ class RunSim:
         self.constant_hold = True
         self.number_of_request = number_of_request
         self.num_cores = num_cores
-        self.hold_time_mean = hold_time_mean * self.num_cores
+        self.hold_time_mean = hold_time_mean
         self.inter_arrival_time = inter_arrival_time / self.num_cores
 
         with open('./data/input/bandwidth_info.json', 'r') as fp:
@@ -128,7 +128,7 @@ class RunSim:
         for erlang, obj in self.hold_inter_dict.items():
             if not self.constant_hold:
                 self.hold_time_mean = obj['holding_time_mean']
-            self.inter_arrival_time = obj['inter_arrival_time']
+                self.inter_arrival_time = obj['inter_arrival_time']
             self.create_input()
 
             if self.save:

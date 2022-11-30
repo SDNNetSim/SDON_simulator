@@ -3,8 +3,8 @@ import configparser
 import pandas as pd
 import numpy as np
 
-PAIRINGS_FILE_PATH = 'data/raw/europe_network.xlsx'
-LINK_LEN_FILE_PATH = 'data/raw/europe_network_distance.txt'
+PAIRINGS_FILE_PATH = 'data/raw/us_network.xlsx'
+LINK_LEN_FILE_PATH = 'data/raw/us_network.txt'
 
 
 def map_erlang_times(network='europe'):

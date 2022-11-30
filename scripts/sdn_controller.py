@@ -70,7 +70,7 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
                           network_spec_db=network_spec_db, mod_formats=mod_formats)
     selected_path, path_mod = routing_obj.shortest_path()
 
-    if selected_path is not False:
+    if selected_path is not False and path_mod is not False:
         spectrum_assignment = SpectrumAssignment(selected_path, mod_formats[path_mod]['slots_needed'], network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
 

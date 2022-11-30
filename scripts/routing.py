@@ -90,20 +90,22 @@ class Routing:
         """
         paths_obj = nx.shortest_simple_paths(G=self.physical_topology, source=self.source, target=self.destination,
                                              weight='length')
-        path_len = 0
         for path in paths_obj:
-            for i in range(0, len(path) - 1):
-                path_len += self.physical_topology[path[i]][path[i + 1]]['length']
-
-            # TODO: Can they be equal?
-            # It's important to check modulation formats in this order
-            if self.mod_formats['64-QAM']['max_length'] > path_len:
-                mod_format = '64-QAM'
-            elif self.mod_formats['16-QAM']['max_length'] > path_len:
-                mod_format = '16-QAM'
-            elif self.mod_formats['QPSK']['max_length'] > path_len:
-                mod_format = 'QPSK'
-            else:
-                # TODO: Should we look for other paths or block? Block for now.
-                return False, False
+            mod_format = self.check_mod_formats(path)
             return path, mod_format
+
+    def check_mod_formats(self, path):
+        path_len = 0
+        for i in range(0, len(path) - 1):
+            path_len += self.physical_topology[path[i]][path[i + 1]]['length']
+
+        # It's important to check modulation formats in this order
+        if self.mod_formats['64-QAM']['max_length'] >= path_len:
+            mod_format = '64-QAM'
+        elif self.mod_formats['16-QAM']['max_length'] >= path_len:
+            mod_format = '16-QAM'
+        elif self.mod_formats['QPSK']['max_length'] >= path_len:
+            mod_format = 'QPSK'
+        else:
+            return False
+        return mod_format
