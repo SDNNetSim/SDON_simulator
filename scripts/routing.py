@@ -90,6 +90,9 @@ class Routing:
         """
         paths_obj = nx.shortest_simple_paths(G=self.physical_topology, source=self.source, target=self.destination,
                                              weight='length')
+
+        # TODO: Spectral computation
+        # TODO: Update number of slots occupied based on spectral computation
         for path in paths_obj:
             mod_format = self.check_mod_formats(path)
             return path, mod_format

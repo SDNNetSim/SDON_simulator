@@ -8,9 +8,6 @@ from scripts.engine import Engine
 
 
 # TODO: Try one, four, and seven cores
-# TODO: Change request generation to match Yue's ratios
-# TODO: Also considering reachability
-# TODO: Consider guard band variable
 
 # TODO: Update docs
 # TODO: Update tests
@@ -22,14 +19,16 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, hold_time_mean=3600, inter_arrival_time=17.14285714285714, number_of_request=5000,
+    # TODO: Increase lambda like Yue, constant Mu, calculate Erlang and save like that
+    def __init__(self, hold_time_mean=0.2, inter_arrival_time=2, number_of_request=30000,
                  num_iteration=5, num_core_slots=128, num_cores=1):
         self.seed = list()
         self.constant_hold = True
         self.number_of_request = number_of_request
         self.num_cores = num_cores
         self.hold_time_mean = hold_time_mean
-        self.inter_arrival_time = inter_arrival_time / self.num_cores
+        # TODO: Change
+        self.inter_arrival_time = inter_arrival_time
 
         with open('./data/input/bandwidth_info.json', 'r') as fp:
             self.bw_types = json.load(fp)
@@ -126,6 +125,7 @@ class RunSim:
         erlang_list = list(self.hold_inter_dict.keys())
 
         for erlang, obj in self.hold_inter_dict.items():
+            # TODO: Fix file name for constant hold
             if not self.constant_hold:
                 self.hold_time_mean = obj['holding_time_mean']
                 self.inter_arrival_time = obj['inter_arrival_time']
@@ -134,10 +134,10 @@ class RunSim:
             if self.save:
                 self.save_input()
 
-            if erlang == '800':
-                if erlang in erlang_list[start_erlang:end_erlang] or start_erlang is None:
-                    engine = Engine(self.sim_input, erlang=erlang)
-                    engine.run()
+            if erlang in erlang_list[start_erlang:end_erlang] or start_erlang is None:
+                engine = Engine(self.sim_input, erlang=erlang)
+                engine.run()
+            return
 
 
 if __name__ == '__main__':

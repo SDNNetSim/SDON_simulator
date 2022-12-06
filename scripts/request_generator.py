@@ -1,6 +1,18 @@
 import numpy as np
 
-# TODO: Update docs
+
+def universal_rv():
+    resp = np.random.randint(0, 2147483647) / 2147483647
+    return resp
+
+
+def uniform_rv(num_nodes):
+    return int(universal_rv() * num_nodes)
+
+
+def exponential_rv(lam):
+    exp = ((-1) / lam) * np.log(universal_rv())
+    return exp
 
 
 def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
@@ -44,17 +56,26 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
     # List of all possible bandwidths
     bands_list = list(slot_dict.keys())
     while len(requests) < (req_no * 2):
-        current = current + np.random.exponential(inter_arrival_time_mean)
-        new_hold = current + np.random.exponential(holding_time_mean)
+        current = current + np.random.exponential(1 / inter_arrival_time_mean)
+        new_hold = current + np.random.exponential(1 / holding_time_mean)
+        # current = current + exponential_rv(lam=inter_arrival_time_mean)
+        # new_hold = current + exponential_rv(lam=holding_time_mean)
 
-        src = nodes[np.random.randint(0, len(nodes))]
-        des = nodes[np.random.randint(0, len(nodes))]
+        # TODO: Change?
+        # src = nodes[np.random.randint(0, len(nodes))]
+        # des = nodes[np.random.randint(0, len(nodes))]
+        src = uniform_rv(len(nodes) - 1)
+        des = uniform_rv(len(nodes) - 1)
 
         while src == des:
-            des = nodes[np.random.randint(0, len(nodes))]
+            # des = nodes[np.random.randint(0, len(nodes))]
+            des = uniform_rv(len(nodes) - 1)
 
         while True:
-            chosen_band = bands_list[np.random.randint(0, len(bands_list))]  # pylint: disable=invalid-sequence-index
+            # TODO: He sets a datasize for each (derives occupied slots based on this)
+            # TODO: Spectral computation
+            # chosen_band = bands_list[np.random.randint(0, len(bands_list))]  # pylint: disable=invalid-sequence-index
+            chosen_band = bands_list[uniform_rv(len(nodes))]  # pylint: disable=invalid-sequence-index
             if bands_dict[chosen_band] != 0:
                 bands_dict[chosen_band] -= 1
                 break
@@ -92,6 +113,6 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, req_no,
             }})
             counter_id += 1
         else:
-            raise NotImplementedError('This line of code should not be reached.')
+            continue
 
     return requests

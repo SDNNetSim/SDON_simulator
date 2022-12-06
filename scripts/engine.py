@@ -77,7 +77,9 @@ class Engine:
             print(f'Confidence interval of {round(self.ci_percent, 2)}% reached on simulation {simulation_number + 1}, '
                   f'ending and saving results for Erlang: {self.erlang}')
             self.save_sim_results()
-            sys.exit(0)
+            return True
+        else:
+            return False
 
     def update_blocking(self, i):
         """
@@ -209,7 +211,8 @@ class Engine:
                     self.handle_release(time)
 
             self.update_blocking(i)
-            self.calc_blocking_stats(i)
+            if self.calc_blocking_stats(i):
+                return
 
             if (i + 1) % 10 == 0 or i == 0:
                 print(f'Iteration {i + 1} out of {self.sim_input["num_iters"]} completed for Erlang: {self.erlang}')
