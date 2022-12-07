@@ -105,7 +105,7 @@ class Engine:
                                   physical_topology=self.physical_topology,
                                   network_spec_db=self.network_spec_db,
                                   mod_formats=self.sorted_requests[time]['mod_formats'],
-                                  bandwidth=self.sorted_requests[time]['chosen_bw'],
+                                  chosen_bw=self.sorted_requests[time]['bandwidth'],
                                   path=list()
                                   )
 
@@ -205,6 +205,7 @@ class Engine:
                                      num_requests=self.sim_input['number_of_request'],
                                      slot_dict=self.sim_input['bandwidth_types'])
 
+            # TODO: Check if all the nodes are getting utilized correctly
             self.sorted_requests = dict(sorted(self.requests.items()))
 
             for time in self.sorted_requests:

@@ -10,7 +10,7 @@ class Blocking:
     """
 
     def __init__(self):
-        self.file_path = '../data/output/'
+        self.file_path = '../data/output'
         self.files = self.get_file_names()
         self.erlang_arr = np.array([])
         self.blocking_arr = np.array([])
@@ -19,20 +19,21 @@ class Blocking:
         """
         Obtains all the filenames of the output data for each Erlang.
         """
-        return sorted([f for f in os.listdir(self.file_path) if os.path.isfile(os.path.join(self.file_path, f))])
+        return sorted([float(f.split('_')[0]) for f in os.listdir(self.file_path)
+                       if os.path.isfile(os.path.join(self.file_path, f))])
 
     def plot_blocking_means(self):
         """
         Plots blocking means vs. Erlang values.
         """
-        for file_name in self.files:
-            with open(self.file_path + file_name, 'r', encoding='utf-8') as curr_f:
+        for erlang in self.files:
+            with open(f'{self.file_path}/{erlang}_erlang.json', 'r', encoding='utf-8') as curr_f:
                 curr_dict = json.load(curr_f)
 
-            erlang = float(file_name.split('_')[0])
             blocking_mean = curr_dict['stats']['mean']
             if blocking_mean is None:
-                blocking_mean = 0
+                # blocking_mean = 0
+                continue
             else:
                 blocking_mean = float(blocking_mean)
 
@@ -47,6 +48,7 @@ class Blocking:
         Saves and shows the plot.
         """
         # TODO: Update to save
+        plt.yscale('log')
         plt.plot(self.erlang_arr, self.blocking_arr)
         plt.show()
 

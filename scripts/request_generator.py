@@ -48,12 +48,12 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, num_req
         depart_time = math.ceil(current_time + exponential_rv(holding_time_mean))
 
         # We never want our node to equal the length, we start from index 0 in a list! (Node numbers are all minus 1)
-        src = uniform_rv(len(nodes))
-        des = uniform_rv(len(nodes))
+        src = nodes[uniform_rv(len(nodes))]
+        des = nodes[uniform_rv(len(nodes))]
 
         while src == des:
             # des = nodes[np.random.randint(0, len(nodes))]
-            des = uniform_rv(len(nodes))
+            des = nodes[uniform_rv(len(nodes))]
 
         while True:
             # TODO: He sets a datasize for each (derives occupied slots based on this)

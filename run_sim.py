@@ -24,10 +24,11 @@ class RunSim:
     def __init__(self, hold_time_mean=0.2, inter_arrival_time=2, number_of_request=30000,
                  num_iteration=5, num_core_slots=128, num_cores=1, bw_slot=12.5):
         self.seed = list()
-        self.constant_hold = True
+        self.constant_hold = False
         self.number_of_request = number_of_request
         self.num_cores = num_cores
         self.hold_time_mean = hold_time_mean
+        # TODO: Normalize this value?
         self.inter_arrival_time = inter_arrival_time
         # Frequency for one spectrum slot (GHz)
         self.bw_slot = bw_slot
@@ -125,9 +126,9 @@ class RunSim:
         """
         Executes the run method using threads.
         """
-        t1 = threading.Thread(target=self.run, args=(0, 8))
-        t2 = threading.Thread(target=self.run, args=(8, 16))
-        t3 = threading.Thread(target=self.run, args=(16, 24))
+        t1 = threading.Thread(target=self.run, args=(2, 48))
+        t2 = threading.Thread(target=self.run, args=(48, 96))
+        t3 = threading.Thread(target=self.run, args=(96, 144))
 
         t1.start()
         t2.start()
@@ -137,30 +138,22 @@ class RunSim:
         t2.join()
         t3.join()
 
-    def run(self, start_erlang=None, end_erlang=None):
+    def run(self, lambda_start, lambda_end):
         """
         Controls the class.
         """
-        erlang_list = list(self.hold_inter_dict.keys())
+        if not self.constant_hold:
+            for curr_lam in range(lambda_start, lambda_end, 2):
+                self.create_input()
 
-        for erlang, obj in self.hold_inter_dict.items():
-            # TODO: Fix file name for constant hold
-            # if not self.constant_hold:
-            #     self.hold_time_mean = obj['holding_time_mean']
-            #     self.inter_arrival_time = obj['inter_arrival_time']
+                if self.save:
+                    self.save_input()
 
-            self.create_input()
-
-            if self.save:
-                self.save_input()
-
-            if erlang in erlang_list[start_erlang:end_erlang] or start_erlang is None:
-                engine = Engine(self.sim_input, erlang=erlang)
+                engine = Engine(self.sim_input, erlang=curr_lam / self.hold_time_mean)
                 engine.run()
-            return
+        return
 
 
 if __name__ == '__main__':
     test_obj = RunSim()
-    # test_obj.thread_runs()
-    test_obj.run()
+    test_obj.thread_runs()

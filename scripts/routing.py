@@ -91,6 +91,8 @@ class Routing:
         :return: The shortest path
         :rtype: list
         """
+        if self.source == 10:
+            print('Begin debug')
         paths_obj = nx.shortest_simple_paths(G=self.physical_topology, source=self.source, target=self.destination,
                                              weight='length')
 
