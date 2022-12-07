@@ -9,6 +9,5 @@ docs/_build/*
 misc/
 
 # Data files
-data/input/*
 data/output/*
 scripts/__pycache__

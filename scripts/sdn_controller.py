@@ -36,27 +36,7 @@ def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, 
 
 
 def controller_main(src, dest, request_type, physical_topology, network_spec_db, mod_formats,
-                    slot_num=None, path=None, chosen_mod=None):
-    """
-    Either releases spectrum from the database, assigns a spectrum, or returns False otherwise.
-
-    :param src: The source node
-    :type src: str
-    :param dest: The destination node
-    :type dest: str
-    :param request_type: The request type e.g. Release
-    :type request_type: str
-    :param physical_topology: Holds all the physical topology variables
-    :type physical_topology: dict
-    :param network_spec_db: Holds the network spectrum information
-    :type network_spec_db: dict
-    :param num_slots: The number of spectrum slots needed to release or request
-    :type num_slots: int
-    :param slot_num: The starting slot number desired
-    :type slot_num: int
-    :param path: The shortest path found
-    :type path: list
-    """
+                    slot_num=None, path=None, chosen_mod=None, chosen_bw=None):
     if request_type == "Release":
         network_spec_db = handle_arrive_rel(network_spec_db=network_spec_db,
                                             path=path,
@@ -67,10 +47,12 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
         return network_spec_db, physical_topology
 
     routing_obj = Routing(source=src, destination=dest, physical_topology=physical_topology,
-                          network_spec_db=network_spec_db, mod_formats=mod_formats)
-    selected_path, path_mod = routing_obj.shortest_path()
+                          network_spec_db=network_spec_db, mod_formats=mod_formats, bw=chosen_bw)
+    # TODO: Update slots needed
+    selected_path, path_mod, slots_needed = routing_obj.shortest_path()
+    mod_formats[path_mod]['slots_needed'] = slots_needed
 
-    if selected_path is not False and path_mod is not False:
+    if selected_path is not False and path_mod is not False and slots_needed is not False:
         spectrum_assignment = SpectrumAssignment(selected_path, mod_formats[path_mod]['slots_needed'], network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
 

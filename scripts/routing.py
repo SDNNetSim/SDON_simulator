@@ -1,3 +1,5 @@
+import math
+
 import networkx as nx
 import numpy as np
 
@@ -8,7 +10,7 @@ class Routing:
     """
 
     def __init__(self, source, destination, physical_topology, network_spec_db, mod_formats,
-                 slots_needed=None):
+                 slots_needed=None, bw=None):
         self.path = None
 
         self.source = source
@@ -16,6 +18,7 @@ class Routing:
         self.physical_topology = physical_topology
         self.network_spec_db = network_spec_db
         self.slots_needed = slots_needed
+        self.bw = bw
 
         self.mod_formats = mod_formats
 
@@ -91,24 +94,31 @@ class Routing:
         paths_obj = nx.shortest_simple_paths(G=self.physical_topology, source=self.source, target=self.destination,
                                              weight='length')
 
-        # TODO: Spectral computation
         # TODO: Update number of slots occupied based on spectral computation
         for path in paths_obj:
-            mod_format = self.check_mod_formats(path)
-            return path, mod_format
+            mod_format, slots_needed = self.assign_mod_format(path)
+            return path, mod_format, slots_needed
 
-    def check_mod_formats(self, path):
+    def spectral_slot_comp(self, bits_per_symbol):
+        # TODO: Change hard coded value here (make more neat)
+        return math.ceil(float(self.bw) / float(bits_per_symbol) / 12.5)
+
+    def assign_mod_format(self, path):
         path_len = 0
         for i in range(0, len(path) - 1):
             path_len += self.physical_topology[path[i]][path[i + 1]]['length']
 
         # It's important to check modulation formats in this order
+        # TODO: Greater than or greater than or equal to?
         if self.mod_formats['64-QAM']['max_length'] >= path_len:
             mod_format = '64-QAM'
         elif self.mod_formats['16-QAM']['max_length'] >= path_len:
             mod_format = '16-QAM'
         elif self.mod_formats['QPSK']['max_length'] >= path_len:
             mod_format = 'QPSK'
+        # Failure to assign modulation format
         else:
-            return False
-        return mod_format
+            return False, False
+
+        slots_needed = self.spectral_slot_comp(self.mod_formats[mod_format]['slots_needed'])
+        return mod_format, slots_needed

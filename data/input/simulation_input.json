@@ -1,0 +1,646 @@
+{
+    "seed": [],
+    "holding_time_mean": 0.2,
+    "inter_arrival_time": 2,
+    "number_of_request": 30000,
+    "bandwidth_types": {
+        "50": {
+            "QPSK": {
+                "slots_needed": 2,
+                "max_length": 11080
+            },
+            "16-QAM": {
+                "slots_needed": 1,
+                "max_length": 4750
+            },
+            "64-QAM": {
+                "slots_needed": 1,
+                "max_length": 1832
+            }
+        },
+        "100": {
+            "QPSK": {
+                "slots_needed": 4,
+                "max_length": 5540
+            },
+            "16-QAM": {
+                "slots_needed": 2,
+                "max_length": 2375
+            },
+            "64-QAM": {
+                "slots_needed": 2,
+                "max_length": 916
+            }
+        },
+        "400": {
+            "QPSK": {
+                "slots_needed": 16,
+                "max_length": 1385
+            },
+            "16-QAM": {
+                "slots_needed": 8,
+                "max_length": 594
+            },
+            "64-QAM": {
+                "slots_needed": 6,
+                "max_length": 229
+            }
+        }
+    },
+    "num_iters": 5,
+    "number_of_slot_per_core": 128,
+    "physical_topology": {
+        "nodes": {
+            "Seattle": {
+                "type": "CDC"
+            },
+            "Portland": {
+                "type": "CDC"
+            },
+            "Helena": {
+                "type": "CDC"
+            },
+            "Palo Alto": {
+                "type": "CDC"
+            },
+            "Las Vegas": {
+                "type": "CDC"
+            },
+            "San Diego": {
+                "type": "CDC"
+            },
+            "Salt Lake City": {
+                "type": "CDC"
+            },
+            "Tuscon": {
+                "type": "CDC"
+            },
+            "Boulder": {
+                "type": "CDC"
+            },
+            "Chicago": {
+                "type": "CDC"
+            },
+            "El Paso": {
+                "type": "CDC"
+            },
+            "Lincoln": {
+                "type": "CDC"
+            },
+            "Dallas": {
+                "type": "CDC"
+            },
+            "San Antonio": {
+                "type": "CDC"
+            },
+            "Columbus": {
+                "type": "CDC"
+            },
+            "Ithaca": {
+                "type": "CDC"
+            },
+            "Frankfort": {
+                "type": "CDC"
+            },
+            "Birmingham": {
+                "type": "CDC"
+            },
+            "Mobile": {
+                "type": "CDC"
+            },
+            "Princeton": {
+                "type": "CDC"
+            },
+            "Washington": {
+                "type": "CDC"
+            },
+            "Knoxville": {
+                "type": "CDC"
+            },
+            "Raleigh": {
+                "type": "CDC"
+            },
+            "Jacksonville": {
+                "type": "CDC"
+            }
+        },
+        "links": {
+            "1": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 800,
+                "source": "Seattle",
+                "destination": "Portland"
+            },
+            "2": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1000,
+                "source": "Seattle",
+                "destination": "Helena"
+            },
+            "3": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1100,
+                "source": "Portland",
+                "destination": "Palo Alto"
+            },
+            "4": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 950,
+                "source": "Portland",
+                "destination": "Helena"
+            },
+            "5": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 250,
+                "source": "Palo Alto",
+                "destination": "Las Vegas"
+            },
+            "6": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 800,
+                "source": "Palo Alto",
+                "destination": "San Diego"
+            },
+            "7": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1000,
+                "source": "Palo Alto",
+                "destination": "Salt Lake City"
+            },
+            "8": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 800,
+                "source": "Las Vegas",
+                "destination": "San Diego"
+            },
+            "9": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 850,
+                "source": "Las Vegas",
+                "destination": "Salt Lake City"
+            },
+            "10": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1200,
+                "source": "San Diego",
+                "destination": "Tuscon"
+            },
+            "11": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1000,
+                "source": "Helena",
+                "destination": "Salt Lake City"
+            },
+            "12": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1200,
+                "source": "Helena",
+                "destination": "Boulder"
+            },
+            "13": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1900,
+                "source": "Helena",
+                "destination": "Chicago"
+            },
+            "14": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 900,
+                "source": "Salt Lake City",
+                "destination": "Tuscon"
+            },
+            "15": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1000,
+                "source": "Salt Lake City",
+                "destination": "Boulder"
+            },
+            "16": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 900,
+                "source": "Tuscon",
+                "destination": "El Paso"
+            },
+            "17": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1000,
+                "source": "Boulder",
+                "destination": "El Paso"
+            },
+            "18": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1400,
+                "source": "Boulder",
+                "destination": "Chicago"
+            },
+            "19": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1000,
+                "source": "Boulder",
+                "destination": "Lincoln"
+            },
+            "20": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 950,
+                "source": "El Paso",
+                "destination": "Dallas"
+            },
+            "21": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 850,
+                "source": "El Paso",
+                "destination": "San Antonio"
+            },
+            "22": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 900,
+                "source": "Chicago",
+                "destination": "Lincoln"
+            },
+            "23": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1300,
+                "source": "Chicago",
+                "destination": "Columbus"
+            },
+            "24": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 2600,
+                "source": "Chicago",
+                "destination": "Ithaca"
+            },
+            "25": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 900,
+                "source": "Lincoln",
+                "destination": "Dallas"
+            },
+            "26": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1000,
+                "source": "Lincoln",
+                "destination": "Frankfort"
+            },
+            "27": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 650,
+                "source": "Dallas",
+                "destination": "San Antonio"
+            },
+            "28": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1100,
+                "source": "Dallas",
+                "destination": "Birmingham"
+            },
+            "29": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1200,
+                "source": "San Antonio",
+                "destination": "Mobile"
+            },
+            "30": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 600,
+                "source": "Columbus",
+                "destination": "Frankfort"
+            },
+            "31": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1300,
+                "source": "Columbus",
+                "destination": "Princeton"
+            },
+            "32": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1000,
+                "source": "Frankfort",
+                "destination": "Birmingham"
+            },
+            "33": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1000,
+                "source": "Frankfort",
+                "destination": "Washington"
+            },
+            "34": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 800,
+                "source": "Frankfort",
+                "destination": "Knoxville"
+            },
+            "35": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 800,
+                "source": "Birmingham",
+                "destination": "Mobile"
+            },
+            "36": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 850,
+                "source": "Birmingham",
+                "destination": "Knoxville"
+            },
+            "37": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1000,
+                "source": "Birmingham",
+                "destination": "Raleigh"
+            },
+            "38": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 900,
+                "source": "Mobile",
+                "destination": "Jacksonville"
+            },
+            "39": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1200,
+                "source": "Ithaca",
+                "destination": "Princeton"
+            },
+            "40": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 700,
+                "source": "Princeton",
+                "destination": "Washington"
+            },
+            "41": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 300,
+                "source": "Washington",
+                "destination": "Knoxville"
+            },
+            "42": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 600,
+                "source": "Knoxville",
+                "destination": "Raleigh"
+            },
+            "43": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "nonlinearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 900,
+                "source": "Raleigh",
+                "destination": "Jacksonville"
+            }
+        }
+    }
+}

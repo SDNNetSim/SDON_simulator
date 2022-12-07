@@ -7,8 +7,6 @@ from scripts.structure_raw_data import structure_data, map_erlang_times
 from scripts.engine import Engine
 
 
-# TODO: Try one, four, and seven cores
-
 # TODO: Update docs
 # TODO: Update tests
 # TODO: GitHub pipelines
@@ -20,15 +18,19 @@ class RunSim:
     """
 
     # TODO: Increase lambda like Yue, constant Mu, calculate Erlang and save like that
+    # TODO: Run and save for multiple cores iteratively
+    # TODO: Output relevant data to a file like Yue?
+    # TODO: Move most of this info to another file, everything here should only be running the simulation.
     def __init__(self, hold_time_mean=0.2, inter_arrival_time=2, number_of_request=30000,
-                 num_iteration=5, num_core_slots=128, num_cores=1):
+                 num_iteration=5, num_core_slots=128, num_cores=1, bw_slot=12.5):
         self.seed = list()
         self.constant_hold = True
         self.number_of_request = number_of_request
         self.num_cores = num_cores
         self.hold_time_mean = hold_time_mean
-        # TODO: Change
         self.inter_arrival_time = inter_arrival_time
+        # Frequency for one spectrum slot (GHz)
+        self.bw_slot = bw_slot
 
         with open('./data/input/bandwidth_info.json', 'r') as fp:
             self.bw_types = json.load(fp)
@@ -45,20 +47,21 @@ class RunSim:
         self.output_file_name = None
         self.save = True
 
-    def save_input(self):
+    def save_input(self, file_name=None, obj=None):
         """
         Saves simulation input data.
         """
-        if self.output_file_name is None:
-            if not os.path.exists('data/input'):
-                os.mkdir('data/input')
-            if not os.path.exists('data/output'):
-                os.mkdir('data/output')
+        if not os.path.exists('data/input'):
+            os.mkdir('data/input')
+        if not os.path.exists('data/output'):
+            os.mkdir('data/output')
 
-            with open('data/input/simulation_input.json', 'w', encoding='utf-8') as file_path:
-                json.dump(self.sim_input, file_path, indent=4)
-        else:
-            raise NotImplementedError
+        # Default to saving simulation input
+        if file_name is None:
+            file_name = 'simulation_input.json'
+            obj = self.sim_input
+        with open(f'data/input/{file_name}', 'w', encoding='utf-8') as file_path:
+            json.dump(obj, file_path, indent=4)
 
     def create_pt(self):
         """
@@ -85,6 +88,22 @@ class RunSim:
             self.link_num += 1
         # Reset link numbers
         self.link_num = 1
+
+    # TODO: Make a config file instead
+    def create_bw_info(self):
+        # Max length is in km
+        # TODO: (Question for Yue) Potentially change to 40 (Is this a bug?)
+        bw_info = [
+            {'50': {'QPSK': {'max_length': 11080}, '16-QAM': {'max_length': 4750}, '64-QAM': {'max_length': 1832}}},
+            {'100': {'QPSK': {'max_length': 5540}, '16-QAM': {'max_length': 2375}, '64-QAM': {'max_length': 916}}},
+            {'400': {'QPSK': {'max_length': 1385}, '16-QAM': {'max_length': 594}, '64-QAM': {'max_length': 229}}},
+        ]
+        for obj in bw_info:
+            for bw, bw_obj in obj.items():
+                for mod_format, mod_obj in bw_obj.items():
+                    bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / self.bw_slot)
+
+        self.save_input('bandwidth_info.json', bw_info)
 
     def create_input(self):
         """
@@ -126,9 +145,10 @@ class RunSim:
 
         for erlang, obj in self.hold_inter_dict.items():
             # TODO: Fix file name for constant hold
-            if not self.constant_hold:
-                self.hold_time_mean = obj['holding_time_mean']
-                self.inter_arrival_time = obj['inter_arrival_time']
+            # if not self.constant_hold:
+            #     self.hold_time_mean = obj['holding_time_mean']
+            #     self.inter_arrival_time = obj['inter_arrival_time']
+
             self.create_input()
 
             if self.save:

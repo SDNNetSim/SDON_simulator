@@ -105,6 +105,7 @@ class Engine:
                                   physical_topology=self.physical_topology,
                                   network_spec_db=self.network_spec_db,
                                   mod_formats=self.sorted_requests[time]['mod_formats'],
+                                  bandwidth=self.sorted_requests[time]['chosen_bw'],
                                   path=list()
                                   )
 
@@ -190,16 +191,18 @@ class Engine:
             self.requests_status = dict()
             self.create_pt()
 
+            # No seed has been given, go off of the iteration number
             if len(self.sim_input['seed']) == 0:
                 self.seed = i + 1
             else:
                 self.seed = self.sim_input['seed'][i]
 
+            # TODO: Left off checking here
             self.requests = generate(seed_no=self.seed,
                                      nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
                                      holding_time_mean=self.sim_input['holding_time_mean'],
                                      inter_arrival_time_mean=self.sim_input['inter_arrival_time'],
-                                     req_no=self.sim_input['number_of_request'],
+                                     num_requests=self.sim_input['number_of_request'],
                                      slot_dict=self.sim_input['bandwidth_types'])
 
             self.sorted_requests = dict(sorted(self.requests.items()))

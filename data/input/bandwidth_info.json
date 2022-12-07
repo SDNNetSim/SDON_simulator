@@ -1,0 +1,44 @@
+{
+  "50": {
+    "QPSK": {
+      "slots_needed": 2,
+      "max_length": 11080
+    },
+    "16-QAM": {
+      "slots_needed": 1,
+      "max_length": 4750
+    },
+    "64-QAM": {
+      "slots_needed": 1,
+      "max_length": 1832
+    }
+  },
+  "100": {
+    "QPSK": {
+      "slots_needed": 4,
+      "max_length": 5540
+    },
+    "16-QAM": {
+      "slots_needed": 2,
+      "max_length": 2375
+    },
+    "64-QAM": {
+      "slots_needed": 2,
+      "max_length": 916
+    }
+  },
+  "400": {
+    "QPSK": {
+      "slots_needed": 16,
+      "max_length": 1385
+    },
+    "16-QAM": {
+      "slots_needed": 8,
+      "max_length": 594
+    },
+    "64-QAM": {
+      "slots_needed": 6,
+      "max_length": 229
+    }
+  }
+}
