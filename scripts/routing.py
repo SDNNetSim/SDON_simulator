@@ -116,14 +116,18 @@ class Routing:
         # TODO: Greater than or greater than or equal to?
         if self.mod_formats['64-QAM']['max_length'] >= path_len:
             mod_format = '64-QAM'
+            # TODO: Why is this done manually in his code??? Why initialize?
+            bits_per_symbol = 6
         elif self.mod_formats['16-QAM']['max_length'] >= path_len:
             mod_format = '16-QAM'
+            bits_per_symbol = 4
         elif self.mod_formats['QPSK']['max_length'] >= path_len:
             mod_format = 'QPSK'
+            bits_per_symbol = 2
         # Failure to assign modulation format
         else:
             return False, False
 
         # TODO: Is slots needed correct here?
-        slots_needed = self.spectral_slot_comp(self.mod_formats[mod_format]['slots_needed'])
+        slots_needed = self.spectral_slot_comp(bits_per_symbol)
         return mod_format, slots_needed

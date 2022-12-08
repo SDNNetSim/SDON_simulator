@@ -1,49 +1,49 @@
 {
     "seed": [],
     "holding_time_mean": 0.2,
-    "inter_arrival_time": 124,
+    "inter_arrival_time": 126,
     "number_of_request": 30000,
     "bandwidth_types": {
         "50": {
             "QPSK": {
-                "slots_needed": 2,
-                "max_length": 11080
+                "max_length": 11080,
+                "slots_needed": 2
             },
             "16-QAM": {
-                "slots_needed": 4,
-                "max_length": 4750
+                "max_length": 4750,
+                "slots_needed": 1
             },
             "64-QAM": {
-                "slots_needed": 4,
-                "max_length": 1832
+                "max_length": 1832,
+                "slots_needed": 1
             }
         },
         "100": {
             "QPSK": {
-                "slots_needed": 2,
-                "max_length": 5540
+                "max_length": 5540,
+                "slots_needed": 4
             },
             "16-QAM": {
-                "slots_needed": 4,
-                "max_length": 2375
+                "max_length": 2375,
+                "slots_needed": 2
             },
             "64-QAM": {
-                "slots_needed": 4,
-                "max_length": 916
+                "max_length": 916,
+                "slots_needed": 2
             }
         },
         "400": {
             "QPSK": {
-                "slots_needed": 2,
-                "max_length": 1385
+                "max_length": 1385,
+                "slots_needed": 16
             },
             "16-QAM": {
-                "slots_needed": 8,
-                "max_length": 594
+                "max_length": 594,
+                "slots_needed": 8
             },
             "64-QAM": {
-                "slots_needed": 6,
-                "max_length": 229
+                "max_length": 229,
+                "slots_needed": 32
             }
         }
     },

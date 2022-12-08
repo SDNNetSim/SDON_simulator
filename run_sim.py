@@ -95,15 +95,14 @@ class RunSim:
     def create_bw_info(self):
         # Max length is in km
         # TODO: (Question for Yue) Potentially change to 40 (Is this a bug?)
-        bw_info = [
-            {'50': {'QPSK': {'max_length': 11080}, '16-QAM': {'max_length': 4750}, '64-QAM': {'max_length': 1832}}},
-            {'100': {'QPSK': {'max_length': 5540}, '16-QAM': {'max_length': 2375}, '64-QAM': {'max_length': 916}}},
-            {'400': {'QPSK': {'max_length': 1385}, '16-QAM': {'max_length': 594}, '64-QAM': {'max_length': 229}}},
-        ]
-        for obj in bw_info:
-            for bw, bw_obj in obj.items():
-                for mod_format, mod_obj in bw_obj.items():
-                    bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / self.bw_slot)
+        bw_info = {
+            '50': {'QPSK': {'max_length': 11080}, '16-QAM': {'max_length': 4750}, '64-QAM': {'max_length': 1832}},
+            '100': {'QPSK': {'max_length': 5540}, '16-QAM': {'max_length': 2375}, '64-QAM': {'max_length': 916}},
+            '400': {'QPSK': {'max_length': 1385}, '16-QAM': {'max_length': 594}, '64-QAM': {'max_length': 229}},
+        }
+        for bw, bw_obj in bw_info.items():
+            for mod_format, mod_obj in bw_obj.items():
+                bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / self.bw_slot)
 
         self.save_input('bandwidth_info.json', bw_info)
 
