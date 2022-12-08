@@ -22,7 +22,7 @@ class RunSim:
     # TODO: Output relevant data to a file like Yue?
     # TODO: Move most of this info to another file, everything here should only be running the simulation.
     def __init__(self, hold_time_mean=0.2, inter_arrival_time=2, number_of_request=30000,
-                 num_iteration=100, num_core_slots=128, num_cores=4, bw_slot=12.5):
+                 num_iteration=100, num_core_slots=128, num_cores=1, bw_slot=12.5):
         self.seed = list()
         self.constant_hold = False
         self.number_of_request = number_of_request
