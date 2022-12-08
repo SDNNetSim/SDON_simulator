@@ -14,7 +14,7 @@ def uniform_rv(scale_param):
 
 def exponential_rv(scale_param):
     # np.log is the natural logarithm
-    return ((-1) / scale_param) * np.log(universal_rv())
+    return ((-1) / float(scale_param)) * np.log(universal_rv())
 
 
 def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, num_requests,
@@ -44,21 +44,21 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, num_req
     bands_list = list(slot_dict.keys())
     while len(requests) < (num_requests * 2):
         # TODO: Yue turns his into integers?
-        current_time = math.ceil(current_time + exponential_rv(inter_arrival_time_mean))
-        depart_time = math.ceil(current_time + exponential_rv(holding_time_mean))
+        current_time = current_time + math.ceil((exponential_rv(inter_arrival_time_mean) * 1000) / 1000)
+        depart_time = current_time + math.ceil((exponential_rv(holding_time_mean) * 1000) / 1000)
 
         # We never want our node to equal the length, we start from index 0 in a list! (Node numbers are all minus 1)
+        # TODO: Ensure all nodes are being utilized
         src = nodes[uniform_rv(len(nodes))]
         des = nodes[uniform_rv(len(nodes))]
 
         while src == des:
-            # des = nodes[np.random.randint(0, len(nodes))]
             des = nodes[uniform_rv(len(nodes))]
 
         while True:
             # TODO: He sets a datasize for each (derives occupied slots based on this)
             chosen_bw = bands_list[uniform_rv(len(bands_list))]  # pylint: disable=invalid-sequence-index
-            if bands_dict[chosen_bw] != 0:
+            if bands_dict[chosen_bw] > 0:
                 bands_dict[chosen_bw] -= 1
                 break
             else:

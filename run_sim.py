@@ -22,7 +22,7 @@ class RunSim:
     # TODO: Output relevant data to a file like Yue?
     # TODO: Move most of this info to another file, everything here should only be running the simulation.
     def __init__(self, hold_time_mean=0.2, inter_arrival_time=2, number_of_request=30000,
-                 num_iteration=5, num_core_slots=128, num_cores=1, bw_slot=12.5):
+                 num_iteration=100, num_core_slots=128, num_cores=4, bw_slot=12.5):
         self.seed = list()
         self.constant_hold = False
         self.number_of_request = number_of_request
@@ -33,6 +33,7 @@ class RunSim:
         # Frequency for one spectrum slot (GHz)
         self.bw_slot = bw_slot
 
+        self.create_bw_info()
         with open('./data/input/bandwidth_info.json', 'r') as fp:
             self.bw_types = json.load(fp)
 
@@ -142,18 +143,19 @@ class RunSim:
         """
         Controls the class.
         """
-        if not self.constant_hold:
-            for curr_lam in range(lambda_start, lambda_end, 2):
-                self.create_input()
+        for curr_lam in range(lambda_start, lambda_end, 2):
+            self.inter_arrival_time = curr_lam
+            self.create_input()
 
-                if self.save:
-                    self.save_input()
+            if self.save:
+                self.save_input()
 
-                engine = Engine(self.sim_input, erlang=curr_lam / self.hold_time_mean)
-                engine.run()
+            engine = Engine(self.sim_input, erlang=self.inter_arrival_time / self.hold_time_mean)
+            engine.run()
         return
 
 
 if __name__ == '__main__':
     test_obj = RunSim()
-    test_obj.thread_runs()
+    test_obj.run(lambda_start=2, lambda_end=143)
+    # test_obj.thread_runs()

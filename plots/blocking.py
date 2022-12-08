@@ -48,7 +48,7 @@ class Blocking:
         Saves and shows the plot.
         """
         # TODO: Update to save
-        plt.yscale('log')
+        # plt.yscale('log')
         plt.plot(self.erlang_arr, self.blocking_arr)
         plt.show()
 

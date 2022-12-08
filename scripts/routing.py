@@ -93,6 +93,8 @@ class Routing:
         """
         if self.source == 10:
             print('Begin debug')
+
+        # TODO: Ensure this works correctly
         paths_obj = nx.shortest_simple_paths(G=self.physical_topology, source=self.source, target=self.destination,
                                              weight='length')
 
@@ -122,5 +124,6 @@ class Routing:
         else:
             return False, False
 
+        # TODO: Is slots needed correct here?
         slots_needed = self.spectral_slot_comp(self.mod_formats[mod_format]['slots_needed'])
         return mod_format, slots_needed

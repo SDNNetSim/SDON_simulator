@@ -146,6 +146,7 @@ class Engine:
 
         :return: None
         """
+        # TODO: Make sure this is correct (plot)
         # Reset physical topology and network spectrum from previous iterations
         self.physical_topology = nx.Graph()
         self.network_spec_db = dict()

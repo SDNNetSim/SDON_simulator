@@ -66,6 +66,8 @@ class SpectrumAssignment:
         Loops through each core and find the starting and ending indexes of where the request
         can be assigned.
         """
+        # TODO: I'm pretty sure Yue always uses a guard band (line 414 resource assignment)
+        # TODO: I don't understand max allowed segments in his code? These actually get erased...
         start_slot = 0
         end_slot = self.slots_needed - 1
 
