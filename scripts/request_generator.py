@@ -2,9 +2,12 @@ import math
 import numpy as np
 
 
+# TODO: Pay attention to system time, it's different than arrival in his code
+
+
 # TODO: Move these to 'useful functions'
 def universal_rv():
-    return np.random.randint(0, 2147483647) / 2147483647
+    return float(np.random.randint(0, 2147483647)) / float(2147483647)
 
 
 # TODO: Ensure that passing the list length minus one is okay
@@ -14,7 +17,7 @@ def uniform_rv(scale_param):
 
 def exponential_rv(scale_param):
     # np.log is the natural logarithm
-    return ((-1) / float(scale_param)) * np.log(universal_rv())
+    return ((-1.0) / float(scale_param)) * np.log(universal_rv())
 
 
 def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, num_requests,
@@ -44,8 +47,10 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, num_req
     bands_list = list(slot_dict.keys())
     while len(requests) < (num_requests * 2):
         # TODO: Yue turns his into integers?
-        current_time = current_time + math.ceil((exponential_rv(inter_arrival_time_mean) * 1000) / 1000)
-        depart_time = current_time + math.ceil((exponential_rv(holding_time_mean) * 1000) / 1000)
+        # TODO: Try with ints
+        # We should probably start at zero
+        current_time = current_time + (math.ceil(exponential_rv(inter_arrival_time_mean) * 1000) / 1000)
+        depart_time = current_time + (math.ceil(exponential_rv(holding_time_mean) * 1000) / 1000)
 
         # We never want our node to equal the length, we start from index 0 in a list! (Node numbers are all minus 1)
         # TODO: Ensure all nodes are being utilized
@@ -57,6 +62,7 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, num_req
 
         while True:
             # TODO: He sets a datasize for each (derives occupied slots based on this)
+            # TODO: Ensure the correct amount of bws are allocated
             chosen_bw = bands_list[uniform_rv(len(bands_list))]  # pylint: disable=invalid-sequence-index
             if bands_dict[chosen_bw] > 0:
                 bands_dict[chosen_bw] -= 1

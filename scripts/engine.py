@@ -70,6 +70,7 @@ class Engine:
             return
         self.variance = np.var(block_percent_arr)
         # Confidence interval rate
+        # TODO: Make sure this is correct
         self.ci_rate = 1.645 * (np.sqrt(self.variance) / np.sqrt(len(block_percent_arr)))
         self.ci_percent = ((2 * self.ci_rate) / np.mean(block_percent_arr)) * 100
 
@@ -128,6 +129,7 @@ class Engine:
         :type time: float
         :return: None
         """
+        # TODO: Check to make sure this works
         if self.sorted_requests[time]['id'] in self.requests_status:
             controller_main(src=self.sorted_requests[time]["source"],
                             dest=self.sorted_requests[time]["destination"],
@@ -139,6 +141,9 @@ class Engine:
                             slot_num=self.requests_status[self.sorted_requests[time]['id']]['slots'],
                             path=self.requests_status[self.sorted_requests[time]['id']]['path'],
                             )
+        # Request was blocked, nothing to release
+        else:
+            pass
 
     def create_pt(self):
         """

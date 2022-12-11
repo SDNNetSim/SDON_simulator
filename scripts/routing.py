@@ -114,16 +114,16 @@ class Routing:
 
         # It's important to check modulation formats in this order
         # TODO: Greater than or greater than or equal to?
-        if self.mod_formats['64-QAM']['max_length'] >= path_len:
-            mod_format = '64-QAM'
+        if self.mod_formats['QPSK']['max_length'] >= path_len > self.mod_formats['16-QAM']['max_length']:
+            mod_format = 'QPSK'
             # TODO: Why is this done manually in his code??? Why initialize?
-            bits_per_symbol = 6
-        elif self.mod_formats['16-QAM']['max_length'] >= path_len:
+            bits_per_symbol = 2
+        elif self.mod_formats['16-QAM']['max_length'] >= path_len > self.mod_formats['64-QAM']['max_length']:
             mod_format = '16-QAM'
             bits_per_symbol = 4
-        elif self.mod_formats['QPSK']['max_length'] >= path_len:
-            mod_format = 'QPSK'
-            bits_per_symbol = 2
+        elif self.mod_formats['64-QAM']['max_length'] >= path_len:
+            mod_format = '64-QAM'
+            bits_per_symbol = 6
         # Failure to assign modulation format
         else:
             return False, False

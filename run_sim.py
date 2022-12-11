@@ -22,7 +22,7 @@ class RunSim:
     # TODO: Output relevant data to a file like Yue?
     # TODO: Move most of this info to another file, everything here should only be running the simulation.
     def __init__(self, hold_time_mean=0.2, inter_arrival_time=2, number_of_request=30000,
-                 num_iteration=100, num_core_slots=128, num_cores=1, bw_slot=12.5):
+                 num_iteration=100, num_core_slots=128, num_cores=4, bw_slot=12.5):
         self.seed = list()
         self.constant_hold = False
         self.number_of_request = number_of_request
@@ -102,6 +102,7 @@ class RunSim:
         }
         for bw, bw_obj in bw_info.items():
             for mod_format, mod_obj in bw_obj.items():
+                # TODO: Check on this
                 bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / self.bw_slot)
 
         self.save_input('bandwidth_info.json', bw_info)
@@ -143,7 +144,8 @@ class RunSim:
         Controls the class.
         """
         for curr_lam in range(lambda_start, lambda_end, 2):
-            self.inter_arrival_time = curr_lam
+            self.inter_arrival_time = float(curr_lam)
+            # TODO: Check on this
             self.create_input()
 
             if self.save:

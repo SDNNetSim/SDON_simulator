@@ -76,29 +76,18 @@ class SpectrumAssignment:
 
             # Look for a super spectrum in the current core
             while end_slot < self.num_slots:
-                # Ensure guard band is NOT considered at the end of the array
-                if end_slot == self.num_slots - 1:
-                    spec_set = set(core_arr[start_slot:end_slot])
-                    rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot])
-                else:
-                    spec_set = set(core_arr[start_slot:end_slot + self.guard_band])
-                    rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot + self.guard_band])
+                spec_set = set(core_arr[start_slot:end_slot + self.guard_band])
+                rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot + self.guard_band])
 
                 # Spectrum is free
                 if (spec_set, rev_spec_set) == ({0}, {0}):
                     if len(self.path) > 2:
-                        if end_slot == self.num_slots - 1:
-                            self.check_other_links(core_num, start_slot, end_slot)
-                        else:
-                            self.check_other_links(core_num, start_slot, end_slot + self.guard_band)
+                        self.check_other_links(core_num, start_slot, end_slot + self.guard_band)
 
                     # Other links spectrum slots are also available
                     if self.is_free is not False or len(self.path) <= 2:
-                        if end_slot == self.num_slots - 1:
-                            self.response = {'core_num': core_num, 'start_slot': start_slot, 'end_slot': end_slot}
-                        else:
-                            self.response = {'core_num': core_num, 'start_slot': start_slot,
-                                             'end_slot': end_slot + self.guard_band}
+                        self.response = {'core_num': core_num, 'start_slot': start_slot,
+                                         'end_slot': end_slot + self.guard_band}
                         return
 
                 # No more open slots
@@ -127,6 +116,7 @@ class SpectrumAssignment:
         if self.cores_matrix is None or self.rev_cores_matrix is None:
             raise ValueError('Bi-directional link not found in network spectrum database.')
 
+        # TODO: Make sure we're searching for the correct amount of slots
         self.num_slots = np.shape(self.cores_matrix)[1]
         self.find_spectrum_slots()
 
