@@ -30,7 +30,7 @@ class Blocking:
             with open(f'{self.file_path}/{erlang}_erlang.json', 'r', encoding='utf-8') as curr_f:
                 curr_dict = json.load(curr_f)
 
-            blocking_mean = curr_dict['stats']['mean']
+            blocking_mean = curr_dict['simulations']['0']
             if blocking_mean is None:
                 # blocking_mean = 0
                 continue
@@ -48,8 +48,9 @@ class Blocking:
         Saves and shows the plot.
         """
         # TODO: Update to save
-        # plt.yscale('log')
+        plt.yscale('log')
         plt.plot(self.erlang_arr, self.blocking_arr)
+        plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
         plt.show()
 
 

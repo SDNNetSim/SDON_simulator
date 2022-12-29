@@ -17,6 +17,7 @@ def uniform_rv(scale_param):
 
 def exponential_rv(scale_param):
     # np.log is the natural logarithm
+
     return ((-1.0) / float(scale_param)) * np.log(universal_rv())
 
 
@@ -29,9 +30,10 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, num_req
 
     # We want to create requests in a 3:5:2 fashion
     # TODO: Move this to the engine eventually
-    bw_ratio_one = 0.3
+    # TODO: Check this, should we only use 100 and 400?
+    bw_ratio_one = 0.0
     bw_ratio_two = 0.5
-    bw_ratio_three = 0.2
+    bw_ratio_three = 0.5
 
     # Number of requests allocated for each bandwidth
     # TODO: This could potentially not equal the number of requests we think
@@ -51,19 +53,26 @@ def generate(seed_no, nodes, holding_time_mean, inter_arrival_time_mean, num_req
         # We should probably start at zero
         current_time = current_time + (math.ceil(exponential_rv(inter_arrival_time_mean) * 1000) / 1000)
         depart_time = current_time + (math.ceil(exponential_rv(holding_time_mean) * 1000) / 1000)
+        # current_time = current_time + np.random.exponential(inter_arrival_time_mean)
+        # depart_time = current_time + np.random.exponential(holding_time_mean)
 
         # We never want our node to equal the length, we start from index 0 in a list! (Node numbers are all minus 1)
         # TODO: Ensure all nodes are being utilized
         src = nodes[uniform_rv(len(nodes))]
         des = nodes[uniform_rv(len(nodes))]
+        # src = nodes[np.random.randint(0, len(nodes))]
+        # des = nodes[np.random.randint(0, len(nodes))]
 
         while src == des:
+            # des = nodes[np.random.randint(0, len(nodes))]
             des = nodes[uniform_rv(len(nodes))]
 
         while True:
             # TODO: He sets a datasize for each (derives occupied slots based on this)
             # TODO: Ensure the correct amount of bws are allocated
-            chosen_bw = bands_list[uniform_rv(len(bands_list))]  # pylint: disable=invalid-sequence-index
+            # TODO: This isn't exactly how he chooses a band in his newer version of code?
+            # chosen_bw = bands_list[np.random.randint(0, len(bands_list))]  # pylint: disable=invalid-sequence-index
+            chosen_bw = bands_list[uniform_rv(len(bands_list))]
             if bands_dict[chosen_bw] > 0:
                 bands_dict[chosen_bw] -= 1
                 break

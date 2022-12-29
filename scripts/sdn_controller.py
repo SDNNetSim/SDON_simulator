@@ -41,7 +41,7 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
         network_spec_db = handle_arrive_rel(network_spec_db=network_spec_db,
                                             path=path,
                                             start_slot=slot_num,
-                                            num_slots=mod_formats[chosen_mod]['slots_needed'],
+                                            num_slots=mod_formats['QPSK']['slots_needed'],
                                             req_type='Release'
                                             )
         return network_spec_db, physical_topology
@@ -49,25 +49,28 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
     routing_obj = Routing(source=src, destination=dest, physical_topology=physical_topology,
                           network_spec_db=network_spec_db, mod_formats=mod_formats, bw=chosen_bw)
     # TODO: Update slots needed
-    selected_path, path_mod, slots_needed = routing_obj.shortest_path()
+    # selected_path, path_mod, slots_needed = routing_obj.shortest_path()
+    selected_path = routing_obj.least_congested_path()
 
-    if selected_path is not False and path_mod is not False and slots_needed is not False:
-        mod_formats[path_mod]['slots_needed'] = slots_needed
-        spectrum_assignment = SpectrumAssignment(selected_path, mod_formats[path_mod]['slots_needed'], network_spec_db)
+    if selected_path is not False:
+        # Hard coding QPSK for now, all slots needed are actually the same (Not actually QPSK)
+        # TODO: Make sure the number of slots is correct
+        spectrum_assignment = SpectrumAssignment(selected_path, mod_formats['QPSK']['slots_needed'], network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
 
         if selected_sp is not False:
             ras_output = {
                 'path': selected_path,
-                'mod_format': path_mod,
+                'mod_format': 'QPSK',
                 'core_num': selected_sp['core_num'],
                 'start_res_slot': selected_sp['start_slot'],
                 'end_res_slot': selected_sp['end_slot'],
             }
+            # TODO: Make sure the number of slots is correct
             network_spec_db = handle_arrive_rel(network_spec_db=network_spec_db,
                                                 path=selected_path,
                                                 start_slot=selected_sp['start_slot'],
-                                                num_slots=mod_formats[path_mod]['slots_needed'],
+                                                num_slots=mod_formats['QPSK']['slots_needed'],
                                                 req_type='Arrival'
                                                 )
             return ras_output, network_spec_db, physical_topology

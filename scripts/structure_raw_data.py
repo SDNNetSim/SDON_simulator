@@ -3,8 +3,9 @@ import configparser
 import pandas as pd
 import numpy as np
 
+# TODO: Change to nsf net
 PAIRINGS_FILE_PATH = 'data/raw/us_network.xlsx'
-LINK_LEN_FILE_PATH = 'data/raw/us_network.txt'
+LINK_LEN_FILE_PATH = 'data/raw/europe_network_distance.txt'
 
 
 def map_erlang_times(network='europe'):
@@ -22,7 +23,11 @@ def map_erlang_times(network='europe'):
         hold_conf_fp = 'data/raw/europe_omnetpp_hold.ini'
         inter_conf_fp = 'data/raw/europe_omnetpp_inter.ini'
     else:
-        raise NotImplementedError
+        # This isn't actually used later on, I did this for speed
+        hold_conf_fp = 'data/raw/europe_omnetpp_hold.ini'
+        # TODO: Ensure these values are correct
+        inter_conf_fp = 'data/raw/nsfnet_omnetpp_inter.ini'
+        # raise NotImplementedError
 
     arr_one = np.arange(10, 100, 10)
     arr_two = np.arange(100, 850, 50)
@@ -58,13 +63,17 @@ def assign_link_lengths(node_pairings=None):
     with open(LINK_LEN_FILE_PATH, 'r', encoding='utf-8') as curr_f:
         for line in curr_f:
             tmp_list = line.split('\t')
+            # tmp_list = line.replace(' ', '')
             src = tmp_list[0]
             dest = tmp_list[1]
             # Remove new line, leading, and trailing white space
-            link_len = tmp_list[2].strip('\n').strip()
+            # link_len = tmp_list[2].strip('\n').strip()
+            link_len = '1'
 
-            src_dest_tuple = (node_pairings[src], node_pairings[dest])
-            rev_tuple = (node_pairings[dest], node_pairings[src])
+            # src_dest_tuple = (node_pairings[src], node_pairings[dest])
+            src_dest_tuple = (src, dest)
+            # rev_tuple = (node_pairings[dest], node_pairings[src])
+            rev_tuple = (dest, src)
             # TODO: Change to implement in text file and not in structure code
             if rev_tuple in response_dict.keys() or src_dest_tuple in response_dict.keys():  # pylint: disable=consider-iterating-dictionary
                 continue

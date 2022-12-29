@@ -21,14 +21,13 @@ class RunSim:
     # TODO: Run and save for multiple cores iteratively
     # TODO: Output relevant data to a file like Yue?
     # TODO: Move most of this info to another file, everything here should only be running the simulation.
-    def __init__(self, hold_time_mean=0.2, inter_arrival_time=2, number_of_request=30000,
-                 num_iteration=100, num_core_slots=128, num_cores=4, bw_slot=12.5):
+    def __init__(self, hold_time_mean=1.0 / 3600.0, inter_arrival_time=2, number_of_request=10000,
+                 num_iteration=1, num_core_slots=256, num_cores=1, bw_slot=12.5):
         self.seed = list()
         self.constant_hold = False
         self.number_of_request = number_of_request
         self.num_cores = num_cores
         self.hold_time_mean = hold_time_mean
-        # TODO: Normalize this value?
         self.inter_arrival_time = inter_arrival_time
         # Frequency for one spectrum slot (GHz)
         self.bw_slot = bw_slot
@@ -43,7 +42,7 @@ class RunSim:
         self.link_num = 1
 
         self.data = structure_data()
-        self.hold_inter_dict = map_erlang_times()
+        # self.hold_inter_dict = map_erlang_times()
 
         self.sim_input = None
         self.output_file_name = None
@@ -96,14 +95,18 @@ class RunSim:
         # Max length is in km
         # TODO: (Question for Yue) Potentially change to 40 (Is this a bug?)
         bw_info = {
-            '50': {'QPSK': {'max_length': 11080}, '16-QAM': {'max_length': 4750}, '64-QAM': {'max_length': 1832}},
+            # '50': {'QPSK': {'max_length': 11080}, '16-QAM': {'max_length': 4750}, '64-QAM': {'max_length': 1832}},
             '100': {'QPSK': {'max_length': 5540}, '16-QAM': {'max_length': 2375}, '64-QAM': {'max_length': 916}},
             '400': {'QPSK': {'max_length': 1385}, '16-QAM': {'max_length': 594}, '64-QAM': {'max_length': 229}},
         }
         for bw, bw_obj in bw_info.items():
             for mod_format, mod_obj in bw_obj.items():
                 # TODO: Check on this
-                bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / self.bw_slot)
+                if bw == '100':
+                    bw_obj[mod_format]['slots_needed'] = 3
+                elif bw == '400':
+                    bw_obj[mod_format]['slots_needed'] = 10
+                # bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / self.bw_slot)
 
         self.save_input('bandwidth_info.json', bw_info)
 
@@ -139,24 +142,30 @@ class RunSim:
         t2.join()
         t3.join()
 
-    def run(self, lambda_start, lambda_end):
+    def run(self, lambda_start, lambda_end, step):
         """
         Controls the class.
         """
-        for curr_lam in range(lambda_start, lambda_end, 2):
-            self.inter_arrival_time = float(curr_lam)
+        tmp_lam_list = [36.0, 18.0, 12.0, 9.0, 7.2, 6.0, 5.143, 4.5]
+        # for curr_lam in range(lambda_start, lambda_end, step):
+        for curr_lam in tmp_lam_list:
+        # for curr_lam in range(100, 900, 200):
+            curr_lam = 1.0 / curr_lam
+            self.inter_arrival_time = float(curr_lam) * float(self.num_cores)
             # TODO: Check on this
             self.create_input()
 
             if self.save:
                 self.save_input()
 
-            engine = Engine(self.sim_input, erlang=self.inter_arrival_time / self.hold_time_mean)
+            engine = Engine(self.sim_input, erlang=curr_lam / self.hold_time_mean)
+            # engine = Engine(self.sim_input, erlang=self.hold_time_mean / curr_lam)
             engine.run()
         return
 
 
 if __name__ == '__main__':
     test_obj = RunSim()
-    test_obj.run(lambda_start=2, lambda_end=143)
+    test_obj.run(lambda_start=2, lambda_end=143, step=2)
+    # test_obj.run(lambda_start=100, lambda_end=900, step=100)
     # test_obj.thread_runs()
