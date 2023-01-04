@@ -10,6 +10,7 @@ from scripts.engine import Engine
 # TODO: Update docs
 # TODO: Update tests
 # TODO: GitHub pipelines
+# TODO: Save simulation results by topology and date directory
 
 
 class RunSim:
@@ -21,8 +22,8 @@ class RunSim:
     # TODO: Run and save for multiple cores iteratively
     # TODO: Output relevant data to a file like Yue?
     # TODO: Move most of this info to another file, everything here should only be running the simulation.
-    def __init__(self, hold_time_mean=1.0 / 3600.0, inter_arrival_time=2, number_of_request=10000,
-                 num_iteration=1, num_core_slots=256, num_cores=1, bw_slot=12.5):
+    def __init__(self, hold_time_mean=0.001, inter_arrival_time=2, number_of_request=10000,
+                 num_iteration=10, num_core_slots=256, num_cores=1, bw_slot=12.5):
         self.seed = list()
         self.constant_hold = False
         self.number_of_request = number_of_request
@@ -47,6 +48,8 @@ class RunSim:
         self.sim_input = None
         self.output_file_name = None
         self.save = True
+
+        self.erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
 
     def save_input(self, file_name=None, obj=None):
         """
@@ -142,30 +145,24 @@ class RunSim:
         t2.join()
         t3.join()
 
-    def run(self, lambda_start, lambda_end, step):
+    def run(self):
         """
         Controls the class.
         """
-        tmp_lam_list = [36.0, 18.0, 12.0, 9.0, 7.2, 6.0, 5.143, 4.5]
-        # for curr_lam in range(lambda_start, lambda_end, step):
-        for curr_lam in tmp_lam_list:
-        # for curr_lam in range(100, 900, 200):
-            curr_lam = 1.0 / curr_lam
-            self.inter_arrival_time = float(curr_lam) * float(self.num_cores)
+        for curr_erlang in self.erlang_lst:
+            self.inter_arrival_time = float(self.hold_time_mean) * float(self.num_cores) * curr_erlang
             # TODO: Check on this
             self.create_input()
 
             if self.save:
                 self.save_input()
 
-            engine = Engine(self.sim_input, erlang=curr_lam / self.hold_time_mean)
-            # engine = Engine(self.sim_input, erlang=self.hold_time_mean / curr_lam)
+            engine = Engine(self.sim_input, erlang=curr_erlang)
             engine.run()
         return
 
 
 if __name__ == '__main__':
     test_obj = RunSim()
-    test_obj.run(lambda_start=2, lambda_end=143, step=2)
-    # test_obj.run(lambda_start=100, lambda_end=900, step=100)
+    test_obj.run()
     # test_obj.thread_runs()

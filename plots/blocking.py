@@ -3,6 +3,8 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 
+# TODO: Label Axis and label What mu was equal to
+
 
 class Blocking:
     """
@@ -30,10 +32,11 @@ class Blocking:
             with open(f'{self.file_path}/{erlang}_erlang.json', 'r', encoding='utf-8') as curr_f:
                 curr_dict = json.load(curr_f)
 
-            blocking_mean = curr_dict['simulations']['0']
+            # TODO: Change this before plotting!
+            blocking_mean = curr_dict['stats']['mean']
             if blocking_mean is None:
-                # blocking_mean = 0
-                continue
+                blocking_mean = 0
+                # continue
             else:
                 blocking_mean = float(blocking_mean)
 
@@ -48,8 +51,15 @@ class Blocking:
         Saves and shows the plot.
         """
         # TODO: Update to save
+        # TODO: Add grids
         plt.yscale('log')
+        # self.erlang_arr = [erlang for erlang in range(50, 800, 50)]
+        # self.blocking_arr = [0, 0, 0, 0, 0, 0, 0, 0.0013, 0.0084, 0.0158, 0.0242, 0.0314, 0.0423, 0.0467, 0.0575]
+        # if len(self.erlang_arr) != len(self.blocking_arr):
+        #     raise ValueError
+
         plt.plot(self.erlang_arr, self.blocking_arr)
+        plt.grid()
         plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
         plt.show()
 
@@ -57,3 +67,4 @@ class Blocking:
 if __name__ == '__main__':
     blocking_obj = Blocking()
     blocking_obj.plot_blocking_means()
+    blocking_obj.save_plot()

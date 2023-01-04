@@ -1,7 +1,7 @@
 {
     "seed": [],
-    "holding_time_mean": 0.0002777777777777778,
-    "inter_arrival_time": 0.2222222222222222,
+    "holding_time_mean": 0.001,
+    "inter_arrival_time": 0.8,
     "number_of_request": 10000,
     "bandwidth_types": {
         "100": {
@@ -33,7 +33,7 @@
             }
         }
     },
-    "num_iters": 1,
+    "num_iters": 10,
     "number_of_slot_per_core": 256,
     "physical_topology": {
         "nodes": {
