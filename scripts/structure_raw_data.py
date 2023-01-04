@@ -3,6 +3,7 @@ import configparser
 import pandas as pd
 import numpy as np
 
+# TODO: This script needs to be updated and neatened, beware (Will get to it by next week 1/4/2023)
 # TODO: Change to nsf net
 PAIRINGS_FILE_PATH = 'data/raw/us_network.xlsx'
 LINK_LEN_FILE_PATH = 'data/raw/europe_network_distance.txt'

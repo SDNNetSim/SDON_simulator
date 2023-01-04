@@ -3,7 +3,7 @@ import json
 import os
 import threading
 
-from scripts.structure_raw_data import structure_data, map_erlang_times
+from scripts.structure_raw_data import structure_data
 from scripts.engine import Engine
 
 
@@ -11,62 +11,59 @@ from scripts.engine import Engine
 # TODO: Update tests
 # TODO: GitHub pipelines
 # TODO: Save simulation results by topology and date directory
+# TODO: Document mu and the number of cores used
 
 
 class RunSim:
     """
     Runs the simulations for this project.
     """
-
-    # TODO: Increase lambda like Yue, constant Mu, calculate Erlang and save like that
-    # TODO: Run and save for multiple cores iteratively
-    # TODO: Output relevant data to a file like Yue?
-    # TODO: Move most of this info to another file, everything here should only be running the simulation.
-    def __init__(self, hold_time_mean=0.001, inter_arrival_time=2, number_of_request=10000,
-                 num_iteration=10, num_core_slots=256, num_cores=1, bw_slot=12.5):
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1, bw_slot=12.5):
         self.seed = list()
-        self.constant_hold = False
-        self.number_of_request = number_of_request
+        self.num_requests = num_requests
         self.num_cores = num_cores
-        self.hold_time_mean = hold_time_mean
-        self.inter_arrival_time = inter_arrival_time
-        # Frequency for one spectrum slot (GHz)
-        self.bw_slot = bw_slot
+        self.mu = mu
+        self.lam = lam
+        self.erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
 
+        # TODO: Update this
+        # TODO: Change to handle data, structure and generate
         self.create_bw_info()
         with open('./data/input/bandwidth_info.json', 'r') as fp:
             self.bw_types = json.load(fp)
+        self.data = structure_data()
 
-        self.num_iteration = num_iteration
-        self.num_core_slots = num_core_slots
+        # Frequency for one spectrum slot (GHz)
+        self.bw_slot = bw_slot
+        self.spectral_slots = spectral_slots
         self.physical_topology = {'nodes': {}, 'links': {}}
         self.link_num = 1
 
-        self.data = structure_data()
-        # self.hold_inter_dict = map_erlang_times()
-
+        # If the confidence interval isn't reached, maximum allowed iterations
+        self.max_iters = max_iters
         self.sim_input = None
         self.output_file_name = None
         self.save = True
 
-        self.erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
-
     def save_input(self, file_name=None, obj=None):
         """
-        Saves simulation input data.
+        Saves simulation input data. Not bandwidth data for now, since that is intended to be a constant and unchanged
+        file.
         """
         if not os.path.exists('data/input'):
             os.mkdir('data/input')
         if not os.path.exists('data/output'):
             os.mkdir('data/output')
 
-        # Default to saving simulation input
+        # Default file name for saving simulation input
         if file_name is None:
             file_name = 'simulation_input.json'
             obj = self.sim_input
+
         with open(f'data/input/{file_name}', 'w', encoding='utf-8') as file_path:
             json.dump(obj, file_path, indent=4)
 
+    # TODO: Move this method to a "generate data" class or something
     def create_pt(self):
         """
         Creates the physical topology.
@@ -96,7 +93,7 @@ class RunSim:
     # TODO: Make a config file instead
     def create_bw_info(self):
         # Max length is in km
-        # TODO: (Question for Yue) Potentially change to 40 (Is this a bug?)
+        # TODO: Separate this is a more organized way (Yue vs. Arash's)
         bw_info = {
             # '50': {'QPSK': {'max_length': 11080}, '16-QAM': {'max_length': 4750}, '64-QAM': {'max_length': 1832}},
             '100': {'QPSK': {'max_length': 5540}, '16-QAM': {'max_length': 2375}, '64-QAM': {'max_length': 916}},
@@ -104,7 +101,6 @@ class RunSim:
         }
         for bw, bw_obj in bw_info.items():
             for mod_format, mod_obj in bw_obj.items():
-                # TODO: Check on this
                 if bw == '100':
                     bw_obj[mod_format]['slots_needed'] = 3
                 elif bw == '400':
@@ -120,12 +116,12 @@ class RunSim:
         self.create_pt()
         self.sim_input = {
             'seed': self.seed,
-            'holding_time_mean': self.hold_time_mean,
-            'inter_arrival_time': self.inter_arrival_time,
-            'number_of_request': self.number_of_request,
+            'mu': self.mu,
+            'lambda': self.lam,
+            'number_of_request': self.num_requests,
             'bandwidth_types': self.bw_types,
-            'num_iters': self.num_iteration,
-            'number_of_slot_per_core': self.num_core_slots,
+            'max_iters': self.max_iters,
+            'spectral_slots': self.spectral_slots,
             'physical_topology': self.physical_topology
         }
 
@@ -150,10 +146,10 @@ class RunSim:
         Controls the class.
         """
         for curr_erlang in self.erlang_lst:
-            self.inter_arrival_time = float(self.hold_time_mean) * float(self.num_cores) * curr_erlang
-            # TODO: Check on this
+            self.lam = self.mu * float(self.num_cores) * curr_erlang
             self.create_input()
 
+            # Save simulation input, if desired
             if self.save:
                 self.save_input()
 
@@ -165,4 +161,3 @@ class RunSim:
 if __name__ == '__main__':
     test_obj = RunSim()
     test_obj.run()
-    # test_obj.thread_runs()

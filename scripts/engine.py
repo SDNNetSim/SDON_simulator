@@ -164,7 +164,7 @@ class Engine:
             dest = self.sim_input['physical_topology']['links'][link_no]['destination']
             cores_matrix = np.zeros((self.sim_input['physical_topology']['links']
                                      [link_no]['fiber']['num_cores'],
-                                     self.sim_input['number_of_slot_per_core']))
+                                     self.sim_input['spectral_slots']))
 
             self.network_spec_db[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': link_no}
             self.network_spec_db[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': link_no}
@@ -189,7 +189,7 @@ class Engine:
         if self.sim_input_fp is not None:
             self.load_input()
 
-        for i in range(self.sim_input['num_iters']):
+        for i in range(self.sim_input['max_iters']):
             if i == 0:
                 print(f"Simulation started for Erlang: {self.erlang}.")
 
@@ -206,8 +206,8 @@ class Engine:
             # TODO: Left off checking here
             self.requests = generate(seed_no=self.seed,
                                      nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
-                                     holding_time_mean=self.sim_input['holding_time_mean'],
-                                     inter_arrival_time_mean=self.sim_input['inter_arrival_time'],
+                                     holding_time_mean=self.sim_input['mu'],
+                                     inter_arrival_time_mean=self.sim_input['lambda'],
                                      num_requests=self.sim_input['number_of_request'],
                                      slot_dict=self.sim_input['bandwidth_types'])
 
@@ -225,7 +225,7 @@ class Engine:
                 return
 
             if (i + 1) % 10 == 0 or i == 0:
-                print(f'Iteration {i + 1} out of {self.sim_input["num_iters"]} completed for Erlang: {self.erlang}')
+                print(f'Iteration {i + 1} out of {self.sim_input["max_iters"]} completed for Erlang: {self.erlang}')
                 block_percent_arr = np.array(list(self.blocking['simulations'].values()))
                 print(f'Mean of blocking: {np.mean(block_percent_arr)}')
                 self.save_sim_results()

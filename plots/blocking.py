@@ -3,7 +3,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 
-# TODO: Label Axis and label What mu was equal to
+# TODO: Label Axis and label What mu was equal to (need to save Mu)
 
 
 class Blocking:
@@ -33,7 +33,8 @@ class Blocking:
                 curr_dict = json.load(curr_f)
 
             # TODO: Change this before plotting!
-            blocking_mean = curr_dict['stats']['mean']
+            # blocking_mean = curr_dict['stats']['mean']
+            blocking_mean = curr_dict['simulations']['0']
             if blocking_mean is None:
                 blocking_mean = 0
                 # continue
