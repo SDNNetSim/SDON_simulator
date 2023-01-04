@@ -123,7 +123,7 @@
             "1": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -135,7 +135,7 @@
             "2": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -147,7 +147,7 @@
             "3": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -159,7 +159,7 @@
             "4": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -171,7 +171,7 @@
             "5": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -183,7 +183,7 @@
             "6": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -195,7 +195,7 @@
             "7": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -207,7 +207,7 @@
             "8": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -219,7 +219,7 @@
             "9": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -231,7 +231,7 @@
             "10": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -243,7 +243,7 @@
             "11": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -255,7 +255,7 @@
             "12": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -267,7 +267,7 @@
             "13": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -279,7 +279,7 @@
             "14": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -291,7 +291,7 @@
             "15": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -303,7 +303,7 @@
             "16": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -315,7 +315,7 @@
             "17": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -327,7 +327,7 @@
             "18": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -339,7 +339,7 @@
             "19": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -351,7 +351,7 @@
             "20": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -363,7 +363,7 @@
             "21": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -375,7 +375,7 @@
             "22": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -387,7 +387,7 @@
             "23": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -399,7 +399,7 @@
             "24": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -411,7 +411,7 @@
             "25": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -423,7 +423,7 @@
             "26": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -435,7 +435,7 @@
             "27": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -447,7 +447,7 @@
             "28": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -459,7 +459,7 @@
             "29": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -471,7 +471,7 @@
             "30": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -483,7 +483,7 @@
             "31": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -495,7 +495,7 @@
             "32": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -507,7 +507,7 @@
             "33": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -519,7 +519,7 @@
             "34": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -531,7 +531,7 @@
             "35": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -543,7 +543,7 @@
             "36": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -555,7 +555,7 @@
             "37": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -567,7 +567,7 @@
             "38": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -579,7 +579,7 @@
             "39": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -591,7 +591,7 @@
             "40": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -603,7 +603,7 @@
             "41": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -615,7 +615,7 @@
             "42": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -627,7 +627,7 @@
             "43": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -639,7 +639,7 @@
             "44": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -651,7 +651,7 @@
             "45": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -663,7 +663,7 @@
             "46": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -675,7 +675,7 @@
             "47": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -687,7 +687,7 @@
             "48": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -699,7 +699,7 @@
             "49": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -711,7 +711,7 @@
             "50": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -723,7 +723,7 @@
             "51": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -735,7 +735,7 @@
             "52": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -747,7 +747,7 @@
             "53": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -759,7 +759,7 @@
             "54": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0
@@ -771,7 +771,7 @@
             "55": {
                 "fiber": {
                     "attenuation": 0.0022927500975300002,
-                    "nonlinearity": 0.06472318887822313,
+                    "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
                     "num_cores": 1,
                     "fiber_type": 0

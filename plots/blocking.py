@@ -10,7 +10,6 @@ class Blocking:
     """
     Creates and saves plot of blocking percentage vs. Erlang.
     """
-
     def __init__(self):
         self.file_path = '../data/output'
         self.files = self.get_file_names()

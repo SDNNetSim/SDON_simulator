@@ -1,9 +1,9 @@
-import math
 import json
 import os
 import threading
 
 from scripts.structure_data import structure_data
+from scripts.generate_data import create_bw_info, create_pt
 from scripts.engine import Engine
 
 
@@ -18,7 +18,8 @@ class RunSim:
     """
     Runs the simulations for this project.
     """
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1, bw_slot=12.5):
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1, bw_slot=12.5,
+                 create_bw_data=False):
         self.seed = list()
         self.num_requests = num_requests
         self.num_cores = num_cores
@@ -26,17 +27,18 @@ class RunSim:
         self.lam = lam
         self.erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
 
-        # TODO: Update this
-        # TODO: Change to handle data, structure and generate
-        self.create_bw_info()
+        if create_bw_data:
+            bw_info = create_bw_info()
+            self.save_input('bandwidth_info.json', bw_info)
         with open('./data/input/bandwidth_info.json', 'r') as fp:
             self.bw_types = json.load(fp)
+
         self.data = structure_data()
 
         # Frequency for one spectrum slot (GHz)
         self.bw_slot = bw_slot
         self.spectral_slots = spectral_slots
-        self.physical_topology = {'nodes': {}, 'links': {}}
+        self.physical_topology = create_pt(num_cores=self.num_cores, nodes_links=self.data)
         self.link_num = 1
 
         # If the confidence interval isn't reached, maximum allowed iterations
@@ -63,57 +65,10 @@ class RunSim:
         with open(f'data/input/{file_name}', 'w', encoding='utf-8') as file_path:
             json.dump(obj, file_path, indent=4)
 
-    # TODO: Move this method to a "generate data" class or something
-    def create_pt(self):
-        """
-        Creates the physical topology.
-        """
-        # This may change in the future, hence creating the same dictionary for all fibers in a link right now
-        # TODO: Are these exponents or 'e'?
-        tmp_dict = dict()
-        tmp_dict['attenuation'] = (0.2 / 4.343) * (math.e ** -3)
-        tmp_dict['nonlinearity'] = 1.3 * (math.e ** -3)
-        tmp_dict['dispersion'] = (16 * math.e ** -6) * ((1550 * math.e ** -9) ** 2) / (
-                2 * math.pi * 3 * math.e ** 8)
-        tmp_dict['num_cores'] = self.num_cores
-        tmp_dict['fiber_type'] = 0
-
-        for nodes, link_len in self.data.items():
-            source = nodes[0]
-            dest = nodes[1]
-
-            self.physical_topology['nodes'][source] = {'type': 'CDC'}
-            self.physical_topology['nodes'][dest] = {'type': 'CDC'}
-            self.physical_topology['links'][self.link_num] = {'fiber': tmp_dict, 'length': link_len, 'source': source,
-                                                              'destination': dest}
-            self.link_num += 1
-        # Reset link numbers
-        self.link_num = 1
-
-    # TODO: Make a config file instead
-    def create_bw_info(self):
-        # Max length is in km
-        # TODO: Separate this is a more organized way (Yue vs. Arash's)
-        bw_info = {
-            # '50': {'QPSK': {'max_length': 11080}, '16-QAM': {'max_length': 4750}, '64-QAM': {'max_length': 1832}},
-            '100': {'QPSK': {'max_length': 5540}, '16-QAM': {'max_length': 2375}, '64-QAM': {'max_length': 916}},
-            '400': {'QPSK': {'max_length': 1385}, '16-QAM': {'max_length': 594}, '64-QAM': {'max_length': 229}},
-        }
-        for bw, bw_obj in bw_info.items():
-            for mod_format, mod_obj in bw_obj.items():
-                if bw == '100':
-                    bw_obj[mod_format]['slots_needed'] = 3
-                elif bw == '400':
-                    bw_obj[mod_format]['slots_needed'] = 10
-                # bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / self.bw_slot)
-
-        self.save_input('bandwidth_info.json', bw_info)
-
     def create_input(self):
         """
         Creates simulation input data.
         """
-        self.create_pt()
         self.sim_input = {
             'seed': self.seed,
             'mu': self.mu,
@@ -129,6 +84,7 @@ class RunSim:
         """
         Executes the run method using threads.
         """
+        # TODO: Update, arguments have changed, this will not work
         t1 = threading.Thread(target=self.run, args=(2, 48))
         t2 = threading.Thread(target=self.run, args=(48, 96))
         t3 = threading.Thread(target=self.run, args=(96, 144))
