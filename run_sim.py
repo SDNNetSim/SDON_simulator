@@ -1,6 +1,6 @@
 import json
 import os
-import threading
+import time
 
 from scripts.structure_data import structure_data
 from scripts.generate_data import create_bw_info, create_pt
@@ -10,8 +10,6 @@ from scripts.engine import Engine
 # TODO: Update docs
 # TODO: Update tests
 # TODO: GitHub pipelines
-# TODO: Save simulation results by topology and date directory
-# TODO: Document mu and the number of cores used
 
 
 class RunSim:
@@ -33,7 +31,7 @@ class RunSim:
         with open('./data/input/bandwidth_info.json', 'r') as fp:
             self.bw_types = json.load(fp)
 
-        self.data = structure_data()
+        self.data, self.network_name = structure_data()
 
         # Frequency for one spectrum slot (GHz)
         self.bw_slot = bw_slot
@@ -84,23 +82,13 @@ class RunSim:
         """
         Executes the run method using threads.
         """
-        # TODO: Update, arguments have changed, this will not work
-        t1 = threading.Thread(target=self.run, args=(2, 48))
-        t2 = threading.Thread(target=self.run, args=(48, 96))
-        t3 = threading.Thread(target=self.run, args=(96, 144))
-
-        t1.start()
-        t2.start()
-        t3.start()
-
-        t1.join()
-        t2.join()
-        t3.join()
+        raise NotImplementedError
 
     def run(self):
         """
         Controls the class.
         """
+        sim_start = time.strftime("%m%d_%H:%M:%S")
         for curr_erlang in self.erlang_lst:
             self.lam = self.mu * float(self.num_cores) * curr_erlang
             self.create_input()
@@ -109,7 +97,7 @@ class RunSim:
             if self.save:
                 self.save_input()
 
-            engine = Engine(self.sim_input, erlang=curr_erlang)
+            engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name, sim_start=sim_start)
             engine.run()
         return
 

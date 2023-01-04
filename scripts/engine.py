@@ -1,6 +1,6 @@
 # Standard imports
 import json
-import sys
+import os
 
 # Third party imports
 import networkx as nx
@@ -16,7 +16,7 @@ class Engine:
     Controls the SDN simulation.
     """
 
-    def __init__(self, sim_input=None, erlang=None, sim_input_fp=None):
+    def __init__(self, sim_input=None, erlang=None, sim_input_fp=None, network_name=None, sim_start=None):
         self.blocking = {
             'simulations': dict(),
             'stats': dict()
@@ -26,7 +26,9 @@ class Engine:
         self.sim_input = sim_input
         self.erlang = erlang
         self.seed = 1
+        self.sim_start = sim_start
 
+        self.network_name = network_name
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
 
@@ -43,14 +45,28 @@ class Engine:
         """
         Saves the simulation results to a file like #_erlang.json.
         """
+        # We use link 1 to determine number of cores used (all links are the same at the moment)
         self.blocking['stats'] = {
             'mean': self.mean,
             'variance': self.variance,
             'ci_rate': self.ci_rate,
-            'ci_percent': self.ci_percent
+            'ci_percent': self.ci_percent,
+            'misc_info': {
+                'cores_used': self.sim_input['physical_topology']['links'][1]['fiber']['num_cores'],
+                'mu': self.sim_input['mu'],
+                'spectral_slots': self.sim_input['spectral_slots']
+            }
         }
 
-        with open(f'data/output/{self.erlang}_erlang.json', 'w', encoding='utf-8') as file_path:
+        if not os.path.exists('data/output/'):
+            os.mkdir('data/output/')
+        if not os.path.exists(f'data/output/{self.network_name}/'):
+            os.mkdir(f'data/output/{self.network_name}/')
+        if not os.path.exists(f'data/output/{self.network_name}/{self.sim_start}/'):
+            os.mkdir(f'data/output/{self.network_name}/{self.sim_start}/')
+
+        with open(f'data/output/{self.network_name}/{self.sim_start}/{self.erlang}_erlang.json', 'w', encoding='utf-8')\
+                as file_path:
             json.dump(self.blocking, file_path, indent=4)
 
     def calc_blocking_stats(self, simulation_number):
@@ -70,7 +86,6 @@ class Engine:
             return
         self.variance = np.var(block_percent_arr)
         # Confidence interval rate
-        # TODO: Make sure this is correct
         self.ci_rate = 1.645 * (np.sqrt(self.variance) / np.sqrt(len(block_percent_arr)))
         self.ci_percent = ((2 * self.ci_rate) / np.mean(block_percent_arr)) * 100
 
@@ -92,28 +107,28 @@ class Engine:
         """
         self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
 
-    def handle_arrival(self, time):
+    def handle_arrival(self, curr_time):
         """
         Calls the controller to handle an arrival request.
 
-        :param time: The arrival time of the request
-        :type time: float
+        :param curr_time: The arrival time of the request
+        :type curr_time: float
         :return: None
         """
-        rsa_res = controller_main(src=self.sorted_requests[time]["source"],
-                                  dest=self.sorted_requests[time]["destination"],
+        rsa_res = controller_main(src=self.sorted_requests[curr_time]["source"],
+                                  dest=self.sorted_requests[curr_time]["destination"],
                                   request_type="Arrival",
                                   physical_topology=self.physical_topology,
                                   network_spec_db=self.network_spec_db,
-                                  mod_formats=self.sorted_requests[time]['mod_formats'],
-                                  chosen_bw=self.sorted_requests[time]['bandwidth'],
+                                  mod_formats=self.sorted_requests[curr_time]['mod_formats'],
+                                  chosen_bw=self.sorted_requests[curr_time]['bandwidth'],
                                   path=list()
                                   )
 
         if rsa_res is False:
             self.blocking_iter += 1
         else:
-            self.requests_status.update({self.sorted_requests[time]['id']: {
+            self.requests_status.update({self.sorted_requests[curr_time]['id']: {
                 "mod_format": rsa_res[0]['mod_format'],
                 "slots": rsa_res[0]['start_res_slot'],
                 "path": rsa_res[0]['path']
@@ -121,25 +136,24 @@ class Engine:
             self.network_spec_db = rsa_res[1]
             self.physical_topology = rsa_res[2]
 
-    def handle_release(self, time):
+    def handle_release(self, curr_time):
         """
         Calls the controller to handle a release request.
 
-        :param time: The arrival time of the request
-        :type time: float
+        :param curr_time: The arrival time of the request
+        :type curr_time: float
         :return: None
         """
-        # TODO: Check to make sure this works
-        if self.sorted_requests[time]['id'] in self.requests_status:
-            controller_main(src=self.sorted_requests[time]["source"],
-                            dest=self.sorted_requests[time]["destination"],
+        if self.sorted_requests[curr_time]['id'] in self.requests_status:
+            controller_main(src=self.sorted_requests[curr_time]["source"],
+                            dest=self.sorted_requests[curr_time]["destination"],
                             request_type="Release",
                             physical_topology=self.physical_topology,
                             network_spec_db=self.network_spec_db,
-                            mod_formats=self.sorted_requests[time]['mod_formats'],
-                            chosen_mod=self.requests_status[self.sorted_requests[time]['id']]['mod_format'],
-                            slot_num=self.requests_status[self.sorted_requests[time]['id']]['slots'],
-                            path=self.requests_status[self.sorted_requests[time]['id']]['path'],
+                            mod_formats=self.sorted_requests[curr_time]['mod_formats'],
+                            chosen_mod=self.requests_status[self.sorted_requests[curr_time]['id']]['mod_format'],
+                            slot_num=self.requests_status[self.sorted_requests[curr_time]['id']]['slots'],
+                            path=self.requests_status[self.sorted_requests[curr_time]['id']]['path'],
                             )
         # Request was blocked, nothing to release
         else:
@@ -151,7 +165,6 @@ class Engine:
 
         :return: None
         """
-        # TODO: Make sure this is correct (plot)
         # Reset physical topology and network spectrum from previous iterations
         self.physical_topology = nx.Graph()
         self.network_spec_db = dict()
@@ -203,7 +216,6 @@ class Engine:
             else:
                 self.seed = self.sim_input['seed'][i]
 
-            # TODO: Left off checking here
             self.requests = generate(seed_no=self.seed,
                                      nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
                                      holding_time_mean=self.sim_input['mu'],
@@ -211,16 +223,16 @@ class Engine:
                                      num_requests=self.sim_input['number_of_request'],
                                      slot_dict=self.sim_input['bandwidth_types'])
 
-            # TODO: Check if all the nodes are getting utilized correctly
             self.sorted_requests = dict(sorted(self.requests.items()))
 
-            for time in self.sorted_requests:
-                if self.sorted_requests[time]['request_type'] == "Arrival":
-                    self.handle_arrival(time)
-                elif self.sorted_requests[time]['request_type'] == "Release":
-                    self.handle_release(time)
+            for curr_time in self.sorted_requests:
+                if self.sorted_requests[curr_time]['request_type'] == "Arrival":
+                    self.handle_arrival(curr_time)
+                elif self.sorted_requests[curr_time]['request_type'] == "Release":
+                    self.handle_release(curr_time)
 
             self.update_blocking(i)
+            # Confidence interval has been reached
             if self.calc_blocking_stats(i):
                 return
 
