@@ -3,7 +3,7 @@ import json
 import os
 import threading
 
-from scripts.structure_raw_data import structure_data
+from scripts.structure_data import structure_data
 from scripts.engine import Engine
 
 
