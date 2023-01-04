@@ -218,18 +218,20 @@ class Engine:
 
             self.requests = generate(seed_no=self.seed,
                                      nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
-                                     holding_time_mean=self.sim_input['mu'],
-                                     inter_arrival_time_mean=self.sim_input['lambda'],
+                                     mu=self.sim_input['mu'],
+                                     lam=self.sim_input['lambda'],
                                      num_requests=self.sim_input['number_of_request'],
-                                     slot_dict=self.sim_input['bandwidth_types'])
+                                     bw_dict=self.sim_input['bandwidth_types'])
 
             self.sorted_requests = dict(sorted(self.requests.items()))
 
             for curr_time in self.sorted_requests:
-                if self.sorted_requests[curr_time]['request_type'] == "Arrival":
+                if self.sorted_requests[curr_time]['request_type'] == "arrival":
                     self.handle_arrival(curr_time)
-                elif self.sorted_requests[curr_time]['request_type'] == "Release":
+                elif self.sorted_requests[curr_time]['request_type'] == "release":
                     self.handle_release(curr_time)
+                else:
+                    raise NotImplementedError
 
             self.update_blocking(i)
             # Confidence interval has been reached
