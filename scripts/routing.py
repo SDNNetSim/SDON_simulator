@@ -63,7 +63,8 @@ class Routing:
 
     def least_congested_path(self):
         """
-        Given a graph with a desired source and destination, find the least congested pathway.
+        Given a graph with a desired source and destination, implement the least congested pathway algorithm. (Based on
+        Arash Rezaee's research paper assumptions)
 
         :return: The least congested path
         :rtype: list
@@ -91,32 +92,42 @@ class Routing:
         :return: The shortest path
         :rtype: list
         """
-        if self.source == 10:
-            print('Begin debug')
-
-        # TODO: Ensure this works correctly
         paths_obj = nx.shortest_simple_paths(G=self.physical_topology, source=self.source, target=self.destination,
                                              weight='length')
 
-        # TODO: Update number of slots occupied based on spectral computation
+        # Modulation format calculations based on Yue Wang's dissertation
         for path in paths_obj:
             mod_format, slots_needed = self.assign_mod_format(path)
             return path, mod_format, slots_needed
 
     def spectral_slot_comp(self, bits_per_symbol):
-        # TODO: Change hard coded value here (make more neat)
+        """
+        Compute the amount of spectral slots needed.
+
+        :param bits_per_symbol:  The number of bits per symbol
+        :type bits_per_symbol: int
+        :return: Amount of spectral slots needed to allocate a request
+        :rtype: int
+        """
         return math.ceil(float(self.bw) / float(bits_per_symbol) / 12.5)
 
     def assign_mod_format(self, path):
+        """
+        Given a path, assign an appropriate modulation format to the request. Return False if the length of the path
+        exceeds the maximum lengths for modulation formats used here.
+
+        :param path: The path chosen to allocate a request
+        :type path: list
+        :return: The modulation format chosen and the number of slots needed to allocate the request
+        :rtype: (str, int) or bool
+        """
         path_len = 0
         for i in range(0, len(path) - 1):
             path_len += self.physical_topology[path[i]][path[i + 1]]['length']
 
         # It's important to check modulation formats in this order
-        # TODO: Greater than or greater than or equal to?
         if self.mod_formats['QPSK']['max_length'] >= path_len > self.mod_formats['16-QAM']['max_length']:
             mod_format = 'QPSK'
-            # TODO: Why is this done manually in his code??? Why initialize?
             bits_per_symbol = 2
         elif self.mod_formats['16-QAM']['max_length'] >= path_len > self.mod_formats['64-QAM']['max_length']:
             mod_format = '16-QAM'
@@ -128,6 +139,5 @@ class Routing:
         else:
             return False, False
 
-        # TODO: Is slots needed correct here?
         slots_needed = self.spectral_slot_comp(bits_per_symbol)
         return mod_format, slots_needed
