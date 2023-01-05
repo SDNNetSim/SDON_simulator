@@ -7,16 +7,6 @@ class SpectrumAssignment:
     """
 
     def __init__(self, path, slots_needed=None, network_spec_db=None, guard_band=0):
-        """
-        The constructor.
-
-        :param path: The selected pathway of a request
-        :type path: list
-        :param slots_needed: The number of spectrum slots the request needs
-        :type slots_needed: int
-        :param network_spec_db: The network spectrum database
-        :type network_spec_db: dict
-        """
         self.is_free = True
         self.path = path
 
@@ -66,8 +56,7 @@ class SpectrumAssignment:
         Loops through each core and find the starting and ending indexes of where the request
         can be assigned.
         """
-        # TODO: I'm pretty sure Yue always uses a guard band (line 414 resource assignment)
-        # TODO: I don't understand max allowed segments in his code? These actually get erased...
+        # TODO: Guard band always used
         start_slot = 0
         end_slot = self.slots_needed - 1
 
@@ -116,7 +105,6 @@ class SpectrumAssignment:
         if self.cores_matrix is None or self.rev_cores_matrix is None:
             raise ValueError('Bi-directional link not found in network spectrum database.')
 
-        # TODO: Make sure we're searching for the correct amount of slots
         self.num_slots = np.shape(self.cores_matrix)[1]
         self.find_spectrum_slots()
 
