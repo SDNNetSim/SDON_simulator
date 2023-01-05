@@ -1,9 +1,9 @@
 import math
 
-from useful_functions.random_generation import *
+from useful_functions.random_generation import set_seed, uniform_rv, exponential_rv
 
 
-def generate(seed_no, nodes, mu, lam, num_requests, bw_dict):
+def generate(seed_no, nodes, mu, lam, num_requests, bw_dict):  # pylint: disable=invalid-name
     """
     Generate all the requests for the simulation.
 
@@ -62,8 +62,6 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict):
             if bands_dict[chosen_bw] > 0:
                 bands_dict[chosen_bw] -= 1
                 break
-            else:
-                continue
 
         if current_time not in requests and depart_time not in requests:
             requests.update({current_time: {
