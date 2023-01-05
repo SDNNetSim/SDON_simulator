@@ -1,6 +1,6 @@
 import configparser
 
-import pandas as pd
+import pandas as pd  # pylint: disable=import-error
 import numpy as np
 
 # An Excel file mapping a node number to a name
