@@ -10,7 +10,7 @@ class Routing:
     """
 
     def __init__(self, source, destination, physical_topology, network_spec_db, mod_formats,
-                 slots_needed=None, bw=None):
+                 slots_needed=None, bw=None):  # pylint: disable=invalid-name
         self.path = None
 
         self.source = source
@@ -18,7 +18,7 @@ class Routing:
         self.physical_topology = physical_topology
         self.network_spec_db = network_spec_db
         self.slots_needed = slots_needed
-        self.bw = bw
+        self.bw = bw  # pylint: disable=invalid-name
 
         self.mod_formats = mod_formats
 
