@@ -1,13 +1,14 @@
 import os
 import json
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # pylint: disable=import-error
 
 
 class Blocking:
     """
     Creates and saves plot of blocking percentage vs. Erlang.
     """
+
     def __init__(self):
         self.des_time = '0104_19:13:37'
         self.network_name = 'Pan-European'
@@ -16,7 +17,7 @@ class Blocking:
 
         self.erlang_arr = np.array([])
         self.blocking_arr = np.array([])
-        self.mu = None
+        self.mu = None  # pylint: disable=invalid-name
         self.num_cores = None
         self.spectral_slots = None
 
