@@ -36,7 +36,7 @@ def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, 
 
 
 def controller_main(src, dest, request_type, physical_topology, network_spec_db, mod_formats,
-                    slot_num=None, path=None, chosen_mod=None, chosen_bw=None):
+                    slot_num=None, path=None, chosen_mod=None, chosen_bw=None):  # pylint: disable=unused-argument
     """
     Controls arrivals and departures for requests in the simulation. Return False if a request can't be allocated.
 
