@@ -1,5 +1,5 @@
-Useful Functions Modules Documentation
-======================================
+Useful Functions Module Documentation
+=====================================
 
 .. toctree::
 

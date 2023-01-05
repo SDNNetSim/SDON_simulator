@@ -7,28 +7,25 @@ from scripts.generate_data import create_bw_info, create_pt
 from scripts.engine import Engine
 
 
-# TODO: Update docs
-# TODO: Update tests
-# TODO: GitHub pipelines
-
-
 class RunSim:
     """
     Runs the simulations for this project.
     """
+
     def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1, bw_slot=12.5,
+                 # pylint: disable=invalid-name
                  create_bw_data=False):
         self.seed = list()
         self.num_requests = num_requests
         self.num_cores = num_cores
-        self.mu = mu
+        self.mu = mu  # pylint: disable=invalid-name
         self.lam = lam
         self.erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
 
         if create_bw_data:
             bw_info = create_bw_info()
             self.save_input('bandwidth_info.json', bw_info)
-        with open('./data/input/bandwidth_info.json', 'r') as fp:
+        with open('./data/input/bandwidth_info.json', 'r', encoding='utf-8') as fp:  # pylint: disable=invalid-name
             self.bw_types = json.load(fp)
 
         self.data, self.network_name = structure_data()
@@ -99,7 +96,6 @@ class RunSim:
 
             engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name, sim_start=sim_start)
             engine.run()
-        return
 
 
 if __name__ == '__main__':
