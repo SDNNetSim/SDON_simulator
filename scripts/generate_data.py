@@ -18,12 +18,13 @@ def create_pt(num_cores, nodes_links):
     tmp_dict = dict()
 
     # TODO: Should these be exponents or Euler's constant?
-    tmp_dict['attenuation'] = (0.2 / 4.343) * (math.e ** -3)
-    tmp_dict['non_linearity'] = 1.3 * (math.e ** -3)
-    tmp_dict['dispersion'] = (16 * math.e ** -6) * ((1550 * math.e ** -9) ** 2) / (
+    tmp_dict['attenuation'] = (0.2 / 4.343) * (math.e ** -3)                                # alpha  (1/Km)
+    tmp_dict['non_linearity'] = 1.3 * (math.e ** -3)                                        # gamma 1/(W · km)
+    tmp_dict['dispersion'] = (16 * math.e ** -6) * ((1550 * math.e ** -9) ** 2) / (         # beta2 (ps/nm/km )
             2 * math.pi * 3 * math.e ** 8)
     tmp_dict['num_cores'] = num_cores
     tmp_dict['fiber_type'] = 0
+    tmp_dict['span_length'] = 100                                                           # length of span (Km)
     link_num = 1
 
     for nodes, link_len in nodes_links.items():
