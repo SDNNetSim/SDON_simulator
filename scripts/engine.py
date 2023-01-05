@@ -117,7 +117,7 @@ class Engine:
         """
         rsa_res = controller_main(src=self.sorted_requests[curr_time]["source"],
                                   dest=self.sorted_requests[curr_time]["destination"],
-                                  request_type="Arrival",
+                                  request_type="arrival",
                                   physical_topology=self.physical_topology,
                                   network_spec_db=self.network_spec_db,
                                   mod_formats=self.sorted_requests[curr_time]['mod_formats'],
@@ -147,7 +147,7 @@ class Engine:
         if self.sorted_requests[curr_time]['id'] in self.requests_status:
             controller_main(src=self.sorted_requests[curr_time]["source"],
                             dest=self.sorted_requests[curr_time]["destination"],
-                            request_type="Release",
+                            request_type="release",
                             physical_topology=self.physical_topology,
                             network_spec_db=self.network_spec_db,
                             mod_formats=self.sorted_requests[curr_time]['mod_formats'],

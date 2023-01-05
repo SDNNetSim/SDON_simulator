@@ -9,7 +9,7 @@ class Blocking:
     Creates and saves plot of blocking percentage vs. Erlang.
     """
     def __init__(self):
-        self.des_time = '0104_18:58:47'
+        self.des_time = '0104_19:13:37'
         self.network_name = 'Pan-European'
         self.file_path = f'../data/output/{self.network_name}/{self.des_time}/'
         self.files = self.get_file_names()
