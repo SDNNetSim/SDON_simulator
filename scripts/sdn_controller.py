@@ -2,7 +2,7 @@ from scripts.routing import Routing
 from scripts.spectrum_assignment import SpectrumAssignment
 
 
-def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, req_type=None):
+def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, id, core_num=0, req_type=None):
     """
     Releases or fills slots in the network spectrum database arrays.
 
@@ -22,7 +22,7 @@ def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, 
     :rtype: dict
     """
     if req_type == 'arrival':
-        value = 1
+        value = id
     elif req_type == 'release':
         value = 0
     else:
@@ -35,7 +35,7 @@ def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, 
     return network_spec_db
 
 
-def controller_main(src, dest, request_type, physical_topology, network_spec_db, mod_formats,
+def controller_main(src, dest, request_type, physical_topology, network_spec_db, mod_formats, id,
                     slot_num=None, path=None, chosen_mod=None, chosen_bw=None):
     """
     Controls arrivals and departures for requests in the simulation. Return False if a request can't be allocated.
@@ -69,7 +69,8 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
                                             path=path,
                                             start_slot=slot_num,
                                             num_slots=mod_formats['QPSK']['slots_needed'],
-                                            req_type='release'
+                                            req_type='release',
+                                            id = id
                                             )
         return network_spec_db, physical_topology
 
@@ -98,7 +99,8 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
                                                 path=selected_path,
                                                 start_slot=selected_sp['start_slot'],
                                                 num_slots=mod_formats['QPSK']['slots_needed'],
-                                                req_type='arrival'
+                                                req_type='arrival',
+                                                id = id
                                                 )
             return ras_output, network_spec_db, physical_topology
 
