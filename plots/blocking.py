@@ -10,7 +10,9 @@ class Blocking:
     """
 
     def __init__(self):
-        self.des_time = '0104_19:13:37'
+        # Change these variables for the desired plot you'd like
+        # TODO: Document the structure of how things are saved
+        self.des_time = '0105_14:48:32'
         self.network_name = 'Pan-European'
         self.file_path = f'../data/output/{self.network_name}/{self.des_time}/'
         self.files = self.get_file_names()
@@ -68,6 +70,8 @@ class Blocking:
         plt.ylabel('Blocking Probability')
         plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
 
+        if not os.path.exists('./output/'):
+            os.mkdir('./output/')
         if not os.path.exists(f'./output/{self.network_name}'):
             os.mkdir(f'./output/{self.network_name}')
 
