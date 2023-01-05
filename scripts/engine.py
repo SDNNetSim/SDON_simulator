@@ -65,7 +65,7 @@ class Engine:
         if not os.path.exists(f'data/output/{self.network_name}/{self.sim_start}/'):
             os.mkdir(f'data/output/{self.network_name}/{self.sim_start}/')
 
-        with open(f'data/output/{self.network_name}/{self.sim_start}/{self.erlang}_erlang.json', 'w', encoding='utf-8')\
+        with open(f'data/output/{self.network_name}/{self.sim_start}/{self.erlang}_erlang.json', 'w', encoding='utf-8') \
                 as file_path:
             json.dump(self.blocking, file_path, indent=4)
 
@@ -79,11 +79,11 @@ class Engine:
         """
         block_percent_arr = np.array(list(self.blocking['simulations'].values()))
         if len(block_percent_arr) == 1:
-            return
+            return False
 
         self.mean = np.mean(block_percent_arr)
         if self.mean == 0:
-            return
+            return False
         self.variance = np.var(block_percent_arr)
         # Confidence interval rate
         self.ci_rate = 1.645 * (np.sqrt(self.variance) / np.sqrt(len(block_percent_arr)))
@@ -94,8 +94,8 @@ class Engine:
                   f'ending and saving results for Erlang: {self.erlang}')
             self.save_sim_results()
             return True
-        else:
-            return False
+
+        return False
 
     def update_blocking(self, i):
         """
