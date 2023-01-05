@@ -7,3 +7,8 @@ docs/_build/*
 
 # My stuff
 misc/
+
+# Data files
+data/output/*
+scripts/__pycache__
+plots/output/*

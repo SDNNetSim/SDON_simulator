@@ -6,23 +6,15 @@ class SpectrumAssignment:
     Finds spectrum slots for a given request.
     """
 
-    def __init__(self, path, slots_needed=None, network_spec_db=None):
-        """
-        The constructor.
-
-        :param path: The selected pathway of a request
-        :type path: list
-        :param slots_needed: The number of spectrum slots the request needs
-        :type slots_needed: int
-        :param network_spec_db: The network spectrum database
-        :type network_spec_db: dict
-        """
+    def __init__(self, path, slots_needed=None, network_spec_db=None, guard_band=0):
         self.is_free = True
         self.path = path
 
         self.slots_needed = slots_needed
+        self.guard_band = guard_band
         self.network_spec_db = network_spec_db
         self.cores_matrix = None
+        self.rev_cores_matrix = None
         self.num_slots = None
 
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
@@ -48,9 +40,12 @@ class SpectrumAssignment:
 
             # Contains source and destination names
             sub_path = (self.path[i], self.path[i + 1])
-            spectrum = self.network_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot]
+            rev_sub_path = (self.path[i + 1], self.path[i])
 
-            if set(spectrum) != {0}:
+            spec_set = set(self.network_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot])
+            rev_spec_set = set(self.network_spec_db[rev_sub_path]['cores_matrix'][core_num][start_slot:end_slot])
+
+            if (spec_set, rev_spec_set) != ({0}, {0}):
                 self.is_free = False
                 return
 
@@ -61,26 +56,32 @@ class SpectrumAssignment:
         Loops through each core and find the starting and ending indexes of where the request
         can be assigned.
         """
+        # TODO: Guard band always used
         start_slot = 0
         end_slot = self.slots_needed - 1
 
         for core_num, core_arr in enumerate(self.cores_matrix):
             open_slots_arr = np.where(core_arr == 0)[0]
+
             # Look for a super spectrum in the current core
             while end_slot < self.num_slots:
-                spectrum_set = set(core_arr[start_slot:end_slot])
+                spec_set = set(core_arr[start_slot:end_slot + self.guard_band])
+                rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot + self.guard_band])
+
                 # Spectrum is free
-                if spectrum_set == {0}:
+                if (spec_set, rev_spec_set) == ({0}, {0}):
                     if len(self.path) > 2:
-                        self.check_other_links(core_num, start_slot, end_slot)
+                        self.check_other_links(core_num, start_slot, end_slot + self.guard_band)
 
                     # Other links spectrum slots are also available
                     if self.is_free is not False or len(self.path) <= 2:
-                        self.response = {'core_num': core_num, 'start_slot': start_slot, 'end_slot': end_slot}
+                        self.response = {'core_num': core_num, 'start_slot': start_slot,
+                                         'end_slot': end_slot + self.guard_band}
                         return
 
                 # No more open slots
                 if len(open_slots_arr) == 0:
+                    self.is_free = False
                     break
 
                 # TODO: This will check zero twice potentially
@@ -97,14 +98,18 @@ class SpectrumAssignment:
         :return: The available core, starting index, and ending index. False otherwise.
         :rtype: dict or bool
         """
+        # Ensure spectrum from 'A' to 'B' and 'B' to 'A' are free
         self.cores_matrix = self.network_spec_db[(self.path[0], self.path[1])]['cores_matrix']
-        if self.cores_matrix is None:
-            raise ValueError('Link not found in network spectrum database.')
+        self.rev_cores_matrix = self.network_spec_db[(self.path[1], self.path[0])]['cores_matrix']
+
+        if self.cores_matrix is None or self.rev_cores_matrix is None:
+            raise ValueError('Bi-directional link not found in network spectrum database.')
 
         self.num_slots = np.shape(self.cores_matrix)[1]
         self.find_spectrum_slots()
 
-        if self.is_free:
+        # TODO: Find a better way for this (potentially remove is_free variable)
+        if self.response['start_slot'] is not None:
             return self.response
 
         return False

@@ -15,6 +15,7 @@ networking.
    :caption: Contents:
 
    scripts/script_modules.rst
+   useful_functions/useful_functions_modules.rst
    tests/test_modules.rst
 
 Indices and tables

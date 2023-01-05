@@ -1,0 +1,30 @@
+{
+    "100": {
+        "QPSK": {
+            "max_length": 5540,
+            "slots_needed": 3
+        },
+        "16-QAM": {
+            "max_length": 2375,
+            "slots_needed": 3
+        },
+        "64-QAM": {
+            "max_length": 916,
+            "slots_needed": 3
+        }
+    },
+    "400": {
+        "QPSK": {
+            "max_length": 1385,
+            "slots_needed": 10
+        },
+        "16-QAM": {
+            "max_length": 594,
+            "slots_needed": 10
+        },
+        "64-QAM": {
+            "max_length": 229,
+            "slots_needed": 10
+        }
+    }
+}

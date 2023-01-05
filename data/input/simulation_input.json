@@ -1,0 +1,785 @@
+{
+    "seed": [],
+    "mu": 1.0,
+    "lambda": 800.0,
+    "number_of_request": 10000,
+    "bandwidth_types": {
+        "100": {
+            "QPSK": {
+                "max_length": 5540,
+                "slots_needed": 3
+            },
+            "16-QAM": {
+                "max_length": 2375,
+                "slots_needed": 3
+            },
+            "64-QAM": {
+                "max_length": 916,
+                "slots_needed": 3
+            }
+        },
+        "400": {
+            "QPSK": {
+                "max_length": 1385,
+                "slots_needed": 10
+            },
+            "16-QAM": {
+                "max_length": 594,
+                "slots_needed": 10
+            },
+            "64-QAM": {
+                "max_length": 229,
+                "slots_needed": 10
+            }
+        }
+    },
+    "max_iters": 1,
+    "spectral_slots": 256,
+    "physical_topology": {
+        "nodes": {
+            "0": {
+                "type": "CDC"
+            },
+            "1": {
+                "type": "CDC"
+            },
+            "4": {
+                "type": "CDC"
+            },
+            "2": {
+                "type": "CDC"
+            },
+            "6": {
+                "type": "CDC"
+            },
+            "5": {
+                "type": "CDC"
+            },
+            "3": {
+                "type": "CDC"
+            },
+            "9": {
+                "type": "CDC"
+            },
+            "13": {
+                "type": "CDC"
+            },
+            "8": {
+                "type": "CDC"
+            },
+            "7": {
+                "type": "CDC"
+            },
+            "12": {
+                "type": "CDC"
+            },
+            "11": {
+                "type": "CDC"
+            },
+            "10": {
+                "type": "CDC"
+            },
+            "15": {
+                "type": "CDC"
+            },
+            "17": {
+                "type": "CDC"
+            },
+            "16": {
+                "type": "CDC"
+            },
+            "14": {
+                "type": "CDC"
+            },
+            "21": {
+                "type": "CDC"
+            },
+            "24": {
+                "type": "CDC"
+            },
+            "20": {
+                "type": "CDC"
+            },
+            "19": {
+                "type": "CDC"
+            },
+            "23": {
+                "type": "CDC"
+            },
+            "18": {
+                "type": "CDC"
+            },
+            "22": {
+                "type": "CDC"
+            },
+            "26": {
+                "type": "CDC"
+            },
+            "25": {
+                "type": "CDC"
+            }
+        },
+        "links": {
+            "1": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "0",
+                "destination": "1"
+            },
+            "2": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "0",
+                "destination": "4"
+            },
+            "3": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "0",
+                "destination": "2"
+            },
+            "4": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "1",
+                "destination": "6"
+            },
+            "5": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "1",
+                "destination": "5"
+            },
+            "6": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "1",
+                "destination": "3"
+            },
+            "7": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "2",
+                "destination": "4"
+            },
+            "8": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "2",
+                "destination": "9"
+            },
+            "9": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "3",
+                "destination": "5"
+            },
+            "10": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "3",
+                "destination": "13"
+            },
+            "11": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "4",
+                "destination": "8"
+            },
+            "12": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "4",
+                "destination": "7"
+            },
+            "13": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "5",
+                "destination": "12"
+            },
+            "14": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "5",
+                "destination": "13"
+            },
+            "15": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "5",
+                "destination": "6"
+            },
+            "16": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "6",
+                "destination": "12"
+            },
+            "17": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "6",
+                "destination": "7"
+            },
+            "18": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "7",
+                "destination": "8"
+            },
+            "19": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "7",
+                "destination": "11"
+            },
+            "20": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "8",
+                "destination": "9"
+            },
+            "21": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "8",
+                "destination": "10"
+            },
+            "22": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "8",
+                "destination": "15"
+            },
+            "23": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "8",
+                "destination": "11"
+            },
+            "24": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "9",
+                "destination": "10"
+            },
+            "25": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "9",
+                "destination": "17"
+            },
+            "26": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "10",
+                "destination": "17"
+            },
+            "27": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "10",
+                "destination": "16"
+            },
+            "28": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "11",
+                "destination": "12"
+            },
+            "29": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "11",
+                "destination": "14"
+            },
+            "30": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "11",
+                "destination": "15"
+            },
+            "31": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "12",
+                "destination": "13"
+            },
+            "32": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "13",
+                "destination": "14"
+            },
+            "33": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "13",
+                "destination": "21"
+            },
+            "34": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "13",
+                "destination": "24"
+            },
+            "35": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "14",
+                "destination": "20"
+            },
+            "36": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "14",
+                "destination": "21"
+            },
+            "37": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "15",
+                "destination": "16"
+            },
+            "38": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "15",
+                "destination": "19"
+            },
+            "39": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "15",
+                "destination": "20"
+            },
+            "40": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "16",
+                "destination": "19"
+            },
+            "41": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "16",
+                "destination": "23"
+            },
+            "42": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "16",
+                "destination": "18"
+            },
+            "43": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "16",
+                "destination": "17"
+            },
+            "44": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "17",
+                "destination": "18"
+            },
+            "45": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "18",
+                "destination": "23"
+            },
+            "46": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "18",
+                "destination": "22"
+            },
+            "47": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "19",
+                "destination": "20"
+            },
+            "48": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "19",
+                "destination": "23"
+            },
+            "49": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "20",
+                "destination": "21"
+            },
+            "50": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "21",
+                "destination": "24"
+            },
+            "51": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "21",
+                "destination": "26"
+            },
+            "52": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "22",
+                "destination": "23"
+            },
+            "53": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "24",
+                "destination": "26"
+            },
+            "54": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "24",
+                "destination": "25"
+            },
+            "55": {
+                "fiber": {
+                    "attenuation": 0.0022927500975300002,
+                    "non_linearity": 0.06472318887822313,
+                    "dispersion": 2.5826100399050722e-08,
+                    "num_cores": 1,
+                    "fiber_type": 0
+                },
+                "length": 1,
+                "source": "25",
+                "destination": "26"
+            }
+        }
+    }
+}

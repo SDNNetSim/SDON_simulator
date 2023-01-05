@@ -8,7 +8,7 @@
     400
   ],
   "NO_iteration": 10,
-  "number_of_slot_per_core": 500,
+  "spectral_slots": 500,
   "physical_topology": {
     "nodes": {
       "Lowell": {
@@ -24,6 +24,9 @@
         "type": "CDC"
       },
       "Las Vegas": {
+        "type": "CDC"
+      },
+      "Portland": {
         "type": "CDC"
       },
       "San Francisco": {
@@ -89,6 +92,78 @@
         },
         "length": 20,
         "source": "Las Vegas",
+        "destination": "Portland"
+      },
+      "6": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 3
+        },
+        "length": 20,
+        "source": "Portland",
+        "destination": "San Francisco"
+      },
+      "7": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 3
+        },
+        "length": 20,
+        "source": "Lowell",
+        "destination": "New York City"
+      },
+      "8": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 3
+        },
+        "length": 20,
+        "source": "New York City",
+        "destination": "Richmond"
+      },
+      "9": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 3
+        },
+        "length": 20,
+        "source": "Richmond",
+        "destination": "Austin"
+      },
+      "10": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 3
+        },
+        "length": 20,
+        "source": "Austin",
+        "destination": "Portland"
+      },
+      "11": {
+        "fiber": {
+          "fiber_type": 0,
+          "attenuation": 0,
+          "dispersion": 0,
+          "nonlinearity": 0,
+          "num_cores": 3
+        },
+        "length": 20,
+        "source": "Portland",
         "destination": "San Francisco"
       }
     }
