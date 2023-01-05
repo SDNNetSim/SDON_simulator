@@ -12,9 +12,9 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1, bw_slot=12.5,
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=100, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
-                 create_bw_data=False):
+                 bw_slot=12.5, create_bw_data=False):  # pylint: disable=invalid-name
         self.seed = list()
         self.num_requests = num_requests
         self.num_cores = num_cores

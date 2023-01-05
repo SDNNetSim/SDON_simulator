@@ -33,7 +33,7 @@
             }
         }
     },
-    "max_iters": 1,
+    "max_iters": 100,
     "spectral_slots": 256,
     "physical_topology": {
         "nodes": {
