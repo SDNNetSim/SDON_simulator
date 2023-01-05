@@ -35,8 +35,8 @@ def uniform_rv(scale_param=None):
     """
     if scale_param is None:
         return np.random.uniform(0, 1)
-    else:
-        return int(np.random.uniform(0, 1) * scale_param)
+
+    return int(np.random.uniform(0, 1) * scale_param)
 
 
 def exponential_rv(scale_param):
