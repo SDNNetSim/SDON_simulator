@@ -57,15 +57,15 @@ class Engine:
                 'spectral_slots': self.sim_input['spectral_slots']
             }
         }
-
+        sim_time = self.sim_start[0:7] + '_' + self.sim_start[8:10] + '_' + self.sim_start[11:13]
         if not os.path.exists('data/output/'):
             os.mkdir('data/output/')
         if not os.path.exists(f'data/output/{self.network_name}/'):
             os.mkdir(f'data/output/{self.network_name}/')
-        if not os.path.exists(f'data/output/{self.network_name}/{self.sim_start}/'):
-            os.mkdir(f'data/output/{self.network_name}/{self.sim_start}/')
+        if not os.path.exists(f'data/output/{self.network_name}/{sim_time}/'):
+            os.mkdir(f'data/output/{self.network_name}/{sim_time}/')
 
-        with open(f'data/output/{self.network_name}/{self.sim_start}/{self.erlang}_erlang.json', 'w', encoding='utf-8')\
+        with open(f'data/output/{self.network_name}/{sim_time}/{self.erlang}_erlang.json', 'w', encoding='utf-8')\
                 as file_path:
             json.dump(self.blocking, file_path, indent=4)
 
@@ -122,7 +122,8 @@ class Engine:
                                   network_spec_db=self.network_spec_db,
                                   mod_formats=self.sorted_requests[curr_time]['mod_formats'],
                                   chosen_bw=self.sorted_requests[curr_time]['bandwidth'],
-                                  path=list()
+                                  path=list(),
+                                  id = self.sorted_requests[curr_time]['id']
                                   )
 
         if rsa_res is False:
@@ -154,6 +155,7 @@ class Engine:
                             chosen_mod=self.requests_status[self.sorted_requests[curr_time]['id']]['mod_format'],
                             slot_num=self.requests_status[self.sorted_requests[curr_time]['id']]['slots'],
                             path=self.requests_status[self.sorted_requests[curr_time]['id']]['path'],
+                            id = self.sorted_requests[curr_time]['id']
                             )
         # Request was blocked, nothing to release
         else:
