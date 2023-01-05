@@ -57,16 +57,16 @@ def create_bw_info():
         '400': {'QPSK': {'max_length': 1385}, '16-QAM': {'max_length': 594}, '64-QAM': {'max_length': 229}},
     }
 
-    for bw, bw_obj in bw_info.items():
-        for mod_format, mod_obj in bw_obj.items():
+    for bw, bw_obj in bw_info.items():  # pylint: disable=invalid-name
+        for mod_format, mod_obj in bw_obj.items():  # pylint: disable=unused-variable
             # Hard coded values, ignoring bw = 50 Gbps, Arash's bw assumption for number of slots needed (only using
             # 100 and 400). We don't use the max length value above in this case. Also, only one modulation format was
             # used, hence we set all the modulation values to have the same reach for ease of switching between them in
             # code. This is temporary.
             if bw == '100':
-                bw_obj[mod_format]['slots_needed'] = 3
+                bw_obj[mod_format]['slots_needed'] = 3  # pylint: disable=unnecessary-dict-index-lookup
             elif bw == '400':
-                bw_obj[mod_format]['slots_needed'] = 10
+                bw_obj[mod_format]['slots_needed'] = 10  # pylint: disable=unnecessary-dict-index-lookup
             # Yue Wang's dissertation assumption on the number of slots needed for each bandwidth and modulation format
             # bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / self.bw_slot)
 
