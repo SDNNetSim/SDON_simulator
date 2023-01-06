@@ -1,7 +1,7 @@
 {
     "seed": [],
     "mu": 1.0,
-    "lambda": 800.0,
+    "lambda": 50.0,
     "number_of_request": 10000,
     "bandwidth_types": {
         "100": {
@@ -33,7 +33,7 @@
             }
         }
     },
-    "max_iters": 100,
+    "max_iters": 1,
     "spectral_slots": 256,
     "physical_topology": {
         "nodes": {

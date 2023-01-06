@@ -6,7 +6,9 @@ class SpectrumAssignment:
     Finds spectrum slots for a given request.
     """
 
-    def __init__(self, path, slots_needed=None, network_spec_db=None, guard_band=0):
+    # TODO: Guard band has been zero for previous runs!
+    # TODO: Move guard band to run sim
+    def __init__(self, path, slots_needed=None, network_spec_db=None, guard_band=1):
         self.is_free = True
         self.path = path
 
@@ -63,7 +65,7 @@ class SpectrumAssignment:
         for core_num, core_arr in enumerate(self.cores_matrix):
             open_slots_arr = np.where(core_arr == 0)[0]
 
-            # Look for a super spectrum in the current core
+            # Look for a super channel in the current core
             while end_slot < self.num_slots:
                 spec_set = set(core_arr[start_slot:end_slot + self.guard_band])
                 rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot + self.guard_band])

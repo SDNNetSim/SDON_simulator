@@ -115,7 +115,8 @@ class Engine:
         :type curr_time: float
         :return: None
         """
-        rsa_res = controller_main(src=self.sorted_requests[curr_time]["source"],
+        rsa_res = controller_main(req_id=self.sorted_requests[curr_time]["id"],
+                                  src=self.sorted_requests[curr_time]["source"],
                                   dest=self.sorted_requests[curr_time]["destination"],
                                   request_type="arrival",
                                   physical_topology=self.physical_topology,
@@ -145,7 +146,8 @@ class Engine:
         :return: None
         """
         if self.sorted_requests[curr_time]['id'] in self.requests_status:
-            controller_main(src=self.sorted_requests[curr_time]["source"],
+            controller_main(req_id=self.sorted_requests[curr_time]["id"],
+                            src=self.sorted_requests[curr_time]["source"],
                             dest=self.sorted_requests[curr_time]["destination"],
                             request_type="release",
                             physical_topology=self.physical_topology,

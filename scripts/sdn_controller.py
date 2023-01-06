@@ -2,10 +2,12 @@ from scripts.routing import Routing
 from scripts.spectrum_assignment import SpectrumAssignment
 
 
-def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, req_type=None):
+def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, core_num=0, req_type=None):
     """
     Releases or fills slots in the network spectrum database arrays.
 
+    :param req_id: The request's id number
+    :type req_id: int
     :param network_spec_db: The current network spectrum database
     :type network_spec_db: dict
     :param path: The shortest path computed
@@ -22,12 +24,14 @@ def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, 
     :rtype: dict
     """
     if req_type == 'arrival':
-        value = 1
+        value = req_id
     elif req_type == 'release':
         value = 0
     else:
         raise ValueError(f'Expected release or arrival, got {req_type}.')
 
+    # TODO: We shall add the guard band here, need to account for this
+    # TODO: This will most likely change for slicing, different functions?
     for i in range(len(path) - 1):
         network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = value
         network_spec_db[(path[i + 1], path[i])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = value
@@ -35,11 +39,13 @@ def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, core_num=0, 
     return network_spec_db
 
 
-def controller_main(src, dest, request_type, physical_topology, network_spec_db, mod_formats,
+def controller_main(req_id, src, dest, request_type, physical_topology, network_spec_db, mod_formats,
                     slot_num=None, path=None, chosen_mod=None, chosen_bw=None):  # pylint: disable=unused-argument
     """
     Controls arrivals and departures for requests in the simulation. Return False if a request can't be allocated.
 
+    :param req_id: The request's id number
+    :type req_id: int
     :param src: Source node
     :type src: int
     :param dest: Destination node
@@ -65,7 +71,8 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
     """
     # TODO: Modulation format hard coded for the moment, it's not important for temporary reasons
     if request_type == "release":
-        network_spec_db = handle_arrive_rel(network_spec_db=network_spec_db,
+        network_spec_db = handle_arrive_rel(req_id=req_id,
+                                            network_spec_db=network_spec_db,
                                             path=path,
                                             start_slot=slot_num,
                                             num_slots=mod_formats['QPSK']['slots_needed'],
@@ -73,9 +80,11 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
                                             )
         return network_spec_db, physical_topology
 
-    routing_obj = Routing(source=src, destination=dest, physical_topology=physical_topology,
+    routing_obj = Routing(req_id=req_id, source=src, destination=dest, physical_topology=physical_topology,
                           network_spec_db=network_spec_db, mod_formats=mod_formats, bw=chosen_bw)
 
+    # TODO: Whose routing function are we using?
+    # TODO: Whose modulation format assumptions are we using?
     # This is used for Yue's assumptions in his dissertation
     # selected_path, path_mod, slots_needed = routing_obj.shortest_path()
     # Used for Arash's assumptions in previous research papers
@@ -94,7 +103,8 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
                 'start_res_slot': selected_sp['start_slot'],
                 'end_res_slot': selected_sp['end_slot'],
             }
-            network_spec_db = handle_arrive_rel(network_spec_db=network_spec_db,
+            network_spec_db = handle_arrive_rel(req_id=req_id,
+                                                network_spec_db=network_spec_db,
                                                 path=selected_path,
                                                 start_slot=selected_sp['start_slot'],
                                                 num_slots=mod_formats['QPSK']['slots_needed'],

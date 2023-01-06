@@ -9,10 +9,11 @@ class Routing:
     Contains the routing methods for the simulation.
     """
 
-    def __init__(self, source, destination, physical_topology, network_spec_db, mod_formats,
+    def __init__(self, req_id, source, destination, physical_topology, network_spec_db, mod_formats,
                  slots_needed=None, bw=None):  # pylint: disable=invalid-name
         self.path = None
 
+        self.req_id = req_id
         self.source = source
         self.destination = destination
         self.physical_topology = physical_topology
@@ -32,8 +33,8 @@ class Routing:
         :return: The least congested route
         :rtype: list
         """
-        # Sort dictionary by number of slots occupied key and return the first one
-        sorted_paths_list = sorted(self.paths_list, key=lambda d: d['link_info']['slots_taken'])
+        # Sort dictionary by number of free slots, descending (least congested)
+        sorted_paths_list = sorted(self.paths_list, key=lambda d: d['link_info']['free_slots'], reverse=True)
 
         return sorted_paths_list[0]['path']
 
@@ -45,17 +46,19 @@ class Routing:
         :param path: A given path
         :type path: list
         """
-        res_dict = {'link': None, 'slots_taken': -1}
+        res_dict = {'link': None, 'free_slots': None}
 
         for i in range(len(path) - 1):
             cores_matrix = self.network_spec_db[(path[i]), path[i + 1]]['cores_matrix']
             link_num = self.network_spec_db[(path[i]), path[i + 1]]['link_num']
-            slots_taken = 0
+            # The total amount of free spectral slots
+            free_slots = 0
 
             for core_num, core_arr in enumerate(cores_matrix):  # pylint: disable=unused-variable
-                slots_taken += len(np.where(core_arr == 1)[0])
-            if slots_taken > res_dict['slots_taken']:
-                res_dict['slots_taken'] = slots_taken
+                free_slots += len(np.where(core_arr == 0)[0])
+                # We want to find the least amount of free slots
+            if res_dict['free_slots'] is None or free_slots < res_dict['free_slots']:
+                res_dict['free_slots'] = free_slots
                 res_dict['link'] = link_num
 
         # Link info is information about the most congested link found
@@ -64,7 +67,7 @@ class Routing:
     def least_congested_path(self):
         """
         Given a graph with a desired source and destination, implement the least congested pathway algorithm. (Based on
-        Arash Rezaee's research paper assumptions)
+        Arash Rezaee's research paper's assumptions)
 
         :return: The least congested path
         :rtype: list
@@ -109,6 +112,7 @@ class Routing:
         :return: Amount of spectral slots needed to allocate a request
         :rtype: int
         """
+        # TODO: 12.5 should be a variable (frequency for one spectral slot)
         return math.ceil(float(self.bw) / float(bits_per_symbol) / 12.5)
 
     def assign_mod_format(self, path):
