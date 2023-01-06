@@ -25,6 +25,10 @@ def create_pt(num_cores, nodes_links):
     tmp_dict['num_cores'] = num_cores
     tmp_dict['fiber_type'] = 0
     tmp_dict['span_length'] = 100                                                           # length of span (Km)
+    tmp_dict['nsp'] = 1.8                                                                   # spontaneous_emission_factor 
+    tmp_dict['plank'] = 6.62607004 * math.e ** -34                                 # plank constant
+    
+    
     link_num = 1
 
     for nodes, link_len in nodes_links.items():
