@@ -23,18 +23,20 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, core
     :return: The updated network spectrum database
     :rtype: dict
     """
-    if req_type == 'arrival':
-        value = req_id
-    elif req_type == 'release':
-        value = 0
-    else:
-        raise ValueError(f'Expected release or arrival, got {req_type}.')
-
-    # TODO: We shall add the guard band here, need to account for this
     # TODO: This will most likely change for slicing, different functions?
+    # TODO: Request number can be zero! (Free slot!) Uh oh...
     for i in range(len(path) - 1):
-        network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = value
-        network_spec_db[(path[i + 1], path[i])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = value
+        if req_type == 'arrival':
+            # Remember, Python list indexing is up to and NOT including!
+            network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots - 1] \
+                = req_id
+            # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
+            network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot + num_slots - 1] = -req_id
+        elif req_type == 'release':
+            network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = 0
+            network_spec_db[(path[i + 1], path[i])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = 0
+        else:
+            raise ValueError(f'Expected release or arrival, got {req_type}.')
 
     return network_spec_db
 

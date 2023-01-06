@@ -24,7 +24,9 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict):  # pylint: disable
     """
     requests = {}
     current_time = 0
-    counter_id = 0
+    # We must start at 1, as we allocate spectral slots with the request number and '0' is considered a free spectral
+    # slot
+    counter_id = 1
 
     set_seed(seed_no=seed_no)
 
