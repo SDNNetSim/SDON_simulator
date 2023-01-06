@@ -6,6 +6,7 @@ from scripts.structure_data import structure_data
 from scripts.generate_data import create_bw_info, create_pt
 from scripts.engine import Engine
 
+
 # TODO: Update docs
 # TODO: Update tests
 # TODO: objectify everything?
