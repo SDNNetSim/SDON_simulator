@@ -16,12 +16,14 @@ class Engine:
     Controls the SDN simulation.
     """
 
-    def __init__(self, sim_input=None, erlang=None, sim_input_fp=None, network_name=None, sim_start=None):
+    def __init__(self, sim_input=None, erlang=None, sim_input_fp=None, network_name=None, sim_start=None,
+                 assume='arash'):
         self.blocking = {
             'simulations': dict(),
             'stats': dict()
         }
         self.blocking_iter = 0
+        self.assume = assume
         self.sim_input_fp = sim_input_fp
         self.sim_input = sim_input
         self.erlang = erlang
@@ -223,7 +225,8 @@ class Engine:
                                      mu=self.sim_input['mu'],
                                      lam=self.sim_input['lambda'],
                                      num_requests=self.sim_input['number_of_request'],
-                                     bw_dict=self.sim_input['bandwidth_types'])
+                                     bw_dict=self.sim_input['bandwidth_types'],
+                                     assume=self.assume)
 
             self.sorted_requests = dict(sorted(self.requests.items()))
 

@@ -12,7 +12,7 @@ class Blocking:
     def __init__(self):
         # Change these variables for the desired plot you'd like
         # TODO: Document the structure of how things are saved
-        self.des_time = '0107_10:56:17'
+        self.des_time = '0107_11:07:41'
         self.network_name = 'Pan-European'
         self.file_path = f'../data/output/{self.network_name}/{self.des_time}/'
         self.files = self.get_file_names()

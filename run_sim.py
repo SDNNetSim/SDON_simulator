@@ -95,6 +95,14 @@ class RunSim:
         Controls the class.
         """
         sim_start = time.strftime("%m%d_%H:%M:%S")
+
+        if self.sim_assume == 'arash':
+            self.mu = 1.0
+        elif self.sim_assume == 'yue':
+            self.mu = 0.2
+        else:
+            raise NotImplementedError
+
         for curr_erlang in self.erlang_lst:
             self.lam = self.mu * float(self.num_cores) * curr_erlang
             self.create_input()
@@ -103,7 +111,8 @@ class RunSim:
             if self.save:
                 self.save_input()
 
-            engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name, sim_start=sim_start)
+            engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name, sim_start=sim_start,
+                            assume=self.sim_assume)
             engine.run()
 
 

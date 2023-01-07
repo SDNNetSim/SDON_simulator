@@ -55,7 +55,7 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
     :param request_type: Determine if the request is an arrival or departure
     :type request_type: str
     :param physical_topology: The physical topology information
-    :type physical_topology: dict
+    :type physical_topology: graph
     :param network_spec_db: The network spectrum database, holding information about the network
     :type network_spec_db: dict
     :param mod_formats: Information relating to all modulation formats
