@@ -125,7 +125,8 @@ class Engine:
                                   network_spec_db=self.network_spec_db,
                                   mod_formats=self.sorted_requests[curr_time]['mod_formats'],
                                   chosen_bw=self.sorted_requests[curr_time]['bandwidth'],
-                                  path=list()
+                                  path=list(),
+                                  assume=self.assume
                                   )
 
         if rsa_res is False:
@@ -158,6 +159,7 @@ class Engine:
                             chosen_mod=self.requests_status[self.sorted_requests[curr_time]['id']]['mod_format'],
                             slot_num=self.requests_status[self.sorted_requests[curr_time]['id']]['slots'],
                             path=self.requests_status[self.sorted_requests[curr_time]['id']]['path'],
+                            assume=self.assume
                             )
         # Request was blocked, nothing to release
         else:

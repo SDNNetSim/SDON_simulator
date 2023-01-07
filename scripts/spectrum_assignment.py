@@ -8,7 +8,8 @@ class SpectrumAssignment:
 
     # TODO: Guard band has been zero for previous runs!
     # TODO: Move guard band to run sim
-    def __init__(self, path, slots_needed=None, network_spec_db=None, guard_band=1):
+    # TODO: Change guard band back
+    def __init__(self, path, slots_needed=None, network_spec_db=None, guard_band=0):
         self.is_free = True
         self.path = path
 
@@ -59,14 +60,19 @@ class SpectrumAssignment:
         can be assigned.
         """
         # TODO: Guard band always used
+        # TODO: Edge case where the number of slots needed is one - not correct! (Comment) (Make sure it works)
         start_slot = 0
-        end_slot = self.slots_needed - 1
+        if self.slots_needed == 1:
+            end_slot = self.slots_needed
+        else:
+            end_slot = self.slots_needed - 1
 
         for core_num, core_arr in enumerate(self.cores_matrix):
             open_slots_arr = np.where(core_arr == 0)[0]
 
             # Look for a super channel in the current core
-            while end_slot < self.num_slots:
+            # TODO: Check on this
+            while (end_slot + self.guard_band) < self.num_slots:
                 spec_set = set(core_arr[start_slot:end_slot + self.guard_band])
                 rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot + self.guard_band])
 
@@ -91,7 +97,11 @@ class SpectrumAssignment:
                 start_slot = open_slots_arr[0]
                 # Remove prior slots
                 open_slots_arr = open_slots_arr[1:]
-                end_slot = start_slot + (self.slots_needed - 1)
+                # TODO: Make sure this is correct
+                if self.slots_needed == 1:
+                    end_slot = start_slot + self.slots_needed
+                else:
+                    end_slot = start_slot + (self.slots_needed - 1)
 
     def find_free_spectrum(self):
         """

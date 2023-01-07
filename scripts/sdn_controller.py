@@ -25,15 +25,31 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, core
     """
     # TODO: This will most likely change for slicing, different functions?
     for i in range(len(path) - 1):
+        # TODO: Neaten this up
+        # TODO: Another edge case, last index is trying to be allocated
+        if num_slots == 1 and req_type == 'arrival':
+            end_index = start_slot + num_slots
+        elif num_slots == 1 and req_type == 'release':
+            end_index = start_slot + num_slots + 1
+        elif req_type == 'arrival':
+            end_index = start_slot + num_slots - 1
+        elif req_type == 'release':
+            end_index = start_slot + num_slots
+        else:
+            raise NotImplementedError
+
+        src_dest = (path[i], path[i + 1])
         if req_type == 'arrival':
             # Remember, Python list indexing is up to and NOT including!
-            network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots - 1] \
-                = req_id
+            network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = req_id
             # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
-            network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot + num_slots - 1] = -req_id
+            try:
+                network_spec_db[src_dest]['cores_matrix'][core_num][end_index] = (req_id * -1)
+            except IndexError:
+                print("Here")
         elif req_type == 'release':
-            network_spec_db[(path[i], path[i + 1])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = 0
-            network_spec_db[(path[i + 1], path[i])]['cores_matrix'][core_num][start_slot:start_slot + num_slots] = 0
+            network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = 0
+            network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = 0
         else:
             raise ValueError(f'Expected release or arrival, got {req_type}.')
 
@@ -93,6 +109,7 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
         raise NotImplementedError
 
     if selected_path is not False and path_mod is not False and slots_needed is not False:
+        mod_formats[path_mod]['slots_needed'] = slots_needed
         spectrum_assignment = SpectrumAssignment(selected_path, slots_needed, network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
 

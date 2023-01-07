@@ -20,7 +20,7 @@ class RunSim:
 
     def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
-                 bw_slot=12.5, create_bw_data=True, sim_assume='arash'):  # pylint: disable=invalid-name
+                 bw_slot=12.5, create_bw_data=True, sim_assume='arash', constant_weight=True):  # pylint: disable=invalid-name
 
         # Assumptions for things like mu, lambda, modulation format/calc, and routing
         self.sim_assume = sim_assume
@@ -37,7 +37,7 @@ class RunSim:
         with open('./data/input/bandwidth_info.json', 'r', encoding='utf-8') as fp:  # pylint: disable=invalid-name
             self.bw_types = json.load(fp)
 
-        self.data, self.network_name = structure_data()
+        self.data, self.network_name = structure_data(constant_weight=constant_weight)
 
         # Frequency for one spectrum slot (GHz)
         self.bw_slot = bw_slot
@@ -90,6 +90,7 @@ class RunSim:
         """
         raise NotImplementedError
 
+    # TODO: Two different run methods?
     def run(self):
         """
         Controls the class.
@@ -97,7 +98,7 @@ class RunSim:
         sim_start = time.strftime("%m%d_%H:%M:%S")
 
         if self.sim_assume == 'arash':
-            self.mu = 1.0
+            self.mu = 3600.0
         elif self.sim_assume == 'yue':
             self.mu = 0.2
         else:
@@ -114,6 +115,20 @@ class RunSim:
             engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name, sim_start=sim_start,
                             assume=self.sim_assume)
             engine.run()
+
+        # for lam in range(2, 143, 2):
+        #     curr_erlang = float(lam) / self.mu
+        #     lam *= float(self.num_cores)
+        #     self.lam = float(lam)
+        #     self.create_input()
+        #
+        #     # Save simulation input, if desired
+        #     if self.save:
+        #         self.save_input()
+        #
+        #     engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name, sim_start=sim_start,
+        #                     assume=self.sim_assume)
+        #     engine.run()
 
 
 if __name__ == '__main__':
