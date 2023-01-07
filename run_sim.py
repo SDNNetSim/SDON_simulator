@@ -9,7 +9,8 @@ from scripts.engine import Engine
 
 # TODO: Update docs
 # TODO: Update tests
-# TODO: objectify everything?
+# TODO: Objectify everything?
+# TODO: Document how simulator is based off of two papers
 
 
 class RunSim:
@@ -19,7 +20,10 @@ class RunSim:
 
     def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
-                 bw_slot=12.5, create_bw_data=False):  # pylint: disable=invalid-name
+                 bw_slot=12.5, create_bw_data=True, sim_assume='arash'):  # pylint: disable=invalid-name
+
+        # Assumptions for things like mu, lambda, modulation format/calc, and routing
+        self.sim_assume = sim_assume
         self.seed = list()
         self.num_requests = num_requests
         self.num_cores = num_cores
@@ -28,7 +32,7 @@ class RunSim:
         self.erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
 
         if create_bw_data:
-            bw_info = create_bw_info()
+            bw_info = create_bw_info(assume=self.sim_assume)
             self.save_input('bandwidth_info.json', bw_info)
         with open('./data/input/bandwidth_info.json', 'r', encoding='utf-8') as fp:  # pylint: disable=invalid-name
             self.bw_types = json.load(fp)

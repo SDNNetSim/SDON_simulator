@@ -40,34 +40,29 @@ def create_pt(num_cores, nodes_links):
 
 
 # TODO: Eventually make a config file
-def create_bw_info():
+def create_bw_info(bw_slot=12.5, assume=None):
     """
     Determines the number of spectral slots needed for every modulation format in each bandwidth.
 
     :return: The number of spectral slots needed for each bandwidth and modulation format pair
     :rtype: dict
     """
-    # TODO: Note, this simulator was constructed based off of two prior research papers. For that reason, some parts of
-    #   this are commented out for now. Other parts, hard coded. This will eventually be changed, but must stay this
-    #   way for now.
     # Max length is in km
-    bw_info = {
-        # '50': {'QPSK': {'max_length': 11080}, '16-QAM': {'max_length': 4750}, '64-QAM': {'max_length': 1832}},
-        '100': {'QPSK': {'max_length': 5540}, '16-QAM': {'max_length': 2375}, '64-QAM': {'max_length': 916}},
-        '400': {'QPSK': {'max_length': 1385}, '16-QAM': {'max_length': 594}, '64-QAM': {'max_length': 229}},
-    }
-
-    for bw, bw_obj in bw_info.items():  # pylint: disable=invalid-name
-        for mod_format, mod_obj in bw_obj.items():  # pylint: disable=unused-variable
-            # Hard coded values, ignoring bw = 50 Gbps, Arash's bw assumption for number of slots needed (only using
-            # 100 and 400). We don't use the max length value above in this case. Also, only one modulation format was
-            # used, hence we set all the modulation values to have the same reach for ease of switching between them in
-            # code. This is temporary.
-            if bw == '100':
-                bw_obj[mod_format]['slots_needed'] = 3  # pylint: disable=unnecessary-dict-index-lookup
-            elif bw == '400':
-                bw_obj[mod_format]['slots_needed'] = 10  # pylint: disable=unnecessary-dict-index-lookup
-            # Yue Wang's dissertation assumption on the number of slots needed for each bandwidth and modulation format
-            # bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / self.bw_slot)
+    if assume == 'yue':
+        bw_info = {
+            '50': {'QPSK': {'max_length': 11080}, '16-QAM': {'max_length': 4750}, '64-QAM': {'max_length': 1832}},
+            '100': {'QPSK': {'max_length': 5540}, '16-QAM': {'max_length': 2375}, '64-QAM': {'max_length': 916}},
+            '400': {'QPSK': {'max_length': 1385}, '16-QAM': {'max_length': 594}, '64-QAM': {'max_length': 229}},
+        }
+        for bw, bw_obj in bw_info.items():  # pylint: disable=invalid-name
+            for mod_format, mod_obj in bw_obj.items():  # pylint: disable=unused-variable
+                bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / bw_slot)
+    elif assume == 'arash':
+        bw_info = {
+            '100': {'QPSK': {'slots_needed': 3}},
+            '400': {'QPSK': {'slots_needed': 10}},
+        }
+    else:
+        raise NotImplementedError
 
     return bw_info
