@@ -57,7 +57,7 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume):  # pylint:
 
     # Multiplied by two, to account for arrival and departure requests
     while len(requests) < (num_requests * 2):
-        # TODO: Not using math.ceil increases blocking
+        # TODO: Not using math.ceil and the weird division increases blocking
         current_time = current_time + exponential_rv(lam)
         depart_time = current_time + exponential_rv(mu)
 

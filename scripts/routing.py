@@ -84,9 +84,20 @@ class Routing:
                 if num_hops <= min_hops + 1:
                     self.find_most_cong_link(path)
                 else:
-                    return self.find_least_cong_route()
+                    path = self.find_least_cong_route()
+                    mod_format = 'QPSK'
 
-        return False
+                    # TODO: Find a better way to do this it's sort of redundant
+                    if self.bw == '100':
+                        slots_needed = 3
+                    elif self.bw == '400':
+                        slots_needed = 10
+                    else:
+                        raise NotImplementedError
+
+                    return path, mod_format, slots_needed
+
+        return False, False, False
 
     def shortest_path(self):
         """
@@ -103,17 +114,18 @@ class Routing:
             mod_format, slots_needed = self.assign_mod_format(path)
             return path, mod_format, slots_needed
 
-    def spectral_slot_comp(self, bits_per_symbol):
+    def spectral_slot_comp(self, bits_per_symbol, bw_slot=12.5):
         """
         Compute the amount of spectral slots needed.
 
         :param bits_per_symbol:  The number of bits per symbol
         :type bits_per_symbol: int
+        :param bw_slot: The frequency for one spectral slot
+        :type bw_slot: float
         :return: Amount of spectral slots needed to allocate a request
         :rtype: int
         """
-        # TODO: 12.5 should be a variable (frequency for one spectral slot)
-        return math.ceil(float(self.bw) / float(bits_per_symbol) / 12.5)
+        return math.ceil(float(self.bw) / float(bits_per_symbol) / bw_slot)
 
     def assign_mod_format(self, path):
         """

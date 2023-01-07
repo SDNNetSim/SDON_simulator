@@ -24,7 +24,6 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, core
     :rtype: dict
     """
     # TODO: This will most likely change for slicing, different functions?
-    # TODO: Request number can be zero! (Free slot!) Uh oh...
     for i in range(len(path) - 1):
         if req_type == 'arrival':
             # Remember, Python list indexing is up to and NOT including!
@@ -42,7 +41,7 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, core
 
 
 def controller_main(req_id, src, dest, request_type, physical_topology, network_spec_db, mod_formats,
-                    slot_num=None, path=None, chosen_mod=None, chosen_bw=None):  # pylint: disable=unused-argument
+                    slot_num=None, path=None, chosen_mod=None, chosen_bw=None, assume='arash'):
     """
     Controls arrivals and departures for requests in the simulation. Return False if a request can't be allocated.
 
@@ -68,16 +67,17 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
     :type chosen_mod: str
     :param chosen_bw: The chosen bandwidth
     :type chosen_bw: str
+    :param assume: A flag to dictate whether we're using Arash or Yue's assumptions
+    :type assume: str
     :return: The modulation format, core, start slot, and end slot chosen along with the network DB and topology
     :rtype: (dict, dict, dict) or bool
     """
-    # TODO: Modulation format hard coded for the moment, it's not important for temporary reasons
     if request_type == "release":
         network_spec_db = handle_arrive_rel(req_id=req_id,
                                             network_spec_db=network_spec_db,
                                             path=path,
                                             start_slot=slot_num,
-                                            num_slots=mod_formats['QPSK']['slots_needed'],
+                                            num_slots=mod_formats[chosen_mod]['slots_needed'],
                                             req_type='release'
                                             )
         return network_spec_db, physical_topology
@@ -85,22 +85,21 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
     routing_obj = Routing(req_id=req_id, source=src, destination=dest, physical_topology=physical_topology,
                           network_spec_db=network_spec_db, mod_formats=mod_formats, bw=chosen_bw)
 
-    # TODO: Whose routing function are we using?
-    # TODO: Whose modulation format assumptions are we using?
-    # This is used for Yue's assumptions in his dissertation
-    # selected_path, path_mod, slots_needed = routing_obj.shortest_path()
-    # Used for Arash's assumptions in previous research papers
-    selected_path = routing_obj.least_congested_path()
+    if assume == 'yue':
+        selected_path, path_mod, slots_needed = routing_obj.shortest_path()
+    elif assume == 'arash':
+        selected_path, path_mod, slots_needed = routing_obj.least_congested_path()
+    else:
+        raise NotImplementedError
 
-    if selected_path is not False:
-        # Hard coding QPSK for now, all slots needed are actually the same (Not actually QPSK)
-        spectrum_assignment = SpectrumAssignment(selected_path, mod_formats['QPSK']['slots_needed'], network_spec_db)
+    if selected_path is not False and path_mod is not False and slots_needed is not False:
+        spectrum_assignment = SpectrumAssignment(selected_path, slots_needed, network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
 
         if selected_sp is not False:
-            ras_output = {
+            resp = {
                 'path': selected_path,
-                'mod_format': 'QPSK',
+                'mod_format': path_mod,
                 'core_num': selected_sp['core_num'],
                 'start_res_slot': selected_sp['start_slot'],
                 'end_res_slot': selected_sp['end_slot'],
@@ -109,10 +108,10 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
                                                 network_spec_db=network_spec_db,
                                                 path=selected_path,
                                                 start_slot=selected_sp['start_slot'],
-                                                num_slots=mod_formats['QPSK']['slots_needed'],
+                                                num_slots=slots_needed,
                                                 req_type='arrival'
                                                 )
-            return ras_output, network_spec_db, physical_topology
+            return resp, network_spec_db, physical_topology
 
         return False
 
