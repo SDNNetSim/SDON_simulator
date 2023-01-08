@@ -60,6 +60,7 @@ class Engine:
             }
         }
 
+        # TODO: Move something like this to useful functions module
         if not os.path.exists('data/output/'):
             os.mkdir('data/output/')
         if not os.path.exists(f'data/output/{self.network_name}/'):
@@ -122,6 +123,7 @@ class Engine:
                                   dest=self.sorted_requests[curr_time]["destination"],
                                   request_type="arrival",
                                   physical_topology=self.physical_topology,
+                                  guard_band=self.sim_input['guard_band'],
                                   network_spec_db=self.network_spec_db,
                                   mod_formats=self.sorted_requests[curr_time]['mod_formats'],
                                   chosen_bw=self.sorted_requests[curr_time]['bandwidth'],
@@ -158,6 +160,7 @@ class Engine:
                             mod_formats=self.sorted_requests[curr_time]['mod_formats'],
                             chosen_mod=self.requests_status[self.sorted_requests[curr_time]['id']]['mod_format'],
                             slot_num=self.requests_status[self.sorted_requests[curr_time]['id']]['slots'],
+                            guard_band=self.sim_input['guard_band'],
                             path=self.requests_status[self.sorted_requests[curr_time]['id']]['path'],
                             assume=self.assume
                             )
