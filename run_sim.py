@@ -10,7 +10,6 @@ from scripts.engine import Engine
 # TODO: Update docs
 # TODO: Update tests
 # TODO: Objectify everything?
-# TODO: Document how simulator is based off of two papers
 
 
 class RunSim:
@@ -18,31 +17,25 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
-                 # pylint: disable=invalid-name
-                 bw_slot=12.5, create_bw_data=True, sim_assume='arash', constant_weight=True):  # pylint: disable=invalid-name
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,  # pylint: disable=invalid-name
+                 bw_slot=12.5, sim_flag='arash', constant_weight=True):
 
         # Assumptions for things like mu, lambda, modulation format/calc, and routing
-        self.sim_assume = sim_assume
+        self.sim_flag = sim_flag
+        self.network_name = None
+        self.constant_weight = constant_weight
         self.seed = list()
         self.num_requests = num_requests
         self.num_cores = num_cores
         self.mu = mu  # pylint: disable=invalid-name
         self.lam = lam
-        self.erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
 
-        if create_bw_data:
-            bw_info = create_bw_info(assume=self.sim_assume)
-            self.save_input('bandwidth_info.json', bw_info)
-        with open('./data/input/bandwidth_info.json', 'r', encoding='utf-8') as fp:  # pylint: disable=invalid-name
-            self.bw_types = json.load(fp)
-
-        self.data, self.network_name = structure_data(constant_weight=constant_weight)
+        self.sim_start = time.strftime("%m%d_%H:%M:%S")
 
         # Frequency for one spectrum slot (GHz)
         self.bw_slot = bw_slot
+        self.bw_types = None
         self.spectral_slots = spectral_slots
-        self.physical_topology = create_pt(num_cores=self.num_cores, nodes_links=self.data)
         self.link_num = 1
 
         # If the confidence interval isn't reached, maximum allowed iterations
@@ -73,6 +66,14 @@ class RunSim:
         """
         Creates simulation input data.
         """
+        bw_info = create_bw_info(assume=self.sim_flag)
+        self.save_input('bandwidth_info.json', bw_info)
+        with open('./data/input/bandwidth_info.json', 'r', encoding='utf-8') as fp:  # pylint: disable=invalid-name
+            self.bw_types = json.load(fp)
+
+        data = structure_data(constant_weight=self.constant_weight, network=self.network_name)
+        physical_topology = create_pt(num_cores=self.num_cores, nodes_links=data)
+
         self.sim_input = {
             'seed': self.seed,
             'mu': self.mu,
@@ -81,56 +82,76 @@ class RunSim:
             'bandwidth_types': self.bw_types,
             'max_iters': self.max_iters,
             'spectral_slots': self.spectral_slots,
-            'physical_topology': self.physical_topology
+            'physical_topology': physical_topology
         }
 
     def thread_runs(self):
         """
-        Executes the run method using threads.
+        Executes the run methods using threads.
         """
         raise NotImplementedError
 
-    # TODO: Two different run methods?
-    def run(self):
+    def run_yue(self):
         """
-        Controls the class.
+        Run the simulator based on Yue Wang's previous research assumptions regarding:
+            - The number of spectral slots per core
+            - Slots needed for modulation formats and maximum reach
+            - Link weights in the topology
+            - The value of mu
+
+        :return: None
         """
-        sim_start = time.strftime("%m%d_%H:%M:%S")
+        self.mu = 0.2
+        self.spectral_slots = 128
+        self.sim_flag = 'yue'
+        self.network_name = 'USNet'
+        self.constant_weight = False
 
-        if self.sim_assume == 'arash':
-            self.mu = 3600.0
-        elif self.sim_assume == 'yue':
-            self.mu = 0.2
-        else:
-            raise NotImplementedError
-
-        for curr_erlang in self.erlang_lst:
-            self.lam = self.mu * float(self.num_cores) * curr_erlang
+        for lam in range(2, 143, 2):
+            curr_erlang = float(lam) / self.mu
+            lam *= float(self.num_cores)
+            self.lam = float(lam)
             self.create_input()
 
-            # Save simulation input, if desired
             if self.save:
                 self.save_input()
 
-            engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name, sim_start=sim_start,
-                            assume=self.sim_assume)
+            engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name,
+                            sim_start=self.sim_start,
+                            assume=self.sim_flag)
             engine.run()
 
-        # for lam in range(2, 143, 2):
-        #     curr_erlang = float(lam) / self.mu
-        #     lam *= float(self.num_cores)
-        #     self.lam = float(lam)
-        #     self.create_input()
-        #
-        #     # Save simulation input, if desired
-        #     if self.save:
-        #         self.save_input()
-        #
-        #     engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name, sim_start=sim_start,
-        #                     assume=self.sim_assume)
-        #     engine.run()
+    def run_arash(self):
+        """
+        Run the simulator based on Arash Rezaee's previous research assumptions regarding:
+            - The number of spectral slots per core
+            - Slots needed for modulation formats
+            - Link weights in the topology
+            - The value of mu
+
+        :return: None
+        """
+        self.mu = 3600.0
+        self.spectral_slots = 256
+        self.sim_flag = 'arash'
+        self.network_name = 'Pan-European'
+        self.constant_weight = True
+        erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
+
+        for curr_erlang in erlang_lst:
+            self.lam = self.mu * float(self.num_cores) * curr_erlang
+            self.create_input()
+
+            if self.save:
+                self.save_input()
+
+            engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name,
+                            sim_start=self.sim_start,
+                            assume=self.sim_flag)
+            engine.run()
 
 
 if __name__ == '__main__':
     test_obj = RunSim()
-    test_obj.run()
+    # test_obj.run_yue()
+    test_obj.run_arash()
