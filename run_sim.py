@@ -8,6 +8,9 @@ from useful_functions.handle_dirs_files import create_dir
 
 
 # TODO: Update tests
+# TODO: Regex for commit messages
+# TODO: Standardize commit topics [example_topic]
+# TODO: Coding and commit guide lines
 
 
 class RunSim:
