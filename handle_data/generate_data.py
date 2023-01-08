@@ -56,7 +56,7 @@ def create_bw_info(bw_slot=12.5, assume=None):
         }
         for bw, bw_obj in bw_info.items():  # pylint: disable=invalid-name
             for mod_format, mod_obj in bw_obj.items():  # pylint: disable=unused-variable
-                bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / bw_slot)
+                bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / bw_slot)   # pylint: disable=unnecessary-dict-index-lookup
     elif assume == 'arash':
         bw_info = {
             '100': {'QPSK': {'slots_needed': 3}},

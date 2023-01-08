@@ -1,6 +1,5 @@
 # Standard imports
 import json
-import os
 
 # Third party imports
 import networkx as nx
