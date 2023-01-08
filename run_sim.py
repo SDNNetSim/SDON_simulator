@@ -9,7 +9,6 @@ from scripts.engine import Engine
 
 # TODO: Update docs
 # TODO: Update tests
-# TODO: Objectify everything?
 
 
 class RunSim:
@@ -157,5 +156,5 @@ class RunSim:
 
 if __name__ == '__main__':
     test_obj = RunSim()
-    test_obj.run_yue()
-    # test_obj.run_arash()
+    # test_obj.run_yue()
+    test_obj.run_arash()
