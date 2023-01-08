@@ -2,35 +2,6 @@ from scripts.routing import Routing
 from scripts.spectrum_assignment import SpectrumAssignment
 
 
-def get_end_index(start_slot, num_slots, req_type):
-    """
-    Determines the correct end index for allocating and releasing requests. This is due to an edge case. Previously,
-    we did not expect a request to only allocate one slot. Since this became the case later on, we have to account for
-    it since we use list slicing. This will most likely be changed in the future to implement a more efficient way.
-
-    :param start_slot: The start slot of the request
-    :type start_slot: int
-    :param num_slots: The number of slots the request needs
-    :type num_slots: int
-    :param req_type: Determines if we have a request arriving or departing
-    :type req_type: str
-    :return: The correct end index to allocate or release
-    :rtype: int
-    """
-    if num_slots == 1 and req_type == 'arrival':
-        end_index = start_slot + num_slots
-    elif num_slots == 1 and req_type == 'release':
-        end_index = start_slot + num_slots + 1
-    elif req_type == 'arrival':
-        end_index = start_slot + num_slots - 1
-    elif req_type == 'release':
-        end_index = start_slot + num_slots
-    else:
-        raise NotImplementedError
-
-    return end_index
-
-
 def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, guard_band=None, core_num=0, req_type=None):
     """
     Releases or fills slots in the network spectrum database arrays.
@@ -43,7 +14,7 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, guar
     :type path: list
     :param start_slot: The first slot number taken or desired
     :type start_slot: int
-    :param num_slots: The number of slots occupied or to be occupied
+    :param num_slots: The number of slots occupied or to be occupied (still need to add a guard band)
     :type num_slots: int
     :param guard_band: Tells us if a guard band was used or not
     :type guard_band: bool
@@ -55,19 +26,24 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, guar
     :rtype: dict
     """
     # TODO: This will most likely change for slicing, different functions?
+    # TODO: Check this with Arash's, it wasn't correct for Yue's
     for i in range(len(path) - 1):
-        end_index = get_end_index(start_slot, num_slots, req_type)
-
         src_dest = (path[i], path[i + 1])
+
         if req_type == 'arrival':
+            end_index = start_slot + num_slots
             # Remember, Python list indexing is up to and NOT including!
             network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = req_id
             # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
             if guard_band:
                 network_spec_db[src_dest]['cores_matrix'][core_num][end_index] = (req_id * -1)
-            else:
-                network_spec_db[src_dest]['cores_matrix'][core_num][end_index] = req_id
         elif req_type == 'release':
+            # To account for the guard band being released
+            if guard_band:
+                end_index = start_slot + num_slots + 1
+            else:
+                end_index = start_slot + num_slots
+
             network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = 0
             network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = 0
         else:
