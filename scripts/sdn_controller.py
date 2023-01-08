@@ -2,7 +2,36 @@ from scripts.routing import Routing
 from scripts.spectrum_assignment import SpectrumAssignment
 
 
-def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, core_num=0, req_type=None):
+def get_end_index(start_slot, num_slots, req_type):
+    """
+    Determines the correct end index for allocating and releasing requests. This is due to an edge case. Previously,
+    we did not expect a request to only allocate one slot. Since this became the case later on, we have to account for
+    it since we use list slicing. This will most likely be changed in the future to implement a more efficient way.
+
+    :param start_slot: The start slot of the request
+    :type start_slot: int
+    :param num_slots: The number of slots the request needs
+    :type num_slots: int
+    :param req_type: Determines if we have a request arriving or departing
+    :type req_type: str
+    :return: The correct end index to allocate or release
+    :rtype: int
+    """
+    if num_slots == 1 and req_type == 'arrival':
+        end_index = start_slot + num_slots
+    elif num_slots == 1 and req_type == 'release':
+        end_index = start_slot + num_slots + 1
+    elif req_type == 'arrival':
+        end_index = start_slot + num_slots - 1
+    elif req_type == 'release':
+        end_index = start_slot + num_slots
+    else:
+        raise NotImplementedError
+
+    return end_index
+
+
+def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, guard_band=None, core_num=0, req_type=None):
     """
     Releases or fills slots in the network spectrum database arrays.
 
@@ -16,6 +45,8 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, core
     :type start_slot: int
     :param num_slots: The number of slots occupied or to be occupied
     :type num_slots: int
+    :param guard_band: Tells us if a guard band was used or not
+    :type guard_band: bool
     :param core_num: Index of the core to be released or taken
     :type core_num: int
     :param req_type: Indicates whether it's an arrival or release
@@ -25,28 +56,17 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, core
     """
     # TODO: This will most likely change for slicing, different functions?
     for i in range(len(path) - 1):
-        # TODO: Neaten this up
-        # TODO: Another edge case, last index is trying to be allocated
-        if num_slots == 1 and req_type == 'arrival':
-            end_index = start_slot + num_slots
-        elif num_slots == 1 and req_type == 'release':
-            end_index = start_slot + num_slots + 1
-        elif req_type == 'arrival':
-            end_index = start_slot + num_slots - 1
-        elif req_type == 'release':
-            end_index = start_slot + num_slots
-        else:
-            raise NotImplementedError
+        end_index = get_end_index(start_slot, num_slots, req_type)
 
         src_dest = (path[i], path[i + 1])
         if req_type == 'arrival':
             # Remember, Python list indexing is up to and NOT including!
             network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = req_id
             # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
-            try:
+            if guard_band:
                 network_spec_db[src_dest]['cores_matrix'][core_num][end_index] = (req_id * -1)
-            except IndexError:
-                print("Here")
+            else:
+                network_spec_db[src_dest]['cores_matrix'][core_num][end_index] = req_id
         elif req_type == 'release':
             network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = 0
             network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = 0
@@ -57,7 +77,7 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, core
 
 
 def controller_main(req_id, src, dest, request_type, physical_topology, network_spec_db, mod_formats,
-                    slot_num=None, path=None, chosen_mod=None, chosen_bw=None, assume='arash'):
+                    slot_num=None, guard_band=None, path=None, chosen_mod=None, chosen_bw=None, assume='arash'):
     """
     Controls arrivals and departures for requests in the simulation. Return False if a request can't be allocated.
 
@@ -77,6 +97,8 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
     :type mod_formats: dict
     :param slot_num: The start slot number of the request to be allocated or released
     :type slot_num: int
+    :param guard_band: Tells us if a guard band was used or not
+    :type guard_band: int (0 or 1 as of now)
     :param path: The chosen path
     :type path: list
     :param chosen_mod: The chosen modulation format
@@ -94,7 +116,8 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
                                             path=path,
                                             start_slot=slot_num,
                                             num_slots=mod_formats[chosen_mod]['slots_needed'],
-                                            req_type='release'
+                                            req_type='release',
+                                            guard_band=guard_band
                                             )
         return network_spec_db, physical_topology
 
@@ -110,7 +133,7 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
 
     if selected_path is not False and path_mod is not False and slots_needed is not False:
         mod_formats[path_mod]['slots_needed'] = slots_needed
-        spectrum_assignment = SpectrumAssignment(selected_path, slots_needed, network_spec_db)
+        spectrum_assignment = SpectrumAssignment(selected_path, slots_needed, network_spec_db, guard_band=guard_band)
         selected_sp = spectrum_assignment.find_free_spectrum()
 
         if selected_sp is not False:
@@ -126,7 +149,8 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
                                                 path=selected_path,
                                                 start_slot=selected_sp['start_slot'],
                                                 num_slots=slots_needed,
-                                                req_type='arrival'
+                                                req_type='arrival',
+                                                guard_band=guard_band
                                                 )
             return resp, network_spec_db, physical_topology
 
