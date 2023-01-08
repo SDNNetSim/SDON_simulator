@@ -121,7 +121,8 @@ class Engine:
                                   mod_formats=self.sorted_requests[curr_time]['mod_formats'],
                                   chosen_bw=self.sorted_requests[curr_time]['bandwidth'],
                                   path=list(),
-                                  assume=self.assume
+                                  assume=self.assume,
+                                  bw_obj=self.sim_input['bandwidth_types'],
                                   )
 
         if rsa_res is False:

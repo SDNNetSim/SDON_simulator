@@ -40,7 +40,7 @@ def create_pt(num_cores, nodes_links):
 
 
 # TODO: Eventually make a config file
-def create_bw_info(bw_slot=12.5, assume=None):
+def create_bw_info(assume=None):
     """
     Determines the number of spectral slots needed for every modulation format in each bandwidth.
 

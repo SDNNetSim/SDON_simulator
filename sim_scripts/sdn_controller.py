@@ -2,6 +2,7 @@ from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
 
 
+# TODO: Objectify this code
 def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, guard_band=None, core_num=0, req_type=None):
     """
     Releases or fills slots in the network spectrum database arrays.
@@ -51,8 +52,85 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, guar
     return network_spec_db
 
 
+def handle_lps(req_id, path, network_spec_db, physical_topology, band_width, path_mod, mod_formats, max_lps, guard_band,
+               num_cores):
+    """
+        - We are basically treating them as two separate requests if we successfully split
+        - After this, we'll need to change the handle arrival and release function to use np.where()
+        - Restrict to single core, eventually do multiple cores
+        - We need the actual path length here
+    """
+    orig_num_slots = mod_formats[band_width][path_mod]['slots_needed']
+    # No slicing is possible
+    if orig_num_slots == 1 or max_lps == 1:
+        return False
+    # - Iteratively check if you can split the request up between other modulation formats and bandwidths (with respect
+    #   to max lps and length constraints
+    # - After each successful slice, use spectrum assignment to see if the spectrum is free with fewer slots
+    # - Return true if spectrum assignment returns true with the information needed
+    # - Continue until slicing can no longer occur, or length does not suffice
+    # - Return False if the last point happens
+
+    path_len = 0
+    for i in range(len(path) - 1):
+        path_len += physical_topology[path[i]][path[i + 1]]['length']
+
+    # Check if the length works, check if number of slots is divisible with no remainder
+    # I think we want to start at the highest and work our way down to the lowest
+    # Cannot slice into something that has more slots than right now
+    # Damn, will have to get spectrum assignment and allocate multiple times, then release...If not then remove all?
+    # Due to the above point, it would make your life a lot easier to create another method in spectrum assignment?
+    # TODO: Order dict and start at selected mod, work your way down (mods and bws?)
+    for curr_bw, obj in mod_formats.items():
+        for modulation, obj_2 in obj.items():
+            # Remember max LPS
+            # TODO: Check the mod here
+            if obj_2['max_length'] < path_len or obj_2['slots_needed'] % orig_num_slots != 0:
+                continue
+
+            spectrum_assignment = SpectrumAssignment(path, obj_2['slots_needed'], network_spec_db,
+                                                     guard_band=guard_band)
+
+            tmp_slots = orig_num_slots
+            curr_lps = 1
+            while tmp_slots != 0:
+                selected_sp = spectrum_assignment.find_free_spectrum()
+                # TODO: Free all spectral slots previously allocated
+                if selected_sp is False:
+                    # TODO: Eventually won't need start slot or number of slots
+                    network_spec_db = handle_arrive_rel(req_id=req_id,
+                                                        network_spec_db=network_spec_db,
+                                                        path=path,
+                                                        start_slot=0,
+                                                        num_slots=0,
+                                                        req_type='release',
+                                                        guard_band=guard_band
+                                                        )
+                    break
+
+                network_spec_db = handle_arrive_rel(req_id=req_id,
+                                                    network_spec_db=network_spec_db,
+                                                    path=path,
+                                                    start_slot=selected_sp['start_slot'],
+                                                    num_slots=obj_2['slots_needed'],
+                                                    req_type='arrival',
+                                                    guard_band=guard_band
+                                                    )
+                tmp_slots -= obj_2['slots_needed']
+                curr_lps += 1
+                if curr_lps > max_lps:
+                    break
+            # TODO: Update this return (also check this variable)
+            if tmp_slots == 0:
+                return True
+
+    return False
+
+
+# TODO: We have too many arguments, neaten this up
 def controller_main(req_id, src, dest, request_type, physical_topology, network_spec_db, mod_formats,
-                    slot_num=None, guard_band=None, path=None, chosen_mod=None, chosen_bw=None, assume='arash'):
+                    slot_num=None, guard_band=None, path=None, chosen_mod=None, max_lps=None, chosen_bw=None,
+                    assume='arash', bw_obj=None):
     """
     Controls arrivals and departures for requests in the simulation. Return False if a request can't be allocated.
 
@@ -77,6 +155,8 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
     :param path: The chosen path
     :type path: list
     :param chosen_mod: The chosen modulation format
+    :param max_lps: The maximum allowed time slices
+    :type max_lps: int
     :type chosen_mod: str
     :param chosen_bw: The chosen bandwidth
     :type chosen_bw: str
@@ -129,7 +209,17 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
                                                 guard_band=guard_band
                                                 )
             return resp, network_spec_db, physical_topology
+        else:
+            # TODO: Only do this if the request has been blocked? Or always?
+            # TODO: Don't forget to return false if you can't successfully do lps
+            # TODO: Must the slicing be the same? For example, we can only slice w.r.t. one modulation and bandwidth?
+            # TODO: I need all modulations for all bandwidths not just one
+            # TODO: Change number of cores to variable
+            lps_resp = handle_lps(req_id, selected_path, network_spec_db, physical_topology, chosen_bw, path_mod,
+                                  bw_obj, max_lps, guard_band, 1)
+            if lps_resp is not False:
+                pass
 
-        return False
+            return False
 
     return False
