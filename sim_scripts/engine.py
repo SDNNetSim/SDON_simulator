@@ -7,8 +7,9 @@ import networkx as nx
 import numpy as np
 
 # Project imports
-from scripts.request_generator import generate
-from scripts.sdn_controller import controller_main
+from sim_scripts.request_generator import generate
+from sim_scripts.sdn_controller import controller_main
+from useful_functions.handle_dirs_files import create_dir
 
 
 class Engine:
@@ -60,14 +61,7 @@ class Engine:
             }
         }
 
-        # TODO: Move something like this to useful functions module
-        if not os.path.exists('data/output/'):
-            os.mkdir('data/output/')
-        if not os.path.exists(f'data/output/{self.network_name}/'):
-            os.mkdir(f'data/output/{self.network_name}/')
-        if not os.path.exists(f'data/output/{self.network_name}/{self.sim_start}/'):
-            os.mkdir(f'data/output/{self.network_name}/{self.sim_start}/')
-
+        create_dir(f'data/output/{self.network_name}/{self.sim_start}/')
         with open(f'data/output/{self.network_name}/{self.sim_start}/{self.erlang}_erlang.json', 'w', encoding='utf-8') \
                 as file_path:
             json.dump(self.blocking, file_path, indent=4)

@@ -1,5 +1,5 @@
-from scripts.routing import Routing
-from scripts.spectrum_assignment import SpectrumAssignment
+from sim_scripts.routing import Routing
+from sim_scripts.spectrum_assignment import SpectrumAssignment
 
 
 def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, guard_band=None, core_num=0, req_type=None):
@@ -26,7 +26,6 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, guar
     :rtype: dict
     """
     # TODO: This will most likely change for slicing, different functions?
-    # TODO: Check this with Arash's, it wasn't correct for Yue's
     for i in range(len(path) - 1):
         src_dest = (path[i], path[i + 1])
 

@@ -1,23 +1,55 @@
 {
     "seed": [],
-    "mu": 3600.0,
-    "lambda": 2880000.0,
+    "mu": 0.2,
+    "lambda": 142.0,
     "number_of_request": 10000,
     "bandwidth_types": {
+        "50": {
+            "QPSK": {
+                "max_length": 11080,
+                "slots_needed": 4
+            },
+            "16-QAM": {
+                "max_length": 4750,
+                "slots_needed": 4
+            },
+            "64-QAM": {
+                "max_length": 1832,
+                "slots_needed": 4
+            }
+        },
         "100": {
             "QPSK": {
-                "slots_needed": 3
+                "max_length": 5540,
+                "slots_needed": 8
+            },
+            "16-QAM": {
+                "max_length": 2375,
+                "slots_needed": 8
+            },
+            "64-QAM": {
+                "max_length": 916,
+                "slots_needed": 8
             }
         },
         "400": {
             "QPSK": {
-                "slots_needed": 10
+                "max_length": 1385,
+                "slots_needed": 32
+            },
+            "16-QAM": {
+                "max_length": 594,
+                "slots_needed": 32
+            },
+            "64-QAM": {
+                "max_length": 229,
+                "slots_needed": 32
             }
         }
     },
     "max_iters": 1,
-    "spectral_slots": 256,
-    "guard_band": 0,
+    "spectral_slots": 128,
+    "guard_band": 1,
     "physical_topology": {
         "nodes": {
             "0": {
@@ -26,79 +58,70 @@
             "1": {
                 "type": "CDC"
             },
-            "4": {
+            "5": {
                 "type": "CDC"
             },
             "2": {
                 "type": "CDC"
             },
-            "6": {
-                "type": "CDC"
-            },
-            "5": {
-                "type": "CDC"
-            },
             "3": {
                 "type": "CDC"
             },
-            "9": {
+            "4": {
                 "type": "CDC"
             },
-            "13": {
-                "type": "CDC"
-            },
-            "8": {
+            "6": {
                 "type": "CDC"
             },
             "7": {
                 "type": "CDC"
             },
-            "12": {
-                "type": "CDC"
-            },
-            "11": {
+            "8": {
                 "type": "CDC"
             },
             "10": {
                 "type": "CDC"
             },
-            "15": {
+            "9": {
                 "type": "CDC"
             },
-            "17": {
+            "11": {
                 "type": "CDC"
             },
-            "16": {
+            "12": {
+                "type": "CDC"
+            },
+            "13": {
                 "type": "CDC"
             },
             "14": {
                 "type": "CDC"
             },
-            "21": {
+            "18": {
                 "type": "CDC"
             },
-            "24": {
+            "15": {
                 "type": "CDC"
             },
-            "20": {
+            "16": {
+                "type": "CDC"
+            },
+            "17": {
                 "type": "CDC"
             },
             "19": {
                 "type": "CDC"
             },
-            "23": {
+            "20": {
                 "type": "CDC"
             },
-            "18": {
+            "21": {
                 "type": "CDC"
             },
             "22": {
                 "type": "CDC"
             },
-            "26": {
-                "type": "CDC"
-            },
-            "25": {
+            "23": {
                 "type": "CDC"
             }
         },
@@ -111,7 +134,7 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
+                "length": 800,
                 "source": "0",
                 "destination": "1"
             },
@@ -123,9 +146,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
+                "length": 1000,
                 "source": "0",
-                "destination": "4"
+                "destination": "5"
             },
             "3": {
                 "fiber": {
@@ -135,8 +158,8 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "0",
+                "length": 1100,
+                "source": "1",
                 "destination": "2"
             },
             "4": {
@@ -147,9 +170,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
+                "length": 950,
                 "source": "1",
-                "destination": "6"
+                "destination": "5"
             },
             "5": {
                 "fiber": {
@@ -159,9 +182,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "1",
-                "destination": "5"
+                "length": 250,
+                "source": "2",
+                "destination": "3"
             },
             "6": {
                 "fiber": {
@@ -171,9 +194,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "1",
-                "destination": "3"
+                "length": 800,
+                "source": "2",
+                "destination": "4"
             },
             "7": {
                 "fiber": {
@@ -183,9 +206,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
+                "length": 1000,
                 "source": "2",
-                "destination": "4"
+                "destination": "6"
             },
             "8": {
                 "fiber": {
@@ -195,9 +218,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "2",
-                "destination": "9"
+                "length": 800,
+                "source": "3",
+                "destination": "4"
             },
             "9": {
                 "fiber": {
@@ -207,9 +230,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
+                "length": 850,
                 "source": "3",
-                "destination": "5"
+                "destination": "6"
             },
             "10": {
                 "fiber": {
@@ -219,9 +242,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "3",
-                "destination": "13"
+                "length": 1200,
+                "source": "4",
+                "destination": "7"
             },
             "11": {
                 "fiber": {
@@ -231,9 +254,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "4",
-                "destination": "8"
+                "length": 1000,
+                "source": "5",
+                "destination": "6"
             },
             "12": {
                 "fiber": {
@@ -243,9 +266,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "4",
-                "destination": "7"
+                "length": 1200,
+                "source": "5",
+                "destination": "8"
             },
             "13": {
                 "fiber": {
@@ -255,9 +278,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
+                "length": 1900,
                 "source": "5",
-                "destination": "12"
+                "destination": "10"
             },
             "14": {
                 "fiber": {
@@ -267,9 +290,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "5",
-                "destination": "13"
+                "length": 900,
+                "source": "6",
+                "destination": "7"
             },
             "15": {
                 "fiber": {
@@ -279,9 +302,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "5",
-                "destination": "6"
+                "length": 1000,
+                "source": "6",
+                "destination": "8"
             },
             "16": {
                 "fiber": {
@@ -291,9 +314,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "6",
-                "destination": "12"
+                "length": 900,
+                "source": "7",
+                "destination": "9"
             },
             "17": {
                 "fiber": {
@@ -303,9 +326,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "6",
-                "destination": "7"
+                "length": 1000,
+                "source": "8",
+                "destination": "9"
             },
             "18": {
                 "fiber": {
@@ -315,9 +338,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "7",
-                "destination": "8"
+                "length": 1400,
+                "source": "8",
+                "destination": "10"
             },
             "19": {
                 "fiber": {
@@ -327,8 +350,8 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "7",
+                "length": 1000,
+                "source": "8",
                 "destination": "11"
             },
             "20": {
@@ -339,9 +362,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "8",
-                "destination": "9"
+                "length": 950,
+                "source": "9",
+                "destination": "12"
             },
             "21": {
                 "fiber": {
@@ -351,9 +374,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "8",
-                "destination": "10"
+                "length": 850,
+                "source": "9",
+                "destination": "13"
             },
             "22": {
                 "fiber": {
@@ -363,9 +386,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "8",
-                "destination": "15"
+                "length": 900,
+                "source": "10",
+                "destination": "11"
             },
             "23": {
                 "fiber": {
@@ -375,9 +398,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "8",
-                "destination": "11"
+                "length": 1300,
+                "source": "10",
+                "destination": "14"
             },
             "24": {
                 "fiber": {
@@ -387,9 +410,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "9",
-                "destination": "10"
+                "length": 2600,
+                "source": "10",
+                "destination": "18"
             },
             "25": {
                 "fiber": {
@@ -399,9 +422,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "9",
-                "destination": "17"
+                "length": 900,
+                "source": "11",
+                "destination": "12"
             },
             "26": {
                 "fiber": {
@@ -411,9 +434,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "10",
-                "destination": "17"
+                "length": 1000,
+                "source": "11",
+                "destination": "15"
             },
             "27": {
                 "fiber": {
@@ -423,9 +446,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "10",
-                "destination": "16"
+                "length": 650,
+                "source": "12",
+                "destination": "13"
             },
             "28": {
                 "fiber": {
@@ -435,9 +458,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "11",
-                "destination": "12"
+                "length": 1100,
+                "source": "12",
+                "destination": "16"
             },
             "29": {
                 "fiber": {
@@ -447,9 +470,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "11",
-                "destination": "14"
+                "length": 1200,
+                "source": "13",
+                "destination": "17"
             },
             "30": {
                 "fiber": {
@@ -459,8 +482,8 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "11",
+                "length": 600,
+                "source": "14",
                 "destination": "15"
             },
             "31": {
@@ -471,9 +494,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "12",
-                "destination": "13"
+                "length": 1300,
+                "source": "14",
+                "destination": "19"
             },
             "32": {
                 "fiber": {
@@ -483,9 +506,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "13",
-                "destination": "14"
+                "length": 1000,
+                "source": "15",
+                "destination": "16"
             },
             "33": {
                 "fiber": {
@@ -495,9 +518,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "13",
-                "destination": "21"
+                "length": 1000,
+                "source": "15",
+                "destination": "20"
             },
             "34": {
                 "fiber": {
@@ -507,9 +530,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "13",
-                "destination": "24"
+                "length": 800,
+                "source": "15",
+                "destination": "21"
             },
             "35": {
                 "fiber": {
@@ -519,9 +542,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "14",
-                "destination": "20"
+                "length": 800,
+                "source": "16",
+                "destination": "17"
             },
             "36": {
                 "fiber": {
@@ -531,8 +554,8 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "14",
+                "length": 850,
+                "source": "16",
                 "destination": "21"
             },
             "37": {
@@ -543,9 +566,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "15",
-                "destination": "16"
+                "length": 1000,
+                "source": "16",
+                "destination": "22"
             },
             "38": {
                 "fiber": {
@@ -555,9 +578,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "15",
-                "destination": "19"
+                "length": 900,
+                "source": "17",
+                "destination": "23"
             },
             "39": {
                 "fiber": {
@@ -567,9 +590,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "15",
-                "destination": "20"
+                "length": 1200,
+                "source": "18",
+                "destination": "19"
             },
             "40": {
                 "fiber": {
@@ -579,9 +602,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "16",
-                "destination": "19"
+                "length": 700,
+                "source": "19",
+                "destination": "20"
             },
             "41": {
                 "fiber": {
@@ -591,9 +614,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "16",
-                "destination": "23"
+                "length": 300,
+                "source": "20",
+                "destination": "21"
             },
             "42": {
                 "fiber": {
@@ -603,9 +626,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "16",
-                "destination": "18"
+                "length": 600,
+                "source": "21",
+                "destination": "22"
             },
             "43": {
                 "fiber": {
@@ -615,153 +638,9 @@
                     "num_cores": 1,
                     "fiber_type": 0
                 },
-                "length": 1,
-                "source": "16",
-                "destination": "17"
-            },
-            "44": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
-                "source": "17",
-                "destination": "18"
-            },
-            "45": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
-                "source": "18",
-                "destination": "23"
-            },
-            "46": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
-                "source": "18",
-                "destination": "22"
-            },
-            "47": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
-                "source": "19",
-                "destination": "20"
-            },
-            "48": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
-                "source": "19",
-                "destination": "23"
-            },
-            "49": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
-                "source": "20",
-                "destination": "21"
-            },
-            "50": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
-                "source": "21",
-                "destination": "24"
-            },
-            "51": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
-                "source": "21",
-                "destination": "26"
-            },
-            "52": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
+                "length": 900,
                 "source": "22",
                 "destination": "23"
-            },
-            "53": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
-                "source": "24",
-                "destination": "26"
-            },
-            "54": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
-                "source": "24",
-                "destination": "25"
-            },
-            "55": {
-                "fiber": {
-                    "attenuation": 0.0022927500975300002,
-                    "non_linearity": 0.06472318887822313,
-                    "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
-                    "fiber_type": 0
-                },
-                "length": 1,
-                "source": "25",
-                "destination": "26"
             }
         }
     }
