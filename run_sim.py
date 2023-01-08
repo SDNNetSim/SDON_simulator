@@ -18,7 +18,7 @@ class RunSim:
     """
 
     def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,  # pylint: disable=invalid-name
-                 bw_slot=12.5, sim_flag='arash', constant_weight=True):
+                 bw_slot=12.5, sim_flag='arash', constant_weight=True, guard_band=1):
 
         # Assumptions for things like mu, lambda, modulation format/calc, and routing
         self.sim_flag = sim_flag
@@ -29,6 +29,7 @@ class RunSim:
         self.num_cores = num_cores
         self.mu = mu  # pylint: disable=invalid-name
         self.lam = lam
+        self.guard_band = guard_band
 
         self.sim_start = time.strftime("%m%d_%H:%M:%S")
 
@@ -82,6 +83,7 @@ class RunSim:
             'bandwidth_types': self.bw_types,
             'max_iters': self.max_iters,
             'spectral_slots': self.spectral_slots,
+            'guard_band': self.guard_band,
             'physical_topology': physical_topology
         }
 
@@ -106,6 +108,7 @@ class RunSim:
         self.sim_flag = 'yue'
         self.network_name = 'USNet'
         self.constant_weight = False
+        self.guard_band = 1
 
         for lam in range(2, 143, 2):
             curr_erlang = float(lam) / self.mu
@@ -136,6 +139,7 @@ class RunSim:
         self.sim_flag = 'arash'
         self.network_name = 'Pan-European'
         self.constant_weight = True
+        self.guard_band = 0
         erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
 
         for curr_erlang in erlang_lst:
@@ -153,5 +157,5 @@ class RunSim:
 
 if __name__ == '__main__':
     test_obj = RunSim()
-    # test_obj.run_yue()
-    test_obj.run_arash()
+    test_obj.run_yue()
+    # test_obj.run_arash()
