@@ -1,6 +1,6 @@
 Request Generator
 =================
 
-.. automodule:: scripts.request_generator
+.. automodule:: sim_scripts.request_generator
     :members:
     :undoc-members:

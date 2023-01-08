@@ -8,5 +8,3 @@ Script Module Documentation
     routing
     sdn_controller
     spectrum_assignment
-    generate_data
-    structure_data

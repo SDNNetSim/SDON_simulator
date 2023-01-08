@@ -1,8 +1,8 @@
 import unittest
 import os
 
-from scripts.routing import Routing
-from scripts.engine import Engine
+from sim_scripts.routing import Routing
+from sim_scripts.engine import Engine
 
 
 class TestRouting(unittest.TestCase):

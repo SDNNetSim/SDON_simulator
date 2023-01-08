@@ -1,6 +1,6 @@
 Generate Data
 =============
 
-.. automodule:: scripts.generate_data
+.. automodule:: handle_data.generate_data
     :members:
     :undoc-members:

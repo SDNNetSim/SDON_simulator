@@ -1,6 +1,6 @@
 SDN Controller
 ==============
 
-.. automodule:: scripts.sdn_controller
+.. automodule:: sim_scripts.sdn_controller
     :members:
     :undoc-members:

@@ -107,11 +107,10 @@ def assign_link_lengths(node_pairings=None, constant_weight=False, network_fp=No
 def structure_data(constant_weight=False, network=None):
     """
     The main structure data function.
-
     :param constant_weight: Determines if we want to set all link lengths to one or not
     :type constant_weight: bool
     :param network: The desired network name for link weights to be read in
-    :type network str
+    :type network: str
     :return: A dictionary with a node pair (src, dest): link_length
     :rtype: dict
     """

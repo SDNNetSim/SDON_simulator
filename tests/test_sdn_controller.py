@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from scripts.sdn_controller import handle_arrive_rel
+from sim_scripts.sdn_controller import handle_arrive_rel
 
 
 class TestSDNController(unittest.TestCase):
