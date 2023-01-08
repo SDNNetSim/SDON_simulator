@@ -100,14 +100,15 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
                           network_spec_db=network_spec_db, mod_formats=mod_formats, bw=chosen_bw)
 
     if assume == 'yue':
-        selected_path, path_mod, slots_needed = routing_obj.shortest_path()
+        selected_path, path_mod = routing_obj.shortest_path()
     elif assume == 'arash':
-        selected_path, path_mod, slots_needed = routing_obj.least_congested_path()
+        selected_path = routing_obj.least_congested_path()
+        path_mod = 'QPSK'
     else:
         raise NotImplementedError
 
-    if selected_path is not False and path_mod is not False and slots_needed is not False:
-        mod_formats[path_mod]['slots_needed'] = slots_needed
+    if selected_path is not False and path_mod is not False:
+        slots_needed = mod_formats[path_mod]['slots_needed']
         spectrum_assignment = SpectrumAssignment(selected_path, slots_needed, network_spec_db, guard_band=guard_band)
         selected_sp = spectrum_assignment.find_free_spectrum()
 
