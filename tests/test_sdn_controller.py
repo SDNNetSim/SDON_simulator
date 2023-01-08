@@ -37,7 +37,7 @@ class TestSDNController(unittest.TestCase):
             self.network_spec_db[curr_tuple]['cores_matrix'][0][50:100] = 1
 
         response = handle_arrive_rel(network_spec_db=self.network_spec_db, path=self.path, start_slot=50, num_slots=50,
-                                     core_num=0, req_type='release')
+                                     core_num=0, req_type='release', req_id=5)
 
         test_matrix = response[('Lowell', 'Miami')]['cores_matrix'][0]
         test_rev_matrix = response[('Miami', 'Lowell')]['cores_matrix'][0]
@@ -51,7 +51,7 @@ class TestSDNController(unittest.TestCase):
         Test that a link has allocated its resources properly.
         """
         response = handle_arrive_rel(network_spec_db=self.network_spec_db, path=self.path, start_slot=50, num_slots=50,
-                                     core_num=0, req_type='arrival')
+                                     core_num=0, req_type='arrival', req_id=5)
 
         for i in range(len(self.path) - 1):
             curr_array = response[(self.path[i], self.path[i + 1])]['cores_matrix'][0][50:100]
