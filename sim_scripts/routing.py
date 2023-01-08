@@ -85,17 +85,7 @@ class Routing:
                     self.find_most_cong_link(path)
                 else:
                     path = self.find_least_cong_route()
-                    mod_format = 'QPSK'
-
-                    # TODO: Find a better way to do this it's sort of redundant
-                    if self.bw == '100':
-                        slots_needed = 3
-                    elif self.bw == '400':
-                        slots_needed = 10
-                    else:
-                        raise NotImplementedError
-
-                    return path, mod_format, slots_needed
+                    return path
 
         return False, False, False
 
@@ -111,8 +101,9 @@ class Routing:
 
         # Modulation format calculations based on Yue Wang's dissertation
         for path in paths_obj:
+            # TODO: Eventually remove slots needed
             mod_format, slots_needed = self.assign_mod_format(path)
-            return path, mod_format, slots_needed
+            return path, mod_format
 
     def spectral_slot_comp(self, bits_per_symbol, bw_slot=12.5):
         """
