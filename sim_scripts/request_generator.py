@@ -1,9 +1,7 @@
-import math
-
 from useful_functions.random_generation import set_seed, uniform_rv, exponential_rv
 
 
-def generate(seed_no, nodes, mu, lam, num_requests, bw_dict):  # pylint: disable=invalid-name
+def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume):  # pylint: disable=invalid-name
     """
     Generate all the requests for the simulation.
 
@@ -19,6 +17,8 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict):  # pylint: disable
     :type num_requests: int
     :param bw_dict: Contains information for each bandwidth and modulation
     :type bw_dict: dict
+    :param assume: Tells us if our request generator is based on Yue or Arash's prior research assumptions
+    :type assume: str
     :return: Every request generated
     :rtype: dict
     """
@@ -30,11 +30,17 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict):  # pylint: disable
 
     set_seed(seed_no=seed_no)
 
-    # Bandwidth ratio generation
-    # TODO: This should be moved to run_sim
-    bw_ratio_one = 0.0
-    bw_ratio_two = 0.5
-    bw_ratio_three = 0.5
+    # Bandwidth ratio generation (50, 100, and 400 Gbps)
+    if assume == 'arash':
+        bw_ratio_one = 0.0
+        bw_ratio_two = 0.5
+        bw_ratio_three = 0.5
+    elif assume == 'yue':
+        bw_ratio_one = 0.3
+        bw_ratio_two = 0.5
+        bw_ratio_three = 0.2
+    else:
+        raise NotImplementedError
 
     # Number of requests allocated for each bandwidth
     # TODO: This could potentially not equal the number of requests we think
@@ -49,8 +55,9 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict):  # pylint: disable
 
     # Multiplied by two, to account for arrival and departure requests
     while len(requests) < (num_requests * 2):
-        current_time = current_time + (math.ceil(exponential_rv(lam) * 1000) / 1000)
-        depart_time = current_time + (math.ceil(exponential_rv(mu) * 1000) / 1000)
+        # TODO: Not using math.ceil and the weird division increases blocking?
+        current_time = current_time + exponential_rv(lam)
+        depart_time = current_time + exponential_rv(mu)
 
         # We never want our node to equal the length, we start from index 0 in a list! (Node numbers are all minus 1)
         src = nodes[uniform_rv(len(nodes))]

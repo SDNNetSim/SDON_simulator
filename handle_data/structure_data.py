@@ -3,13 +3,8 @@ import configparser
 import pandas as pd  # pylint: disable=import-error
 import numpy as np
 
-# An Excel file mapping a node number to a name
-PAIRINGS_FILE_PATH = 'data/raw/us_network.xlsx'
-# A text file assigning a distance for a link between two nodes
-LINK_LEN_FILE_PATH = 'data/raw/europe_network_distance.txt'
-NETWORK_NAME = 'Pan-European'
 
-
+# TODO: Map erlang times and create node pairs are outdated functions for the time being
 def map_erlang_times(network='europe'):
     """
     Map Erlang values to the inter-arrival and holding time means from a configuration file.
@@ -57,7 +52,7 @@ def create_node_pairs():
     :return: A dictionary of each node number to a node name
     :rtype: dict
     """
-    data_frame = pd.read_excel(PAIRINGS_FILE_PATH)
+    data_frame = pd.read_excel('')
     tmp_dict = dict()
 
     for row in data_frame.iterrows():
@@ -70,18 +65,20 @@ def create_node_pairs():
     return tmp_dict
 
 
-def assign_link_lengths(node_pairings=None, constant_weight=True):
+def assign_link_lengths(node_pairings=None, constant_weight=False, network_fp=None):
     """
     Assign a length to every link that exists in the topology.
 
     :param node_pairings: Node numbers to names
     :param constant_weight: Ignore link weight for certain routing algorithms
+    :param network_fp: The name of the desired network to find link weights for
+    :type network_fp: str
     :return: A dictionary with a node pair (src, dest): link_length
     :rtype: dict
     """
     # The input file annoyingly does not have a consistent format, can't use dataframe
     response_dict = dict()
-    with open(LINK_LEN_FILE_PATH, 'r', encoding='utf-8') as curr_f:
+    with open(network_fp, 'r', encoding='utf-8') as curr_f:
         for line in curr_f:
             tmp_list = line.split('\t')
             src = tmp_list[0]
@@ -107,16 +104,27 @@ def assign_link_lengths(node_pairings=None, constant_weight=True):
     return response_dict
 
 
-def structure_data():
+def structure_data(constant_weight=False, network=None):
     """
     The main structure data function.
 
+    :param constant_weight: Determines if we want to set all link lengths to one or not
+    :type constant_weight: bool
+    :param network: The desired network name for link weights to be read in
+    :type network: str
     :return: A dictionary with a node pair (src, dest): link_length
     :rtype: dict
     """
-    # tmp_resp = create_node_pairs()
-    # return assign_link_lengths(node_pairings=tmp_resp, constant_weight=False)
-    return assign_link_lengths(), NETWORK_NAME
+    if network == 'USNet':
+        network_fp = 'data/raw/us_network.txt'
+    elif network == 'NSFNet':
+        network_fp = 'data/raw/nsf_network.txt'
+    elif network == 'Pan-European':
+        network_fp = 'data/raw/europe_network.txt'
+    else:
+        raise NotImplementedError(f"Unknown network name. Expected USNet, NSFNet, or Pan-European. Got: {network}")
+
+    return assign_link_lengths(constant_weight=constant_weight, network_fp=network_fp)
 
 
 def main():

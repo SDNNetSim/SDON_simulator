@@ -1,8 +1,8 @@
 import unittest
 import os
 
-from scripts.routing import Routing
-from scripts.engine import Engine
+from sim_scripts.routing import Routing
+from sim_scripts.engine import Engine
 
 
 class TestRouting(unittest.TestCase):
@@ -29,7 +29,7 @@ class TestRouting(unittest.TestCase):
         self.network_spec_db = self.engine.network_spec_db
 
         self.routing = Routing(source='Lowell', destination='San Francisco', physical_topology=self.physical_topology,
-                               network_spec_db=self.network_spec_db, mod_formats='')
+                               network_spec_db=self.network_spec_db, mod_formats='', req_id='')
 
     def test_least_cong_route(self):
         """

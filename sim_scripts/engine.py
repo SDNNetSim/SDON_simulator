@@ -1,14 +1,14 @@
 # Standard imports
 import json
-import os
 
 # Third party imports
 import networkx as nx
 import numpy as np
 
 # Project imports
-from scripts.request_generator import generate
-from scripts.sdn_controller import controller_main
+from sim_scripts.request_generator import generate
+from sim_scripts.sdn_controller import controller_main
+from useful_functions.handle_dirs_files import create_dir
 
 
 class Engine:
@@ -16,12 +16,14 @@ class Engine:
     Controls the SDN simulation.
     """
 
-    def __init__(self, sim_input=None, erlang=None, sim_input_fp=None, network_name=None, sim_start=None):
+    def __init__(self, sim_input=None, erlang=None, sim_input_fp=None, network_name=None, sim_start=None,
+                 assume='arash'):
         self.blocking = {
             'simulations': dict(),
             'stats': dict()
         }
         self.blocking_iter = 0
+        self.assume = assume
         self.sim_input_fp = sim_input_fp
         self.sim_input = sim_input
         self.erlang = erlang
@@ -58,13 +60,7 @@ class Engine:
             }
         }
 
-        if not os.path.exists('data/output/'):
-            os.mkdir('data/output/')
-        if not os.path.exists(f'data/output/{self.network_name}/'):
-            os.mkdir(f'data/output/{self.network_name}/')
-        if not os.path.exists(f'data/output/{self.network_name}/{self.sim_start}/'):
-            os.mkdir(f'data/output/{self.network_name}/{self.sim_start}/')
-
+        create_dir(f'data/output/{self.network_name}/{self.sim_start}/')
         with open(f'data/output/{self.network_name}/{self.sim_start}/{self.erlang}_erlang.json', 'w', encoding='utf-8') \
                 as file_path:
             json.dump(self.blocking, file_path, indent=4)
@@ -120,10 +116,12 @@ class Engine:
                                   dest=self.sorted_requests[curr_time]["destination"],
                                   request_type="arrival",
                                   physical_topology=self.physical_topology,
+                                  guard_band=self.sim_input['guard_band'],
                                   network_spec_db=self.network_spec_db,
                                   mod_formats=self.sorted_requests[curr_time]['mod_formats'],
                                   chosen_bw=self.sorted_requests[curr_time]['bandwidth'],
-                                  path=list()
+                                  path=list(),
+                                  assume=self.assume
                                   )
 
         if rsa_res is False:
@@ -155,7 +153,9 @@ class Engine:
                             mod_formats=self.sorted_requests[curr_time]['mod_formats'],
                             chosen_mod=self.requests_status[self.sorted_requests[curr_time]['id']]['mod_format'],
                             slot_num=self.requests_status[self.sorted_requests[curr_time]['id']]['slots'],
+                            guard_band=self.sim_input['guard_band'],
                             path=self.requests_status[self.sorted_requests[curr_time]['id']]['path'],
+                            assume=self.assume
                             )
         # Request was blocked, nothing to release
         else:
@@ -223,7 +223,8 @@ class Engine:
                                      mu=self.sim_input['mu'],
                                      lam=self.sim_input['lambda'],
                                      num_requests=self.sim_input['number_of_request'],
-                                     bw_dict=self.sim_input['bandwidth_types'])
+                                     bw_dict=self.sim_input['bandwidth_types'],
+                                     assume=self.assume)
 
             self.sorted_requests = dict(sorted(self.requests.items()))
 

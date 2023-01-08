@@ -1,6 +1,6 @@
 Structure Data
 ==============
 
-.. automodule:: scripts.structure_data
+.. automodule:: handle_data.structure_data
     :members:
     :undoc-members:

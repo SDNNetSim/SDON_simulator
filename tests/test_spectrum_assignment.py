@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from scripts.spectrum_assignment import SpectrumAssignment
+from sim_scripts.spectrum_assignment import SpectrumAssignment
 
 
 class TestSpectrumAssignment(unittest.TestCase):
