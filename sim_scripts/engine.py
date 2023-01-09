@@ -111,30 +111,32 @@ class Engine:
         :type curr_time: float
         :return: None
         """
-        rsa_res = controller_main(req_id=self.sorted_requests[curr_time]["id"],
-                                  src=self.sorted_requests[curr_time]["source"],
-                                  dest=self.sorted_requests[curr_time]["destination"],
-                                  request_type="arrival",
-                                  physical_topology=self.physical_topology,
-                                  guard_band=self.sim_input['guard_band'],
-                                  network_spec_db=self.network_spec_db,
-                                  mod_formats=self.sorted_requests[curr_time]['mod_formats'],
-                                  chosen_bw=self.sorted_requests[curr_time]['bandwidth'],
-                                  path=list(),
-                                  assume=self.assume,
-                                  bw_obj=self.sim_input['bandwidth_types'],
-                                  )
+        resp = controller_main(req_id=self.sorted_requests[curr_time]["id"],
+                               src=self.sorted_requests[curr_time]["source"],
+                               dest=self.sorted_requests[curr_time]["destination"],
+                               request_type="arrival",
+                               physical_topology=self.physical_topology,
+                               guard_band=self.sim_input['guard_band'],
+                               max_lps=self.sim_input['max_lps'],
+                               network_spec_db=self.network_spec_db,
+                               mod_formats=self.sorted_requests[curr_time]['mod_formats'],
+                               chosen_bw=self.sorted_requests[curr_time]['bandwidth'],
+                               path=list(),
+                               assume=self.assume,
+                               bw_obj=self.sim_input['bandwidth_types'],
+                               )
 
-        if rsa_res is False:
+        if resp is False:
             self.blocking_iter += 1
         else:
+            # TODO: This will change (Is it needed?)
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
-                "mod_format": rsa_res[0]['mod_format'],
-                "slots": rsa_res[0]['start_res_slot'],
-                "path": rsa_res[0]['path']
+                "mod_format": resp[0]['mod_format'],
+                "slots": resp[0]['start_res_slot'],
+                "path": resp[0]['path']
             }})
-            self.network_spec_db = rsa_res[1]
-            self.physical_topology = rsa_res[2]
+            self.network_spec_db = resp[1]
+            self.physical_topology = resp[2]
 
     def handle_release(self, curr_time):
         """
@@ -145,19 +147,20 @@ class Engine:
         :return: None
         """
         if self.sorted_requests[curr_time]['id'] in self.requests_status:
-            controller_main(req_id=self.sorted_requests[curr_time]["id"],
-                            src=self.sorted_requests[curr_time]["source"],
-                            dest=self.sorted_requests[curr_time]["destination"],
-                            request_type="release",
-                            physical_topology=self.physical_topology,
-                            network_spec_db=self.network_spec_db,
-                            mod_formats=self.sorted_requests[curr_time]['mod_formats'],
-                            chosen_mod=self.requests_status[self.sorted_requests[curr_time]['id']]['mod_format'],
-                            slot_num=self.requests_status[self.sorted_requests[curr_time]['id']]['slots'],
-                            guard_band=self.sim_input['guard_band'],
-                            path=self.requests_status[self.sorted_requests[curr_time]['id']]['path'],
-                            assume=self.assume
-                            )
+            resp = controller_main(req_id=self.sorted_requests[curr_time]["id"],
+                                   src=self.sorted_requests[curr_time]["source"],
+                                   dest=self.sorted_requests[curr_time]["destination"],
+                                   request_type="release",
+                                   physical_topology=self.physical_topology,
+                                   network_spec_db=self.network_spec_db,
+                                   max_lps=self.sim_input['max_lps'],
+                                   mod_formats=self.sorted_requests[curr_time]['mod_formats'],
+                                   chosen_mod=self.requests_status[self.sorted_requests[curr_time]['id']]['mod_format'],
+                                   path=self.requests_status[self.sorted_requests[curr_time]['id']]['path'],
+                                   assume=self.assume
+                                   )
+            self.network_spec_db = resp[0]
+            self.physical_topology = resp[1]
         # Request was blocked, nothing to release
         else:
             pass
