@@ -63,31 +63,9 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot=None, num_slots=
 
 def handle_lps(req_id, path, network_spec_db, physical_topology, band_width, path_mod, mod_formats, max_lps, guard_band,
                num_cores):
-    """
-        - We are basically treating them as two separate requests if we successfully split
-        - After this, we'll need to change the handle arrival and release function to use np.where()
-        - Restrict to single core, eventually do multiple cores
-        - We need the actual path length here
-
-        - Iteratively check if you can split the request up between other modulation formats and bandwidths (with respect
-            to max lps and length constraints
-        - After each successful slice, use spectrum assignment to see if the spectrum is free with fewer slots
-        - Return true if spectrum assignment returns true with the information needed
-        - Continue until slicing can no longer occur, or length does not suffice
-        - Return False if the last point happens
-
-        - Check if the length works, check if number of slots is divisible with no remainder
-        - I think we want to start at the highest and work our way down to the lowest
-        - Cannot slice into something that has more slots than right now
-        - Damn, will have to get spectrum assignment and allocate multiple times, then release...If not then remove all?
-        - Due to the above point, it would make your life a lot easier to create another method in spectrum assignment?
-
-        - Must add up to the bandwidth, we actually don't care about the number of slots
-        - Shall we only stick with one bandwidth?
-        - Are we allowed to use 25 and 200?
-    """
+    # TODO: Shall we only stick with one bandwidth?
+    # TODO: Are we allowed to use 25 and 200?
     # No slicing is possible
-    # TODO: Check to make sure this is reached (Referring to the string)
     if band_width == '25' or max_lps == 1:
         return False
 
@@ -96,49 +74,57 @@ def handle_lps(req_id, path, network_spec_db, physical_topology, band_width, pat
     for i in range(len(path) - 1):
         path_len += physical_topology[path[i]][path[i + 1]]['length']
 
+    # Sort the dictionary in descending order by bandwidth
+    keys_lst = [int(key) for key in mod_formats.keys()]
+    keys_lst.sort(reverse=True)
+    mod_formats = {str(i): mod_formats[str(i)] for i in keys_lst}
+
     for curr_bw, obj in mod_formats.items():
-        # TODO: I believe modulation is a variable, indexing all this incorrectly
-        for modulation, obj_2 in obj.items():
-            if obj_2['QPSK']['max_length'] >= path_len > obj_2['16-QAM']['max_length']:
-                tmp_format = 'QPSK'
-            elif obj_2['16-QAM']['max_length'] >= path_len > obj_2['64-QAM']['max_length']:
-                tmp_format = '16-QAM'
-            elif obj_2['64-QAM']['max_length'] >= path_len:
-                tmp_format = '64-QAM'
-            # Failure to assign modulation format due to length constraint
-            else:
-                continue
+        # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
+        if int(curr_bw) >= int(band_width):
+            continue
 
-            # TODO: Check this
-            num_slices = int(int(band_width) / int(curr_bw))
-            if num_slices > max_lps:
-                # TODO: Make sure this break works correctly
-                break
+        # Attempt to assign a modulation format
+        if obj['QPSK']['max_length'] >= path_len > obj['16-QAM']['max_length']:
+            tmp_format = 'QPSK'
+        elif obj['16-QAM']['max_length'] >= path_len > obj['64-QAM']['max_length']:
+            tmp_format = '16-QAM'
+        elif obj['64-QAM']['max_length'] >= path_len:
+            tmp_format = '64-QAM'
+        else:
+            continue
 
-            # Attempt to allocate request using slicing (check if all slices can be allocated)
-            for i in range(num_slices):
-                spectrum_assignment = SpectrumAssignment(path, obj_2[tmp_format]['slots_needed'], network_spec_db,
-                                                         guard_band=guard_band)
-                selected_sp = spectrum_assignment.find_free_spectrum()
-                # TODO: May need a variable here to break from the entire for loop
-                if selected_sp is False:
-                    network_spec_db = handle_arrive_rel(req_id=req_id,
-                                                        network_spec_db=network_spec_db,
-                                                        path=path,
-                                                        req_type='release'
-                                                        )
-                    break
+        num_slices = int(int(band_width) / int(curr_bw))
+        if num_slices > max_lps:
+            break
 
+        is_allocated = True
+        # Check if all slices can be allocated
+        for i in range(num_slices):
+            spectrum_assignment = SpectrumAssignment(path, obj[tmp_format]['slots_needed'], network_spec_db,
+                                                     guard_band=guard_band)
+            selected_sp = spectrum_assignment.find_free_spectrum()
+            if selected_sp is not False:
                 network_spec_db = handle_arrive_rel(req_id=req_id,
                                                     network_spec_db=network_spec_db,
                                                     path=path,
                                                     start_slot=selected_sp['start_slot'],
-                                                    num_slots=obj_2[tmp_format]['slots_needed'],
+                                                    num_slots=obj[tmp_format]['slots_needed'],
                                                     req_type='arrival',
                                                     guard_band=guard_band
                                                     )
+            # Clear all previously attempted allocations
+            else:
+                network_spec_db = handle_arrive_rel(req_id=req_id,
+                                                    network_spec_db=network_spec_db,
+                                                    path=path,
+                                                    req_type='release'
+                                                    )
+                is_allocated = False
+                break
+        if is_allocated:
+            return network_spec_db, physical_topology, selected_sp
 
-    # TODO: You never return True yet
     return False
 
 
@@ -184,10 +170,7 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
         network_spec_db = handle_arrive_rel(req_id=req_id,
                                             network_spec_db=network_spec_db,
                                             path=path,
-                                            start_slot=slot_num,
-                                            num_slots=mod_formats[chosen_mod]['slots_needed'],
                                             req_type='release',
-                                            guard_band=guard_band
                                             )
         return network_spec_db, physical_topology
 
@@ -202,38 +185,60 @@ def controller_main(req_id, src, dest, request_type, physical_topology, network_
     else:
         raise NotImplementedError
 
-    if selected_path is not False and path_mod is not False:
-        slots_needed = mod_formats[path_mod]['slots_needed']
-        spectrum_assignment = SpectrumAssignment(selected_path, slots_needed, network_spec_db, guard_band=guard_band)
-        selected_sp = spectrum_assignment.find_free_spectrum()
+    if selected_path is not False:
+        if path_mod is not False:
+            slots_needed = mod_formats[path_mod]['slots_needed']
+            spectrum_assignment = SpectrumAssignment(selected_path, slots_needed, network_spec_db,
+                                                     guard_band=guard_band)
+            selected_sp = spectrum_assignment.find_free_spectrum()
 
-        if selected_sp is not False:
-            resp = {
-                'path': selected_path,
-                'mod_format': path_mod,
-                'core_num': selected_sp['core_num'],
-                'start_res_slot': selected_sp['start_slot'],
-                'end_res_slot': selected_sp['end_slot'],
-            }
-            network_spec_db = handle_arrive_rel(req_id=req_id,
-                                                network_spec_db=network_spec_db,
-                                                path=selected_path,
-                                                start_slot=selected_sp['start_slot'],
-                                                num_slots=slots_needed,
-                                                req_type='arrival',
-                                                guard_band=guard_band
-                                                )
-            return resp, network_spec_db, physical_topology
+            if selected_sp is not False:
+                resp = {
+                    'path': selected_path,
+                    'mod_format': path_mod,
+                    'core_num': selected_sp['core_num'],
+                    'start_res_slot': selected_sp['start_slot'],
+                    'end_res_slot': selected_sp['end_slot'],
+                }
+                network_spec_db = handle_arrive_rel(req_id=req_id,
+                                                    network_spec_db=network_spec_db,
+                                                    path=selected_path,
+                                                    start_slot=selected_sp['start_slot'],
+                                                    num_slots=slots_needed,
+                                                    req_type='arrival',
+                                                    guard_band=guard_band
+                                                    )
+                return resp, network_spec_db, physical_topology
+            else:
+                lps_resp = handle_lps(req_id, selected_path, network_spec_db, physical_topology, chosen_bw, path_mod,
+                                      bw_obj, max_lps, guard_band, 1)
+                if lps_resp is not False:
+                    resp = {
+                        'path': selected_path,
+                        'mod_format': path_mod,
+                        'core_num': lps_resp[2]['core_num'],
+                        'start_res_slot': lps_resp[2]['start_slot'],
+                        'end_res_slot': lps_resp[2]['end_slot'],
+                    }
+                    return resp, lps_resp[0], lps_resp[1]
+
+                return False
         else:
             # TODO: Only do this if the request has been blocked? Or always?
-            # TODO: Don't forget to return false if you can't successfully do lps
-            # TODO: Must the slicing be the same? For example, we can only slice w.r.t. one modulation and bandwidth?
-            # TODO: I need all modulations for all bandwidths not just one
             # TODO: Change number of cores to variable
+            # TODO: Eventually move to a 'try lps' method
             lps_resp = handle_lps(req_id, selected_path, network_spec_db, physical_topology, chosen_bw, path_mod,
                                   bw_obj, max_lps, guard_band, 1)
             if lps_resp is not False:
-                pass
+                # TODO: This resp variable must change (Might not be needed any longer if only used for release)
+                resp = {
+                    'path': selected_path,
+                    'mod_format': path_mod,
+                    'core_num': lps_resp[2]['core_num'],
+                    'start_res_slot': lps_resp[2]['start_slot'],
+                    'end_res_slot': lps_resp[2]['end_slot'],
+                }
+                return resp, lps_resp[0], lps_resp[1]
 
             return False
 
