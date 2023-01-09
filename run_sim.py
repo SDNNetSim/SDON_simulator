@@ -20,7 +20,7 @@ class RunSim:
 
     def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
-                 bw_slot=12.5, sim_flag='arash', constant_weight=True, guard_band=1):
+                 bw_slot=12.5, max_lps=4, sim_flag='arash', constant_weight=True, guard_band=1):
 
         # Assumptions for things like mu, lambda, modulation format/calc, and routing
         self.sim_flag = sim_flag
@@ -37,6 +37,7 @@ class RunSim:
 
         # Frequency for one spectrum slot (GHz)
         self.bw_slot = bw_slot
+        self.max_lps = max_lps
         self.bw_types = None
         self.spectral_slots = spectral_slots
         self.link_num = 1
@@ -81,6 +82,7 @@ class RunSim:
             'lambda': self.lam,
             'number_of_request': self.num_requests,
             'bandwidth_types': self.bw_types,
+            'max_lps': self.max_lps,
             'max_iters': self.max_iters,
             'spectral_slots': self.spectral_slots,
             'guard_band': self.guard_band,
