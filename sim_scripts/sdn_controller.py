@@ -1,9 +1,12 @@
+import numpy as np
+
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
 
 
 # TODO: Objectify this code
-def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, guard_band=None, core_num=0, req_type=None):
+def handle_arrive_rel(req_id, network_spec_db, path, start_slot=None, num_slots=None, guard_band=None, core_num=0,
+                      req_type=None):
     """
     Releases or fills slots in the network spectrum database arrays.
 
@@ -26,26 +29,32 @@ def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, guar
     :return: The updated network spectrum database
     :rtype: dict
     """
-    # TODO: This will most likely change for slicing, different functions?
     for i in range(len(path) - 1):
         src_dest = (path[i], path[i + 1])
+        dest_src = (path[i + 1], path[i])
 
         if req_type == 'arrival':
             end_index = start_slot + num_slots
             # Remember, Python list indexing is up to and NOT including!
             network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = req_id
+            network_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_index] = req_id
+
             # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
             if guard_band:
                 network_spec_db[src_dest]['cores_matrix'][core_num][end_index] = (req_id * -1)
+                network_spec_db[dest_src]['cores_matrix'][core_num][end_index] = (req_id * -1)
         elif req_type == 'release':
-            # To account for the guard band being released
-            if guard_band:
-                end_index = start_slot + num_slots + 1
-            else:
-                end_index = start_slot + num_slots
+            core_arr = network_spec_db[src_dest]['cores_matrix'][core_num]
+            rev_core_arr = network_spec_db[dest_src]['cores_matrix'][core_num]
+            req_indexes = np.where(core_arr == req_id)
+            guard_bands = np.where(core_arr == (req_id * -1))
 
-            network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = 0
-            network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = 0
+            for index in req_indexes:
+                core_arr[index] = 0
+                rev_core_arr[index] = 0
+            for gb_index in guard_bands:
+                core_arr[gb_index] = 0
+                rev_core_arr[gb_index] = 0
         else:
             raise ValueError(f'Expected release or arrival, got {req_type}.')
 
@@ -59,52 +68,64 @@ def handle_lps(req_id, path, network_spec_db, physical_topology, band_width, pat
         - After this, we'll need to change the handle arrival and release function to use np.where()
         - Restrict to single core, eventually do multiple cores
         - We need the actual path length here
-    """
-    orig_num_slots = mod_formats[band_width][path_mod]['slots_needed']
-    # No slicing is possible
-    if orig_num_slots == 1 or max_lps == 1:
-        return False
-    # - Iteratively check if you can split the request up between other modulation formats and bandwidths (with respect
-    #   to max lps and length constraints
-    # - After each successful slice, use spectrum assignment to see if the spectrum is free with fewer slots
-    # - Return true if spectrum assignment returns true with the information needed
-    # - Continue until slicing can no longer occur, or length does not suffice
-    # - Return False if the last point happens
 
+        - Iteratively check if you can split the request up between other modulation formats and bandwidths (with respect
+            to max lps and length constraints
+        - After each successful slice, use spectrum assignment to see if the spectrum is free with fewer slots
+        - Return true if spectrum assignment returns true with the information needed
+        - Continue until slicing can no longer occur, or length does not suffice
+        - Return False if the last point happens
+
+        - Check if the length works, check if number of slots is divisible with no remainder
+        - I think we want to start at the highest and work our way down to the lowest
+        - Cannot slice into something that has more slots than right now
+        - Damn, will have to get spectrum assignment and allocate multiple times, then release...If not then remove all?
+        - Due to the above point, it would make your life a lot easier to create another method in spectrum assignment?
+
+        - Must add up to the bandwidth, we actually don't care about the number of slots
+        - Shall we only stick with one bandwidth?
+        - Are we allowed to use 25 and 200?
+    """
+    # No slicing is possible
+    # TODO: Check to make sure this is reached (Referring to the string)
+    if band_width == '25' or max_lps == 1:
+        return False
+
+    # Obtain the length of the path
     path_len = 0
     for i in range(len(path) - 1):
         path_len += physical_topology[path[i]][path[i + 1]]['length']
 
-    # Check if the length works, check if number of slots is divisible with no remainder
-    # I think we want to start at the highest and work our way down to the lowest
-    # Cannot slice into something that has more slots than right now
-    # Damn, will have to get spectrum assignment and allocate multiple times, then release...If not then remove all?
-    # Due to the above point, it would make your life a lot easier to create another method in spectrum assignment?
-    # TODO: Order dict and start at selected mod, work your way down (mods and bws?)
     for curr_bw, obj in mod_formats.items():
+        # TODO: I believe modulation is a variable, indexing all this incorrectly
         for modulation, obj_2 in obj.items():
-            # Remember max LPS
-            # TODO: Check the mod here
-            if obj_2['max_length'] < path_len or obj_2['slots_needed'] % orig_num_slots != 0:
+            if obj_2['QPSK']['max_length'] >= path_len > obj_2['16-QAM']['max_length']:
+                tmp_format = 'QPSK'
+            elif obj_2['16-QAM']['max_length'] >= path_len > obj_2['64-QAM']['max_length']:
+                tmp_format = '16-QAM'
+            elif obj_2['64-QAM']['max_length'] >= path_len:
+                tmp_format = '64-QAM'
+            # Failure to assign modulation format due to length constraint
+            else:
                 continue
 
-            spectrum_assignment = SpectrumAssignment(path, obj_2['slots_needed'], network_spec_db,
-                                                     guard_band=guard_band)
+            # TODO: Check this
+            num_slices = int(int(band_width) / int(curr_bw))
+            if num_slices > max_lps:
+                # TODO: Make sure this break works correctly
+                break
 
-            tmp_slots = orig_num_slots
-            curr_lps = 1
-            while tmp_slots != 0:
+            # Attempt to allocate request using slicing (check if all slices can be allocated)
+            for i in range(num_slices):
+                spectrum_assignment = SpectrumAssignment(path, obj_2[tmp_format]['slots_needed'], network_spec_db,
+                                                         guard_band=guard_band)
                 selected_sp = spectrum_assignment.find_free_spectrum()
-                # TODO: Free all spectral slots previously allocated
+                # TODO: May need a variable here to break from the entire for loop
                 if selected_sp is False:
-                    # TODO: Eventually won't need start slot or number of slots
                     network_spec_db = handle_arrive_rel(req_id=req_id,
                                                         network_spec_db=network_spec_db,
                                                         path=path,
-                                                        start_slot=0,
-                                                        num_slots=0,
-                                                        req_type='release',
-                                                        guard_band=guard_band
+                                                        req_type='release'
                                                         )
                     break
 
@@ -112,18 +133,12 @@ def handle_lps(req_id, path, network_spec_db, physical_topology, band_width, pat
                                                     network_spec_db=network_spec_db,
                                                     path=path,
                                                     start_slot=selected_sp['start_slot'],
-                                                    num_slots=obj_2['slots_needed'],
+                                                    num_slots=obj_2[tmp_format]['slots_needed'],
                                                     req_type='arrival',
                                                     guard_band=guard_band
                                                     )
-                tmp_slots -= obj_2['slots_needed']
-                curr_lps += 1
-                if curr_lps > max_lps:
-                    break
-            # TODO: Update this return (also check this variable)
-            if tmp_slots == 0:
-                return True
 
+    # TODO: You never return True yet
     return False
 
 

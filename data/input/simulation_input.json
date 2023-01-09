@@ -1,7 +1,7 @@
 {
     "seed": [],
     "mu": 0.2,
-    "lambda": 14.0,
+    "lambda": 142.0,
     "number_of_request": 10000,
     "bandwidth_types": {
         "25": {
