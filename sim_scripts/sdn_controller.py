@@ -76,13 +76,23 @@ class SDNController:
             dest_src = (self.path[i + 1], self.path[i])
 
             # Remember, Python list indexing is up to and NOT including!
-            self.network_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
-            self.network_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
+            tmp_set = set(self.network_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1])
+            rev_tmp_set = set(self.network_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1])
+
+            if tmp_set != {0.0} or rev_tmp_set != {0.0}:
+                raise BufferError("Attempted to allocate a taken spectrum.")
+
+            self.network_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
+            self.network_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
 
             # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
             if self.guard_band:
-                self.network_db[src_dest]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
-                self.network_db[dest_src]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
+                if self.network_db[src_dest]['cores_matrix'][core_num][end_slot - 1] != 0.0 or \
+                        self.network_db[dest_src]['cores_matrix'][core_num][end_slot - 1] != 0.0:
+                    raise BufferError("Attempted to allocate a taken spectrum.")
+
+                self.network_db[src_dest]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
+                self.network_db[dest_src]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
 
     # TODO: ...Put lps (which is actually ls *sigh*) in another script?
     def allocate_lps(self):

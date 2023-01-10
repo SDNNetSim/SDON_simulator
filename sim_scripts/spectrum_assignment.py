@@ -58,7 +58,7 @@ class SpectrumAssignment:
         can be assigned.
         """
         start_slot = 0
-        end_slot = self.slots_needed - 1
+        end_slot = self.slots_needed
 
         for core_num, core_arr in enumerate(self.cores_matrix):
             open_slots_arr = np.where(core_arr == 0)[0]
@@ -92,7 +92,7 @@ class SpectrumAssignment:
                 start_slot = open_slots_arr[0]
                 # Remove prior slots
                 open_slots_arr = open_slots_arr[1:]
-                end_slot = start_slot + (self.slots_needed - 1)
+                end_slot = start_slot + self.slots_needed
 
     def find_free_spectrum(self):
         """
