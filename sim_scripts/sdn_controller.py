@@ -84,6 +84,7 @@ class SDNController:
                 self.network_db[src_dest]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
                 self.network_db[dest_src]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
 
+    # TODO: ...Put lps (which is actually ls *sigh*) in another script?
     def allocate_lps(self):
         """
         Attempts to perform light path slicing (lps) to allocate a request.
@@ -142,11 +143,12 @@ class SDNController:
         :return: The updated response and network database
         """
         # TODO: Only do this if the request has been blocked? Or always?
-        # TODO: Mod formats will change (Is resp even needed?)
         lps_resp = self.allocate_lps()
         if lps_resp is not False:
             resp = {
                 'path': self.path,
+                "mod_format": None,
+                "start_slot": None,
                 'is_sliced': True,
             }
             return resp, self.network_db
@@ -188,6 +190,7 @@ class SDNController:
                 # TODO: Ensure spectrum assignment works correctly
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
+                # TODO: Response needs to be updated (we don't need start slot and things like that anymore)
                 if selected_sp is not False:
                     resp = {
                         'path': selected_path,

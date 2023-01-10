@@ -148,7 +148,8 @@ class Engine:
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
                 "mod_format": resp[0]['mod_format'],
                 "slots": resp[0]['start_slot'],
-                "path": resp[0]['path']
+                "path": resp[0]['path'],
+                "is_sliced": resp[0]['is_sliced']
             }})
             self.network_spec_db = resp[1]
 
