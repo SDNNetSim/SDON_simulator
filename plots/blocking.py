@@ -14,7 +14,7 @@ class Blocking:
         # TODO: Document the structure of how things are saved
         # TODO: Default to latest one if none is chosen (mark this on the graph)
         # TODO: Document how much LPS was used
-        self.des_time = '0110_09:41:33'
+        self.des_time = '0110_10:13:17'
         self.network_name = 'USNet'
         self.file_path = f'../data/output/{self.network_name}/{self.des_time}/'
         self.files = self.get_file_names()

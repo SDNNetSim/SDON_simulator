@@ -22,6 +22,8 @@ class SDNController:
         self.src = src
         self.dest = dest
 
+        # Modulation formats for the chosen bandwidth
+        # TODO: Change
         self.mod_formats = mod_formats
         self.chosen_bw = chosen_bw
         self.max_lps = max_lps
@@ -119,8 +121,7 @@ class SDNController:
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
-                    # TODO: Update end slot
-                    self.handle_arrival(start_slot=selected_sp['start_slot'], end_slot=obj[tmp_format]['slots_needed'],
+                    self.handle_arrival(start_slot=selected_sp['start_slot'], end_slot=selected_sp['end_slot'],
                                         core_num=selected_sp['core_num'])
                 # Clear all previously attempted allocations
                 else:
@@ -142,7 +143,6 @@ class SDNController:
         """
         # TODO: Only do this if the request has been blocked? Or always?
         # TODO: Mod formats will change (Is resp even needed?)
-        # TODO: Is topology even needed or changed? Why return it?
         lps_resp = self.allocate_lps()
         if lps_resp is not False:
             resp = {
@@ -162,14 +162,13 @@ class SDNController:
         :type request_type: str
         :return: The response with relevant information, network database, and physical topology
         """
-        # TODO: I don't think we need to return topology, ever, in all methods
         if request_type == "release":
             self.handle_release()
             return self.network_db
 
         routing_obj = Routing(req_id=self.req_id, source=self.src, destination=self.dest,
                               physical_topology=self.topology, network_spec_db=self.network_db,
-                              mod_formats=self.mod_formats, bw=self.chosen_bw)
+                              mod_formats=self.mod_formats[self.chosen_bw], bw=self.chosen_bw)
 
         if self.sim_assume == 'yue':
             selected_path, path_mod = routing_obj.shortest_path()
@@ -182,7 +181,7 @@ class SDNController:
         if selected_path is not False:
             self.path = selected_path
             if path_mod is not False:
-                slots_needed = self.mod_formats[path_mod]['slots_needed']
+                slots_needed = self.mod_formats[self.chosen_bw][path_mod]['slots_needed']
                 spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.network_db,
                                                          guard_band=self.guard_band)
 
@@ -204,10 +203,8 @@ class SDNController:
                     self.handle_arrival(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
                     return resp, self.network_db
                 else:
-                    # return self.handle_lps()
-                    return False
+                    return self.handle_lps()
             else:
-                # return self.handle_lps()
-                return False
+                return self.handle_lps()
 
         return False

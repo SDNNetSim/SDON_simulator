@@ -127,7 +127,7 @@ class Engine:
         else:
             self.control_obj.path = None
 
-        self.control_obj.mod_formats = self.sorted_requests[curr_time]['mod_formats']
+        self.control_obj.mod_formats = self.sim_input['bandwidth_types']
         self.control_obj.chosen_bw = self.sorted_requests[curr_time]['bandwidth']
         self.control_obj.max_lps = self.sim_input['max_lps']
 
