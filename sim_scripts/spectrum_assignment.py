@@ -58,19 +58,17 @@ class SpectrumAssignment:
         Loops through each core and find the starting and ending indexes of where the request
         can be assigned.
         """
-        # TODO: Edge case where the number of slots needed is one - not correct! (Comment) (Make sure it works)
         start_slot = 0
-        if self.slots_needed == 1:
-            end_slot = self.slots_needed
-        else:
-            # TODO: This should be checked
-            end_slot = self.slots_needed - 1
+        end_slot = self.slots_needed - 1
 
         for core_num, core_arr in enumerate(self.cores_matrix):
             open_slots_arr = np.where(core_arr == 0)[0]
 
             # Look for a super channel in the current core
             while (end_slot + self.guard_band) < self.num_slots:
+                if self.guard_band == 0 and self.slots_needed == 1:
+                    raise NotImplementedError
+
                 spec_set = set(core_arr[start_slot:end_slot + self.guard_band])
                 rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot + self.guard_band])
 
@@ -81,7 +79,6 @@ class SpectrumAssignment:
 
                     # Other links spectrum slots are also available
                     if self.is_free is not False or len(self.path) <= 2:
-                        # TODO: The end slot here assumes a guard band, will this work in other functions?
                         self.response = {'core_num': core_num, 'start_slot': start_slot,
                                          'end_slot': end_slot + self.guard_band}
                         return
@@ -96,11 +93,7 @@ class SpectrumAssignment:
                 start_slot = open_slots_arr[0]
                 # Remove prior slots
                 open_slots_arr = open_slots_arr[1:]
-                # TODO: Make sure this is correct
-                if self.slots_needed == 1:
-                    end_slot = start_slot + self.slots_needed
-                else:
-                    end_slot = start_slot + (self.slots_needed - 1)
+                end_slot = start_slot + (self.slots_needed - 1)
 
     def find_free_spectrum(self):
         """

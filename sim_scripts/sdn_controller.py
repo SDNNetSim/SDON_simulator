@@ -46,23 +46,19 @@ class SDNController:
                     self.network_db[src_dest]['cores_matrix'][core_num][gb_index] = 0
                     self.network_db[dest_src]['cores_matrix'][core_num][gb_index] = 0
 
-    def handle_arrival(self, start_slot, num_slots, core_num):
+    def handle_arrival(self, start_slot, end_slot, core_num):
         for i in range(len(self.path) - 1):
             src_dest = (self.path[i], self.path[i + 1])
             dest_src = (self.path[i + 1], self.path[i])
 
-            end_index = start_slot + num_slots
             # Remember, Python list indexing is up to and NOT including!
-            self.network_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = self.req_id
-            self.network_db[dest_src]['cores_matrix'][core_num][start_slot:end_index] = self.req_id
+            self.network_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
+            self.network_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
 
             # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
             if self.guard_band:
-                try:
-                    self.network_db[src_dest]['cores_matrix'][core_num][end_index] = (self.req_id * -1)
-                except IndexError:
-                    print("Begin debug")
-                self.network_db[dest_src]['cores_matrix'][core_num][end_index] = (self.req_id * -1)
+                self.network_db[src_dest]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
+                self.network_db[dest_src]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
 
     def allocate_lps(self):
         # TODO: Shall we only stick with one bandwidth?
@@ -96,7 +92,8 @@ class SDNController:
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
-                    self.handle_arrival(start_slot=selected_sp['start_slot'], num_slots=obj[tmp_format]['slots_needed'],
+                    # TODO: Update end slot
+                    self.handle_arrival(start_slot=selected_sp['start_slot'], end_slot=obj[tmp_format]['slots_needed'],
                                         core_num=selected_sp['core_num'])
                 # Clear all previously attempted allocations
                 else:
@@ -146,7 +143,8 @@ class SDNController:
                 spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.network_db,
                                                          guard_band=self.guard_band)
 
-                # TODO: ensure spectrum assignment works correctly (correct path found)
+                # TODO: Ensure spectrum assignment works correctly (correct path found)
+                # TODO: End slot is not correct?
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
@@ -160,7 +158,8 @@ class SDNController:
                     }
 
                     # TODO: We assume spectrum assignment work correctly here
-                    self.handle_arrival(selected_sp['start_slot'], slots_needed, selected_sp['core_num'])
+                    # TODO: End slot should be passed here, it is not correct?
+                    self.handle_arrival(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
                     return resp, self.network_db, self.topology
                 else:
                     # return self.handle_lps()
