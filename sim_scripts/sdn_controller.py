@@ -87,7 +87,6 @@ class SDNController:
         Attempts to perform light path slicing (lps) to allocate a request.
 
         :return: If we were able to successfully carry out lps or not
-        :rtype: bool
         """
         # TODO: Shall we only stick with one bandwidth?
         # TODO: Are we allowed to use 25 and 200?
@@ -139,8 +138,7 @@ class SDNController:
         The main light path slicing function. Created solely for the purpose to produce less lines of code in the
         handle event method.
 
-        :return: The updated response, network database, and topology
-        :rtype: set or bool
+        :return: The updated response and network database
         """
         # TODO: Only do this if the request has been blocked? Or always?
         # TODO: Mod formats will change (Is resp even needed?)
@@ -151,7 +149,7 @@ class SDNController:
                 'path': self.path,
                 'is_sliced': True,
             }
-            return resp, self.network_db, self.topology
+            return resp, self.network_db
 
         return False
 
@@ -163,12 +161,11 @@ class SDNController:
         :param request_type: Whether the request is an arrival or shall be released
         :type request_type: str
         :return: The response with relevant information, network database, and physical topology
-        :rtype: set or bool
         """
-        # TODO: I don't think we need to return topology
+        # TODO: I don't think we need to return topology, ever, in all methods
         if request_type == "release":
             self.handle_release()
-            return self.network_db, self.topology
+            return self.network_db
 
         routing_obj = Routing(req_id=self.req_id, source=self.src, destination=self.dest,
                               physical_topology=self.topology, network_spec_db=self.network_db,
@@ -189,8 +186,7 @@ class SDNController:
                 spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.network_db,
                                                          guard_band=self.guard_band)
 
-                # TODO: Ensure spectrum assignment works correctly (correct path found)
-                # TODO: End slot is not correct?
+                # TODO: Ensure spectrum assignment works correctly
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
@@ -204,9 +200,9 @@ class SDNController:
                     }
 
                     # TODO: We assume spectrum assignment work correctly here
-                    # TODO: End slot should be passed here, it is not correct?
+                    # TODO: Debug to ensure passing the end slot works correctly
                     self.handle_arrival(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
-                    return resp, self.network_db, self.topology
+                    return resp, self.network_db
                 else:
                     # return self.handle_lps()
                     return False

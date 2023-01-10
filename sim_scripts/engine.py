@@ -150,9 +150,7 @@ class Engine:
                 "slots": resp[0]['start_slot'],
                 "path": resp[0]['path']
             }})
-            # TODO: Ensure these get updated
             self.network_spec_db = resp[1]
-            self.physical_topology = resp[2]
 
     def handle_release(self, curr_time):
         """
@@ -164,10 +162,8 @@ class Engine:
         """
         if self.sorted_requests[curr_time]['id'] in self.requests_status:
             self.update_control_obj(curr_time, release=True)
-            resp = self.control_obj.handle_event(request_type='release')
+            self.network_spec_db = self.control_obj.handle_event(request_type='release')
 
-            self.network_spec_db = resp[0]
-            self.physical_topology = resp[1]
         # Request was blocked, nothing to release
         else:
             pass
