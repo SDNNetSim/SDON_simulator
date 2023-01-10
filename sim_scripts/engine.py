@@ -7,7 +7,7 @@ import numpy as np
 
 # Project imports
 from sim_scripts.request_generator import generate
-from sim_scripts.sdn_controller import controller_main
+from sim_scripts.sdn_controller import SDNController
 from useful_functions.handle_dirs_files import create_dir
 
 
@@ -33,6 +33,8 @@ class Engine:
         self.network_name = network_name
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
+
+        self.control_obj = SDNController(sim_assume=assume)
 
         self.requests = None
         self.sorted_requests = None
@@ -103,6 +105,24 @@ class Engine:
         """
         self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
 
+    # TODO: Not sure if I even like this format
+    def update_control_obj(self, curr_time, release=False):
+        self.control_obj.network_db = self.network_spec_db
+        self.control_obj.topology = self.physical_topology
+
+        self.control_obj.req_id = self.sorted_requests[curr_time]["id"]
+        self.control_obj.src = self.sorted_requests[curr_time]["source"]
+        self.control_obj.dest = self.sorted_requests[curr_time]["destination"]
+        # A path has not been chosen yet for an arrival
+        if release:
+            self.control_obj.path = self.requests_status[self.sorted_requests[curr_time]['id']]['path']
+        else:
+            self.control_obj.path = None
+
+        self.control_obj.mod_formats = self.sorted_requests[curr_time]['mod_formats']
+        self.control_obj.chosen_bw = self.sorted_requests[curr_time]['bandwidth']
+        self.control_obj.max_lps = self.sim_input['max_lps']
+
     def handle_arrival(self, curr_time):
         """
         Calls the controller to handle an arrival request.
@@ -111,30 +131,18 @@ class Engine:
         :type curr_time: float
         :return: None
         """
-        resp = controller_main(req_id=self.sorted_requests[curr_time]["id"],
-                               src=self.sorted_requests[curr_time]["source"],
-                               dest=self.sorted_requests[curr_time]["destination"],
-                               request_type="arrival",
-                               physical_topology=self.physical_topology,
-                               guard_band=self.sim_input['guard_band'],
-                               max_lps=self.sim_input['max_lps'],
-                               network_spec_db=self.network_spec_db,
-                               mod_formats=self.sorted_requests[curr_time]['mod_formats'],
-                               chosen_bw=self.sorted_requests[curr_time]['bandwidth'],
-                               path=list(),
-                               assume=self.assume,
-                               bw_obj=self.sim_input['bandwidth_types'],
-                               )
+        self.update_control_obj(curr_time, release=False)
+        resp = self.control_obj.handle_event(request_type='arrival')
 
         if resp is False:
             self.blocking_iter += 1
         else:
-            # TODO: This will change (Is it needed?)
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
                 "mod_format": resp[0]['mod_format'],
-                "slots": resp[0]['start_res_slot'],
+                "slots": resp[0]['start_slot'],
                 "path": resp[0]['path']
             }})
+            # TODO: Ensure these get updated
             self.network_spec_db = resp[1]
             self.physical_topology = resp[2]
 
@@ -147,18 +155,9 @@ class Engine:
         :return: None
         """
         if self.sorted_requests[curr_time]['id'] in self.requests_status:
-            resp = controller_main(req_id=self.sorted_requests[curr_time]["id"],
-                                   src=self.sorted_requests[curr_time]["source"],
-                                   dest=self.sorted_requests[curr_time]["destination"],
-                                   request_type="release",
-                                   physical_topology=self.physical_topology,
-                                   network_spec_db=self.network_spec_db,
-                                   max_lps=self.sim_input['max_lps'],
-                                   mod_formats=self.sorted_requests[curr_time]['mod_formats'],
-                                   chosen_mod=self.requests_status[self.sorted_requests[curr_time]['id']]['mod_format'],
-                                   path=self.requests_status[self.sorted_requests[curr_time]['id']]['path'],
-                                   assume=self.assume
-                                   )
+            self.update_control_obj(curr_time, release=True)
+            resp = self.control_obj.handle_event(request_type='release')
+
             self.network_spec_db = resp[0]
             self.physical_topology = resp[1]
         # Request was blocked, nothing to release
@@ -207,6 +206,8 @@ class Engine:
         """
         if self.sim_input_fp is not None:
             self.load_input()
+
+        self.control_obj.num_cores = self.sim_input['num_cores']
 
         for i in range(self.sim_input['max_iters']):
             if i == 0:

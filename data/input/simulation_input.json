@@ -75,7 +75,7 @@
             }
         }
     },
-    "max_lps": 4,
+    "max_lps": 1,
     "max_iters": 1,
     "spectral_slots": 128,
     "guard_band": 1,
@@ -672,5 +672,6 @@
                 "destination": "23"
             }
         }
-    }
+    },
+    "num_cores": 1
 }

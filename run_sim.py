@@ -11,6 +11,7 @@ from useful_functions.handle_dirs_files import create_dir
 # TODO: Regex for commit messages
 # TODO: Standardize commit topics [example_topic]
 # TODO: Coding and commit guide lines
+# TODO: Update docs
 
 
 class RunSim:
@@ -20,7 +21,7 @@ class RunSim:
 
     def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
-                 bw_slot=12.5, max_lps=4, sim_flag='arash', constant_weight=True, guard_band=1):
+                 bw_slot=12.5, max_lps=1, sim_flag='arash', constant_weight=True, guard_band=1):
 
         # Assumptions for things like mu, lambda, modulation format/calc, and routing
         self.sim_flag = sim_flag
@@ -86,7 +87,8 @@ class RunSim:
             'max_iters': self.max_iters,
             'spectral_slots': self.spectral_slots,
             'guard_band': self.guard_band,
-            'physical_topology': physical_topology
+            'physical_topology': physical_topology,
+            'num_cores': self.num_cores
         }
 
     def thread_runs(self):

@@ -17,6 +17,7 @@ class SpectrumAssignment:
         self.rev_cores_matrix = None
         self.num_slots = None
 
+        # TODO: This and other variables may have to be reset each time
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
 
     def check_other_links(self, core_num, start_slot, end_slot):
@@ -62,6 +63,7 @@ class SpectrumAssignment:
         if self.slots_needed == 1:
             end_slot = self.slots_needed
         else:
+            # TODO: This should be checked
             end_slot = self.slots_needed - 1
 
         for core_num, core_arr in enumerate(self.cores_matrix):

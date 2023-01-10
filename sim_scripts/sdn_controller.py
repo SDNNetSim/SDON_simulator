@@ -2,14 +2,12 @@ import numpy as np
 
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
+from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
 
 
 class SDNController:
-    def __int__(self, req_id, network_db, topology, num_cores, path, sim_assume, src, dest, mod_formats, chosen_bw,
-                max_lps):
-        # TODO: Ensure all variables are updated properly, especially in the constructor
-        # TODO: I'm not sure why physical topology would ever change, why return it?
-        # TODO: Move variables not shared to methods and not in the constructor
+    def __init__(self, req_id=None, network_db=None, topology=None, num_cores=None, path=None, sim_assume=None,
+                 src=None, dest=None, mod_formats=None, chosen_bw=None, max_lps=None):
         self.req_id = req_id
         self.network_db = network_db
         self.topology = topology
@@ -19,8 +17,10 @@ class SDNController:
 
         self.src = src
         self.dest = dest
-        self.src_dest = None
-        self.dest_src = None
+
+        self.mod_formats = mod_formats
+        self.chosen_bw = chosen_bw
+        self.max_lps = max_lps
 
         if self.sim_assume == 'arash':
             self.guard_band = 0
@@ -29,24 +29,22 @@ class SDNController:
         else:
             raise NotImplementedError
 
-        self.spectrum_obj = SpectrumAssignment()
-        self.mod_formats = mod_formats
-        self.chosen_bw = chosen_bw
-        self.max_lps = max_lps
-
     def handle_release(self):
         for i in range(len(self.path) - 1):
-            for core_num in range(len(self.num_cores)):
-                core_arr = self.network_db[self.src_dest]['cores_matrix'][core_num]
+            src_dest = (self.path[i], self.path[i + 1])
+            dest_src = (self.path[i + 1], self.path[i])
+
+            for core_num in range(self.num_cores):
+                core_arr = self.network_db[src_dest]['cores_matrix'][core_num]
                 req_indexes = np.where(core_arr == self.req_id)
                 guard_bands = np.where(core_arr == (self.req_id * -1))
 
                 for index in req_indexes:
-                    self.network_db[self.src_dest]['cores_matrix'][core_num][index] = 0
-                    self.network_db[self.dest_src]['cores_matrix'][core_num][index] = 0
+                    self.network_db[src_dest]['cores_matrix'][core_num][index] = 0
+                    self.network_db[dest_src]['cores_matrix'][core_num][index] = 0
                 for gb_index in guard_bands:
-                    self.network_db[self.src_dest]['cores_matrix'][core_num][gb_index] = 0
-                    self.network_db[self.dest_src]['cores_matrix'][core_num][gb_index] = 0
+                    self.network_db[src_dest]['cores_matrix'][core_num][gb_index] = 0
+                    self.network_db[dest_src]['cores_matrix'][core_num][gb_index] = 0
 
     def handle_arrival(self, start_slot, num_slots, core_num):
         for i in range(len(self.path) - 1):
@@ -60,7 +58,10 @@ class SDNController:
 
             # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
             if self.guard_band:
-                self.network_db[src_dest]['cores_matrix'][core_num][end_index] = (self.req_id * -1)
+                try:
+                    self.network_db[src_dest]['cores_matrix'][core_num][end_index] = (self.req_id * -1)
+                except IndexError:
+                    print("Begin debug")
                 self.network_db[dest_src]['cores_matrix'][core_num][end_index] = (self.req_id * -1)
 
     def allocate_lps(self):
@@ -70,31 +71,17 @@ class SDNController:
         if self.chosen_bw == '25' or self.max_lps == 1:
             return False
 
-        # Obtain the length of the path
-        path_len = 0
-        for i in range(len(self.path) - 1):
-            path_len += self.topology[self.path[i]][self.path[i + 1]]['length']
-
-        # TODO: Move to useful functions
+        path_len = find_path_len(self.path, self.topology)
         # Sort the dictionary in descending order by bandwidth
-        keys_lst = [int(key) for key in self.mod_formats.keys()]
-        keys_lst.sort(reverse=True)
-        mod_formats = {str(i): self.mod_formats[str(i)] for i in keys_lst}
+        mod_formats = sort_dict_keys(self.mod_formats)
 
         for curr_bw, obj in mod_formats.items():
             # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
             if int(curr_bw) >= int(self.chosen_bw):
                 continue
 
-            # TODO: Move to useful functions
-            # Attempt to assign a modulation format
-            if obj['QPSK']['max_length'] >= path_len > obj['16-QAM']['max_length']:
-                tmp_format = 'QPSK'
-            elif obj['16-QAM']['max_length'] >= path_len > obj['64-QAM']['max_length']:
-                tmp_format = '16-QAM'
-            elif obj['64-QAM']['max_length'] >= path_len:
-                tmp_format = '64-QAM'
-            else:
+            tmp_format = get_path_mod(obj, path_len)
+            if tmp_format is False:
                 continue
 
             num_slices = int(int(self.chosen_bw) / int(curr_bw))
@@ -104,9 +91,9 @@ class SDNController:
             is_allocated = True
             # Check if all slices can be allocated
             for i in range(num_slices):
-                self.spectrum_obj.network_spec_db = self.network_db
-                self.spectrum_obj.slots_needed = obj[tmp_format]['slots_needed']
-                selected_sp = self.spectrum_obj.find_free_spectrum()
+                spectrum_assignment = SpectrumAssignment(self.path, obj[tmp_format]['slots_needed'], self.network_db,
+                                                         guard_band=self.guard_band)
+                selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
                     self.handle_arrival(start_slot=selected_sp['start_slot'], num_slots=obj[tmp_format]['slots_needed'],
@@ -127,12 +114,15 @@ class SDNController:
         # TODO: Mod formats will change (Is resp even needed?)
         lps_resp = self.allocate_lps()
         if lps_resp is not False:
-            resp = {}
+            resp = {
+                'path': self.path,
+                'is_sliced': True,
+            }
             return resp, self.network_db, self.topology
         else:
             return False
 
-    def controller_main(self, request_type):
+    def handle_event(self, request_type):
         if request_type == "release":
             self.handle_release()
             return self.network_db, self.topology
@@ -150,23 +140,33 @@ class SDNController:
             raise NotImplementedError
 
         if selected_path is not False:
+            self.path = selected_path
             if path_mod is not False:
                 slots_needed = self.mod_formats[path_mod]['slots_needed']
-                self.spectrum_obj.path = selected_path
-                self.spectrum_obj.slots_needed = slots_needed
-                self.spectrum_obj.network_spec_db = self.network_db
-                self.spectrum_obj.guard_band = self.guard_band
+                spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.network_db,
+                                                         guard_band=self.guard_band)
 
-                selected_sp = self.spectrum_obj.find_free_spectrum()
+                # TODO: ensure spectrum assignment works correctly (correct path found)
+                selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
-                    resp = {}
+                    resp = {
+                        'path': selected_path,
+                        'mod_format': path_mod,
+                        'core_num': selected_sp['core_num'],
+                        'start_slot': selected_sp['start_slot'],
+                        'end_slot': selected_sp['end_slot'],
+                        'is_sliced': False
+                    }
 
-                    self.handle_arrival(resp['start_slot'], resp['end_slot'], resp['core_num'])
+                    # TODO: We assume spectrum assignment work correctly here
+                    self.handle_arrival(selected_sp['start_slot'], slots_needed, selected_sp['core_num'])
                     return resp, self.network_db, self.topology
                 else:
-                    return self.handle_lps()
+                    # return self.handle_lps()
+                    return False
             else:
-                return self.handle_lps()
+                # return self.handle_lps()
+                return False
 
         return False
