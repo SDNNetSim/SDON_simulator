@@ -105,8 +105,16 @@ class Engine:
         """
         self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
 
-    # TODO: Not sure if I even like this format
     def update_control_obj(self, curr_time, release=False):
+        """
+        Updates the information for the SDN controller object initialized in the constructor.
+
+        :param curr_time: The current time of the arrival or departure
+        :type curr_time: float
+        :param release: Determines if we have a path or not, an arrival request has not been assigned one yet
+        :type release: bool
+        :return: None
+        """
         self.control_obj.network_db = self.network_spec_db
         self.control_obj.topology = self.physical_topology
 
