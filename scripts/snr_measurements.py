@@ -19,7 +19,7 @@ class SnrMeasurments:
         self.start_slot_no = start_slot_no
         self.end_slot_no = end_slot_no
         self.assigned_core_no = assigned_core_no
-        self.requested_bit_ratr = requested_bit_rate
+        self.requested_bit_rate = requested_bit_rate
         self.modulation_format = modulation_format
         self.guard_band = guard_band
         self.physical_topology = physical_topology
@@ -41,39 +41,42 @@ class SnrMeasurments:
         
         
     def G_NLI_ASE(self):
-        light_frequncy = (1.9341 * math.e ** 14)
-        Rho = ( ( math.pi ** 2 ) * np.abs( self.physical_topology['dispersion'] ) )/( 2 * self.physical_topology['attenuation'])
-        Mio = ( 3 * ( self.physical_topology['non_linearity'] ** 2 ) ) / ( 2 * math.pi * self.physical_topology['attenuation'] * np.abs( self.physical_topology['dispersion'] ))
-        Fi = (self.start_slot_no * self.frequncy_spacing ) + ( ( self.no_assigned_slots * self.frequncy_spacing ) / 2 )
-        BW = self.no_assigned_slots * self.frequncy_spacing
+        light_frequncy = (1.9341 * 10 ** 14)
+        
+        Fi = ((self.start_slot_no * self.frequncy_spacing ) + ( ( self.no_assigned_slots * self.frequncy_spacing ) / 2 )) * 10 ** 9
+        BW = self.no_assigned_slots * self.frequncy_spacing * 10 ** 9
         PSDi = self.input_power / BW
-        SCI = (PSDi ** 2) * math.asinh( Rho * (BW ** 2 ) )
+        
         PSD_NLI = 0
         PSD_corr = 0
-        for link in self.path:
+        for link in range(0, len(self.path)-1):
             MCI = 0
             Num_span = 0
             visited_channel = []
+            link_id = self.network_spec_db[(self.path[link], self.path[link+1])]['link_num']
+            Rho = ( ( math.pi ** 2 ) * np.abs( self.physical_topology['links'][link_id]['fiber']['dispersion'] ) )/( 2 * self.physical_topology['links'][link_id]['fiber']['attenuation'])
+            Mio = ( 3 * ( self.physical_topology['links'][link_id]['fiber']['non_linearity'] ** 2 ) ) / ( 2 * math.pi * self.physical_topology['links'][link_id]['fiber']['attenuation'] * np.abs( self.physical_topology['links'][link_id]['fiber']['dispersion'] ))
+            SCI = (PSDi ** 2) * math.asinh( Rho * (BW ** 2 ) )
             for w in range(self.spectral_slots):
-                if self.network_spec_db[link][self.assigned_core_no][w] != 0 :
-                    if self.network_spec_db[link][self.assigned_core_no][w] in visited_channel:
+                if self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w] not in [0,-1]: #!= 0 :
+                    if self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w] in visited_channel:
                         continue
                     else:
-                        visited_channel.append(self.network_spec_db[link][self.assigned_core_no][w])
+                        visited_channel.append(self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w])
                         
-                    Fj = ( w * self.frequncy_spacing)+((self.requests_status[self.network_spec_db[link][self.assigned_core_no][w]]['slot_number'] * self.frequncy_spacing ) / 2 )
-                    BWj = self.requests_status[self.network_spec_db[link][self.assigned_core_no][w]]['slot_number'] * self.frequncy_spacing
+                    Fj = (( w * self.frequncy_spacing)+((self.requests_status[self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w]]['path'][2] * self.frequncy_spacing ) / 2 ) )* 10 ** 9
+                    BWj = (self.requests_status[self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w]]['path'][2] * self.frequncy_spacing ) * 10 **9
                     PSDj = self.input_power / BWj
                     if Fi != Fj:
-                        MCI = MCI + ((PSDj ** 2) * math.log( math.abs ((math.abs(Fi-Fj)+(BWj/2))/(math.abs(Fi-Fj)-(BWj/2)))))
+                        MCI = MCI + ((PSDj ** 2) * math.log( abs((abs(Fi-Fj)+(BWj/2))/(abs(Fi-Fj)-(BWj/2)))))
             
             if self.phi:
-                hn = math.ceil( ( len(visited_channel) - 1 ) / 2 )
-                for i in range(1,):
+                hn = 0
+                for i in range(1,math.ceil( ( len(visited_channel) - 1 ) / 2 )+1):
                     hn = hn + 1 / i
-                effective_L = ( 1 - math.e ** ( -2 * self.physical_topology['attenuation'] * self.physical_topology['span_length']) ) / ( 2 * self.physical_topology['attenuation'])
-                baud_rate = self.baud_rates[self.modulation_format]
-                temp_coef = ((self.physical_topology['non_linearity'] ** 2 ) * (effective_L ** 2) * (PSDi ** 3) *  ( BW ** 2 ) ) / ( ( baud_rate ** 2 ) * math.pi * self.physical_topology['dispersion'] * self.physical_topology['span_length'])
+                effective_L = ( 1 - math.e ** ( -2 * self.physical_topology['links'][link_id]['fiber']['attenuation'] * self.physical_topology['links'][link_id]['fiber']['span_length'] * 10**3) ) / ( 2 * self.physical_topology['links'][link_id]['fiber']['attenuation'])
+                baud_rate = int(self.requested_bit_rate) *10**9 / 2 #self.baud_rates[self.modulation_format]
+                temp_coef = ((self.physical_topology['links'][link_id]['fiber']['non_linearity'] ** 2 ) * (effective_L ** 2) * (PSDi ** 3) *  ( BW ** 2 ) ) / ( ( baud_rate ** 2 ) * math.pi * self.physical_topology['links'][link_id]['fiber']['dispersion'] * (self.physical_topology['links'][link_id]['fiber']['span_length']*10**3))
                 PSD_corr = ( 80 / 81 ) * self.phi[self.modulation_format] * temp_coef * hn
             
             
@@ -82,14 +85,15 @@ class SnrMeasurments:
                 PSD_NLI = ( ( ( SCI + MCI ) * Mio * PSDi) ) - PSD_corr
             else:
                 PSD_NLI = ( ( ( SCI + MCI ) * Mio * PSDi) )
-            PSD_ASE = ( self.physical_topology['plank'] * light_frequncy * self.physical_topology['nsp'] ) * ( math.e ** (self.physical_topology['attenuation'] * self.physical_topology['span_length'] * math.e ** 3 ) - 1 )
+            PSD_ASE = ( self.physical_topology['links'][link_id]['fiber']['plank'] * light_frequncy * self.physical_topology['links'][link_id]['fiber']['nsp'] ) * ( math.e ** (self.physical_topology['links'][link_id]['fiber']['attenuation'] * self.physical_topology['links'][link_id]['fiber']['span_length'] * 10 ** 3 ) - 1 )
             # SNR =( 1 / ( PSDi / ( ( PSD_ASE + PSD_NLI ) * Num_span ) ) )
             for i in range(1,100):
                 Num_span =  i
                 SNR = ( 1 / ( PSDi / ( ( PSD_ASE + PSD_NLI ) * Num_span ) ) )
-                SNR2 = 10*math.log(1/SNR)
+                SNR2 = 10*math.log10(1/SNR)
                 if SNR2 < self.SNR_requested:
-                    print( "Maximum distance  " + (i-1) * self.physical_topology['span_length'] )
+                    print( "Maximum distance:  " , (i-1) * self.physical_topology['links'][link_id]['fiber']['span_length'] )
+                    break
                 
 
 
