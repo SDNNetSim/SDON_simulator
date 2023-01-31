@@ -94,7 +94,6 @@ class SDNController:
                 self.network_db[src_dest]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
                 self.network_db[dest_src]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
 
-    # TODO: ...Put lps (which is actually ls *sigh*) in another script?
     def allocate_lps(self):
         """
         Attempts to perform light path slicing (lps) to allocate a request.
@@ -131,6 +130,7 @@ class SDNController:
                                                          guard_band=self.guard_band)
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
+                # TODO: Are things getting stuck in the network spectrum DB?
                 if selected_sp is not False:
                     self.handle_arrival(start_slot=selected_sp['start_slot'], end_slot=selected_sp['end_slot'],
                                         core_num=selected_sp['core_num'])

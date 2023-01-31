@@ -10,9 +10,11 @@ from useful_functions.handle_dirs_files import create_dir
 # TODO: Update tests
 # TODO: Regex for commit messages
 # TODO: Standardize commit topics [example_topic]
-# TODO: Coding and commit guide lines document
+# TODO: Coding and commit guidelines document
 # TODO: Update docs
 # TODO: Doesn't have support for multiple cores
+# TODO: Change lps to ls
+# TODO: Optimize naming
 
 
 class RunSim:
@@ -20,9 +22,9 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=7,
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=50, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
-                 bw_slot=12.5, max_lps=1, sim_flag='arash', constant_weight=True, guard_band=1):
+                 bw_slot=12.5, max_lps=8, sim_flag='arash', constant_weight=True, guard_band=1):
 
         # Assumptions for things like mu, lambda, modulation format/calc, and routing
         self.sim_flag = sim_flag

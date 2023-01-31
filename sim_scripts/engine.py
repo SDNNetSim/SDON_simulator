@@ -58,7 +58,8 @@ class Engine:
             'misc_info': {
                 'cores_used': self.sim_input['physical_topology']['links'][1]['fiber']['num_cores'],
                 'mu': self.sim_input['mu'],
-                'spectral_slots': self.sim_input['spectral_slots']
+                'spectral_slots': self.sim_input['spectral_slots'],
+                'max_lps': self.sim_input['max_lps']
             }
         }
 
