@@ -94,6 +94,10 @@ class SpectrumAssignment:
                 open_slots_arr = open_slots_arr[1:]
                 end_slot = start_slot + self.slots_needed
 
+            # Reset start and end slots to check the next core (if there is one)
+            start_slot = 0
+            end_slot = self.slots_needed
+
     def find_free_spectrum(self):
         """
         Controls this class.

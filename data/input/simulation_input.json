@@ -1,7 +1,7 @@
 {
     "seed": [],
     "mu": 0.2,
-    "lambda": 2.0,
+    "lambda": 994.0,
     "number_of_request": 10000,
     "bandwidth_types": {
         "25": {
@@ -160,7 +160,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 800,
@@ -172,7 +172,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1000,
@@ -184,7 +184,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1100,
@@ -196,7 +196,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 950,
@@ -208,7 +208,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 250,
@@ -220,7 +220,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 800,
@@ -232,7 +232,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1000,
@@ -244,7 +244,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 800,
@@ -256,7 +256,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 850,
@@ -268,7 +268,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1200,
@@ -280,7 +280,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1000,
@@ -292,7 +292,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1200,
@@ -304,7 +304,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1900,
@@ -316,7 +316,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 900,
@@ -328,7 +328,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1000,
@@ -340,7 +340,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 900,
@@ -352,7 +352,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1000,
@@ -364,7 +364,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1400,
@@ -376,7 +376,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1000,
@@ -388,7 +388,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 950,
@@ -400,7 +400,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 850,
@@ -412,7 +412,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 900,
@@ -424,7 +424,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1300,
@@ -436,7 +436,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 2600,
@@ -448,7 +448,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 900,
@@ -460,7 +460,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1000,
@@ -472,7 +472,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 650,
@@ -484,7 +484,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1100,
@@ -496,7 +496,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1200,
@@ -508,7 +508,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 600,
@@ -520,7 +520,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1300,
@@ -532,7 +532,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1000,
@@ -544,7 +544,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1000,
@@ -556,7 +556,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 800,
@@ -568,7 +568,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 800,
@@ -580,7 +580,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 850,
@@ -592,7 +592,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1000,
@@ -604,7 +604,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 900,
@@ -616,7 +616,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 1200,
@@ -628,7 +628,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 700,
@@ -640,7 +640,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 300,
@@ -652,7 +652,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 600,
@@ -664,7 +664,7 @@
                     "attenuation": 0.0022927500975300002,
                     "non_linearity": 0.06472318887822313,
                     "dispersion": 2.5826100399050722e-08,
-                    "num_cores": 1,
+                    "num_cores": 7,
                     "fiber_type": 0
                 },
                 "length": 900,
@@ -673,5 +673,5 @@
             }
         }
     },
-    "num_cores": 1
+    "num_cores": 7
 }

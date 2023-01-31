@@ -12,6 +12,7 @@ from useful_functions.handle_dirs_files import create_dir
 # TODO: Standardize commit topics [example_topic]
 # TODO: Coding and commit guide lines document
 # TODO: Update docs
+# TODO: Doesn't have support for multiple cores
 
 
 class RunSim:
@@ -19,7 +20,7 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=7,
                  # pylint: disable=invalid-name
                  bw_slot=12.5, max_lps=1, sim_flag='arash', constant_weight=True, guard_band=1):
 

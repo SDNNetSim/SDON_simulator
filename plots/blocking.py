@@ -14,7 +14,7 @@ class Blocking:
         # TODO: Document the structure of how things are saved
         # TODO: Default to latest one if none is chosen (mark this on the graph)
         # TODO: Document how much LPS was used
-        self.des_time = '0110_11:06:57'
+        self.des_time = '0131_10:58:47'
         self.network_name = 'USNet'
         self.file_path = f'../data/output/{self.network_name}/{self.des_time}/'
         self.files = self.get_file_names()
@@ -65,7 +65,7 @@ class Blocking:
         plt.plot(self.erlang_arr, self.blocking_arr)
 
         plt.grid()
-        plt.legend([f"Cores = {self.num_cores} Mu = {self.mu} Spectral Slots = {self.spectral_slots}"])
+        # plt.legend([f"Cores = {self.num_cores} Mu = {self.mu} Spectral Slots = {self.spectral_slots}"])
 
         plt.title(f'{self.network_name} BP vs. Erlang')
         plt.xlabel('Erlang')

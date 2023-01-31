@@ -236,6 +236,7 @@ class Engine:
                                      bw_dict=self.sim_input['bandwidth_types'],
                                      assume=self.assume)
 
+            # TODO: I would first check here, also make sure request generation is the same
             self.sorted_requests = dict(sorted(self.requests.items()))
 
             for curr_time in self.sorted_requests:
