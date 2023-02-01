@@ -33,6 +33,7 @@ class Engine:
         self.network_name = network_name
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
+        self.transponders = 0
 
         self.control_obj = SDNController(sim_assume=assume)
 
@@ -59,7 +60,10 @@ class Engine:
                 'cores_used': self.sim_input['physical_topology']['links'][1]['fiber']['num_cores'],
                 'mu': self.sim_input['mu'],
                 'spectral_slots': self.sim_input['spectral_slots'],
-                'max_lps': self.sim_input['max_lps']
+                'max_lps': self.sim_input['max_lps'],
+                'transponders': self.transponders,
+                # Divide by two because the requests list has arrivals and departures
+                'av_transponders': self.transponders / (float(len(self.requests)) / 2.0)
             }
         }
 
@@ -145,6 +149,7 @@ class Engine:
 
         if resp is False:
             self.blocking_iter += 1
+            self.transponders += 1
         else:
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
                 "mod_format": resp[0]['mod_format'],
@@ -153,6 +158,7 @@ class Engine:
                 "is_sliced": resp[0]['is_sliced']
             }})
             self.network_spec_db = resp[1]
+            self.transponders += resp[2]
 
     def handle_release(self, curr_time):
         """

@@ -27,6 +27,7 @@ class SDNController:
         self.mod_formats = mod_formats
         self.chosen_bw = chosen_bw
         self.max_lps = max_lps
+        self.transponders = 1
 
         if self.sim_assume == 'arash':
             self.guard_band = 0
@@ -100,8 +101,6 @@ class SDNController:
 
         :return: If we were able to successfully carry out lps or not
         """
-        # TODO: Shall we only stick with one bandwidth?
-        # TODO: Are we allowed to use 25 and 200?
         # No slicing is possible
         if self.chosen_bw == '25' or self.max_lps == 1:
             return False
@@ -122,6 +121,8 @@ class SDNController:
             num_slices = int(int(self.chosen_bw) / int(curr_bw))
             if num_slices > self.max_lps:
                 break
+            else:
+                self.transponders += num_slices
 
             is_allocated = True
             # Check if all slices can be allocated
@@ -161,7 +162,7 @@ class SDNController:
                 "start_slot": None,
                 'is_sliced': True,
             }
-            return resp, self.network_db
+            return resp, self.network_db, self.transponders
 
         return False
 
@@ -174,6 +175,8 @@ class SDNController:
         :type request_type: str
         :return: The response with relevant information, network database, and physical topology
         """
+        # TODO: Even when a request is blocked, we use one transponder?
+        self.transponders = 1
         if request_type == "release":
             self.handle_release()
             return self.network_db
@@ -211,10 +214,8 @@ class SDNController:
                         'is_sliced': False
                     }
 
-                    # TODO: We assume spectrum assignment work correctly here
-                    # TODO: Debug to ensure passing the end slot works correctly
                     self.handle_arrival(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
-                    return resp, self.network_db
+                    return resp, self.network_db, self.transponders
                 else:
                     return self.handle_lps()
             else:
