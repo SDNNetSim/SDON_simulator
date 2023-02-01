@@ -75,8 +75,8 @@
             }
         }
     },
-    "max_lps": 2,
-    "max_iters": 1,
+    "max_lps": 8,
+    "max_iters": 100,
     "spectral_slots": 128,
     "guard_band": 1,
     "physical_topology": {

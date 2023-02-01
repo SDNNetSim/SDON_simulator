@@ -34,6 +34,7 @@ class Engine:
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
         self.transponders = 0
+        self.trans_arr = np.array([])
 
         self.control_obj = SDNController(sim_assume=assume)
 
@@ -45,6 +46,11 @@ class Engine:
         self.variance = None
         self.ci_rate = None
         self.ci_percent = None
+
+        self.dist_block = 0
+        self.dist_arr = np.array([])
+        self.cong_block = 0
+        self.cong_arr = np.array([])
 
     def save_sim_results(self):
         """
@@ -61,9 +67,9 @@ class Engine:
                 'mu': self.sim_input['mu'],
                 'spectral_slots': self.sim_input['spectral_slots'],
                 'max_lps': self.sim_input['max_lps'],
-                'transponders': self.transponders,
-                # Divide by two because the requests list has arrivals and departures
-                'av_transponders': self.transponders / (float(len(self.requests)) / 2.0)
+                'av_transponders': np.mean(self.trans_arr),
+                'dist_block': np.mean(self.dist_arr) * 100.0,
+                'cong_block': np.mean(self.cong_arr) * 100.0,
             }
         }
 
@@ -147,9 +153,13 @@ class Engine:
         self.update_control_obj(curr_time, release=False)
         resp = self.control_obj.handle_event(request_type='arrival')
 
-        if resp is False:
+        if resp[0] is False:
             self.blocking_iter += 1
             self.transponders += 1
+            if resp[1]:
+                self.dist_block += 1
+            else:
+                self.cong_block += 1
         else:
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
                 "mod_format": resp[0]['mod_format'],
@@ -225,6 +235,9 @@ class Engine:
             if i == 0:
                 print(f"Simulation started for Erlang: {self.erlang}.")
 
+            self.dist_block = 0
+            self.cong_block = 0
+            self.transponders = 1
             self.blocking_iter = 0
             self.requests_status = dict()
             self.create_pt()
@@ -243,7 +256,6 @@ class Engine:
                                      bw_dict=self.sim_input['bandwidth_types'],
                                      assume=self.assume)
 
-            # TODO: I would first check here, also make sure request generation is the same
             self.sorted_requests = dict(sorted(self.requests.items()))
 
             for curr_time in self.sorted_requests:
@@ -254,6 +266,11 @@ class Engine:
                 else:
                     raise NotImplementedError
 
+            if self.blocking_iter > 0:
+                self.dist_arr = np.append(self.dist_arr, float(self.dist_block) / float(self.blocking_iter))
+                self.cong_arr = np.append(self.cong_arr, float(self.cong_block) / float(self.blocking_iter))
+            # Divide by two since requests has arrivals and departures
+            self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
             self.update_blocking(i)
             # Confidence interval has been reached
             if self.calc_blocking_stats(i):

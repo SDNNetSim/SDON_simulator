@@ -28,6 +28,7 @@ class SDNController:
         self.chosen_bw = chosen_bw
         self.max_lps = max_lps
         self.transponders = 1
+        self.dist_block = False
 
         if self.sim_assume == 'arash':
             self.guard_band = 0
@@ -101,6 +102,8 @@ class SDNController:
 
         :return: If we were able to successfully carry out lps or not
         """
+        # TODO: Is multiple core slicing enabled? We should differentiate between them
+        # Indicated whether we blocked due to congestion or a length constraint
         # No slicing is possible
         if self.chosen_bw == '25' or self.max_lps == 1:
             return False
@@ -116,13 +119,15 @@ class SDNController:
 
             tmp_format = get_path_mod(obj, path_len)
             if tmp_format is False:
+                self.dist_block = True
                 continue
 
             num_slices = int(int(self.chosen_bw) / int(curr_bw))
             if num_slices > self.max_lps:
                 break
             else:
-                self.transponders += num_slices
+                # TODO: Is this correct?
+                self.transponders += (num_slices - 1)
 
             is_allocated = True
             # Check if all slices can be allocated
@@ -139,6 +144,7 @@ class SDNController:
                 else:
                     self.handle_release()
                     is_allocated = False
+                    self.dist_block = False
                     break
 
             if is_allocated:
@@ -164,7 +170,7 @@ class SDNController:
             }
             return resp, self.network_db, self.transponders
 
-        return False
+        return False, self.dist_block
 
     def handle_event(self, request_type):
         """
@@ -177,6 +183,8 @@ class SDNController:
         """
         # TODO: Even when a request is blocked, we use one transponder?
         self.transponders = 1
+        self.dist_block = False
+
         if request_type == "release":
             self.handle_release()
             return self.network_db
@@ -200,7 +208,6 @@ class SDNController:
                 spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.network_db,
                                                          guard_band=self.guard_band)
 
-                # TODO: Ensure spectrum assignment works correctly
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
                 # TODO: Response needs to be updated (we don't need start slot and things like that anymore)
@@ -217,8 +224,10 @@ class SDNController:
                     self.handle_arrival(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
                     return resp, self.network_db, self.transponders
                 else:
+                    self.dist_block = False
                     return self.handle_lps()
             else:
+                self.dist_block = True
                 return self.handle_lps()
 
-        return False
+        raise NotImplementedError

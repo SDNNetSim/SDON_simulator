@@ -22,9 +22,9 @@ class RunSim:
     Runs the simulations for this project.
     """
 
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=100, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
-                 bw_slot=12.5, max_lps=2, sim_flag='arash', constant_weight=True, guard_band=1):
+                 bw_slot=12.5, max_lps=8, sim_flag='arash', constant_weight=True, guard_band=1):
 
         # Assumptions for things like mu, lambda, modulation format/calc, and routing
         self.sim_flag = sim_flag
