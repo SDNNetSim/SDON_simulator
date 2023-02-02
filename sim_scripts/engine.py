@@ -47,8 +47,10 @@ class Engine:
         self.ci_rate = None
         self.ci_percent = None
 
+        # Number of blocks due to a distance constraint
         self.dist_block = 0
         self.dist_arr = np.array([])
+        # Number of blocks due to a congestion constraint
         self.cong_block = 0
         self.cong_arr = np.array([])
 
@@ -56,13 +58,13 @@ class Engine:
         """
         Saves the simulation results to a file like #_erlang.json.
         """
-        # We use link 1 to determine number of cores used (all links are the same at the moment)
         self.blocking['stats'] = {
             'mean': self.mean,
             'variance': self.variance,
             'ci_rate': self.ci_rate,
             'ci_percent': self.ci_percent,
             'misc_info': {
+                # We use link 1 to determine number of cores used (all links are the same at the moment)
                 'cores_used': self.sim_input['physical_topology']['links'][1]['fiber']['num_cores'],
                 'mu': self.sim_input['mu'],
                 'spectral_slots': self.sim_input['spectral_slots'],
@@ -127,6 +129,7 @@ class Engine:
         :return: None
         """
         self.control_obj.network_db = self.network_spec_db
+        # TODO: I don't think physical topology will ever change
         self.control_obj.topology = self.physical_topology
 
         self.control_obj.req_id = self.sorted_requests[curr_time]["id"]
@@ -155,7 +158,9 @@ class Engine:
 
         if resp[0] is False:
             self.blocking_iter += 1
+            # Blocked, only one transponder used (the original one)
             self.transponders += 1
+            # Returns whether the block was due to distance or not
             if resp[1]:
                 self.dist_block += 1
             else:
@@ -237,7 +242,7 @@ class Engine:
 
             self.dist_block = 0
             self.cong_block = 0
-            self.transponders = 1
+            self.transponders = 0
             self.blocking_iter = 0
             self.requests_status = dict()
             self.create_pt()
@@ -269,6 +274,7 @@ class Engine:
             if self.blocking_iter > 0:
                 self.dist_arr = np.append(self.dist_arr, float(self.dist_block) / float(self.blocking_iter))
                 self.cong_arr = np.append(self.cong_arr, float(self.cong_block) / float(self.blocking_iter))
+
             # Divide by two since requests has arrivals and departures
             self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
             self.update_blocking(i)

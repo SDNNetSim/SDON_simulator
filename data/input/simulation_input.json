@@ -1,7 +1,7 @@
 {
     "seed": [],
     "mu": 0.2,
-    "lambda": 142.0,
+    "lambda": 2.0,
     "number_of_request": 10000,
     "bandwidth_types": {
         "25": {
@@ -75,7 +75,7 @@
             }
         }
     },
-    "max_lps": 8,
+    "max_lps": 2,
     "max_iters": 100,
     "spectral_slots": 128,
     "guard_band": 1,

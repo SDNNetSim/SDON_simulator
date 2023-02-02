@@ -126,7 +126,7 @@ class SDNController:
             if num_slices > self.max_lps:
                 break
             else:
-                # TODO: Is this correct?
+                # Number of slices minus one to account for the original transponder
                 self.transponders += (num_slices - 1)
 
             is_allocated = True
@@ -136,7 +136,6 @@ class SDNController:
                                                          guard_band=self.guard_band)
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
-                # TODO: Are things getting stuck in the network spectrum DB?
                 if selected_sp is not False:
                     self.handle_arrival(start_slot=selected_sp['start_slot'], end_slot=selected_sp['end_slot'],
                                         core_num=selected_sp['core_num'])
@@ -161,6 +160,7 @@ class SDNController:
         """
         # TODO: Only do this if the request has been blocked? Or always?
         lps_resp = self.allocate_lps()
+        # TODO: This response can change, see the TODO for response in handle event
         if lps_resp is not False:
             resp = {
                 'path': self.path,
@@ -181,8 +181,9 @@ class SDNController:
         :type request_type: str
         :return: The response with relevant information, network database, and physical topology
         """
-        # TODO: Even when a request is blocked, we use one transponder?
+        # Even if the request is blocked, we still use one transponder
         self.transponders = 1
+        # Whether the block is due to a distance constraint, else is a congestion constraint
         self.dist_block = False
 
         if request_type == "release":
