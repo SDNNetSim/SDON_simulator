@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt  # pylint: disable=import-error
 from useful_functions.handle_dirs_files import create_dir
 
 
+# TODO: Neaten this script, it's terrible
+
+
 class Blocking:
     """
     Creates and saves plot of blocking percentage vs. Erlang.
@@ -15,7 +18,7 @@ class Blocking:
         # Change these variables for the desired plot you'd like
         # TODO: Document the structure of how things are saved
         # TODO: Default to latest one if none is chosen (mark this on the graph)
-        self.des_times = ['0201_15:05:11', '0201_15:12:06', '0201_15:22:14', '0201_15:39:08']
+        self.des_times = ['0206_14:45:24', '0206_14:53:52', '0206_15:37:59', '0206_15:59:31']
         self.network_name = 'USNet'
         self.base_path = f'../data/output/{self.network_name}'
         self.files = self.get_file_names()
@@ -30,6 +33,10 @@ class Blocking:
         self.trans_arr = np.array([])
         self.dist_arr = np.array([])
         self.cong_arr = np.array([])
+
+        self.band_one = np.array([])
+        self.band_two = np.array([])
+        self.band_three = np.array([])
 
         self.lps = True
 
@@ -134,14 +141,52 @@ class Blocking:
 
         self.save_plot(plot_percents=True)
 
-    def save_plot(self, plot_trans=False, plot_percents=False):
+    def plot_bandwidths(self):
+        for curr_time, lst in self.files.items():
+            self.plot_dict[curr_time] = dict()
+
+            for erlang in lst:
+                curr_fp = f'{self.base_path}/{curr_time}/'
+                with open(f'{curr_fp}/{erlang}_erlang.json', 'r', encoding='utf-8') as curr_f:
+                    curr_dict = json.load(curr_f)
+
+                self.erlang_arr = np.append(self.erlang_arr, erlang)
+                self.dist_arr = np.append(self.dist_arr, curr_dict['stats']['misc_info']['dist_block'])
+                self.cong_arr = np.append(self.cong_arr, curr_dict['stats']['misc_info']['cong_block'])
+
+                obj_one = curr_dict['stats']['misc_info']['bandwidth_block']['50']
+                obj_two = curr_dict['stats']['misc_info']['bandwidth_block']['100']
+                obj_three = curr_dict['stats']['misc_info']['bandwidth_block']['400']
+
+                self.band_one = np.array([self.band_one, (float(obj_one['blocked']) / float(obj_one['total']) * 100.0)])
+                self.band_two = np.array([self.band_one, (float(obj_two['blocked']) / float(obj_two['total']) * 100.0)])
+                self.band_three = np.array(
+                    [self.band_one, (float(obj_three['blocked']) / float(obj_three['total']) * 100.0)])
+
+                self.max_lps = curr_dict['stats']['misc_info']['max_lps']
+                self.num_cores = curr_dict['stats']['misc_info']['cores_used']
+
+            self.plot_dict[curr_time]['erlang'] = self.erlang_arr
+            self.plot_dict[curr_time]['max_lps'] = self.max_lps
+            self.plot_dict[curr_time]['50'] = self.band_one
+            self.plot_dict[curr_time]['100'] = self.band_two
+            self.plot_dict[curr_time]['400'] = self.band_three
+
+            self.band_one = np.array([])
+            self.band_two = np.array([])
+            self.band_three = np.array([])
+            self.erlang_arr = np.array([])
+
+        self.save_plot(plot_bands=True)
+
+    def save_plot(self, plot_trans=False, plot_percents=False, plot_bands=False):
         """
         Saves and shows the plot.
         """
         if plot_trans:
             plt.title(f'{self.network_name} Transponders vs. Erlang (Core = {self.num_cores})')
             plt.ylabel('Transponders per Request')
-        elif plot_percents:
+        elif plot_percents or plot_bands:
             figure, axis = plt.subplots(2, 2)
             plt.subplots_adjust(left=0.1,
                                 bottom=0.1,
@@ -166,14 +211,23 @@ class Blocking:
             if plot_trans:
                 plt.plot(obj['erlang'], obj['av_trans'])
                 legend_list.append(f"LS = {obj['max_lps']}")
-            elif plot_percents:
+            elif plot_percents or plot_bands:
                 axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].grid()
 
-                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['cong_block'])
-                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['dist_block'])
+                if plot_percents:
+                    axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['cong_block'])
+                    axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['dist_block'])
+                else:
+                    axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['50'])
+                    axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['100'])
+                    axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['400'])
 
                 if cnt == 0:
-                    axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].legend(['Congestion', 'Distance'])
+                    if plot_percents:
+                        axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].legend(['Congestion', 'Distance'])
+                    else:
+                        axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].legend(['50', '100', '400'])
+
                     plt.ylabel('Percent')
                     plt.xlabel('Erlang')
 
@@ -199,4 +253,5 @@ if __name__ == '__main__':
     blocking_obj = Blocking()
     # blocking_obj.plot_blocking_means()
     # blocking_obj.plot_transponders()
-    blocking_obj.plot_block_percents()
+    # blocking_obj.plot_block_percents()
+    blocking_obj.plot_bandwidths()
