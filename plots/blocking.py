@@ -67,8 +67,7 @@ class Blocking:
 
                 self.erlang_arr = np.append(self.erlang_arr, erlang)
                 self.blocking_arr = np.append(self.blocking_arr, blocking_mean)
-                self.trans_arr = np.append(self.trans_arr,
-                                           curr_dict['stats']['misc_info']['av_transponders'])
+                self.num_cores = curr_dict['stats']['misc_info']['cores_used']
 
                 if erlang == 50:
                     self.mu = curr_dict['stats']['misc_info']['mu']
@@ -80,11 +79,9 @@ class Blocking:
             self.plot_dict[curr_time]['erlang'] = self.erlang_arr
             self.plot_dict[curr_time]['blocking'] = self.blocking_arr
             self.plot_dict[curr_time]['max_lps'] = self.max_lps
-            self.plot_dict[curr_time]['av_trans'] = self.trans_arr
 
             self.erlang_arr = np.array([])
             self.blocking_arr = np.array([])
-            self.trans_arr = np.array([])
 
         self.save_plot()
 
@@ -144,27 +141,25 @@ class Blocking:
         if plot_trans:
             plt.title(f'{self.network_name} Transponders vs. Erlang (Core = {self.num_cores})')
             plt.ylabel('Transponders per Request')
-        # TODO: Plot all light paths as one figure but different plots
         elif plot_percents:
             figure, axis = plt.subplots(2, 2)
+            plt.subplots_adjust(left=0.1,
+                                bottom=0.1,
+                                right=0.9,
+                                top=0.9,
+                                wspace=0.4,
+                                hspace=0.4)
+            tmp_lst = [[0, 0], [0, 1], [1, 0], [1, 1]]
+            cnt = 0
         else:
             plt.title(f'{self.network_name} BP vs. Erlang (Core = {self.num_cores})')
             plt.ylabel('Blocking Probability')
             plt.yscale('log')
 
-        # plt.grid()
-        # plt.xlabel('Erlang')
-
-        plt.subplots_adjust(left=0.1,
-                            bottom=0.1,
-                            right=0.9,
-                            top=0.9,
-                            wspace=0.4,
-                            hspace=0.4)
+            plt.grid()
+            plt.xlabel('Erlang')
 
         create_dir(f'./output/{self.network_name}')
-        tmp_lst = [[0, 0], [0, 1], [1, 0], [1, 1]]
-        cnt = 0
 
         legend_list = list()
         for curr_time, obj in self.plot_dict.items():
@@ -192,9 +187,8 @@ class Blocking:
 
         if not plot_trans and not plot_percents:
             plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
-
-        # plt.xticks([erlang for erlang in range(10, 810, 100)])
-        # plt.legend(legend_list)
+            plt.xticks([erlang for erlang in range(10, 810, 100)])
+            plt.legend(legend_list)
 
         # Always saves based on the last time in the list
         plt.savefig(f'./output/{self.network_name}/{self.des_times[-1]}.png')
