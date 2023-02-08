@@ -39,10 +39,10 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume):  # pylint:
         bw_ratio_five = 0.5
     elif assume == 'yue':
         bw_ratio_one = 0.0
-        bw_ratio_two = 0.3
-        bw_ratio_three = 0.5
+        bw_ratio_two = 1.0
+        bw_ratio_three = 0.0
         bw_ratio_four = 0.0
-        bw_ratio_five = 0.2
+        bw_ratio_five = 0.0
     else:
         raise NotImplementedError
 

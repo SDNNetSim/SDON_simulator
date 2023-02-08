@@ -65,7 +65,7 @@ class Engine:
             'ci_percent': self.ci_percent,
             'misc_info': {
                 # We use link 1 to determine number of cores used (all links are the same at the moment)
-                'cores_used': self.sim_input['physical_topology']['links'][1]['fiber']['num_cores'],
+                'cores_used': self.sim_input['physical_topology']['links']['1']['fiber']['num_cores'],
                 'mu': self.sim_input['mu'],
                 'spectral_slots': self.sim_input['spectral_slots'],
                 'max_lps': self.sim_input['max_lps'],
