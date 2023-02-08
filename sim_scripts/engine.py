@@ -1,5 +1,6 @@
 # Standard imports
 import json
+import time
 
 # Third party imports
 import networkx as nx
@@ -17,13 +18,14 @@ class Engine:
     """
 
     def __init__(self, sim_input=None, erlang=None, sim_input_fp=None, network_name=None, sim_start=None,
-                 assume='arash'):
+                 assume='arash', t_num=1):
         self.blocking = {
             'simulations': dict(),
             'stats': dict()
         }
         self.blocking_iter = 0
         self.assume = assume
+        self.t_num = t_num
         self.sim_input_fp = sim_input_fp
         self.sim_input = sim_input
         self.erlang = erlang
@@ -75,10 +77,13 @@ class Engine:
             }
         }
 
-        create_dir(f'data/output/{self.network_name}/{self.sim_start}/')
-        with open(f'data/output/{self.network_name}/{self.sim_start}/{self.erlang}_erlang.json', 'w', encoding='utf-8') \
+        time.sleep(1)
+        create_dir(f'data/output/{self.network_name}/{self.sim_start}_{self.t_num}/')
+        with open(f'data/output/{self.network_name}/{self.sim_start}_{self.t_num}/{self.erlang}_erlang.json', 'w',
+                  encoding='utf-8') \
                 as file_path:
             json.dump(self.blocking, file_path, indent=4)
+        time.sleep(1)
 
     def calc_blocking_stats(self, simulation_number):
         """

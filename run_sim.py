@@ -93,37 +93,6 @@ class RunSim:
             'num_cores': self.num_cores
         }
 
-    def thread_runs(self):
-        """
-        Executes the run methods using threads.
-        """
-        # TODO: Create a better method for this
-        t1 = threading.Thread(target=self.run_yue, args=(1, 1,))
-        t1.start()
-        time.sleep(1)
-
-        t2 = threading.Thread(target=self.run_yue, args=(2, 2,))
-        t2.start()
-        time.sleep(1)
-
-        t3 = threading.Thread(target=self.run_yue, args=(4, 3,))
-        t3.start()
-        time.sleep(1)
-
-        t4 = threading.Thread(target=self.run_yue, args=(8, 4,))
-        t4.start()
-        time.sleep(1)
-
-        t5 = threading.Thread(target=self.run_yue, args=(16, 5,))
-        t5.start()
-        time.sleep(1)
-
-        t1.join()
-        t2.join()
-        t3.join()
-        t4.join()
-        t5.join()
-
     def run_yue(self, max_lps=None, t_num=None):
         """
         Run the simulator based on Yue Wang's previous research assumptions regarding:
@@ -157,7 +126,7 @@ class RunSim:
 
             engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name,
                             sim_start=self.sim_start, assume=self.sim_flag,
-                            sim_input_fp=f'./data/input/simulation_input_{self.t_num}.json')
+                            sim_input_fp=f'./data/input/simulation_input_{self.t_num}.json', t_num=self.t_num)
             engine.run()
 
     def run_arash(self):
@@ -192,7 +161,34 @@ class RunSim:
 
 
 if __name__ == '__main__':
-    test_obj = RunSim()
-    test_obj.thread_runs()
-    # test_obj.run_yue()
-    # test_obj.run_arash()
+    obj_one = RunSim()
+    obj_two = RunSim()
+    obj_three = RunSim()
+    obj_four = RunSim()
+    obj_five = RunSim()
+
+    t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1,))
+    t1.start()
+    time.sleep(2)
+
+    t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2,))
+    t2.start()
+    time.sleep(2)
+
+    t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3,))
+    t3.start()
+    time.sleep(2)
+
+    t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4,))
+    t4.start()
+    time.sleep(2)
+
+    t5 = threading.Thread(target=obj_five.run_yue, args=(16, 5,))
+    t5.start()
+    time.sleep(2)
+
+    t1.join()
+    t2.join()
+    t3.join()
+    t4.join()
+    t5.join()
