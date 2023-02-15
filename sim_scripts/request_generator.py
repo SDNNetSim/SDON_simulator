@@ -30,7 +30,7 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume):  # pylint:
 
     set_seed(seed_no=seed_no)
 
-    # Bandwidth ratio generation (50, 100, and 400 Gbps)
+    # Bandwidth ratio generation (50, 100, and 400)
     if assume == 'arash':
         bw_ratio_one = 0.0
         bw_ratio_two = 0.0
@@ -39,10 +39,10 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume):  # pylint:
         bw_ratio_five = 0.5
     elif assume == 'yue':
         bw_ratio_one = 0.0
-        bw_ratio_two = 1.0
-        bw_ratio_three = 0.0
+        bw_ratio_two = 0.3
+        bw_ratio_three = 0.5
         bw_ratio_four = 0.0
-        bw_ratio_five = 0.0
+        bw_ratio_five = 0.2
     else:
         raise NotImplementedError
 

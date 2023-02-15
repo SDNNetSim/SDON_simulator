@@ -18,7 +18,9 @@ class Blocking:
         # Change these variables for the desired plot you'd like
         # TODO: Document the structure of how things are saved
         # TODO: Default to latest one if none is chosen (mark this on the graph)
-        self.des_times = ['0206_14:45:24', '0206_14:53:52', '0206_15:37:59', '0206_15:59:31']
+        # solo/400/0208_15:54:51_5
+        self.des_times = ['solo/50/0208_20:54:36_1', 'solo/50/0208_20:54:38_2', 'solo/50/0208_20:54:40_3',
+                          'solo/50/0208_20:54:42_4']
         self.network_name = 'USNet'
         self.base_path = f'../data/output/{self.network_name}'
         self.files = self.get_file_names()
@@ -195,9 +197,9 @@ class Blocking:
                                 wspace=0.4,
                                 hspace=0.4)
             tmp_lst = [[0, 0], [0, 1], [1, 0], [1, 1]]
-            cnt = 0
         else:
-            plt.title(f'{self.network_name} BP vs. Erlang (Core = {self.num_cores})')
+            # plt.title(f'{self.network_name} BP vs. Erlang (Core, BW = {self.num_cores}, 50 Gbps)')
+            plt.title(f'{self.network_name} BP vs. Erlang (BW = 200 Gbps)')
             plt.ylabel('Blocking Probability')
             plt.yscale('log')
 
@@ -207,12 +209,14 @@ class Blocking:
         create_dir(f'./output/{self.network_name}')
 
         legend_list = list()
+        cnt = 0
         for curr_time, obj in self.plot_dict.items():
             if plot_trans:
                 plt.plot(obj['erlang'], obj['av_trans'])
                 legend_list.append(f"LS = {obj['max_lps']}")
             elif plot_percents or plot_bands:
                 axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].grid()
+                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_yticks([20, 40, 60, 80, 100])
 
                 if plot_percents:
                     axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['cong_block'])
@@ -226,13 +230,14 @@ class Blocking:
                     if plot_percents:
                         axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].legend(['Congestion', 'Distance'])
                     else:
-                        axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].legend(['50', '100', '400'])
+                        axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].legend(['50', '100', '200', '400'])
 
                     plt.ylabel('Percent')
                     plt.xlabel('Erlang')
 
                 axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
-                    f"{self.network_name} (Core, LS = {self.num_cores}, {obj['max_lps']})")
+                    # f"{self.network_name} (Core, LS = {self.num_cores}, {obj['max_lps']})")
+                    f"{self.network_name} (BW, LS = 50, {obj['max_lps']})")
             else:
                 plt.plot(obj['erlang'], obj['blocking'])
                 legend_list.append(f"LS = {obj['max_lps']}")
@@ -245,7 +250,7 @@ class Blocking:
             plt.legend(legend_list)
 
         # Always saves based on the last time in the list
-        plt.savefig(f'./output/{self.network_name}/{self.des_times[-1]}.png')
+        # plt.savefig(f'./output/{self.network_name}/{self.des_times[-1]}.png')
         plt.show()
 
 
@@ -253,5 +258,5 @@ if __name__ == '__main__':
     blocking_obj = Blocking()
     # blocking_obj.plot_blocking_means()
     # blocking_obj.plot_transponders()
-    # blocking_obj.plot_block_percents()
-    blocking_obj.plot_bandwidths()
+    blocking_obj.plot_block_percents()
+    # blocking_obj.plot_bandwidths()
