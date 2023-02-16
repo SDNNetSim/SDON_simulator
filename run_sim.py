@@ -9,21 +9,15 @@ from useful_functions.handle_dirs_files import create_dir
 
 
 # TODO: Update tests
-# TODO: Regex for commit messages
-# TODO: Standardize commit topics [example_topic]
-# TODO: Coding and commit guidelines document
 # TODO: Update docs
-# TODO: Doesn't have support for multiple cores
-# TODO: Change lps to ls
-# TODO: Optimize naming
 
 
 class RunSim:
     """
-    Runs the simulations for this project.
+    Controls all simulations for this project.
     """
 
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=100, spectral_slots=256, num_cores=1,
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
                  bw_slot=12.5, max_lps=1, sim_flag='arash', constant_weight=True, guard_band=1):
 
@@ -31,7 +25,7 @@ class RunSim:
         self.sim_flag = sim_flag
         self.network_name = None
         self.constant_weight = constant_weight
-        self.seed = list()
+        self.seeds = list()
         self.num_requests = num_requests
         self.num_cores = num_cores
         self.mu = mu  # pylint: disable=invalid-name
@@ -42,22 +36,25 @@ class RunSim:
 
         # Frequency for one spectrum slot (GHz)
         self.bw_slot = bw_slot
+        # Maximum allowed light segment slicing (light path slicing)
         self.max_lps = max_lps
         self.bw_types = None
         self.spectral_slots = spectral_slots
+        # Initialize first link number
         self.link_num = 1
 
         # If the confidence interval isn't reached, maximum allowed iterations
         self.max_iters = max_iters
         self.sim_input = None
         self.output_file_name = None
+        # Thread number
         self.t_num = 1
 
     @staticmethod
     def save_input(file_name=None, obj=None):
         """
         Saves simulation input data. Not bandwidth data for now, since that is intended to be a constant and unchanged
-        file.
+        file (See create input).
         """
         create_dir('data/input')
         create_dir('data/output')
@@ -76,11 +73,11 @@ class RunSim:
                   encoding='utf-8') as fp:  # pylint: disable=invalid-name
             self.bw_types = json.load(fp)
 
-        data = structure_data(constant_weight=self.constant_weight, network=self.network_name)
-        physical_topology = create_pt(num_cores=self.num_cores, nodes_links=data)
+        network_data = structure_data(constant_weight=self.constant_weight, network=self.network_name)
+        physical_topology = create_pt(num_cores=self.num_cores, nodes_links=network_data)
 
         self.sim_input = {
-            'seed': self.seed,
+            'seeds': self.seeds,
             'mu': self.mu,
             'lambda': self.lam,
             'number_of_request': self.num_requests,
@@ -95,11 +92,14 @@ class RunSim:
 
     def run_yue(self, max_lps=None, t_num=None):
         """
-        Run the simulator based on Yue Wang's previous research assumptions regarding:
-            - The number of spectral slots per core
-            - Slots needed for modulation formats and maximum reach
-            - Link weights in the topology
-            - The value of mu
+        Run the simulator based on Yue Wang's previous research assumptions. The paper can be found with this citation:
+        Wang, Yue. Dynamic Traffic Scheduling Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss.
+        University of Massachusetts Lowell, 2022.
+
+        :param max_lps: The maximum allowed light path slicing for a given request
+        :type max_lps: int
+        :param t_num: The thread number or ID used to access files without locking
+        :type t_num: int
 
         :return: None
         """
@@ -109,6 +109,7 @@ class RunSim:
         self.network_name = 'USNet'
         self.constant_weight = False
         self.guard_band = 1
+
         if max_lps is not None:
             self.max_lps = max_lps
             self.t_num = t_num
@@ -131,11 +132,8 @@ class RunSim:
 
     def run_arash(self):
         """
-        Run the simulator based on Arash Rezaee's previous research assumptions regarding:
-            - The number of spectral slots per core
-            - Slots needed for modulation formats
-            - Link weights in the topology
-            - The value of mu
+        Run the simulator based on Arash Rezaee's previous research assumptions. The paper can be found with this
+        citation:
 
         :return: None
         """
@@ -151,8 +149,7 @@ class RunSim:
             self.lam = self.mu * float(self.num_cores) * curr_erlang
             self.create_input()
 
-            # TODO: Change
-            self.save_input()
+            self.save_input(file_name='simulation_input.json', obj=self.sim_input)
 
             engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name,
                             sim_start=self.sim_start,
@@ -161,34 +158,36 @@ class RunSim:
 
 
 if __name__ == '__main__':
+    # TODO: Allow this to be accessible by the command line input
     obj_one = RunSim()
-    obj_two = RunSim()
-    obj_three = RunSim()
-    obj_four = RunSim()
-    obj_five = RunSim()
+
+    # obj_two = RunSim()
+    # obj_three = RunSim()
+    # obj_four = RunSim()
+    # obj_five = RunSim()
 
     t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1,))
     t1.start()
     time.sleep(2)
 
-    t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2,))
-    t2.start()
-    time.sleep(2)
-
-    t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3,))
-    t3.start()
-    time.sleep(2)
-
-    t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4,))
-    t4.start()
-    time.sleep(2)
-
-    t5 = threading.Thread(target=obj_five.run_yue, args=(16, 5,))
-    t5.start()
-    time.sleep(2)
-
-    t1.join()
-    t2.join()
-    t3.join()
-    t4.join()
-    t5.join()
+    # t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2,))
+    # t2.start()
+    # time.sleep(2)
+    #
+    # t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3,))
+    # t3.start()
+    # time.sleep(2)
+    #
+    # t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4,))
+    # t4.start()
+    # time.sleep(2)
+    #
+    # t5 = threading.Thread(target=obj_five.run_yue, args=(16, 5,))
+    # t5.start()
+    # time.sleep(2)
+    #
+    # t1.join()
+    # t2.join()
+    # t3.join()
+    # t4.join()
+    # t5.join()
