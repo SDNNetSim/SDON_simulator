@@ -9,11 +9,10 @@ class Routing:
     Contains the routing methods for the simulation.
     """
 
-    def __init__(self, req_id, source, destination, physical_topology, network_spec_db, mod_formats,
+    def __init__(self, source, destination, physical_topology, network_spec_db, mod_formats,
                  slots_needed=None, bw=None):  # pylint: disable=invalid-name
         self.path = None
 
-        self.req_id = req_id
         self.source = source
         self.destination = destination
         self.physical_topology = physical_topology
@@ -46,20 +45,19 @@ class Routing:
         :param path: A given path
         :type path: list
         """
-        res_dict = {'link': None, 'free_slots': None}
+        res_dict = {'link': None, 'free_slots': None, 'core': None}
 
         for i in range(len(path) - 1):
             cores_matrix = self.network_spec_db[(path[i]), path[i + 1]]['cores_matrix']
             link_num = self.network_spec_db[(path[i]), path[i + 1]]['link_num']
-            # The total amount of free spectral slots
-            free_slots = 0
 
             for core_num, core_arr in enumerate(cores_matrix):  # pylint: disable=unused-variable
-                free_slots += len(np.where(core_arr == 0)[0])
+                free_slots = len(np.where(core_arr == 0)[0])
                 # We want to find the least amount of free slots
-            if res_dict['free_slots'] is None or free_slots < res_dict['free_slots']:
-                res_dict['free_slots'] = free_slots
-                res_dict['link'] = link_num
+                if res_dict['free_slots'] is None or free_slots < res_dict['free_slots']:
+                    res_dict['free_slots'] = free_slots
+                    res_dict['link'] = link_num
+                    res_dict['core'] = core_num
 
         # Link info is information about the most congested link found
         self.paths_list.append({'path': path, 'link_info': res_dict})
@@ -103,4 +101,5 @@ class Routing:
         for path in paths_obj:
             path_len = find_path_len(path, self.physical_topology)
             mod_format = get_path_mod(self.mod_formats, path_len)
+
             return path, mod_format
