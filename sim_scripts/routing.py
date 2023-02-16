@@ -1,7 +1,7 @@
-import math
-
 import networkx as nx
 import numpy as np
+
+from useful_functions.sim_functions import get_path_mod, find_path_len
 
 
 class Routing:
@@ -101,50 +101,6 @@ class Routing:
 
         # Modulation format calculations based on Yue Wang's dissertation
         for path in paths_obj:
-            # TODO: Eventually remove slots needed
-            mod_format, slots_needed = self.assign_mod_format(path)
+            path_len = find_path_len(path, self.physical_topology)
+            mod_format = get_path_mod(self.mod_formats, path_len)
             return path, mod_format
-
-    def spectral_slot_comp(self, bits_per_symbol, bw_slot=12.5):
-        """
-        Compute the amount of spectral slots needed.
-
-        :param bits_per_symbol:  The number of bits per symbol
-        :type bits_per_symbol: int
-        :param bw_slot: The frequency for one spectral slot
-        :type bw_slot: float
-        :return: Amount of spectral slots needed to allocate a request
-        :rtype: int
-        """
-        return math.ceil(float(self.bw) / float(bits_per_symbol) / bw_slot)
-
-    def assign_mod_format(self, path):
-        """
-        Given a path, assign an appropriate modulation format to the request. Return False if the length of the path
-        exceeds the maximum lengths for modulation formats used here.
-
-        :param path: The path chosen to allocate a request
-        :type path: list
-        :return: The modulation format chosen and the number of slots needed to allocate the request
-        :rtype: (str, int) or bool
-        """
-        path_len = 0
-        for i in range(0, len(path) - 1):
-            path_len += self.physical_topology[path[i]][path[i + 1]]['length']
-
-        # It's important to check modulation formats in this order
-        if self.mod_formats['QPSK']['max_length'] >= path_len > self.mod_formats['16-QAM']['max_length']:
-            mod_format = 'QPSK'
-            bits_per_symbol = 2
-        elif self.mod_formats['16-QAM']['max_length'] >= path_len > self.mod_formats['64-QAM']['max_length']:
-            mod_format = '16-QAM'
-            bits_per_symbol = 4
-        elif self.mod_formats['64-QAM']['max_length'] >= path_len:
-            mod_format = '64-QAM'
-            bits_per_symbol = 6
-        # Failure to assign modulation format
-        else:
-            return False, False
-
-        slots_needed = self.spectral_slot_comp(bits_per_symbol)
-        return mod_format, slots_needed
