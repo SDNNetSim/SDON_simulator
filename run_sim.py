@@ -133,7 +133,7 @@ class RunSim:
     def run_arash(self):
         """
         Run the simulator based on Arash Rezaee's previous research assumptions. The paper can be found with this
-        citation:
+        citation: https://doi.org/10.1016/j.comnet.2020.107755
 
         :return: None
         """

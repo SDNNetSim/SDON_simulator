@@ -56,6 +56,9 @@ class Engine:
         self.cong_block = 0
         self.cong_arr = np.array([])
 
+        # TODO: Automatically create this dictionary
+        self.block_obj = {'50': 0, '100': 0, '400': 0}
+
     def save_sim_results(self):
         """
         Saves the simulation results to a file like #_erlang.json.
@@ -65,6 +68,7 @@ class Engine:
             'variance': self.variance,
             'ci_rate': self.ci_rate,
             'ci_percent': self.ci_percent,
+            'num_req': self.sim_input['number_of_request'],
             'misc_info': {
                 # We use link 1 to determine number of cores used (all links are the same at the moment)
                 'cores_used': self.sim_input['physical_topology']['links']['1']['fiber']['num_cores'],
@@ -74,10 +78,13 @@ class Engine:
                 'av_transponders': np.mean(self.trans_arr),
                 'dist_block': np.mean(self.dist_arr) * 100.0,
                 'cong_block': np.mean(self.cong_arr) * 100.0,
+                'blocking_obj': self.block_obj,
             }
         }
 
+        # TODO: Are these sleeps needed?
         time.sleep(1)
+        # TODO: Save files in a better way
         create_dir(f'data/output/{self.network_name}/{self.sim_start}_{self.t_num}/')
         with open(f'data/output/{self.network_name}/{self.sim_start}_{self.t_num}/{self.erlang}_erlang.json', 'w',
                   encoding='utf-8') \
@@ -100,6 +107,7 @@ class Engine:
         self.mean = np.mean(block_percent_arr)
         if self.mean == 0:
             return False
+
         self.variance = np.var(block_percent_arr)
         # Confidence interval rate
         self.ci_rate = 1.645 * (np.sqrt(self.variance) / np.sqrt(len(block_percent_arr)))
@@ -121,7 +129,9 @@ class Engine:
         :type i: int
         :return: None
         """
-        self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
+        # TODO: Change
+        # self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
+        self.blocking['simulations'][i] = self.cong_block / (self.sim_input['number_of_request'] - self.dist_block)
 
     def update_control_obj(self, curr_time, release=False):
         """
@@ -170,6 +180,9 @@ class Engine:
                 self.dist_block += 1
             else:
                 self.cong_block += 1
+
+            # TODO: Improve
+            self.block_obj[self.control_obj.chosen_bw] += 1
         else:
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
                 "mod_format": resp[0]['mod_format'],
@@ -191,7 +204,6 @@ class Engine:
         if self.sorted_requests[curr_time]['id'] in self.requests_status:
             self.update_control_obj(curr_time, release=True)
             self.network_spec_db = self.control_obj.handle_event(request_type='release')
-
         # Request was blocked, nothing to release
         else:
             pass
@@ -245,6 +257,9 @@ class Engine:
             if i == 0:
                 print(f"Simulation started for Erlang: {self.erlang}.")
 
+            # Initialize variables for this iteration of the simulation
+            # TODO: Improve
+            self.block_obj = {'50': 0, '100': 0, '400': 0}
             self.dist_block = 0
             self.cong_block = 0
             self.transponders = 0
@@ -253,10 +268,10 @@ class Engine:
             self.create_pt()
 
             # No seed has been given, go off of the iteration number
-            if len(self.sim_input['seed']) == 0:
+            if len(self.sim_input['seeds']) == 0:
                 self.seed = i + 1
             else:
-                self.seed = self.sim_input['seed'][i]
+                self.seed = self.sim_input['seeds'][i]
 
             self.requests = generate(seed_no=self.seed,
                                      nodes=list(self.sim_input['physical_topology']['nodes'].keys()),

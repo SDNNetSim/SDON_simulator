@@ -19,8 +19,7 @@ class Blocking:
         # TODO: Document the structure of how things are saved
         # TODO: Default to latest one if none is chosen (mark this on the graph)
         # solo/400/0208_15:54:51_5
-        self.des_times = ['solo/50/0208_20:54:36_1', 'solo/50/0208_20:54:38_2', 'solo/50/0208_20:54:40_3',
-                          'solo/50/0208_20:54:42_4']
+        self.des_times = ['0216_10:11:02_1', '0216_10:11:04_2', '0216_10:11:06_3', '0216_10:11:08_4', '0216_10:11:10_5']
         self.network_name = 'USNet'
         self.base_path = f'../data/output/{self.network_name}'
         self.files = self.get_file_names()
@@ -75,6 +74,13 @@ class Blocking:
                 blocking_mean = float(blocking_mean)
 
                 self.erlang_arr = np.append(self.erlang_arr, erlang)
+                # TODO: Change
+                # self.blocking_arr = np.append(self.blocking_arr, blocking_mean)
+                block_50 = 0.3 * curr_dict['stats']['misc_info']['blocking_obj']['50']
+                block_100 = 0.5 * curr_dict['stats']['misc_info']['blocking_obj']['100']
+                block_400 = 0.2 * curr_dict['stats']['misc_info']['blocking_obj']['400']
+
+                blocking_mean = ((block_50 + block_100 + block_400) / (curr_dict['stats']['num_req']))
                 self.blocking_arr = np.append(self.blocking_arr, blocking_mean)
                 self.num_cores = curr_dict['stats']['misc_info']['cores_used']
 
@@ -199,7 +205,7 @@ class Blocking:
             tmp_lst = [[0, 0], [0, 1], [1, 0], [1, 1]]
         else:
             # plt.title(f'{self.network_name} BP vs. Erlang (Core, BW = {self.num_cores}, 50 Gbps)')
-            plt.title(f'{self.network_name} BP vs. Erlang (BW = 200 Gbps)')
+            plt.title(f'{self.network_name} BP vs. Erlang')
             plt.ylabel('Blocking Probability')
             plt.yscale('log')
 
@@ -256,7 +262,7 @@ class Blocking:
 
 if __name__ == '__main__':
     blocking_obj = Blocking()
-    # blocking_obj.plot_blocking_means()
+    blocking_obj.plot_blocking_means()
     # blocking_obj.plot_transponders()
-    blocking_obj.plot_block_percents()
+    # blocking_obj.plot_block_percents()
     # blocking_obj.plot_bandwidths()

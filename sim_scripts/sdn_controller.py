@@ -132,6 +132,7 @@ class SDNController:
             is_allocated = True
             # Check if all slices can be allocated
             for i in range(num_slices):
+                # TODO: Are we sure this was doing single core slicing? (Need to have a flag for this)
                 spectrum_assignment = SpectrumAssignment(self.path, obj[tmp_format]['slots_needed'], self.network_db,
                                                          guard_band=self.guard_band)
                 selected_sp = spectrum_assignment.find_free_spectrum()
