@@ -23,7 +23,6 @@ class SDNController:
         self.dest = dest
 
         # Modulation formats for the chosen bandwidth
-        # TODO: Change
         self.mod_formats = mod_formats
         self.chosen_bw = chosen_bw
         self.max_lps = max_lps
@@ -102,7 +101,7 @@ class SDNController:
 
         :return: If we were able to successfully carry out lps or not
         """
-        # TODO: Is multiple core slicing enabled? We should differentiate between them
+        # TODO: Is multiple core slicing always enabled? We should differentiate between them
         # Indicated whether we blocked due to congestion or a length constraint
         # No slicing is possible
         if self.chosen_bw == '25' or self.max_lps == 1:
@@ -125,14 +124,12 @@ class SDNController:
             num_slices = int(int(self.chosen_bw) / int(curr_bw))
             if num_slices > self.max_lps:
                 break
-            else:
-                # Number of slices minus one to account for the original transponder
-                self.transponders += (num_slices - 1)
+            # Number of slices minus one to account for the original transponder
+            self.transponders += (num_slices - 1)
 
             is_allocated = True
             # Check if all slices can be allocated
-            for i in range(num_slices):
-                # TODO: Are we sure this was doing single core slicing? (Need to have a flag for this)
+            for i in range(num_slices):  # pylint: disable=unused-variable
                 spectrum_assignment = SpectrumAssignment(self.path, obj[tmp_format]['slots_needed'], self.network_db,
                                                          guard_band=self.guard_band)
                 selected_sp = spectrum_assignment.find_free_spectrum()
@@ -159,14 +156,10 @@ class SDNController:
 
         :return: The updated response and network database
         """
-        # TODO: Only do this if the request has been blocked? Or always?
         lps_resp = self.allocate_lps()
-        # TODO: This response can change, see the TODO for response in handle event
         if lps_resp is not False:
             resp = {
                 'path': self.path,
-                "mod_format": None,
-                "start_slot": None,
                 'is_sliced': True,
             }
             return resp, self.network_db, self.transponders
@@ -212,24 +205,20 @@ class SDNController:
 
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
-                # TODO: Response needs to be updated (we don't need start slot and things like that anymore)
                 if selected_sp is not False:
                     resp = {
                         'path': selected_path,
                         'mod_format': path_mod,
-                        'core_num': selected_sp['core_num'],
-                        'start_slot': selected_sp['start_slot'],
-                        'end_slot': selected_sp['end_slot'],
                         'is_sliced': False
                     }
 
                     self.handle_arrival(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
                     return resp, self.network_db, self.transponders
-                else:
-                    self.dist_block = False
-                    return self.handle_lps()
-            else:
-                self.dist_block = True
+
+                self.dist_block = False
                 return self.handle_lps()
+
+            self.dist_block = True
+            return self.handle_lps()
 
         raise NotImplementedError
