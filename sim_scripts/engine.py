@@ -55,9 +55,7 @@ class Engine:
         # Number of blocks due to a congestion constraint
         self.cong_block = 0
         self.cong_arr = np.array([])
-
-        # TODO: Automatically create this dictionary
-        self.block_obj = {'50': 0, '100': 0, '400': 0}
+        self.block_obj = dict()
 
     def save_sim_results(self):
         """
@@ -84,9 +82,8 @@ class Engine:
 
         # TODO: Are these sleeps needed?
         time.sleep(1)
-        # TODO: Save files in a better way
-        create_dir(f'data/output/{self.network_name}/{self.sim_start}_{self.t_num}/')
-        with open(f'data/output/{self.network_name}/{self.sim_start}_{self.t_num}/{self.erlang}_erlang.json', 'w',
+        create_dir(f'data/output/{self.network_name}/{self.sim_start}/')
+        with open(f'data/output/{self.network_name}/{self.sim_start}/{self.erlang}_erlang.json', 'w',
                   encoding='utf-8') \
                 as file_path:
             json.dump(self.blocking, file_path, indent=4)
@@ -129,9 +126,7 @@ class Engine:
         :type i: int
         :return: None
         """
-        # TODO: Change
-        # self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
-        self.blocking['simulations'][i] = self.cong_block / (self.sim_input['number_of_request'] - self.dist_block)
+        self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
 
     def update_control_obj(self, curr_time, release=False):
         """
@@ -144,8 +139,6 @@ class Engine:
         :return: None
         """
         self.control_obj.network_db = self.network_spec_db
-        # TODO: I don't think physical topology will ever change
-        self.control_obj.topology = self.physical_topology
 
         self.control_obj.req_id = self.sorted_requests[curr_time]["id"]
         self.control_obj.src = self.sorted_requests[curr_time]["source"]
@@ -175,13 +168,12 @@ class Engine:
             self.blocking_iter += 1
             # Blocked, only one transponder used (the original one)
             self.transponders += 1
-            # Returns whether the block was due to distance or not
+            # Returns whether the block was due to distance or congestion
             if resp[1]:
                 self.dist_block += 1
             else:
                 self.cong_block += 1
 
-            # TODO: Improve
             self.block_obj[self.control_obj.chosen_bw] += 1
         else:
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
@@ -235,6 +227,8 @@ class Engine:
                                             self.sim_input['physical_topology']['links'][link_no]['destination'],
                                             length=self.sim_input['physical_topology']['links'][link_no]['length'])
 
+        self.control_obj.topology = self.physical_topology
+
     def load_input(self):
         """
         Load and return the simulation input JSON file.
@@ -258,8 +252,10 @@ class Engine:
                 print(f"Simulation started for Erlang: {self.erlang}.")
 
             # Initialize variables for this iteration of the simulation
-            # TODO: Improve
-            self.block_obj = {'50': 0, '100': 0, '400': 0}
+            tmp_obj = dict()
+            for bandwidth in self.sim_input['bandwidth_types']:
+                tmp_obj[bandwidth] = 0
+            self.block_obj = tmp_obj
             self.dist_block = 0
             self.cong_block = 0
             self.transponders = 0

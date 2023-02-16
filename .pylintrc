@@ -162,6 +162,7 @@ disable=raw-checker-failed,
         use-dict-literal,
         use-list-literal,
         too-many-locals,
+        too-many-branches
 
 
 # Enable the message, report, category or checker with the given id(s). You can
