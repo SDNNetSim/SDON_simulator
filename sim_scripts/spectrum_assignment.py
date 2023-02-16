@@ -42,7 +42,6 @@ class SpectrumAssignment:
             sub_path = (self.path[i], self.path[i + 1])
             rev_sub_path = (self.path[i + 1], self.path[i])
 
-            # TODO: Up to and not including, check to make sure it works (especially for one slot)
             spec_set = set(self.network_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot])
             rev_spec_set = set(self.network_spec_db[rev_sub_path]['cores_matrix'][core_num][start_slot:end_slot])
 
