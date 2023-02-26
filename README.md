@@ -19,4 +19,9 @@ First, navigate to the desired directory you'd like to clone the repo to e.g. ``
 
 Then, navigate to ```_build/html/``` and open ```index.html``` in a browser of your choice.
 
-**Contributors: Arash Rezaee and Ryan McCann**
+## Standards and Guidelines
+
+1. Commits shall follow the format as specified [here](https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53)
+2. All code shall follow the [PEP 8](https://peps.python.org/pep-0008/) coding style guidelines
+
+**Contributors: Arash Rezaee, Ryan McCann, and Suvhasis Mukhopadhyay**
