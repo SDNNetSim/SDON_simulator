@@ -42,4 +42,3 @@ jobs:
           excludeDescription: 'false'
           excludeTitle: 'false'
           checkAllCommitMessages: 'false'
-          accessToken: ${{ secrets.GITHUB_TOKEN }}
