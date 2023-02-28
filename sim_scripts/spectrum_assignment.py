@@ -6,7 +6,8 @@ class SpectrumAssignment:
     Finds spectrum slots for a given request.
     """
 
-    def __init__(self, path, slots_needed=None, network_spec_db=None, guard_band=None):
+    def __init__(self, path=None, slots_needed=None, network_spec_db=None, guard_band=None, single_core=False,
+                 is_sliced=False):
         self.is_free = True
         self.path = path
 
@@ -16,6 +17,8 @@ class SpectrumAssignment:
         self.cores_matrix = None
         self.rev_cores_matrix = None
         self.num_slots = None
+        self.single_core = single_core
+        self.is_sliced = is_sliced
 
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
 
@@ -42,7 +45,6 @@ class SpectrumAssignment:
             sub_path = (self.path[i], self.path[i + 1])
             rev_sub_path = (self.path[i + 1], self.path[i])
 
-            # TODO: Up to and not including, check to make sure it works (especially for one slot)
             spec_set = set(self.network_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot])
             rev_spec_set = set(self.network_spec_db[rev_sub_path]['cores_matrix'][core_num][start_slot:end_slot])
 
@@ -57,18 +59,21 @@ class SpectrumAssignment:
         Loops through each core and find the starting and ending indexes of where the request
         can be assigned.
         """
-        # TODO: Edge case where the number of slots needed is one - not correct! (Comment) (Make sure it works)
         start_slot = 0
-        if self.slots_needed == 1:
-            end_slot = self.slots_needed
-        else:
-            end_slot = self.slots_needed - 1
+        end_slot = self.slots_needed
 
         for core_num, core_arr in enumerate(self.cores_matrix):
+            # To account for single core light segment slicing
+            if core_num > 0 and self.single_core and self.is_sliced:
+                break
+
             open_slots_arr = np.where(core_arr == 0)[0]
 
             # Look for a super channel in the current core
-            while (end_slot + self.guard_band) < self.num_slots:
+            while (end_slot + self.guard_band) <= self.num_slots:
+                if self.guard_band == 0 and self.slots_needed == 1:
+                    raise NotImplementedError
+
                 spec_set = set(core_arr[start_slot:end_slot + self.guard_band])
                 rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot + self.guard_band])
 
@@ -79,7 +84,6 @@ class SpectrumAssignment:
 
                     # Other links spectrum slots are also available
                     if self.is_free is not False or len(self.path) <= 2:
-                        # TODO: The end slot here assumes a guard band, will this work in other functions?
                         self.response = {'core_num': core_num, 'start_slot': start_slot,
                                          'end_slot': end_slot + self.guard_band}
                         return
@@ -89,16 +93,16 @@ class SpectrumAssignment:
                     self.is_free = False
                     break
 
-                # TODO: This will check zero twice potentially
+                # TODO: This will check zero twice potentially (always checks zero)
                 # Jump to next available slot, assume window will shift therefore we can never pick index 0
                 start_slot = open_slots_arr[0]
                 # Remove prior slots
                 open_slots_arr = open_slots_arr[1:]
-                # TODO: Make sure this is correct
-                if self.slots_needed == 1:
-                    end_slot = start_slot + self.slots_needed
-                else:
-                    end_slot = start_slot + (self.slots_needed - 1)
+                end_slot = start_slot + self.slots_needed
+
+            # Reset start and end slots to check the next core (if there is one)
+            start_slot = 0
+            end_slot = self.slots_needed
 
     def find_free_spectrum(self):
         """

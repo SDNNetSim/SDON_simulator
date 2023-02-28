@@ -30,15 +30,19 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume):  # pylint:
 
     set_seed(seed_no=seed_no)
 
-    # Bandwidth ratio generation (50, 100, and 400 Gbps)
+    # Bandwidth ratio generation (50, 100, and 400)
     if assume == 'arash':
         bw_ratio_one = 0.0
-        bw_ratio_two = 0.5
+        bw_ratio_two = 0.0
         bw_ratio_three = 0.5
+        bw_ratio_four = 0.0
+        bw_ratio_five = 0.5
     elif assume == 'yue':
-        bw_ratio_one = 0.3
-        bw_ratio_two = 0.5
-        bw_ratio_three = 0.2
+        bw_ratio_one = 0.0
+        bw_ratio_two = 0.3
+        bw_ratio_three = 0.5
+        bw_ratio_four = 0.0
+        bw_ratio_five = 0.2
     else:
         raise NotImplementedError
 
@@ -47,15 +51,16 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume):  # pylint:
     bw_one_req = bw_ratio_one * num_requests
     bw_two_req = bw_ratio_two * num_requests
     bw_three_req = bw_ratio_three * num_requests
+    bw_four_req = bw_ratio_four * num_requests
+    bw_five_req = bw_ratio_five * num_requests
 
     # Monitor the number of requests allocated for each bandwidth
-    bands_dict = {'50': bw_one_req, '100': bw_two_req, '400': bw_three_req}
+    bands_dict = {'25': bw_one_req, '50': bw_two_req, '100': bw_three_req, '200': bw_four_req, '400': bw_five_req}
     # List of all possible bandwidths
     bands_list = list(bw_dict.keys())
 
     # Multiplied by two, to account for arrival and departure requests
     while len(requests) < (num_requests * 2):
-        # TODO: Not using math.ceil and the weird division increases blocking?
         current_time = current_time + exponential_rv(lam)
         depart_time = current_time + exponential_rv(mu)
 

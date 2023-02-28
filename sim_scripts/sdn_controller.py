@@ -1,134 +1,228 @@
+import numpy as np
+
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
+from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
 
 
-def handle_arrive_rel(req_id, network_spec_db, path, start_slot, num_slots, guard_band=None, core_num=0, req_type=None):
+class SDNController:
     """
-    Releases or fills slots in the network spectrum database arrays.
-
-    :param req_id: The request's id number
-    :type req_id: int
-    :param network_spec_db: The current network spectrum database
-    :type network_spec_db: dict
-    :param path: The shortest path computed
-    :type path: list
-    :param start_slot: The first slot number taken or desired
-    :type start_slot: int
-    :param num_slots: The number of slots occupied or to be occupied (still need to add a guard band)
-    :type num_slots: int
-    :param guard_band: Tells us if a guard band was used or not
-    :type guard_band: bool
-    :param core_num: Index of the core to be released or taken
-    :type core_num: int
-    :param req_type: Indicates whether it's an arrival or release
-    :type req_type: str
-    :return: The updated network spectrum database
-    :rtype: dict
+    The software defined networking class. Handles events in the simulation.
     """
-    # TODO: This will most likely change for slicing, different functions?
-    for i in range(len(path) - 1):
-        src_dest = (path[i], path[i + 1])
 
-        if req_type == 'arrival':
-            end_index = start_slot + num_slots
-            # Remember, Python list indexing is up to and NOT including!
-            network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = req_id
-            # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
-            if guard_band:
-                network_spec_db[src_dest]['cores_matrix'][core_num][end_index] = (req_id * -1)
-        elif req_type == 'release':
-            # To account for the guard band being released
-            if guard_band:
-                end_index = start_slot + num_slots + 1
-            else:
-                end_index = start_slot + num_slots
+    def __init__(self, req_id=None, network_db=None, topology=None, num_cores=None, path=None, sim_assume=None,
+                 src=None, dest=None, mod_formats=None, chosen_bw=None, max_lps=None):
+        self.req_id = req_id
+        self.network_db = network_db
+        self.topology = topology
+        self.num_cores = num_cores
+        self.path = path
+        self.sim_assume = sim_assume
 
-            network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = 0
-            network_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_index] = 0
+        self.src = src
+        self.dest = dest
+
+        # Modulation formats for the chosen bandwidth
+        self.mod_formats = mod_formats
+        self.chosen_bw = chosen_bw
+        self.max_lps = max_lps
+        # Limit to single core light segment slicing
+        self.single_core = False
+        self.transponders = 1
+        self.dist_block = False
+
+        if self.sim_assume == 'arash':
+            self.guard_band = 0
+        elif self.sim_assume == 'yue':
+            self.guard_band = 1
         else:
-            raise ValueError(f'Expected release or arrival, got {req_type}.')
+            raise NotImplementedError
 
-    return network_spec_db
+    def handle_release(self):
+        """
+        Handles a departure event. Finds where a request was previously allocated and releases it by setting the indexes
+        to all zeros.
 
+        :return: None
+        """
+        for i in range(len(self.path) - 1):
+            src_dest = (self.path[i], self.path[i + 1])
+            dest_src = (self.path[i + 1], self.path[i])
 
-def controller_main(req_id, src, dest, request_type, physical_topology, network_spec_db, mod_formats,
-                    slot_num=None, guard_band=None, path=None, chosen_mod=None, chosen_bw=None, assume='arash'):
-    """
-    Controls arrivals and departures for requests in the simulation. Return False if a request can't be allocated.
+            for core_num in range(self.num_cores):
+                core_arr = self.network_db[src_dest]['cores_matrix'][core_num]
+                req_indexes = np.where(core_arr == self.req_id)
+                guard_bands = np.where(core_arr == (self.req_id * -1))
 
-    :param req_id: The request's id number
-    :type req_id: int
-    :param src: Source node
-    :type src: int
-    :param dest: Destination node
-    :type dest: int
-    :param request_type: Determine if the request is an arrival or departure
-    :type request_type: str
-    :param physical_topology: The physical topology information
-    :type physical_topology: graph
-    :param network_spec_db: The network spectrum database, holding information about the network
-    :type network_spec_db: dict
-    :param mod_formats: Information relating to all modulation formats
-    :type mod_formats: dict
-    :param slot_num: The start slot number of the request to be allocated or released
-    :type slot_num: int
-    :param guard_band: Tells us if a guard band was used or not
-    :type guard_band: int (0 or 1 as of now)
-    :param path: The chosen path
-    :type path: list
-    :param chosen_mod: The chosen modulation format
-    :type chosen_mod: str
-    :param chosen_bw: The chosen bandwidth
-    :type chosen_bw: str
-    :param assume: A flag to dictate whether we're using Arash or Yue's assumptions
-    :type assume: str
-    :return: The modulation format, core, start slot, and end slot chosen along with the network DB and topology
-    :rtype: (dict, dict, dict) or bool
-    """
-    if request_type == "release":
-        network_spec_db = handle_arrive_rel(req_id=req_id,
-                                            network_spec_db=network_spec_db,
-                                            path=path,
-                                            start_slot=slot_num,
-                                            num_slots=mod_formats[chosen_mod]['slots_needed'],
-                                            req_type='release',
-                                            guard_band=guard_band
-                                            )
-        return network_spec_db, physical_topology
+                for index in req_indexes:
+                    self.network_db[src_dest]['cores_matrix'][core_num][index] = 0
+                    self.network_db[dest_src]['cores_matrix'][core_num][index] = 0
+                for gb_index in guard_bands:
+                    self.network_db[src_dest]['cores_matrix'][core_num][gb_index] = 0
+                    self.network_db[dest_src]['cores_matrix'][core_num][gb_index] = 0
 
-    routing_obj = Routing(req_id=req_id, source=src, destination=dest, physical_topology=physical_topology,
-                          network_spec_db=network_spec_db, mod_formats=mod_formats, bw=chosen_bw)
+    def handle_arrival(self, start_slot, end_slot, core_num):
+        """
+        Handles an arrival event. Sets the allocated spectral slots equal to the request ID, the request ID is negative
+        for the guard band to differentiate which slots are guard bands for future SNR calculations.
 
-    if assume == 'yue':
-        selected_path, path_mod, slots_needed = routing_obj.shortest_path()
-    elif assume == 'arash':
-        selected_path, path_mod, slots_needed = routing_obj.least_congested_path()
-    else:
-        raise NotImplementedError
+        :param start_slot: The starting spectral slot to allocate the request
+        :type start_slot: int
+        :param end_slot: The ending spectral slot to allocate the request
+        :type end_slot: int
+        :param core_num: The desired core to allocate the request
+        :type core_num: int
+        :return: None
+        """
+        for i in range(len(self.path) - 1):
+            src_dest = (self.path[i], self.path[i + 1])
+            dest_src = (self.path[i + 1], self.path[i])
 
-    if selected_path is not False and path_mod is not False and slots_needed is not False:
-        mod_formats[path_mod]['slots_needed'] = slots_needed
-        spectrum_assignment = SpectrumAssignment(selected_path, slots_needed, network_spec_db, guard_band=guard_band)
-        selected_sp = spectrum_assignment.find_free_spectrum()
+            # Remember, Python list indexing is up to and NOT including!
+            tmp_set = set(self.network_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1])
+            rev_tmp_set = set(self.network_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1])
 
-        if selected_sp is not False:
-            resp = {
-                'path': selected_path,
-                'mod_format': path_mod,
-                'core_num': selected_sp['core_num'],
-                'start_res_slot': selected_sp['start_slot'],
-                'end_res_slot': selected_sp['end_slot'],
-            }
-            network_spec_db = handle_arrive_rel(req_id=req_id,
-                                                network_spec_db=network_spec_db,
-                                                path=selected_path,
-                                                start_slot=selected_sp['start_slot'],
-                                                num_slots=slots_needed,
-                                                req_type='arrival',
-                                                guard_band=guard_band
-                                                )
-            return resp, network_spec_db, physical_topology
+            if tmp_set != {0.0} or rev_tmp_set != {0.0}:
+                raise BufferError("Attempted to allocate a taken spectrum.")
+
+            self.network_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
+            self.network_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
+
+            # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
+            if self.guard_band:
+                if self.network_db[src_dest]['cores_matrix'][core_num][end_slot - 1] != 0.0 or \
+                        self.network_db[dest_src]['cores_matrix'][core_num][end_slot - 1] != 0.0:
+                    raise BufferError("Attempted to allocate a taken spectrum.")
+
+                self.network_db[src_dest]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
+                self.network_db[dest_src]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
+
+    def allocate_lps(self):
+        """
+        Attempts to perform light path slicing (lps) to allocate a request.
+
+        :return: If we were able to successfully carry out lps or not
+        """
+        # TODO: Is multiple core slicing always enabled? We should differentiate between them
+        # Indicated whether we blocked due to congestion or a length constraint
+        # No slicing is possible
+        if self.chosen_bw == '25' or self.max_lps == 1:
+            return False
+
+        path_len = find_path_len(self.path, self.topology)
+        # Sort the dictionary in descending order by bandwidth
+        mod_formats = sort_dict_keys(self.mod_formats)
+
+        for curr_bw, obj in mod_formats.items():
+            # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
+            if int(curr_bw) >= int(self.chosen_bw):
+                continue
+
+            tmp_format = get_path_mod(obj, path_len)
+            if tmp_format is False:
+                self.dist_block = True
+                continue
+
+            num_slices = int(int(self.chosen_bw) / int(curr_bw))
+            if num_slices > self.max_lps:
+                break
+            # Number of slices minus one to account for the original transponder
+            self.transponders += (num_slices - 1)
+
+            is_allocated = True
+            # Check if all slices can be allocated
+            for i in range(num_slices):  # pylint: disable=unused-variable
+                spectrum_assignment = SpectrumAssignment(self.path, obj[tmp_format]['slots_needed'], self.network_db,
+                                                         guard_band=self.guard_band, single_core=self.single_core,
+                                                         is_sliced=True)
+                selected_sp = spectrum_assignment.find_free_spectrum()
+
+                if selected_sp is not False:
+                    self.handle_arrival(start_slot=selected_sp['start_slot'], end_slot=selected_sp['end_slot'],
+                                        core_num=selected_sp['core_num'])
+                # Clear all previously attempted allocations
+                else:
+                    self.handle_release()
+                    is_allocated = False
+                    self.dist_block = False
+                    break
+
+            if is_allocated:
+                return True
 
         return False
 
-    return False
+    def handle_lps(self):
+        """
+        The main light path slicing function. Created solely for the purpose to produce less lines of code in the
+        handle event method.
+
+        :return: The updated response and network database
+        """
+        lps_resp = self.allocate_lps()
+        if lps_resp is not False:
+            resp = {
+                'path': self.path,
+                'mod_format': None,
+                'is_sliced': True,
+            }
+            return resp, self.network_db, self.transponders
+
+        return False, self.dist_block
+
+    def handle_event(self, request_type):
+        """
+        Handles any event that occurs in the simulation. This is the main method in this class. Returns False if a
+        request has been blocked.
+
+        :param request_type: Whether the request is an arrival or shall be released
+        :type request_type: str
+        :return: The response with relevant information, network database, and physical topology
+        """
+        # Even if the request is blocked, we still use one transponder
+        self.transponders = 1
+        # Whether the block is due to a distance constraint, else is a congestion constraint
+        self.dist_block = False
+
+        if request_type == "release":
+            self.handle_release()
+            return self.network_db
+
+        routing_obj = Routing(source=self.src, destination=self.dest,
+                              physical_topology=self.topology, network_spec_db=self.network_db,
+                              mod_formats=self.mod_formats[self.chosen_bw], bw=self.chosen_bw)
+
+        if self.sim_assume == 'yue':
+            selected_path, path_mod = routing_obj.shortest_path()
+        elif self.sim_assume == 'arash':
+            selected_path = routing_obj.least_congested_path()
+            path_mod = 'QPSK'
+        else:
+            raise NotImplementedError
+
+        if selected_path is not False:
+            self.path = selected_path
+            if path_mod is not False:
+                slots_needed = self.mod_formats[self.chosen_bw][path_mod]['slots_needed']
+                spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.network_db,
+                                                         guard_band=self.guard_band, is_sliced=False)
+
+                selected_sp = spectrum_assignment.find_free_spectrum()
+
+                if selected_sp is not False:
+                    resp = {
+                        'path': selected_path,
+                        'mod_format': path_mod,
+                        'is_sliced': False
+                    }
+
+                    self.handle_arrival(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
+                    return resp, self.network_db, self.transponders
+
+                self.dist_block = False
+                return self.handle_lps()
+
+            self.dist_block = True
+            return self.handle_lps()
+
+        raise NotImplementedError

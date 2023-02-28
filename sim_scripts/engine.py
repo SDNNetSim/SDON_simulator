@@ -1,5 +1,6 @@
 # Standard imports
 import json
+import time
 
 # Third party imports
 import networkx as nx
@@ -7,7 +8,7 @@ import numpy as np
 
 # Project imports
 from sim_scripts.request_generator import generate
-from sim_scripts.sdn_controller import controller_main
+from sim_scripts.sdn_controller import SDNController
 from useful_functions.handle_dirs_files import create_dir
 
 
@@ -17,13 +18,14 @@ class Engine:
     """
 
     def __init__(self, sim_input=None, erlang=None, sim_input_fp=None, network_name=None, sim_start=None,
-                 assume='arash'):
+                 assume='arash', t_num=1):
         self.blocking = {
             'simulations': dict(),
             'stats': dict()
         }
         self.blocking_iter = 0
         self.assume = assume
+        self.t_num = t_num
         self.sim_input_fp = sim_input_fp
         self.sim_input = sim_input
         self.erlang = erlang
@@ -33,6 +35,10 @@ class Engine:
         self.network_name = network_name
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
+        self.transponders = 0
+        self.trans_arr = np.array([])
+
+        self.control_obj = SDNController(sim_assume=assume)
 
         self.requests = None
         self.sorted_requests = None
@@ -43,27 +49,45 @@ class Engine:
         self.ci_rate = None
         self.ci_percent = None
 
+        # Number of blocks due to a distance constraint
+        self.dist_block = 0
+        self.dist_arr = np.array([])
+        # Number of blocks due to a congestion constraint
+        self.cong_block = 0
+        self.cong_arr = np.array([])
+        self.block_obj = dict()
+
     def save_sim_results(self):
         """
         Saves the simulation results to a file like #_erlang.json.
         """
-        # We use link 1 to determine number of cores used (all links are the same at the moment)
         self.blocking['stats'] = {
             'mean': self.mean,
             'variance': self.variance,
             'ci_rate': self.ci_rate,
             'ci_percent': self.ci_percent,
+            'num_req': self.sim_input['number_of_request'],
             'misc_info': {
-                'cores_used': self.sim_input['physical_topology']['links'][1]['fiber']['num_cores'],
+                # We use link 1 to determine number of cores used (all links are the same at the moment)
+                'cores_used': self.sim_input['physical_topology']['links']['1']['fiber']['num_cores'],
                 'mu': self.sim_input['mu'],
-                'spectral_slots': self.sim_input['spectral_slots']
+                'spectral_slots': self.sim_input['spectral_slots'],
+                'max_lps': self.sim_input['max_lps'],
+                'av_transponders': np.mean(self.trans_arr),
+                'dist_block': np.mean(self.dist_arr) * 100.0,
+                'cong_block': np.mean(self.cong_arr) * 100.0,
+                'blocking_obj': self.block_obj,
             }
         }
 
+        # TODO: Are these sleeps needed?
+        time.sleep(1)
         create_dir(f'data/output/{self.network_name}/{self.sim_start}/')
-        with open(f'data/output/{self.network_name}/{self.sim_start}/{self.erlang}_erlang.json', 'w', encoding='utf-8') \
+        with open(f'data/output/{self.network_name}/{self.sim_start}/{self.erlang}_erlang.json', 'w',
+                  encoding='utf-8') \
                 as file_path:
             json.dump(self.blocking, file_path, indent=4)
+        time.sleep(1)
 
     def calc_blocking_stats(self, simulation_number):
         """
@@ -80,6 +104,7 @@ class Engine:
         self.mean = np.mean(block_percent_arr)
         if self.mean == 0:
             return False
+
         self.variance = np.var(block_percent_arr)
         # Confidence interval rate
         self.ci_rate = 1.645 * (np.sqrt(self.variance) / np.sqrt(len(block_percent_arr)))
@@ -101,7 +126,34 @@ class Engine:
         :type i: int
         :return: None
         """
-        self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
+        # TODO: Change
+        # self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
+        self.blocking['simulations'][i] = self.cong_block / (self.sim_input['number_of_request'] - self.dist_block)
+
+    def update_control_obj(self, curr_time, release=False):
+        """
+        Updates the information for the SDN controller object initialized in the constructor.
+
+        :param curr_time: The current time of the arrival or departure
+        :type curr_time: float
+        :param release: Determines if we have a path or not, an arrival request has not been assigned one yet
+        :type release: bool
+        :return: None
+        """
+        self.control_obj.network_db = self.network_spec_db
+
+        self.control_obj.req_id = self.sorted_requests[curr_time]["id"]
+        self.control_obj.src = self.sorted_requests[curr_time]["source"]
+        self.control_obj.dest = self.sorted_requests[curr_time]["destination"]
+        # A path has not been chosen yet for an arrival
+        if release:
+            self.control_obj.path = self.requests_status[self.sorted_requests[curr_time]['id']]['path']
+        else:
+            self.control_obj.path = None
+
+        self.control_obj.mod_formats = self.sim_input['bandwidth_types']
+        self.control_obj.chosen_bw = self.sorted_requests[curr_time]['bandwidth']
+        self.control_obj.max_lps = self.sim_input['max_lps']
 
     def handle_arrival(self, curr_time):
         """
@@ -111,29 +163,28 @@ class Engine:
         :type curr_time: float
         :return: None
         """
-        rsa_res = controller_main(req_id=self.sorted_requests[curr_time]["id"],
-                                  src=self.sorted_requests[curr_time]["source"],
-                                  dest=self.sorted_requests[curr_time]["destination"],
-                                  request_type="arrival",
-                                  physical_topology=self.physical_topology,
-                                  guard_band=self.sim_input['guard_band'],
-                                  network_spec_db=self.network_spec_db,
-                                  mod_formats=self.sorted_requests[curr_time]['mod_formats'],
-                                  chosen_bw=self.sorted_requests[curr_time]['bandwidth'],
-                                  path=list(),
-                                  assume=self.assume
-                                  )
+        self.update_control_obj(curr_time, release=False)
+        resp = self.control_obj.handle_event(request_type='arrival')
 
-        if rsa_res is False:
+        if resp[0] is False:
             self.blocking_iter += 1
+            # Blocked, only one transponder used (the original one)
+            self.transponders += 1
+            # Returns whether the block was due to distance or congestion
+            if resp[1]:
+                self.dist_block += 1
+            else:
+                self.cong_block += 1
+
+            self.block_obj[self.control_obj.chosen_bw] += 1
         else:
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
-                "mod_format": rsa_res[0]['mod_format'],
-                "slots": rsa_res[0]['start_res_slot'],
-                "path": rsa_res[0]['path']
+                "mod_format": resp[0]['mod_format'],
+                "path": resp[0]['path'],
+                "is_sliced": resp[0]['is_sliced']
             }})
-            self.network_spec_db = rsa_res[1]
-            self.physical_topology = rsa_res[2]
+            self.network_spec_db = resp[1]
+            self.transponders += resp[2]
 
     def handle_release(self, curr_time):
         """
@@ -144,19 +195,8 @@ class Engine:
         :return: None
         """
         if self.sorted_requests[curr_time]['id'] in self.requests_status:
-            controller_main(req_id=self.sorted_requests[curr_time]["id"],
-                            src=self.sorted_requests[curr_time]["source"],
-                            dest=self.sorted_requests[curr_time]["destination"],
-                            request_type="release",
-                            physical_topology=self.physical_topology,
-                            network_spec_db=self.network_spec_db,
-                            mod_formats=self.sorted_requests[curr_time]['mod_formats'],
-                            chosen_mod=self.requests_status[self.sorted_requests[curr_time]['id']]['mod_format'],
-                            slot_num=self.requests_status[self.sorted_requests[curr_time]['id']]['slots'],
-                            guard_band=self.sim_input['guard_band'],
-                            path=self.requests_status[self.sorted_requests[curr_time]['id']]['path'],
-                            assume=self.assume
-                            )
+            self.update_control_obj(curr_time, release=True)
+            self.network_spec_db = self.control_obj.handle_event(request_type='release')
         # Request was blocked, nothing to release
         else:
             pass
@@ -188,6 +228,8 @@ class Engine:
                                             self.sim_input['physical_topology']['links'][link_no]['destination'],
                                             length=self.sim_input['physical_topology']['links'][link_no]['length'])
 
+        self.control_obj.topology = self.physical_topology
+
     def load_input(self):
         """
         Load and return the simulation input JSON file.
@@ -204,19 +246,29 @@ class Engine:
         if self.sim_input_fp is not None:
             self.load_input()
 
+        self.control_obj.num_cores = self.sim_input['num_cores']
+
         for i in range(self.sim_input['max_iters']):
             if i == 0:
                 print(f"Simulation started for Erlang: {self.erlang}.")
 
+            # Initialize variables for this iteration of the simulation
+            tmp_obj = dict()
+            for bandwidth in self.sim_input['bandwidth_types']:
+                tmp_obj[bandwidth] = 0
+            self.block_obj = tmp_obj
+            self.dist_block = 0
+            self.cong_block = 0
+            self.transponders = 0
             self.blocking_iter = 0
             self.requests_status = dict()
             self.create_pt()
 
             # No seed has been given, go off of the iteration number
-            if len(self.sim_input['seed']) == 0:
+            if len(self.sim_input['seeds']) == 0:
                 self.seed = i + 1
             else:
-                self.seed = self.sim_input['seed'][i]
+                self.seed = self.sim_input['seeds'][i]
 
             self.requests = generate(seed_no=self.seed,
                                      nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
@@ -236,6 +288,12 @@ class Engine:
                 else:
                     raise NotImplementedError
 
+            if self.blocking_iter > 0:
+                self.dist_arr = np.append(self.dist_arr, float(self.dist_block) / float(self.blocking_iter))
+                self.cong_arr = np.append(self.cong_arr, float(self.cong_block) / float(self.blocking_iter))
+
+            # Divide by two since requests has arrivals and departures
+            self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
             self.update_blocking(i)
             # Confidence interval has been reached
             if self.calc_blocking_stats(i):
