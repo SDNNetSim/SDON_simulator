@@ -1,6 +1,5 @@
 # Standard imports
 import json
-import time
 
 # Third party imports
 import networkx as nx
@@ -80,14 +79,15 @@ class Engine:
             }
         }
 
-        # TODO: Are these sleeps needed?
-        time.sleep(1)
-        create_dir(f'data/output/{self.network_name}/{self.sim_start}/')
-        with open(f'data/output/{self.network_name}/{self.sim_start}/{self.erlang}_erlang.json', 'w',
-                  encoding='utf-8') \
-                as file_path:
+        base_fp = f"data/output/{self.network_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
+        create_dir(base_fp)
+        # Save threads to child directories
+        if self.t_num is not None:
+            base_fp += f"/t{self.t_num}"
+            create_dir(base_fp)
+
+        with open(f"{base_fp}/{self.erlang}_erlang.json", 'w', encoding='utf-8') as file_path:
             json.dump(self.blocking, file_path, indent=4)
-        time.sleep(1)
 
     def calc_blocking_stats(self, simulation_number):
         """
@@ -127,8 +127,8 @@ class Engine:
         :return: None
         """
         # TODO: Change
-        # self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
-        self.blocking['simulations'][i] = self.cong_block / (self.sim_input['number_of_request'] - self.dist_block)
+        self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
+        # self.blocking['simulations'][i] = self.cong_block / (self.sim_input['number_of_request'] - self.dist_block)
 
     def update_control_obj(self, curr_time, release=False):
         """

@@ -8,12 +8,15 @@ from sim_scripts.engine import Engine
 from useful_functions.handle_dirs_files import create_dir
 
 
+# TODO: Allow command line input
+
+
 class RunSim:
     """
     Controls all simulations for this project.
     """
 
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=2, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
                  bw_slot=12.5, max_lps=1, sim_flag='arash', constant_weight=True, guard_band=1):
 
@@ -64,8 +67,13 @@ class RunSim:
         """
         bw_info = create_bw_info(assume=self.sim_flag)
 
-        self.save_input(f'bandwidth_info_{self.t_num}.json', bw_info)
-        with open(f'./data/input/bandwidth_info_{self.t_num}.json', 'r',
+        if self.t_num is None:
+            file_name = 'bandwidth_info.json'
+        else:
+            file_name = f'bandwidth_info_{self.t_num}'
+
+        self.save_input(file_name, bw_info)
+        with open(f'./data/input/{file_name}', 'r',
                   encoding='utf-8') as fp:  # pylint: disable=invalid-name
             self.bw_types = json.load(fp)
 
@@ -109,21 +117,25 @@ class RunSim:
         if max_lps is not None:
             self.max_lps = max_lps
             self.t_num = t_num
-            self.sim_start = time.strftime("%m%d_%H:%M:%S")
         else:
             raise NotImplementedError
 
+        # TODO: Thread your lambda
         for lam in range(2, 143, 2):
             curr_erlang = float(lam) / self.mu
             lam *= float(self.num_cores)
             self.lam = float(lam)
             self.create_input()
 
-            self.save_input(file_name=f'simulation_input_{self.t_num}.json', obj=self.sim_input)
+            if self.t_num is None:
+                file_name = 'simulation_input.json'
+            else:
+                file_name = f'simulation_input_{self.t_num}.json'
 
+            self.save_input(file_name=file_name, obj=self.sim_input)
             engine = Engine(self.sim_input, erlang=curr_erlang, network_name=self.network_name,
                             sim_start=self.sim_start, assume=self.sim_flag,
-                            sim_input_fp=f'./data/input/simulation_input_{self.t_num}.json', t_num=self.t_num)
+                            sim_input_fp=f'./data/input/{file_name}', t_num=self.t_num)
             engine.run()
 
     def run_arash(self):
@@ -154,33 +166,27 @@ class RunSim:
 
 
 if __name__ == '__main__':
-    # TODO: Allow this to be accessible by the command line input
     obj_one = RunSim()
-
     obj_two = RunSim()
     obj_three = RunSim()
     obj_four = RunSim()
     obj_five = RunSim()
 
+    # t1 = threading.Thread(target=obj_one.run_yue, args=(1, None,))
     t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1,))
     t1.start()
-    time.sleep(2)
 
     t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2,))
     t2.start()
-    time.sleep(2)
 
     t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3,))
     t3.start()
-    time.sleep(2)
 
     t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4,))
     t4.start()
-    time.sleep(2)
 
     t5 = threading.Thread(target=obj_five.run_yue, args=(16, 5,))
     t5.start()
-    time.sleep(2)
 
     t1.join()
     t2.join()
