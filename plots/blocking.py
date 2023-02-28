@@ -19,7 +19,8 @@ class Blocking:
         # TODO: Document the structure of how things are saved
         # TODO: Default to latest one if none is chosen (mark this on the graph)
         # solo/400/0208_15:54:51_5
-        self.des_times = ['0216_10:11:02_1', '0216_10:11:04_2', '0216_10:11:06_3', '0216_10:11:08_4', '0216_10:11:10_5']
+        # self.des_times = ['0217_11:07:30', '0217_11:07:32', '0217_11:07:34', '0217_11:07:36', '0217_11:07:38']
+        self.des_times = ['0217_10:33:18', '0217_10:33:20', '0217_10:33:22', '0217_10:33:24', '0217_10:33:26']
         self.network_name = 'USNet'
         self.base_path = f'../data/output/{self.network_name}'
         self.files = self.get_file_names()
@@ -76,11 +77,20 @@ class Blocking:
                 self.erlang_arr = np.append(self.erlang_arr, erlang)
                 # TODO: Change
                 # self.blocking_arr = np.append(self.blocking_arr, blocking_mean)
-                block_50 = 0.3 * curr_dict['stats']['misc_info']['blocking_obj']['50']
-                block_100 = 0.5 * curr_dict['stats']['misc_info']['blocking_obj']['100']
-                block_400 = 0.2 * curr_dict['stats']['misc_info']['blocking_obj']['400']
+                # block_50 = 0.3 * curr_dict['stats']['misc_info']['blocking_obj']['50']
+                # block_100 = 0.5 * curr_dict['stats']['misc_info']['blocking_obj']['100']
+                # block_400 = 0.2 * curr_dict['stats']['misc_info']['blocking_obj']['400']
 
-                blocking_mean = ((block_50 + block_100 + block_400) / (curr_dict['stats']['num_req']))
+                block_50 = 50 * curr_dict['stats']['misc_info']['blocking_obj']['50']
+                block_100 = 100 * curr_dict['stats']['misc_info']['blocking_obj']['100']
+                block_400 = 400 * curr_dict['stats']['misc_info']['blocking_obj']['400']
+
+                total_50 = 50 * (0.3 * curr_dict['stats']['num_req'])
+                total_100 = 100 * (0.5 * curr_dict['stats']['num_req'])
+                total_400 = 400 * (0.2 * curr_dict['stats']['num_req'])
+
+                # blocking_mean = ((block_50 + block_100 + block_400) / (curr_dict['stats']['num_req']))
+                blocking_mean = ((block_50 + block_100 + block_400) / (total_50 + total_100 + total_400))
                 self.blocking_arr = np.append(self.blocking_arr, blocking_mean)
                 self.num_cores = curr_dict['stats']['misc_info']['cores_used']
 

@@ -126,7 +126,9 @@ class Engine:
         :type i: int
         :return: None
         """
-        self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
+        # TODO: Change
+        # self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
+        self.blocking['simulations'][i] = self.cong_block / (self.sim_input['number_of_request'] - self.dist_block)
 
     def update_control_obj(self, curr_time, release=False):
         """
@@ -178,7 +180,6 @@ class Engine:
         else:
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
                 "mod_format": resp[0]['mod_format'],
-                "slots": resp[0]['start_slot'],
                 "path": resp[0]['path'],
                 "is_sliced": resp[0]['is_sliced']
             }})

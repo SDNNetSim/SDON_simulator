@@ -40,7 +40,7 @@
           "attenuation": 0,
           "dispersion": 0,
           "nonlinearity": 0,
-          "num_cores": 1
+          "num_cores": 2
         },
         "length": 95,
         "source": "Lowell",
@@ -52,7 +52,7 @@
           "attenuation": 0,
           "dispersion": 0,
           "nonlinearity": 0,
-          "num_cores": 1
+          "num_cores": 2
         },
         "length": 95,
         "source": "Miami",

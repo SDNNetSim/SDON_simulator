@@ -157,33 +157,33 @@ if __name__ == '__main__':
     # TODO: Allow this to be accessible by the command line input
     obj_one = RunSim()
 
-    # obj_two = RunSim()
-    # obj_three = RunSim()
-    # obj_four = RunSim()
-    # obj_five = RunSim()
+    obj_two = RunSim()
+    obj_three = RunSim()
+    obj_four = RunSim()
+    obj_five = RunSim()
 
     t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1,))
     t1.start()
     time.sleep(2)
 
-    # t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2,))
-    # t2.start()
-    # time.sleep(2)
-    #
-    # t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3,))
-    # t3.start()
-    # time.sleep(2)
-    #
-    # t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4,))
-    # t4.start()
-    # time.sleep(2)
-    #
-    # t5 = threading.Thread(target=obj_five.run_yue, args=(16, 5,))
-    # t5.start()
-    # time.sleep(2)
-    #
-    # t1.join()
-    # t2.join()
-    # t3.join()
-    # t4.join()
-    # t5.join()
+    t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2,))
+    t2.start()
+    time.sleep(2)
+
+    t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3,))
+    t3.start()
+    time.sleep(2)
+
+    t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4,))
+    t4.start()
+    time.sleep(2)
+
+    t5 = threading.Thread(target=obj_five.run_yue, args=(16, 5,))
+    t5.start()
+    time.sleep(2)
+
+    t1.join()
+    t2.join()
+    t3.join()
+    t4.join()
+    t5.join()
