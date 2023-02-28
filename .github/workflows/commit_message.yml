@@ -1,0 +1,45 @@
+name: Commit Message
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - main
+
+jobs:
+
+  check-commit-message:
+    name: Check Commit Message
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.8", "3.9", "3.10" ]
+
+    steps:
+      - name: Check Commit Type
+        uses: gsactions/commit-message-checker@v2
+        with:
+          pattern: '/^[A-Z][a-z0-9_-]{3,19}$/'
+          flags: 'gm'
+          error: 'Your commit message must begin with an uppercase letter.'
+
+      - name: Check Commit Length
+        uses: gsactions/commit-message-checker@v2
+        with:
+          pattern: '^[^#].{72}'
+          error: 'The maximum line length of 72 characters is exceeded.'
+          excludeDescription: 'false'
+          excludeTitle: 'false'
+          checkAllCommitMessages: 'true'
+          accessToken: ${{ secrets.GITHUB_TOKEN }}
