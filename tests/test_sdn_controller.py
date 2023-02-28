@@ -31,7 +31,7 @@ class TestSDNController(unittest.TestCase):
         self.topology = self.engine.physical_topology
         self.network_db = self.engine.network_spec_db
 
-        with open(file_path + 'bandwidth_info.json', "r") as file_obj:
+        with open(file_path + 'bandwidth_info.json', 'r', encoding='utf-8') as file_obj:
             mod_formats = json.load(file_obj)
 
         self.controller = SDNController(req_id=7, network_db=self.network_db, topology=self.topology, num_cores=1,
@@ -52,10 +52,10 @@ class TestSDNController(unittest.TestCase):
 
             self.network_db[src_dest]['cores_matrix'][0][5:15] = self.controller.req_id
             # For the guard band
-            self.network_db[src_dest]['cores_matrix'][0][15] = -self.controller.req_id
+            self.network_db[src_dest]['cores_matrix'][0][15] = self.controller.req_id * -1
 
             self.network_db[dest_src]['cores_matrix'][0][5:15] = self.controller.req_id
-            self.network_db[dest_src]['cores_matrix'][0][15] = -self.controller.req_id
+            self.network_db[dest_src]['cores_matrix'][0][15] = self.controller.req_id * -1
 
         self.controller.network_db = self.network_db
         self.controller.handle_release()
@@ -65,7 +65,8 @@ class TestSDNController(unittest.TestCase):
             src_dest = (self.controller.path[i], self.controller.path[i + 1])
 
             req_indexes = np.where(self.controller.network_db[src_dest]['cores_matrix'][0] == self.controller.req_id)[0]
-            gb_indexes = np.where(self.controller.network_db[src_dest]['cores_matrix'][0] == -self.controller.req_id)[0]
+            gb_indexes = np.where(self.controller.network_db[src_dest]['cores_matrix'][0] == self.controller.req_id)[
+                             0] * -1
 
             self.assertEqual(0, len(req_indexes), 'The request still exists in the network.')
             self.assertEqual(0, len(gb_indexes), 'The guard band still exists in the network.')
@@ -81,12 +82,13 @@ class TestSDNController(unittest.TestCase):
             src_dest = (self.controller.path[i], self.controller.path[i + 1])
 
             req_arr = self.controller.network_db[src_dest]['cores_matrix'][0][20:24]
-            gb = self.controller.network_db[src_dest]['cores_matrix'][0][24]
+            guard_band = self.controller.network_db[src_dest]['cores_matrix'][0][24]
 
             exp_arr = [7.0, 7.0, 7.0, 7.0]
             self.assertEqual(exp_arr, list(req_arr),
                              f'Request was not allocated properly, expected {exp_arr} and got {req_arr}')
-            self.assertEqual(-7, gb, f'Guard band was not allocated properly. Expected -10 and got {gb}')
+            self.assertEqual(-7, guard_band,
+                             f'Guard band was not allocated properly. Expected -10 and got {guard_band}')
 
     def test_single_core_lps(self):
         """

@@ -111,6 +111,10 @@ class Blocking:
         self.save_plot()
 
     def plot_transponders(self):
+        """
+        Will change.
+        :return:
+        """
         for curr_time, lst in self.files.items():
             self.plot_dict[curr_time] = dict()
 
@@ -134,6 +138,10 @@ class Blocking:
         self.save_plot(plot_trans=True)
 
     def plot_block_percents(self):
+        """
+        Will change
+        :return:
+        """
         for curr_time, lst in self.files.items():
             self.plot_dict[curr_time] = dict()
 
@@ -160,6 +168,10 @@ class Blocking:
         self.save_plot(plot_percents=True)
 
     def plot_bandwidths(self):
+        """
+        Will change
+        :return:
+        """
         for curr_time, lst in self.files.items():
             self.plot_dict[curr_time] = dict()
 
@@ -205,7 +217,7 @@ class Blocking:
             plt.title(f'{self.network_name} Transponders vs. Erlang (Core = {self.num_cores})')
             plt.ylabel('Transponders per Request')
         elif plot_percents or plot_bands:
-            figure, axis = plt.subplots(2, 2)
+            figure, axis = plt.subplots(2, 2)  # pylint: disable=unused-variable
             plt.subplots_adjust(left=0.1,
                                 bottom=0.1,
                                 right=0.9,
@@ -226,7 +238,7 @@ class Blocking:
 
         legend_list = list()
         cnt = 0
-        for curr_time, obj in self.plot_dict.items():
+        for curr_time, obj in self.plot_dict.items():  # pylint: disable=unused-variable
             if plot_trans:
                 plt.plot(obj['erlang'], obj['av_trans'])
                 legend_list.append(f"LS = {obj['max_lps']}")
@@ -262,7 +274,7 @@ class Blocking:
 
         if not plot_trans and not plot_percents:
             plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
-            plt.xticks([erlang for erlang in range(10, 810, 100)])
+            plt.xticks(list(range(10, 810, 100)))
             plt.legend(legend_list)
 
         # Always saves based on the last time in the list

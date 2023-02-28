@@ -20,10 +20,10 @@ class TestRequestGenerator(unittest.TestCase):
         else:
             file_path = './tests/test_data/'
 
-        with open(file_path + 'bandwidth_info.json', "r") as file_obj:
+        with open(file_path + 'bandwidth_info.json', 'r', encoding='utf-8') as file_obj:
             self.mod_formats = json.load(file_obj)
 
-        with open(file_path + 'input3.json', "r") as file_obj:
+        with open(file_path + 'input3.json', 'r', encoding='utf-8') as file_obj:
             self.sim_input = json.load(file_obj)
 
     def test_request_ratios(self):
@@ -39,7 +39,7 @@ class TestRequestGenerator(unittest.TestCase):
                         assume='yue')
 
         bandwidth_ratios = {'50': 0, '100': 0, '400': 0}
-        for time, obj in resp.items():
+        for time, obj in resp.items():  # pylint: disable=unused-variable
             bandwidth_ratios[obj['bandwidth']] += 1
 
         # Numbers are doubled due to arrival and departure requests being counted

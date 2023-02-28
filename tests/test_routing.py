@@ -91,7 +91,7 @@ class TestRouting(unittest.TestCase):
         self.routing.source = 'Lowell'
         self.routing.destination = 'Chicago'
 
-        shortest_path, mod = self.routing.shortest_path()
+        shortest_path, mod = self.routing.shortest_path()  # pylint: disable=unused-variable
 
         self.assertEqual(['Lowell', 'New York City', 'Richmond', 'Austin', 'Portland', 'San Francisco', 'Chicago'],
                          shortest_path)
