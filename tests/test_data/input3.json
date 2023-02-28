@@ -8,6 +8,8 @@
     400
   ],
   "NO_iteration": 10,
+  "mu": 2.0,
+  "lambda": 2.0,
   "spectral_slots": 500,
   "physical_topology": {
     "nodes": {
