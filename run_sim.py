@@ -16,7 +16,7 @@ class RunSim:
     Controls all simulations for this project.
     """
 
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=2, spectral_slots=256, num_cores=1,
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=5, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
                  bw_slot=12.5, max_lps=1, sim_flag='arash', constant_weight=True, guard_band=1):
 
@@ -120,7 +120,7 @@ class RunSim:
         else:
             raise NotImplementedError
 
-        # TODO: Thread your lambda
+        # TODO: Thread your lambda?
         for lam in range(2, 143, 2):
             curr_erlang = float(lam) / self.mu
             lam *= float(self.num_cores)

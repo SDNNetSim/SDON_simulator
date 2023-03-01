@@ -32,7 +32,7 @@ class Blocking:
         self.band_three = np.array([])
 
         self.plot_dict = dict()
-        self.x_axis = [10, 100, 200, 300, 400, 500, 600, 700]
+        self.x_axis = [10, 100, 200, 300, 400]
 
         self.mu = None  # pylint: disable=invalid-name
         self.num_cores = None
@@ -88,29 +88,6 @@ class Blocking:
 
         return res_dict
 
-    def plot_blocking(self):
-        """
-        Plots blocking means for all bandwidths vs. Erlang values.
-        """
-        plt.title(f'{self.network_name} BP vs. Erlang (Cores = {self.num_cores})')
-        plt.ylabel('Blocking Probability')
-        plt.yscale('log')
-
-        plt.grid()
-        plt.xlabel('Erlang')
-
-        legend_list = list()
-
-        for thread, obj in self.plot_dict.items():  # pylint: disable=unused-variable
-            plt.plot(obj['erlang'], obj['blocking'])
-            legend_list.append(obj['max_lps'])
-
-        plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
-        plt.xticks(self.x_axis)
-        plt.legend(legend_list)
-
-        self.save_show_plot(file_name='blocking')
-
     @staticmethod
     def get_weighted_blocking(user_dict):
         """
@@ -139,11 +116,35 @@ class Blocking:
         blocking_mean = float(blocking_mean)
         return blocking_mean
 
+    def plot_blocking(self):
+        """
+        Plots blocking means for all bandwidths vs. Erlang values.
+        """
+        plt.title(f'{self.network_name} BP vs. Erlang (Cores = {self.num_cores})')
+        plt.ylabel('Blocking Probability')
+        plt.yscale('log')
+
+        plt.grid()
+        plt.xlabel('Erlang')
+
+        legend_list = list()
+
+        for thread, obj in self.plot_dict.items():  # pylint: disable=unused-variable
+            plt.plot(obj['erlang'], obj['blocking'])
+            legend_list.append(f"LS = {obj['max_lps']}")
+
+        plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
+        plt.legend(legend_list)
+        plt.xticks(self.x_axis)
+        plt.xlim(10, 400)
+
+        self.save_show_plot(file_name='blocking')
+
     def plot_transponders(self):
         """
         Plots the average number of transponders
         """
-        plt.title(f'{self.network_name} Transponders vs. Erlang (Core = {self.num_cores})')
+        plt.title(f'{self.network_name} Transponders vs. Erlang (Cores = {self.num_cores})')
         plt.ylabel('Transponders per Request')
 
         plt.grid()
@@ -155,6 +156,8 @@ class Blocking:
             legend_list.append(f"LS = {obj['max_lps']}")
 
         plt.legend(legend_list)
+        plt.xticks(self.x_axis)
+        plt.xlim(10, 400)
         self.save_show_plot(file_name='transponders')
 
     def plot_block_percents(self):
@@ -176,13 +179,16 @@ class Blocking:
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_yticks([20, 40, 60, 80, 100])
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['cong_block'])
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['dist_block'])
+            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xlim(10, 400)
+            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_ylim(-1, 101)
+            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xticks(self.x_axis)
+            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
+                f"{self.network_name} (Cores, LS = {self.num_cores}, {obj['max_lps']})")
 
             if cnt == 0:
                 axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].legend(['Congestion', 'Distance'])
                 plt.ylabel('Percent')
                 plt.xlabel('Erlang')
-                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
-                    f"{self.network_name} (Core, LS = {self.num_cores}, {obj['max_lps']})")
 
             cnt += 1
             # Ignore light segment slicing for 16, aka thread 5
@@ -207,18 +213,20 @@ class Blocking:
 
         for thread, obj in self.plot_dict.items():  # pylint: disable=unused-variable
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].grid()
-            # TODO: Adjust x and y ticks
-            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_yticks([20, 40, 60, 80, 100])
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['50'])
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['100'])
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['400'])
+            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xlim(10, 400)
+            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_ylim(0, 101)
+            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_yticks([20, 40, 60, 80, 100])
+            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xticks(self.x_axis)
+            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
+                f"{self.network_name} (Cores, LS = {self.num_cores}, {obj['max_lps']})")
 
             if cnt == 0:
                 axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].legend(['50', '100', '400'])
                 plt.ylabel('Percent')
                 plt.xlabel('Erlang')
-                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
-                    f"{self.network_name} (Core, LS = {self.num_cores}, {obj['max_lps']})")
 
             cnt += 1
             # Ignore light segment slicing for 16, aka thread 5
@@ -267,6 +275,10 @@ class Blocking:
                         max_lps = curr_dict['stats']['misc_info']['max_lps']
                     else:
                         max_lps = None
+
+                # Only plot up to Erlang 400, beyond that is considered not important for the time being
+                if erlang == 400:
+                    break
 
             self.plot_dict[thread_num] = dict()
             self.plot_dict[thread_num]['erlang'] = self.erlang_arr
