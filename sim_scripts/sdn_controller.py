@@ -103,7 +103,6 @@ class SDNController:
 
         :return: If we were able to successfully carry out lps or not
         """
-        # TODO: Is multiple core slicing always enabled? We should differentiate between them
         # Indicated whether we blocked due to congestion or a length constraint
         # No slicing is possible
         if self.chosen_bw == '25' or self.max_lps == 1:
