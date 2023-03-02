@@ -70,6 +70,7 @@ class SpectrumAssignment:
                 if end_index not in curr_obj['channel']:
                     break
 
+                # TODO: We must always check the first link, here this doesn't do that
                 if len(self.path) > 2:
                     self.check_links(curr_obj['core'], start_index, end_index + self.guard_band)
 
@@ -94,9 +95,6 @@ class SpectrumAssignment:
         for i, node in enumerate(self.path):  # pylint: disable=unused-variable
             if i == len(self.path) - 1:
                 break
-            # Ignore the first link since we check it in the method that calls this one
-            if i == 0:
-                continue
 
             # Contains source and destination names
             sub_path = (self.path[i], self.path[i + 1])

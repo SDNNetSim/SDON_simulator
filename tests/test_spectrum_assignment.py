@@ -174,7 +174,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         """
         Test the best-fit spectrum allocation policy for a request of size 1.
         """
-        self.spec_obj.best_fit = True
+        self.spec_obj.allocation = 'best-fit'
         self.spec_obj.slots_needed = 1
         core_matrix = self.spec_obj.network_spec_db[('Boston', 'Miami')]['cores_matrix']
         rev_core_matrix = self.spec_obj.network_spec_db[('Miami', 'Boston')]['cores_matrix']
@@ -207,7 +207,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         """
         Test the best-fit spectrum allocation policy for a request of size 4.
         """
-        self.spec_obj.best_fit = True
+        self.spec_obj.allocation = 'best-fit'
         self.spec_obj.slots_needed = 4
         core_matrix = self.spec_obj.network_spec_db[('Lowell', 'Boston')]['cores_matrix']
         rev_core_matrix = self.spec_obj.network_spec_db[('Boston', 'Lowell')]['cores_matrix']
@@ -240,7 +240,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         """
         Test to see if multiple cores have different open windows, the correct one is selected.
         """
-        self.spec_obj.best_fit = True
+        self.spec_obj.allocation = 'best-fit'
         self.spec_obj.slots_needed = 4
         core_matrix = self.spec_obj.network_spec_db[('Boston', 'Miami')]['cores_matrix']
         rev_core_matrix = self.spec_obj.network_spec_db[('Miami', 'Boston')]['cores_matrix']

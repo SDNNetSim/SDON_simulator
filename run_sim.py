@@ -17,7 +17,7 @@ class RunSim:
     Controls all simulations for this project.
     """
 
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=5, spectral_slots=256, num_cores=1,
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
                  bw_slot=12.5, max_lps=1, sim_flag='arash', constant_weight=True, guard_band=1):
 
@@ -180,20 +180,20 @@ if __name__ == '__main__':
     t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1,))
     t1.start()
 
-    t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2,))
-    t2.start()
-
-    t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3,))
-    t3.start()
-
-    t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4,))
-    t4.start()
-
-    t5 = threading.Thread(target=obj_five.run_yue, args=(16, 5,))
-    t5.start()
-
-    t1.join()
-    t2.join()
-    t3.join()
-    t4.join()
-    t5.join()
+    # t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2,))
+    # t2.start()
+    #
+    # t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3,))
+    # t3.start()
+    #
+    # t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4,))
+    # t4.start()
+    #
+    # t5 = threading.Thread(target=obj_five.run_yue, args=(16, 5,))
+    # t5.start()
+    #
+    # t1.join()
+    # t2.join()
+    # t3.join()
+    # t4.join()
+    # t5.join()

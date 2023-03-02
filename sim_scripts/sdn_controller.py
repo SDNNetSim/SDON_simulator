@@ -204,6 +204,8 @@ class SDNController:
             self.path = selected_path
             if path_mod is not False:
                 slots_needed = self.mod_formats[self.chosen_bw][path_mod]['slots_needed']
+                if self.req_id == 42:
+                    print('begin debug')
                 spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.network_db,
                                                          guard_band=self.guard_band, is_sliced=False,
                                                          allocation=self.allocation)
