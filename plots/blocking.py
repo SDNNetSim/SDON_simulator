@@ -254,6 +254,8 @@ class Blocking:
                 self.trans_arr = np.append(self.trans_arr, curr_dict['stats']['misc_info']['av_transponders'])
                 self.dist_arr = np.append(self.dist_arr, curr_dict['stats']['misc_info']['dist_block'])
                 self.cong_arr = np.append(self.cong_arr, curr_dict['stats']['misc_info']['cong_block'])
+                # TODO: Change (dist block)
+                # self.cong_arr = np.append(self.cong_arr, 100)
 
                 bandwidth_obj = curr_dict['stats']['misc_info']['blocking_obj']
                 total_blocks = bandwidth_obj['50'] + bandwidth_obj['100'] + bandwidth_obj['400']

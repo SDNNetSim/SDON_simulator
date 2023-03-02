@@ -126,7 +126,7 @@ class Engine:
         :type i: int
         :return: None
         """
-        # TODO: Change
+        # TODO: Change (distance block)
         self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
         # self.blocking['simulations'][i] = self.cong_block / (self.sim_input['number_of_request'] - self.dist_block)
 
@@ -173,9 +173,14 @@ class Engine:
             # Returns whether the block was due to distance or congestion
             if resp[1]:
                 self.dist_block += 1
+                # TODO: Change (distance block)
+                # self.transponders -= 1
             else:
                 self.cong_block += 1
+                # TODO: Change (distance block)
+                # self.block_obj[self.control_obj.chosen_bw] += 1
 
+            # TODO: Change (distance block)
             self.block_obj[self.control_obj.chosen_bw] += 1
         else:
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {

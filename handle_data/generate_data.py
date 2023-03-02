@@ -50,8 +50,9 @@ def create_bw_info(assume=None):
     # Max length is in km
     if assume == 'yue':
         bw_info = {
-            '25': {'QPSK': {'max_length': 22160, 'slots_needed': 1}, '16-QAM': {'max_length': 9500, 'slots_needed': 1},
-                   '64-QAM': {'max_length': 3664, 'slots_needed': 1}},
+            # TODO: Change (remove 25)
+            # '25': {'QPSK': {'max_length': 22160, 'slots_needed': 1}, '16-QAM': {'max_length': 9500, 'slots_needed': 1},
+            #        '64-QAM': {'max_length': 3664, 'slots_needed': 1}},
             '50': {'QPSK': {'max_length': 11080, 'slots_needed': 2}, '16-QAM': {'max_length': 4750, 'slots_needed': 1},
                    '64-QAM': {'max_length': 1832, 'slots_needed': 1}},
             '100': {'QPSK': {'max_length': 5540, 'slots_needed': 4}, '16-QAM': {'max_length': 2375, 'slots_needed': 2},

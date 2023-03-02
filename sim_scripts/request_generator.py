@@ -55,7 +55,9 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume):  # pylint:
     bw_five_req = bw_ratio_five * num_requests
 
     # Monitor the number of requests allocated for each bandwidth
-    bands_dict = {'25': bw_one_req, '50': bw_two_req, '100': bw_three_req, '200': bw_four_req, '400': bw_five_req}
+    # bands_dict = {'25': bw_one_req, '50': bw_two_req, '100': bw_three_req, '200': bw_four_req, '400': bw_five_req}
+    # TODO: Change (no 25)
+    bands_dict = {'50': bw_two_req, '100': bw_three_req, '200': bw_four_req, '400': bw_five_req}
     # List of all possible bandwidths
     bands_list = list(bw_dict.keys())
 

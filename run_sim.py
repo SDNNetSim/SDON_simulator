@@ -70,7 +70,7 @@ class RunSim:
         if self.t_num is None:
             file_name = 'bandwidth_info.json'
         else:
-            file_name = f'bandwidth_info_{self.t_num}'
+            file_name = f'bandwidth_info_{self.t_num}.json'
 
         self.save_input(file_name, bw_info)
         with open(f'./data/input/{file_name}', 'r',
