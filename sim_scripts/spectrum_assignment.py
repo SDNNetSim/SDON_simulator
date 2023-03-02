@@ -1,6 +1,7 @@
-import numpy as np
 from itertools import groupby
 from operator import itemgetter
+
+import numpy as np
 
 
 # TODO: Find a more efficient, readable, and easier way to do first-fit and best-fit
@@ -31,18 +32,9 @@ class SpectrumAssignment:
 
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
 
-    def check_links_best_fit(self, obj):
-        pass
-
     def best_fit_allocation(self):
         """
-        - Loop through all links
-            - Loop through all cores as well
-        - Get all super channels that are large enough to allocate the request
-        - Check if indexes exist in all other links (start with the first link)
-            - If not, this is no longer a candidate super channel
-        - Sort the candidate super channels and choose the smallest one
-        - Repeat for all cores, compare at the end
+        Implements the best-fit allocation policy for spectrum assignment.
         """
         res_list = list()
         tmp_dict = dict()
