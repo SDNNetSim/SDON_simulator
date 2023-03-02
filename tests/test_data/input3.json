@@ -8,7 +8,9 @@
     400
   ],
   "NO_iteration": 10,
-  "number_of_slot_per_core": 500,
+  "mu": 2.0,
+  "lambda": 2.0,
+  "spectral_slots": 500,
   "physical_topology": {
     "nodes": {
       "Lowell": {
@@ -40,7 +42,7 @@
           "attenuation": 0,
           "dispersion": 0,
           "nonlinearity": 0,
-          "num_cores": 1
+          "num_cores": 2
         },
         "length": 95,
         "source": "Lowell",
@@ -52,7 +54,7 @@
           "attenuation": 0,
           "dispersion": 0,
           "nonlinearity": 0,
-          "num_cores": 1
+          "num_cores": 2
         },
         "length": 95,
         "source": "Miami",

@@ -1,6 +1,21 @@
 name: Pylint
 
-on: [ push ]
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - main
 
 jobs:
 
@@ -23,5 +38,8 @@ jobs:
           pip install -r requirements.txt
       - name: Analysing the code with pylint
         run: |
-          pylint ./scripts
+          pylint ./sim_scripts
           pylint ./tests
+          pylint ./handle_data
+          pylint ./plots
+          pylint ./useful_functions

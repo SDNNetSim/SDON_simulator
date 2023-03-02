@@ -1,20 +1,19 @@
 import unittest
 import os
 
-from scripts.routing import Routing
-from scripts.engine import Engine
+from sim_scripts.routing import Routing
+from sim_scripts.engine import Engine
 
 
 class TestRouting(unittest.TestCase):
     """
-    Tests the routing methods class.
+    Tests the methods in the routing class.
     """
 
     def setUp(self):
         """
         Sets up the class for testing.
         """
-        # TODO: Find a better way to do this
         working_dir = os.getcwd().split('/')
         if working_dir[-1] == 'tests':
             file_path = '../tests/test_data/input3.json'
@@ -28,22 +27,24 @@ class TestRouting(unittest.TestCase):
         self.physical_topology = self.engine.physical_topology
         self.network_spec_db = self.engine.network_spec_db
 
+        mod_formats = {'QPSK': {'max_length': 50000}, '16-QAM': {'max_length': 1}}
+
         self.routing = Routing(source='Lowell', destination='San Francisco', physical_topology=self.physical_topology,
-                               network_spec_db=self.network_spec_db)
+                               network_spec_db=self.network_spec_db, mod_formats=mod_formats)
 
     def test_least_cong_route(self):
         """
         Test the least congested route method.
         """
-        test_dict0 = {'path': ['Lowell', 'Las Vegas', 'Austin'], 'link_info': {'slots_taken': 10}}
-        test_dict1 = {'path': ['Chicago', 'Houston', 'Richmond', 'Los Angeles'], 'link_info': {'slots_taken': 2}}
-        test_dict2 = {'path': ['Boston', 'Miami'], 'link_info': {'slots_taken': 15}}
-        test_dict3 = {'path': ['Boston', 'Lowell', 'Nashua'], 'link_info': {'slots_taken': 300}}
+        test_dict0 = {'path': ['Lowell', 'Las Vegas', 'Austin'], 'link_info': {'free_slots': 0}}
+        test_dict1 = {'path': ['Chicago', 'Houston', 'Richmond', 'Los Angeles'], 'link_info': {'free_slots': 32}}
+        test_dict2 = {'path': ['Boston', 'Miami'], 'link_info': {'free_slots': 127}}
+        test_dict3 = {'path': ['Boston', 'Lowell', 'Nashua'], 'link_info': {'free_slots': 128}}
         self.routing.paths_list = [test_dict0, test_dict1, test_dict2, test_dict3]
 
         check_list = self.routing.find_least_cong_route()
 
-        self.assertEqual(['Chicago', 'Houston', 'Richmond', 'Los Angeles'], check_list, 'Incorrect path chosen.')
+        self.assertEqual(['Boston', 'Lowell', 'Nashua'], check_list, 'Incorrect path chosen.')
 
     def test_find_most_cong_link(self):
         """
@@ -61,8 +62,10 @@ class TestRouting(unittest.TestCase):
         self.routing.find_most_cong_link(path=path1)
         self.routing.find_most_cong_link(path=path2)
 
-        self.assertEqual({'path': path1, 'link_info': {'link': '1', 'slots_taken': 10}}, self.routing.paths_list[0])
-        self.assertEqual({'path': path2, 'link_info': {'link': '5', 'slots_taken': 1500}}, self.routing.paths_list[1])
+        self.assertEqual({'path': path1, 'link_info': {'link': '1', 'free_slots': 490, 'core': 0}},
+                         self.routing.paths_list[0])
+        self.assertEqual({'path': path2, 'link_info': {'link': '5', 'free_slots': 0, 'core': 0}},
+                         self.routing.paths_list[1])
 
     def test_least_congested_path(self):
         """
@@ -80,3 +83,15 @@ class TestRouting(unittest.TestCase):
         response = self.routing.least_congested_path()
 
         self.assertEqual(['Lowell', 'Las Vegas', 'Portland', 'San Francisco'], response, 'Incorrect path chosen.')
+
+    def test_shortest_path(self):
+        """
+        Tests Dijkstra's shortest path algorithm.
+        """
+        self.routing.source = 'Lowell'
+        self.routing.destination = 'Chicago'
+
+        shortest_path, mod = self.routing.shortest_path()  # pylint: disable=unused-variable
+
+        self.assertEqual(['Lowell', 'New York City', 'Richmond', 'Austin', 'Portland', 'San Francisco', 'Chicago'],
+                         shortest_path)

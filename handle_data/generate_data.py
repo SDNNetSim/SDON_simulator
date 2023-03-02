@@ -49,50 +49,33 @@ def create_pt(num_cores, nodes_links):
 
 
 # TODO: Eventually make a config file
-def create_bw_info():
+def create_bw_info(assume=None):
     """
     Determines the number of spectral slots needed for every modulation format in each bandwidth.
 
     :return: The number of spectral slots needed for each bandwidth and modulation format pair
     :rtype: dict
     """
-    # TODO: Note, this simulator was constructed based off of two prior research papers. For that reason, some parts of
-    #   this are commented out for now. Other parts, hard coded. This will eventually be changed, but must stay this
-    #   way for now.
     # Max length is in km
-    """
-    bw_info = {
-        '50': {'QPSK': {'max_length': 11080}, '16-QAM': {'max_length': 4750}, '64-QAM': {'max_length': 1832}},
-        '100': {'QPSK': {'max_length': 5540}, '16-QAM': {'max_length': 2375}, '64-QAM': {'max_length': 916}},
-        '400': {'QPSK': {'max_length': 1385}, '16-QAM': {'max_length': 1401}, '64-QAM': {'max_length': 1}},
-    }
-
-    for bw, bw_obj in bw_info.items():
-        for mod_format, mod_obj in bw_obj.items():
-            # Hard coded values, ignoring bw = 50 Gbps, Arash's bw assumption for number of slots needed (only using
-            # 100 and 400). We don't use the max length value above in this case. Also, only one modulation format was
-            # used, hence we set all the modulation values to have the same reach for ease of switching between them in
-            # code. This is temporary.
-            # if bw == '100':
-            #     bw_obj[mod_format]['slots_needed'] = 3
-            # elif bw == '400':
-            #     bw_obj[mod_format]['slots_needed'] = 10
-            # elif bw == '50':
-            #     bw_obj[mod_format]['slots_needed'] = 1
-            if mod_format == "QPSK":
-                m = 2
-            elif mod_format == "16-QAM":
-                m = 4
-            elif mod_format == "64-QAM":
-                m = 6
-            bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / (12.5* m))
-            # Yue Wang's dissertation assumption on the number of slots needed for each bandwidth and modulation format
-            # bw_obj[mod_format]['slots_needed'] = math.ceil(float(bw) / self.bw_slot)
-    """
-    bw_info = {
-        '50': {'QPSK': {'max_length': 11080, 'slots_needed': 2}, '16-QAM': {'max_length': 4750, 'slots_needed': 1}, '64-QAM': {'max_length': 1832, 'slots_needed': 1}},
-        '100': {'QPSK': {'max_length': 5540, 'slots_needed': 4}, '16-QAM': {'max_length': 2375, 'slots_needed': 2}, '64-QAM': {'max_length': 916, 'slots_needed': 2}},
-        '400': {'QPSK': {'max_length': 1385, 'slots_needed': 16}, '16-QAM': {'max_length': 1401, 'slots_needed': 8}, '64-QAM': {'max_length': 1, 'slots_needed': 6}},
-    }
+    if assume == 'yue':
+        bw_info = {
+            '25': {'QPSK': {'max_length': 22160, 'slots_needed': 1}, '16-QAM': {'max_length': 9500, 'slots_needed': 1},
+                   '64-QAM': {'max_length': 3664, 'slots_needed': 1}},
+            '50': {'QPSK': {'max_length': 11080, 'slots_needed': 2}, '16-QAM': {'max_length': 4750, 'slots_needed': 1},
+                   '64-QAM': {'max_length': 1832, 'slots_needed': 1}},
+            '100': {'QPSK': {'max_length': 5540, 'slots_needed': 4}, '16-QAM': {'max_length': 2375, 'slots_needed': 2},
+                    '64-QAM': {'max_length': 916, 'slots_needed': 2}},
+            '200': {'QPSK': {'max_length': 2770, 'slots_needed': 8}, '16-QAM': {'max_length': 1187, 'slots_needed': 4},
+                    '64-QAM': {'max_length': 458, 'slots_needed': 3}},
+            '400': {'QPSK': {'max_length': 1385, 'slots_needed': 16}, '16-QAM': {'max_length': 594, 'slots_needed': 8},
+                    '64-QAM': {'max_length': 229, 'slots_needed': 6}},
+        }
+    elif assume == 'arash':
+        bw_info = {
+            '100': {'QPSK': {'slots_needed': 3}},
+            '400': {'QPSK': {'slots_needed': 10}},
+        }
+    else:
+        raise NotImplementedError
 
     return bw_info

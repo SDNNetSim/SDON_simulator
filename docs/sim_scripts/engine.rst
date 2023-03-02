@@ -1,6 +1,6 @@
 Engine
 ======
 
-.. automodule:: scripts.engine
+.. automodule:: sim_scripts.engine
     :members:
     :undoc-members:

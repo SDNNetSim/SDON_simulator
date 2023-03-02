@@ -6,7 +6,7 @@ class SpectrumAssignment:
     Finds spectrum slots for a given request.
     """
 
-    def __init__(self, path=None, slots_needed=None, network_spec_db=None, guard_band=0, single_core=False,
+    def __init__(self, path=None, slots_needed=None, network_spec_db=None, guard_band=None, single_core=False,
                  is_sliced=False):
         self.is_free = True
         self.path = path

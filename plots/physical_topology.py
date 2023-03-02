@@ -1,5 +1,5 @@
 import networkx as nx
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # pylint: disable=import-error
 
 
 class PhysicalTopology:  # pylint: disable=too-few-public-methods
