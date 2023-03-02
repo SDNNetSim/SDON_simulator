@@ -9,6 +9,7 @@ from useful_functions.handle_dirs_files import create_dir
 
 
 # TODO: Allow command line input
+# TODO: Need a best-fit flag
 
 
 class RunSim:
@@ -30,6 +31,7 @@ class RunSim:
         self.mu = mu  # pylint: disable=invalid-name
         self.lam = lam
         self.guard_band = guard_band
+        self.allocation = 'first_fit'
 
         self.sim_start = time.strftime("%m%d_%H:%M:%S")
 
@@ -91,7 +93,8 @@ class RunSim:
             'spectral_slots': self.spectral_slots,
             'guard_band': self.guard_band,
             'physical_topology': physical_topology,
-            'num_cores': self.num_cores
+            'num_cores': self.num_cores,
+            'allocation': self.allocation,
         }
 
     def run_yue(self, max_lps=None, t_num=None):
@@ -113,6 +116,7 @@ class RunSim:
         self.network_name = 'USNet'
         self.constant_weight = False
         self.guard_band = 1
+        self.allocation = 'best-fit'
 
         if max_lps is not None:
             self.max_lps = max_lps

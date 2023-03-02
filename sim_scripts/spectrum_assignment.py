@@ -14,7 +14,7 @@ class SpectrumAssignment:
     """
 
     def __init__(self, path=None, slots_needed=None, network_spec_db=None, guard_band=None, single_core=False,
-                 is_sliced=False, best_fit=False):
+                 is_sliced=False, allocation='first-fit'):
         self.is_free = True
         self.path = path
 
@@ -27,7 +27,7 @@ class SpectrumAssignment:
         self.num_cores = None
         self.single_core = single_core
         self.is_sliced = is_sliced
-        self.best_fit = best_fit
+        self.allocation = allocation
 
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
 
@@ -160,10 +160,12 @@ class SpectrumAssignment:
         # TODO: Check this
         self.num_cores = np.shape(self.cores_matrix)[0]
 
-        if self.best_fit:
+        if self.allocation == 'best-fit':
             self.best_fit_allocation()
-        else:
+        elif self.allocation == 'first-fit':
             self.first_fit_allocation()
+        else:
+            raise NotImplementedError
 
         # If the start slot is none, a request couldn't be allocated
         if self.response['start_slot'] is not None:
