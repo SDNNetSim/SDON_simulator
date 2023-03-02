@@ -234,7 +234,7 @@ class Blocking:
                 break
         self.save_show_plot(file_name='bandwidths')
 
-    def get_data(self):
+    def get_data(self):  # pylint: disable=too-many-statements
         """
         Retrieves all the desired data for plotting.
         """
