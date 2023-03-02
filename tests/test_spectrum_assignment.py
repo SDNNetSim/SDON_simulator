@@ -4,6 +4,9 @@ import numpy as np
 from sim_scripts.spectrum_assignment import SpectrumAssignment
 
 
+# TODO: Neaten up this script (more efficient)
+
+
 class TestSpectrumAssignment(unittest.TestCase):
     """
     Tests the spectrum assignment methods.
@@ -164,7 +167,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         self.spec_obj.slots_needed = 4
         response = self.spec_obj.find_free_spectrum()
         self.assertEqual({'core_num': 0, 'start_slot': 0, 'end_slot': 5}, response,
-                         'Incorrect assignment received for a request of size4.')
+                         'Incorrect assignment received for a request of size 4.')
 
     # TODO: Test different core allocations for best-fit
     def test_best_fit_1(self):
@@ -197,15 +200,74 @@ class TestSpectrumAssignment(unittest.TestCase):
             rev_core_matrix[i][window_three[0]:window_three[1]] = 0
 
         response = self.spec_obj.find_free_spectrum()
-        print('bleep bloop')
+        self.assertEqual({'core_num': 0, 'start_slot': 100, 'end_slot': 102}, response,
+                         'Incorrect assignment received for a request of size 1.')
 
     def test_best_fit_4(self):
         """
         Test the best-fit spectrum allocation policy for a request of size 4.
         """
-        # TODO: Do the best fit policy on the first link here to see what happens
         self.spec_obj.best_fit = True
         self.spec_obj.slots_needed = 4
+        core_matrix = self.spec_obj.network_spec_db[('Lowell', 'Boston')]['cores_matrix']
+        rev_core_matrix = self.spec_obj.network_spec_db[('Boston', 'Lowell')]['cores_matrix']
+
+        # Make three available windows, ensure the smallest one is picked
+        window_one = [50, 55]
+        window_two = [200, 201]
+        window_three = [0, 10]
+
+        num_cores = np.shape(core_matrix)[0]
+        for i in range(num_cores):
+            core_matrix[i][0:] = 1
+            rev_core_matrix[i][0:] = 1
+
+            if i == 0:
+                core_matrix[i][window_one[0]:window_one[1]] = 0
+                rev_core_matrix[i][window_one[0]:window_one[1]] = 0
+
+            core_matrix[i][window_two[0]:window_two[1]] = 0
+            rev_core_matrix[i][window_two[0]:window_two[1]] = 0
+
+            core_matrix[i][window_three[0]:window_three[1]] = 0
+            rev_core_matrix[i][window_three[0]:window_three[1]] = 0
+
+        response = self.spec_obj.find_free_spectrum()
+        self.assertEqual({'core_num': 0, 'start_slot': 50, 'end_slot': 55}, response,
+                         'Incorrect assignment received for a request of size 4.')
+
+    def test_best_fit_multi_core(self):
+        """
+        Test to see if multiple cores have different open windows, the correct one is selected.
+        """
+        self.spec_obj.best_fit = True
+        self.spec_obj.slots_needed = 4
+        core_matrix = self.spec_obj.network_spec_db[('Boston', 'Miami')]['cores_matrix']
+        rev_core_matrix = self.spec_obj.network_spec_db[('Miami', 'Boston')]['cores_matrix']
+
+        window_one = [0, 1]
+        window_two = [150, 155]
+        window_three = [200, 255]
+
+        num_cores = np.shape(core_matrix)[0]
+        for i in range(num_cores):
+            core_matrix[i][0:] = 1
+            rev_core_matrix[i][0:] = 1
+
+            # Have a different window allocated for the first core
+            if i == 0:
+                core_matrix[i][window_one[0]:window_one[1]] = 0
+                rev_core_matrix[i][window_one[0]:window_one[1]] = 0
+            else:
+                core_matrix[i][window_two[0]:window_two[1]] = 0
+                rev_core_matrix[i][window_two[0]:window_two[1]] = 0
+
+                core_matrix[i][window_three[0]:window_three[1]] = 0
+                rev_core_matrix[i][window_three[0]:window_three[1]] = 0
+
+        response = self.spec_obj.find_free_spectrum()
+        self.assertEqual({'core_num': 1, 'start_slot': 150, 'end_slot': 155}, response,
+                         'Incorrect assignment received for a request.')
 
 
 if __name__ == '__main__':

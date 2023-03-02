@@ -5,6 +5,7 @@ from operator import itemgetter
 
 # TODO: Find a more efficient, readable, and easier way to do first-fit and best-fit
 # TODO: Different allocations on a bi-directional link are not supported
+# TODO: Neaten up this script (repeat code, efficiency, etc.)
 
 
 class SpectrumAssignment:
@@ -60,8 +61,6 @@ class SpectrumAssignment:
                 for channel in tmp_matrix:
                     if len(channel) >= self.slots_needed:
                         res_list.append({'link': src_dest, 'core': core_num, 'channel': channel})
-
-                # tmp_dict[src_dest][core_num] = sorted(tmp_matrix, key=len)
 
         # Sort the list of candidate super channels
         sorted_list = sorted(res_list, key=lambda d: len(d['channel']))
