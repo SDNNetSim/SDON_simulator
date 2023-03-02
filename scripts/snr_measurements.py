@@ -11,8 +11,9 @@ class SnrMeasurments:
     
     def __init__(self, path, modulation_format, start_slot_no, end_slot_no, no_assigned_slots, 
                  assigned_core_no, requested_bit_rate, physical_topology, frequncy_spacing, input_power, 
-                 spectral_slots, SNR_requested, requests_status = None, phi = None, network_spec_db=None, 
-                 guard_band=0, baud_rates = None, EGN = None):
+                 spectral_slots, SNR_requested, 
+                 requests_status = None, phi = None, network_spec_db=None, 
+                 guard_band=0, baud_rates = None, EGN = None,  bidirectional = True):
         self.path = path
 
         self.no_assigned_slots = no_assigned_slots
@@ -32,6 +33,11 @@ class SnrMeasurments:
         self.EGN = EGN
         self.requests_status = requests_status
         self.baud_rates = baud_rates
+        self.bidirectional = bidirectional
+        # self.mode_coupling_co = mode_coupling_co
+        # self.bending_radius = bending_radius
+        # self.propagation_const = propagation_const
+        # self.core_pitch = core_pitch
         
         self.cores_matrix = None
         self.rev_cores_matrix = None
@@ -86,10 +92,22 @@ class SnrMeasurments:
             else:
                 PSD_NLI = ( ( ( SCI + MCI ) * Mio * PSDi) )
             PSD_ASE = ( self.physical_topology['links'][link_id]['fiber']['plank'] * light_frequncy * self.physical_topology['links'][link_id]['fiber']['nsp'] ) * ( math.e ** (self.physical_topology['links'][link_id]['fiber']['attenuation'] * self.physical_topology['links'][link_id]['fiber']['span_length'] * 10 ** 3 ) - 1 )
+            
+            
+            XT_lambda = (2 * self.physical_topology['links'][link_id]['fiber']["bending_radius"] * self.physical_topology['links'][link_id]['fiber']["mode_coupling_co"] ** 2) / (self.physical_topology['links'][link_id]['fiber']["propagation_const"] * self.physical_topology['links'][link_id]['fiber']["core_pitch"])
+            no_adjacent_core = 6
+            lng = self.physical_topology['links'][link_id]['fiber']['span_length']*10*10**3
+            XT_calc = (no_adjacent_core * ( 1 - math.exp(-(no_adjacent_core+1)*2*XT_lambda*lng))) / (1+no_adjacent_core * math.exp(-(no_adjacent_core+1)*2*XT_lambda*lng))
+            P_XT = no_adjacent_core * XT_lambda * self.physical_topology['links'][link_id]['fiber']['span_length'] * 10**3 * self.input_power 
+            #for i in range(1,100):
+            #P_XT2 = self.input_power * math.exp(-)
             # SNR =( 1 / ( PSDi / ( ( PSD_ASE + PSD_NLI ) * Num_span ) ) )
             for i in range(1,100):
                 Num_span =  i
-                SNR = ( 1 / ( PSDi / ( ( PSD_ASE + PSD_NLI ) * Num_span ) ) )
+                lng2 = Num_span * self.physical_topology['links'][link_id]['fiber']['span_length'] 
+                P_XT2 = no_adjacent_core * XT_lambda * self.input_power * math.exp(-self.physical_topology['links'][link_id]['fiber']['attenuation'] * lng2) * lng2 * 10**3
+                P_XT2 = P_XT2 * self.no_assigned_slots
+                SNR = ( 1 / ( PSDi*BW / ( ( PSD_ASE*BW + PSD_NLI*BW ) * Num_span + P_XT2 ) ) )
                 SNR2 = 10*math.log10(1/SNR)
                 if SNR2 < self.SNR_requested:
                     print( "Maximum distance:  " , (i-1) * self.physical_topology['links'][link_id]['fiber']['span_length'] )
