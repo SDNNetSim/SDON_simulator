@@ -16,14 +16,14 @@ class RunSim:
     """
     Runs the simulations for this project.
     """
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1, bw_slot=12.5,
+    def __init__(self, mu=1.0, lam=2.0, num_requests=300, max_iters=1, spectral_slots=256, num_cores=1, bw_slot=12.5,
                  create_bw_data=False):
         self.seed = list()
         self.num_requests = num_requests
         self.num_cores = num_cores
         self.mu = mu
         self.lam = lam
-        self.erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
+        self.erlang_lst = [float(erlang) for erlang in range(50, 100, 50)]
 
         if create_bw_data:
             bw_info = create_bw_info()

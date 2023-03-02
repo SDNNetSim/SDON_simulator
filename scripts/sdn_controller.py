@@ -1,6 +1,7 @@
+import math
 from scripts.routing import Routing
 from scripts.spectrum_assignment import SpectrumAssignment
-
+from scripts.snr_measurements import SnrMeasurments
 
 def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, id, core_num=0, req_type=None):
     """
@@ -36,7 +37,8 @@ def handle_arrive_rel(network_spec_db, path, start_slot, num_slots, id, core_num
 
 
 def controller_main(src, dest, request_type, physical_topology, network_spec_db, mod_formats, id,
-                    slot_num=None, path=None, chosen_mod=None, chosen_bw=None):
+                    bw_slot, requests_status, phi = None, slot_num = None, path = None, chosen_mod = None, Physic = None,
+                    chosen_bw = None, SNR_requested = 8.5):
     """
     Controls arrivals and departures for requests in the simulation. Return False if a request can't be allocated.
 
@@ -80,25 +82,33 @@ def controller_main(src, dest, request_type, physical_topology, network_spec_db,
     # This is used for Yue's assumptions in his dissertation
     # selected_path, path_mod, slots_needed = routing_obj.shortest_path()
     # Used for Arash's assumptions in previous research papers
-    selected_path = routing_obj.least_congested_path()
+    selected_path = routing_obj.shortest_path()
 
     if selected_path is not False:
         # Hard coding QPSK for now, all slots needed are actually the same (Not actually QPSK)
-        spectrum_assignment = SpectrumAssignment(selected_path, mod_formats['QPSK']['slots_needed'], network_spec_db)
+        spectrum_assignment = SpectrumAssignment(selected_path[0], selected_path[2], network_spec_db)
         selected_sp = spectrum_assignment.find_free_spectrum()
-
+        
+        
+        
         if selected_sp is not False:
+            snr_values = SnrMeasurments(path = selected_path[0], modulation_format = selected_path[1], start_slot_no = selected_sp['start_slot'], end_slot_no = selected_sp['end_slot'], 
+                                        no_assigned_slots = selected_sp['end_slot'] - selected_sp['start_slot'], assigned_core_no = selected_sp['core_num'], 
+                                        requested_bit_rate = chosen_bw, physical_topology = Physic, frequncy_spacing = bw_slot, input_power = 10 ** -3, 
+                                        spectral_slots = 256, SNR_requested = SNR_requested, requests_status = requests_status, phi = phi, network_spec_db=network_spec_db, 
+                                        guard_band=0, baud_rates = None, EGN = True)
+            snr_values.G_NLI_ASE()
             ras_output = {
                 'path': selected_path,
-                'mod_format': 'QPSK',
+                'mod_format': selected_path[1],
                 'core_num': selected_sp['core_num'],
                 'start_res_slot': selected_sp['start_slot'],
                 'end_res_slot': selected_sp['end_slot'],
             }
             network_spec_db = handle_arrive_rel(network_spec_db=network_spec_db,
-                                                path=selected_path,
+                                                path=selected_path[0],
                                                 start_slot=selected_sp['start_slot'],
-                                                num_slots=mod_formats['QPSK']['slots_needed'],
+                                                num_slots=mod_formats[selected_path[1]]['slots_needed'],
                                                 req_type='arrival',
                                                 id = id
                                                 )

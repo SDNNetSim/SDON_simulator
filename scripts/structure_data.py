@@ -6,7 +6,7 @@ import numpy as np
 # An Excel file mapping a node number to a name
 PAIRINGS_FILE_PATH = 'data/raw/us_network.xlsx'
 # A text file assigning a distance for a link between two nodes
-LINK_LEN_FILE_PATH = 'data/raw/europe_network_distance.txt'
+LINK_LEN_FILE_PATH = 'data/raw/test.txt'
 NETWORK_NAME = 'Pan-European'
 
 

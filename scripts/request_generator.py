@@ -24,7 +24,7 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict):
     """
     requests = {}
     current_time = 0
-    counter_id = 0
+    counter_id = 1
 
     set_seed(seed_no=seed_no)
 
@@ -48,7 +48,7 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict):
     # Multiplied by two, to account for arrival and departure requests
     while len(requests) < (num_requests * 2):
         current_time = current_time + (math.ceil(exponential_rv(lam) * 1000) / 1000)
-        depart_time = current_time + (math.ceil(exponential_rv(mu) * 1000) / 1000)
+        depart_time = current_time + 9000000000000 #(math.ceil(exponential_rv(mu) * 1000) / 1000)
 
         # We never want our node to equal the length, we start from index 0 in a list! (Node numbers are all minus 1)
         src = nodes[uniform_rv(len(nodes))]
@@ -64,12 +64,14 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict):
                 break
             else:
                 continue
-
+        chosen_bw = '50'
+        if counter_id == 251:
+            chosen_bw = '400'
         if current_time not in requests and depart_time not in requests:
             requests.update({current_time: {
                 "id": counter_id,
-                "source": src,
-                "destination": des,
+                "source": '0',#src,
+                "destination": '1', #des,
                 "arrive": current_time,
                 "depart": depart_time,
                 "request_type": "arrival",

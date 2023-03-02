@@ -115,6 +115,12 @@ class Engine:
         :type curr_time: float
         :return: None
         """
+        self.network_spec_db[('0','1')]['cores_matrix'][0][125:131]=-1
+        if self.sorted_requests[curr_time]['id'] == 251:
+            self.network_spec_db[('0','1')]['cores_matrix'][0][125:131]=0
+        # self.network_spec_db[('0','1')]['cores_matrix'][0][128:132]=-1
+        # if self.sorted_requests[curr_time]['id'] == 63:
+        #     self.network_spec_db[('0','1')]['cores_matrix'][0][128:132]=0
         rsa_res = controller_main(src=self.sorted_requests[curr_time]["source"],
                                   dest=self.sorted_requests[curr_time]["destination"],
                                   request_type="arrival",
@@ -123,7 +129,11 @@ class Engine:
                                   mod_formats=self.sorted_requests[curr_time]['mod_formats'],
                                   chosen_bw=self.sorted_requests[curr_time]['bandwidth'],
                                   path=list(),
-                                  id = self.sorted_requests[curr_time]['id']
+                                  id = self.sorted_requests[curr_time]['id'],
+                                  bw_slot = 12.5, 
+                                  requests_status = self.requests_status, 
+                                  Physic = self.sim_input['physical_topology'],
+                                  phi = {'QPSK': 1, '16-QAM': 17/25, '64-QAM': 13/21}
                                   )
 
         if rsa_res is False:
@@ -155,7 +165,9 @@ class Engine:
                             chosen_mod=self.requests_status[self.sorted_requests[curr_time]['id']]['mod_format'],
                             slot_num=self.requests_status[self.sorted_requests[curr_time]['id']]['slots'],
                             path=self.requests_status[self.sorted_requests[curr_time]['id']]['path'],
-                            id = self.sorted_requests[curr_time]['id']
+                            id = self.sorted_requests[curr_time]['id'],
+                            Physic = self.sim_input['physical_topology'],
+                            phi = {'QPSK': 1, '16-QAM': 17/25, '64-QAM': 13/21}
                             )
         # Request was blocked, nothing to release
         else:
