@@ -76,6 +76,7 @@ class Engine:
                 'dist_block': np.mean(self.dist_arr) * 100.0,
                 'cong_block': np.mean(self.cong_arr) * 100.0,
                 'blocking_obj': self.block_obj,
+                'allocation': self.sim_input['allocation'],
             }
         }
 
@@ -141,6 +142,7 @@ class Engine:
         :return: None
         """
         self.control_obj.network_db = self.network_spec_db
+        self.control_obj.allocation = self.sim_input['allocation']
 
         self.control_obj.req_id = self.sorted_requests[curr_time]["id"]
         self.control_obj.src = self.sorted_requests[curr_time]["source"]

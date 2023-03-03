@@ -11,13 +11,14 @@ class SDNController:
     """
 
     def __init__(self, req_id=None, network_db=None, topology=None, num_cores=None, path=None, sim_assume=None,
-                 src=None, dest=None, mod_formats=None, chosen_bw=None, max_lps=None):
+                 src=None, dest=None, mod_formats=None, chosen_bw=None, max_lps=None, allocation='first-fit'):
         self.req_id = req_id
         self.network_db = network_db
         self.topology = topology
         self.num_cores = num_cores
         self.path = path
         self.sim_assume = sim_assume
+        self.allocation = allocation
 
         self.src = src
         self.dest = dest
@@ -103,7 +104,6 @@ class SDNController:
 
         :return: If we were able to successfully carry out lps or not
         """
-        # TODO: Is multiple core slicing always enabled? We should differentiate between them
         # Indicated whether we blocked due to congestion or a length constraint
         # No slicing is possible
         if self.chosen_bw == '25' or self.max_lps == 1:
@@ -134,7 +134,7 @@ class SDNController:
             for i in range(num_slices):  # pylint: disable=unused-variable
                 spectrum_assignment = SpectrumAssignment(self.path, obj[tmp_format]['slots_needed'], self.network_db,
                                                          guard_band=self.guard_band, single_core=self.single_core,
-                                                         is_sliced=True)
+                                                         is_sliced=True, allocation=self.allocation)
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
@@ -205,7 +205,8 @@ class SDNController:
             if path_mod is not False:
                 slots_needed = self.mod_formats[self.chosen_bw][path_mod]['slots_needed']
                 spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.network_db,
-                                                         guard_band=self.guard_band, is_sliced=False)
+                                                         guard_band=self.guard_band, is_sliced=False,
+                                                         allocation=self.allocation)
 
                 selected_sp = spectrum_assignment.find_free_spectrum()
 

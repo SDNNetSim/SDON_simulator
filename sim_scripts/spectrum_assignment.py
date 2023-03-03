@@ -1,4 +1,12 @@
+from itertools import groupby
+from operator import itemgetter
+
 import numpy as np
+
+
+# TODO: Find a more efficient, readable, and easier way to do first-fit and best-fit
+# TODO: Different allocations on a bi-directional link are not supported
+# TODO: Neaten up this script (repeat code, efficiency, etc.)
 
 
 class SpectrumAssignment:
@@ -7,7 +15,7 @@ class SpectrumAssignment:
     """
 
     def __init__(self, path=None, slots_needed=None, network_spec_db=None, guard_band=None, single_core=False,
-                 is_sliced=False):
+                 is_sliced=False, allocation='first-fit'):
         self.is_free = True
         self.path = path
 
@@ -17,12 +25,53 @@ class SpectrumAssignment:
         self.cores_matrix = None
         self.rev_cores_matrix = None
         self.num_slots = None
+        self.num_cores = None
         self.single_core = single_core
         self.is_sliced = is_sliced
+        self.allocation = allocation
 
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
 
-    def check_other_links(self, core_num, start_slot, end_slot):
+    def best_fit_allocation(self):
+        """
+        Implements the best-fit allocation policy for spectrum assignment.
+        """
+        res_list = list()
+        tmp_dict = dict()
+
+        # Get all available super channels
+        for i in range(len(self.path) - 1):
+            src_dest = (self.path[i], self.path[i + 1])
+            tmp_dict[src_dest] = dict()
+            for core_num in range(self.num_cores):
+                core_arr = self.network_spec_db[src_dest]['cores_matrix'][core_num]
+                open_slots_arr = np.where(core_arr == 0)[0]
+
+                # See explanation and reference for this odd syntax below
+                tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
+                              groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                for channel in tmp_matrix:
+                    if len(channel) >= self.slots_needed:
+                        res_list.append({'link': src_dest, 'core': core_num, 'channel': channel})
+
+        # Sort the list of candidate super channels
+        sorted_list = sorted(res_list, key=lambda d: len(d['channel']))
+        for curr_obj in sorted_list:
+            for start_index in curr_obj['channel']:
+                end_index = (start_index + self.slots_needed + self.guard_band) - 1
+                if end_index not in curr_obj['channel']:
+                    break
+
+                # TODO: We must always check the first link, here this doesn't do that
+                if len(self.path) > 2:
+                    self.check_links(curr_obj['core'], start_index, end_index + self.guard_band)
+
+                if self.is_free is not False or len(self.path) <= 2:
+                    self.response = {'core_num': curr_obj['core'], 'start_slot': start_index,
+                                     'end_slot': end_index + self.guard_band}
+                    return
+
+    def check_links(self, core_num, start_slot, end_slot):
         """
         Given that one link is available, check all other links in the path. Core and spectrum assignments
         MUST be the same.
@@ -34,12 +83,10 @@ class SpectrumAssignment:
         :param end_slot: The ending index
         :type end_slot: int
         """
+        # TODO: Check reverse cores matrix
         for i, node in enumerate(self.path):  # pylint: disable=unused-variable
             if i == len(self.path) - 1:
                 break
-            # Ignore the first link since we check it in the method that calls this one
-            if i == 0:
-                continue
 
             # Contains source and destination names
             sub_path = (self.path[i], self.path[i + 1])
@@ -54,55 +101,36 @@ class SpectrumAssignment:
 
             self.is_free = True
 
-    def find_spectrum_slots(self):
+    def first_fit_allocation(self):
         """
         Loops through each core and find the starting and ending indexes of where the request
-        can be assigned.
+        can be assigned. First-fit allocation policy.
         """
-        start_slot = 0
-        end_slot = self.slots_needed
-
         for core_num, core_arr in enumerate(self.cores_matrix):
             # To account for single core light segment slicing
             if core_num > 0 and self.single_core and self.is_sliced:
                 break
 
             open_slots_arr = np.where(core_arr == 0)[0]
+            # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
+            open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
+                                 groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
 
-            # Look for a super channel in the current core
-            while (end_slot + self.guard_band) <= self.num_slots:
-                if self.guard_band == 0 and self.slots_needed == 1:
-                    raise NotImplementedError
+            # First fit allocation
+            for tmp_arr in open_slots_matrix:
+                if len(tmp_arr) >= (self.slots_needed + self.guard_band):
+                    for start_index in tmp_arr:
+                        end_index = (start_index + self.slots_needed + self.guard_band) - 1
+                        if end_index not in tmp_arr:
+                            break
 
-                spec_set = set(core_arr[start_slot:end_slot + self.guard_band])
-                rev_spec_set = set(self.rev_cores_matrix[core_num][start_slot:end_slot + self.guard_band])
+                        if len(self.path) > 2:
+                            self.check_links(core_num, start_index, end_index + self.guard_band)
 
-                # Spectrum is free
-                if (spec_set, rev_spec_set) == ({0}, {0}):
-                    if len(self.path) > 2:
-                        self.check_other_links(core_num, start_slot, end_slot + self.guard_band)
-
-                    # Other links spectrum slots are also available
-                    if self.is_free is not False or len(self.path) <= 2:
-                        self.response = {'core_num': core_num, 'start_slot': start_slot,
-                                         'end_slot': end_slot + self.guard_band}
-                        return
-
-                # No more open slots
-                if len(open_slots_arr) == 0:
-                    self.is_free = False
-                    break
-
-                # TODO: This will check zero twice potentially (always checks zero)
-                # Jump to next available slot, assume window will shift therefore we can never pick index 0
-                start_slot = open_slots_arr[0]
-                # Remove prior slots
-                open_slots_arr = open_slots_arr[1:]
-                end_slot = start_slot + self.slots_needed
-
-            # Reset start and end slots to check the next core (if there is one)
-            start_slot = 0
-            end_slot = self.slots_needed
+                        if self.is_free is not False or len(self.path) <= 2:
+                            self.response = {'core_num': core_num, 'start_slot': start_index,
+                                             'end_slot': end_index + self.guard_band}
+                            return
 
     def find_free_spectrum(self):
         """
@@ -119,9 +147,17 @@ class SpectrumAssignment:
             raise ValueError('Bi-directional link not found in network spectrum database.')
 
         self.num_slots = np.shape(self.cores_matrix)[1]
-        self.find_spectrum_slots()
+        # TODO: Check this
+        self.num_cores = np.shape(self.cores_matrix)[0]
 
-        # TODO: Find a better way for this (potentially remove is_free variable)
+        if self.allocation == 'best-fit':
+            self.best_fit_allocation()
+        elif self.allocation == 'first-fit':
+            self.first_fit_allocation()
+        else:
+            raise NotImplementedError
+
+        # If the start slot is none, a request couldn't be allocated
         if self.response['start_slot'] is not None:
             return self.response
 
