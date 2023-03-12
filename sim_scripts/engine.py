@@ -60,6 +60,16 @@ class Engine:
         """
         Saves the simulation results to a file like #_erlang.json.
         """
+        if not np.any(self.cong_arr):
+            cong_mean = 0
+        else:
+            cong_mean = np.mean(self.cong_arr) * 100.0
+
+        if not np.any(self.dist_arr):
+            dist_mean = 0
+        else:
+            dist_mean = np.mean(self.dist_arr) * 100.0
+
         self.blocking['stats'] = {
             'mean': self.mean,
             'variance': self.variance,
@@ -73,8 +83,8 @@ class Engine:
                 'spectral_slots': self.sim_input['spectral_slots'],
                 'max_lps': self.sim_input['max_lps'],
                 'av_transponders': np.mean(self.trans_arr),
-                'dist_block': np.mean(self.dist_arr) * 100.0,
-                'cong_block': np.mean(self.cong_arr) * 100.0,
+                'dist_block': dist_mean,
+                'cong_block': cong_mean,
                 'blocking_obj': self.block_obj,
                 'allocation': self.sim_input['allocation'],
             }
@@ -128,8 +138,8 @@ class Engine:
         :return: None
         """
         # TODO: Change (distance block)
-        self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
-        # self.blocking['simulations'][i] = self.cong_block / (self.sim_input['number_of_request'] - self.dist_block)
+        # self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
+        self.blocking['simulations'][i] = self.cong_block / (self.sim_input['number_of_request'] - self.dist_block)
 
     def update_control_obj(self, curr_time, release=False):
         """
@@ -175,15 +185,13 @@ class Engine:
             # Returns whether the block was due to distance or congestion
             if resp[1]:
                 self.dist_block += 1
-                # TODO: Change (distance block)
-                # self.transponders -= 1
             else:
                 self.cong_block += 1
                 # TODO: Change (distance block)
-                # self.block_obj[self.control_obj.chosen_bw] += 1
+                self.block_obj[self.control_obj.chosen_bw] += 1
 
             # TODO: Change (distance block)
-            self.block_obj[self.control_obj.chosen_bw] += 1
+            # self.block_obj[self.control_obj.chosen_bw] += 1
         else:
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
                 "mod_format": resp[0]['mod_format'],
@@ -295,9 +303,35 @@ class Engine:
                 else:
                     raise NotImplementedError
 
-            if self.blocking_iter > 0:
-                self.dist_arr = np.append(self.dist_arr, float(self.dist_block) / float(self.blocking_iter))
-                self.cong_arr = np.append(self.cong_arr, float(self.cong_block) / float(self.blocking_iter))
+            # TODO: This is temporary
+            # TODO: Ensure this doesn't become infinite, because it will at the moment
+            requests_used = self.sim_input['number_of_request'] - self.dist_block
+            self.dist_block = 0
+
+            while requests_used < self.sim_input['number_of_request']:
+                self.requests = generate(seed_no=self.seed,
+                                         nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
+                                         mu=self.sim_input['mu'],
+                                         lam=self.sim_input['lambda'],
+                                         num_requests=(self.sim_input['number_of_request'] - requests_used),
+                                         bw_dict=self.sim_input['bandwidth_types'],
+                                         assume=self.assume)
+
+                self.sorted_requests = dict(sorted(self.requests.items()))
+
+                for curr_time in self.sorted_requests:
+                    if self.sorted_requests[curr_time]['request_type'] == "arrival":
+                        self.handle_arrival(curr_time)
+                    elif self.sorted_requests[curr_time]['request_type'] == "release":
+                        self.handle_release(curr_time)
+                    else:
+                        raise NotImplementedError
+
+                requests_used = self.sim_input['number_of_request'] - self.dist_block
+                self.dist_block = 0
+
+            self.dist_arr = np.append(self.dist_arr, float(self.dist_block) / float(self.blocking_iter))
+            self.cong_arr = np.append(self.cong_arr, float(self.cong_block) / float(self.blocking_iter))
 
             # Divide by two since requests has arrivals and departures
             self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
