@@ -15,8 +15,6 @@ class Blocking:
     """
 
     def __init__(self):
-        # Change these variables for the desired plot you'd like
-        # self.des_time = '0228/15:20:41'
         self.des_time = None
         self.network_name = 'USNet'
         self.base_path = f'../data/output/{self.network_name}'
@@ -38,6 +36,11 @@ class Blocking:
         self.num_cores = None
         self.spectral_slots = None
         self.lps = True
+
+        self.policy = None
+        self.colors = {'t1': '#024de3', 't2': 'orange', 't3': 'green', 't4': '#e30220', 't5': '#6804cc'}
+        self.weighted = False
+        self.legend_list = list()
 
     def save_show_plot(self, file_name=None):
         """
@@ -79,6 +82,9 @@ class Blocking:
             tmp_list = sorted(os.listdir(curr_fp))
 
             for thread_num in tmp_list:
+                # Ignore LS = 16 for the time being
+                if thread_num == 't5':
+                    continue
                 tmp_fp = f'{curr_fp}{thread_num}/'
                 res_list = sorted([float(f.split('_')[0]) for f in os.listdir(tmp_fp)
                                    if os.path.isfile(os.path.join(tmp_fp, f))])
@@ -93,15 +99,11 @@ class Blocking:
         """
         Gets the weighted blocking probability.
         """
-        block_50 = 50 * user_dict['stats']['misc_info']['blocking_obj']['50']
-        block_100 = 100 * user_dict['stats']['misc_info']['blocking_obj']['100']
-        block_400 = 400 * user_dict['stats']['misc_info']['blocking_obj']['400']
+        block_50 = 0.3 * user_dict['stats']['misc_info']['blocking_obj']['50']
+        block_100 = 0.5 * user_dict['stats']['misc_info']['blocking_obj']['100']
+        block_400 = 0.2 * user_dict['stats']['misc_info']['blocking_obj']['400']
 
-        total_50 = 50 * (0.3 * user_dict['stats']['num_req'])
-        total_100 = 100 * (0.5 * user_dict['stats']['num_req'])
-        total_400 = 400 * (0.2 * user_dict['stats']['num_req'])
-
-        return (block_50 + block_100 + block_400) / (total_50 + total_100 + total_400)
+        return (block_50 + block_100 + block_400) / (user_dict['stats']['num_req'])
 
     @staticmethod
     def get_blocking(user_dict):
@@ -120,23 +122,27 @@ class Blocking:
         """
         Plots blocking means for all bandwidths vs. Erlang values.
         """
-        plt.title(f'{self.network_name} BP vs. Erlang (Cores = {self.num_cores})')
+        plt.title(f'{self.network_name} BP vs. Erlang (Cores = {self.num_cores}) {self.policy}')
         plt.ylabel('Blocking Probability')
+        plt.ylim(10 ** -5, 1)
         plt.yscale('log')
 
         plt.grid()
         plt.xlabel('Erlang')
 
-        legend_list = list()
-
         for thread, obj in self.plot_dict.items():  # pylint: disable=unused-variable
-            plt.plot(obj['erlang'], obj['blocking'])
-            legend_list.append(f"LS = {obj['max_lps']}")
+            color = self.colors[thread]
+            plt.plot(obj['erlang'], obj['blocking'], color=color)
+            self.legend_list.append(f"LS = {obj['max_lps']}")
+            # else:
+            #     plt.plot(obj['erlang'], obj['blocking'], linestyle='--', color=color)
+            #     # plt.plot(obj['erlang'], obj['blocking'])
+            #     self.legend_list.append(f"LS = {obj['max_lps']} Best-fit")
 
         plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
-        plt.legend(legend_list)
         plt.xticks(self.x_axis)
         plt.xlim(10, 400)
+        plt.legend(self.legend_list)
 
         self.save_show_plot(file_name='blocking')
 
@@ -144,7 +150,7 @@ class Blocking:
         """
         Plots the average number of transponders
         """
-        plt.title(f'{self.network_name} Transponders vs. Erlang (Cores = {self.num_cores})')
+        plt.title(f'{self.network_name} Transponders vs. Erlang (Cores = {self.num_cores}) {self.policy}')
         plt.ylabel('Transponders per Request')
 
         plt.grid()
@@ -152,12 +158,14 @@ class Blocking:
 
         legend_list = list()
         for thread, obj in self.plot_dict.items():  # pylint: disable=unused-variable
-            plt.plot(obj['erlang'], obj['av_trans'])
+            color = self.colors[thread]
+            plt.plot(obj['erlang'], obj['av_trans'], color=color)
             legend_list.append(f"LS = {obj['max_lps']}")
 
         plt.legend(legend_list)
         plt.xticks(self.x_axis)
         plt.xlim(10, 400)
+        plt.ylim(0.9, 2)
         self.save_show_plot(file_name='transponders')
 
     def plot_block_percents(self):
@@ -182,13 +190,16 @@ class Blocking:
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xlim(10, 400)
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_ylim(-1, 101)
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xticks(self.x_axis)
-            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
-                f"{self.network_name} (Cores, LS = {self.num_cores}, {obj['max_lps']})")
 
             if cnt == 0:
+                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
+                    f"{self.network_name} (Cores, LS = {self.num_cores}, {obj['max_lps']}) {self.policy}")
                 axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].legend(['Congestion', 'Distance'])
                 plt.ylabel('Percent')
                 plt.xlabel('Erlang')
+            else:
+                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
+                    f"{self.network_name} (Cores, LS = {self.num_cores}, {obj['max_lps']})")
 
             cnt += 1
             # Ignore light segment slicing for 16, aka thread 5
@@ -220,13 +231,16 @@ class Blocking:
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_ylim(0, 101)
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_yticks([20, 40, 60, 80, 100])
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xticks(self.x_axis)
-            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
-                f"{self.network_name} (Cores, LS = {self.num_cores}, {obj['max_lps']})")
 
             if cnt == 0:
+                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
+                    f"{self.network_name} (Cores, LS = {self.num_cores}, {obj['max_lps']}) {self.policy}")
                 axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].legend(['50', '100', '400'])
                 plt.ylabel('Percent')
                 plt.xlabel('Erlang')
+            else:
+                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
+                    f"{self.network_name} (Cores, LS = {self.num_cores}, {obj['max_lps']})")
 
             cnt += 1
             # Ignore light segment slicing for 16, aka thread 5
@@ -249,12 +263,16 @@ class Blocking:
                     curr_dict = json.load(curr_f)
 
                 self.erlang_arr = np.append(self.erlang_arr, erlang)
-                self.blocking_arr = np.append(self.blocking_arr, self.get_blocking(curr_dict))
-                # self.blocking_arr = np.append(self.blocking_arr, self.get_weighted_blocking(curr_dict))
+
+                if not self.weighted:
+                    self.blocking_arr = np.append(self.blocking_arr, self.get_blocking(curr_dict))
+                else:
+                    self.blocking_arr = np.append(self.blocking_arr, self.get_weighted_blocking(curr_dict))
+
                 self.trans_arr = np.append(self.trans_arr, curr_dict['stats']['misc_info']['av_transponders'])
                 self.dist_arr = np.append(self.dist_arr, curr_dict['stats']['misc_info']['dist_block'])
                 self.cong_arr = np.append(self.cong_arr, curr_dict['stats']['misc_info']['cong_block'])
-                # TODO: Change (dist block)
+                # TODO: Change (dist block) - Hardcoded for now (The way stats are taken I had to at this time)
                 # self.cong_arr = np.append(self.cong_arr, 100)
 
                 bandwidth_obj = curr_dict['stats']['misc_info']['blocking_obj']
@@ -269,14 +287,13 @@ class Blocking:
                     self.band_two = np.append(self.band_two, ((float(bandwidth_obj['100']) / total_blocks) * 100.0))
                     self.band_three = np.append(self.band_three, ((float(bandwidth_obj['400']) / total_blocks) * 100.0))
 
-                if erlang == 50:
-                    self.mu = curr_dict['stats']['misc_info']['mu']
-                    self.num_cores = curr_dict['stats']['misc_info']['cores_used']
-                    self.spectral_slots = curr_dict['stats']['misc_info']['spectral_slots']
-                    if self.lps:
-                        max_lps = curr_dict['stats']['misc_info']['max_lps']
-                    else:
-                        max_lps = None
+                self.mu = curr_dict['stats']['misc_info']['mu']
+                self.num_cores = curr_dict['stats']['misc_info']['cores_used']
+                self.spectral_slots = curr_dict['stats']['misc_info']['spectral_slots']
+                if self.lps:
+                    max_lps = curr_dict['stats']['misc_info']['max_lps']
+                else:
+                    max_lps = None
 
                 # Only plot up to Erlang 400, beyond that is considered not important for the time being
                 if erlang == 400:
@@ -304,10 +321,34 @@ class Blocking:
             self.erlang_arr = np.array([])
 
 
-if __name__ == '__main__':
+def main():
+    """
+    Controls the plotting object.
+    :return: None
+    """
+    # TODO: Clean this up, make it more efficient
     blocking_obj = Blocking()
+
+    blocking_obj.des_time = '0302/18:43:29'
+    blocking_obj.policy = 'First Fit'
+    blocking_obj.weighted = True
+    blocking_obj.file_info = blocking_obj.get_file_names()
     blocking_obj.get_data()
     blocking_obj.plot_blocking()
     blocking_obj.plot_transponders()
     blocking_obj.plot_block_percents()
     blocking_obj.plot_bandwidths()
+
+    # blocking_obj.plot_dict = dict()
+    # blocking_obj.show = True
+    # blocking_obj.des_time = '0302/21:05:03'
+    # blocking_obj.file_info = blocking_obj.get_file_names()
+    # blocking_obj.get_data()
+    # blocking_obj.plot_blocking()
+    # blocking_obj.plot_transponders()
+    # blocking_obj.plot_block_percents()
+    # blocking_obj.plot_bandwidths()
+
+
+if __name__ == '__main__':
+    main()

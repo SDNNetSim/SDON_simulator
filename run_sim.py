@@ -9,7 +9,6 @@ from useful_functions.handle_dirs_files import create_dir
 
 
 # TODO: Allow command line input
-# TODO: Need a best-fit flag
 
 
 class RunSim:
@@ -17,7 +16,7 @@ class RunSim:
     Controls all simulations for this project.
     """
 
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=5, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
                  bw_slot=12.5, max_lps=1, sim_flag='arash', constant_weight=True, guard_band=1):
 
@@ -114,9 +113,10 @@ class RunSim:
         self.spectral_slots = 128
         self.sim_flag = 'yue'
         self.network_name = 'USNet'
+        self.num_cores = 1
         self.constant_weight = False
         self.guard_band = 1
-        self.allocation = 'best-fit'
+        self.allocation = 'first-fit'
 
         if max_lps is not None:
             self.max_lps = max_lps
@@ -125,7 +125,8 @@ class RunSim:
             raise NotImplementedError
 
         # TODO: Thread your lambda?
-        for lam in range(2, 143, 2):
+        # TODO: Change, starts at 250
+        for lam in range(52, 143, 2):
             curr_erlang = float(lam) / self.mu
             lam *= float(self.num_cores)
             self.lam = float(lam)
@@ -177,23 +178,23 @@ if __name__ == '__main__':
     obj_five = RunSim()
 
     # t1 = threading.Thread(target=obj_one.run_yue, args=(1, None,))
-    t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1,))
-    t1.start()
-
+    # t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1,))
+    # t1.start()
+    #
     # t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2,))
     # t2.start()
     #
     # t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3,))
     # t3.start()
-    #
-    # t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4,))
-    # t4.start()
-    #
-    # t5 = threading.Thread(target=obj_five.run_yue, args=(16, 5,))
-    # t5.start()
-    #
+
+    t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4,))
+    t4.start()
+
+    t5 = threading.Thread(target=obj_five.run_yue, args=(16, 5,))
+    t5.start()
+
     # t1.join()
     # t2.join()
     # t3.join()
-    # t4.join()
-    # t5.join()
+    t4.join()
+    t5.join()
