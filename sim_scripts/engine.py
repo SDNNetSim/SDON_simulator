@@ -56,26 +56,21 @@ class Engine:
         self.cong_arr = np.array([])
         self.block_obj = dict()
 
+        # TODO: Temporary
+        self.requests_used = None
+
     def save_sim_results(self):
         """
         Saves the simulation results to a file like #_erlang.json.
         """
-        if not np.any(self.cong_arr):
-            cong_mean = 0
-        else:
-            cong_mean = np.mean(self.cong_arr) * 100.0
-
-        if not np.any(self.dist_arr):
-            dist_mean = 0
-        else:
-            dist_mean = np.mean(self.dist_arr) * 100.0
-
         self.blocking['stats'] = {
             'mean': self.mean,
             'variance': self.variance,
             'ci_rate': self.ci_rate,
             'ci_percent': self.ci_percent,
-            'num_req': self.sim_input['number_of_request'],
+            # TODO: Change (distance block)
+            # 'num_req': self.sim_input['number_of_request'],
+            'num_req': self.requests_used,
             'misc_info': {
                 # We use link 1 to determine number of cores used (all links are the same at the moment)
                 'cores_used': self.sim_input['physical_topology']['links']['1']['fiber']['num_cores'],
@@ -83,8 +78,8 @@ class Engine:
                 'spectral_slots': self.sim_input['spectral_slots'],
                 'max_lps': self.sim_input['max_lps'],
                 'av_transponders': np.mean(self.trans_arr),
-                'dist_block': dist_mean,
-                'cong_block': cong_mean,
+                'dist_block': np.mean(self.dist_arr) * 100.0,
+                'cong_block': np.mean(self.cong_arr) * 100.0,
                 'blocking_obj': self.block_obj,
                 'allocation': self.sim_input['allocation'],
             }
@@ -139,7 +134,7 @@ class Engine:
         """
         # TODO: Change (distance block)
         # self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
-        self.blocking['simulations'][i] = self.cong_block / (self.sim_input['number_of_request'] - self.dist_block)
+        self.blocking['simulations'][i] = self.cong_block / self.requests_used
 
     def update_control_obj(self, curr_time, release=False):
         """
@@ -185,6 +180,10 @@ class Engine:
             # Returns whether the block was due to distance or congestion
             if resp[1]:
                 self.dist_block += 1
+                # TODO: Change (distance block)
+                self.transponders -= 1
+                # TODO: Change (distance block)
+                self.blocking_iter -= 1
             else:
                 self.cong_block += 1
                 # TODO: Change (distance block)
@@ -304,16 +303,17 @@ class Engine:
                     raise NotImplementedError
 
             # TODO: This is temporary
-            # TODO: Ensure this doesn't become infinite, because it will at the moment
-            requests_used = self.sim_input['number_of_request'] - self.dist_block
+            # TODO: Change (distance block)
+            self.requests_used = self.sim_input['number_of_request'] - self.dist_block
             self.dist_block = 0
 
-            while requests_used < self.sim_input['number_of_request']:
+            # It's minus ten because the way we're doing it now it's impossible to reach an exact number of requests
+            while self.requests_used < (self.sim_input['number_of_request'] - 10):
                 self.requests = generate(seed_no=self.seed,
                                          nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
                                          mu=self.sim_input['mu'],
                                          lam=self.sim_input['lambda'],
-                                         num_requests=(self.sim_input['number_of_request'] - requests_used),
+                                         num_requests=(self.sim_input['number_of_request'] - self.requests_used),
                                          bw_dict=self.sim_input['bandwidth_types'],
                                          assume=self.assume)
 
@@ -327,14 +327,18 @@ class Engine:
                     else:
                         raise NotImplementedError
 
-                requests_used = self.sim_input['number_of_request'] - self.dist_block
+                self.requests_used = self.sim_input['number_of_request'] - self.dist_block
                 self.dist_block = 0
 
-            self.dist_arr = np.append(self.dist_arr, float(self.dist_block) / float(self.blocking_iter))
-            self.cong_arr = np.append(self.cong_arr, float(self.cong_block) / float(self.blocking_iter))
+            # These are percentages of blocking (due to distance or congestion
+            if self.blocking_iter > 0:
+                self.dist_arr = np.append(self.dist_arr, float(self.dist_block) / float(self.blocking_iter))
+                self.cong_arr = np.append(self.cong_arr, float(self.cong_block) / float(self.blocking_iter))
 
             # Divide by two since requests has arrivals and departures
-            self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
+            # TODO: Change (distance block)
+            # self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
+            self.trans_arr = np.append(self.trans_arr, self.transponders / self.requests_used)
             self.update_blocking(i)
             # Confidence interval has been reached
             if self.calc_blocking_stats(i):

@@ -125,8 +125,7 @@ class RunSim:
             raise NotImplementedError
 
         # TODO: Thread your lambda?
-        # TODO: Change, starts at 250
-        for lam in range(52, 143, 2):
+        for lam in range(2, 143, 2):
             curr_erlang = float(lam) / self.mu
             lam *= float(self.num_cores)
             self.lam = float(lam)
@@ -177,9 +176,9 @@ if __name__ == '__main__':
     obj_four = RunSim()
     obj_five = RunSim()
 
-    # t1 = threading.Thread(target=obj_one.run_yue, args=(1, None,))
+    t1 = threading.Thread(target=obj_one.run_yue, args=(1, None,))
     # t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1,))
-    # t1.start()
+    t1.start()
     #
     # t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2,))
     # t2.start()

@@ -38,7 +38,8 @@ class Blocking:
         self.lps = True
 
         self.policy = None
-        self.colors = {'t1': '#024de3', 't2': 'orange', 't3': 'green', 't4': '#e30220', 't5': '#6804cc'}
+        self.colors = {'None': '#024de3', 't1': '#024de3', 't2': 'orange', 't3': 'green', 't4': '#e30220',
+                       't5': '#6804cc'}
         self.weighted = False
         self.legend_list = list()
 
@@ -82,7 +83,7 @@ class Blocking:
             tmp_list = sorted(os.listdir(curr_fp))
 
             for thread_num in tmp_list:
-                # Ignore LS = 16 for the time being
+                # Ignore LS = 16 for the time being, it always exists in thread 5
                 if thread_num == 't5':
                     continue
                 tmp_fp = f'{curr_fp}{thread_num}/'
@@ -134,6 +135,7 @@ class Blocking:
             color = self.colors[thread]
             plt.plot(obj['erlang'], obj['blocking'], color=color)
             self.legend_list.append(f"LS = {obj['max_lps']}")
+            # TODO: Create a method to plot the best-fit method
             # else:
             #     plt.plot(obj['erlang'], obj['blocking'], linestyle='--', color=color)
             #     # plt.plot(obj['erlang'], obj['blocking'])
@@ -329,9 +331,10 @@ def main():
     # TODO: Clean this up, make it more efficient
     blocking_obj = Blocking()
 
-    blocking_obj.des_time = '0302/18:43:29'
+    # blocking_obj.des_time = '0302/18:43:29'
+    # TODO: This is actually in simulation information
     blocking_obj.policy = 'First Fit'
-    blocking_obj.weighted = True
+    blocking_obj.weighted = False
     blocking_obj.file_info = blocking_obj.get_file_names()
     blocking_obj.get_data()
     blocking_obj.plot_blocking()
