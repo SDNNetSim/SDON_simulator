@@ -34,16 +34,14 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume, req_dist): 
 
     # Number of requests allocated for each bandwidth
     # TODO: This could potentially not equal the number of requests we think
-    bw_one_req = req_dist['bw_one'] * num_requests
-    bw_two_req = req_dist['bw_two'] * num_requests
-    bw_three_req = req_dist['bw_three'] * num_requests
-    bw_four_req = req_dist['bw_four'] * num_requests
-    bw_five_req = req_dist['bw_five'] * num_requests
+    bw_one_req = req_dist['25'] * num_requests
+    bw_two_req = req_dist['50'] * num_requests
+    bw_three_req = req_dist['100'] * num_requests
+    bw_four_req = req_dist['200'] * num_requests
+    bw_five_req = req_dist['400'] * num_requests
 
     # Monitor the number of requests allocated for each bandwidth
     bands_dict = {'25': bw_one_req, '50': bw_two_req, '100': bw_three_req, '200': bw_four_req, '400': bw_five_req}
-    # TODO: Change (no 25)
-    # bands_dict = {'50': bw_two_req, '100': bw_three_req, '200': bw_four_req, '400': bw_five_req}
     # List of all possible bandwidths
     bands_list = list(bw_dict.keys())
 
