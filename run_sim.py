@@ -39,6 +39,8 @@ class RunSim:
         # Maximum allowed light segment slicing (light path slicing)
         self.max_lps = max_lps
         self.bw_types = None
+        self.req_dist = None
+        self.cong_only = None
         self.spectral_slots = spectral_slots
         # Initialize first link number
         self.link_num = 1
@@ -94,9 +96,12 @@ class RunSim:
             'physical_topology': physical_topology,
             'num_cores': self.num_cores,
             'allocation': self.allocation,
+            'request_dist': self.req_dist,
+            'cong_only': self.cong_only,
         }
 
-    def run_yue(self, max_lps=None, t_num=None, num_cores=1, allocation_method='first-fit'):
+    def run_yue(self, max_lps=None, t_num=None, num_cores=1, allocation_method='first-fit', req_dist=None,
+                cong_only=None):
         """
         Run the simulator based on Yue Wang's previous research assumptions. The paper can be found with this citation:
         Wang, Yue. Dynamic Traffic Scheduling Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss.
@@ -110,6 +115,10 @@ class RunSim:
         :type num_cores: int
         :param allocation_method: The spectral allocation policy
         :type allocation_method: str
+        :param req_dist: The distribution of the type of requests generated
+        :type req_dist: dict
+        :param cong_only: Whether to generate requests that are blocked ONLY due to congestion and not distance
+        :type cong_only: bool
 
         :return: None
         """
@@ -121,6 +130,8 @@ class RunSim:
         self.constant_weight = False
         self.guard_band = 1
         self.allocation = allocation_method
+        self.req_dist = req_dist
+        self.cong_only = cong_only
 
         if max_lps is not None:
             self.max_lps = max_lps
@@ -128,7 +139,6 @@ class RunSim:
         else:
             raise NotImplementedError
 
-        # TODO: Thread your lambda?
         for lam in range(2, 143, 2):
             curr_erlang = float(lam) / self.mu
             lam *= float(self.num_cores)
@@ -210,6 +220,23 @@ if __name__ == '__main__':
     t8 = threading.Thread(target=obj_eight.run_yue, args=(8, 8, 7, 'first-fit'))
     t8.start()
 
+    obj_nine = RunSim()
+    obj_ten = RunSim()
+    obj_eleven = RunSim()
+    obj_twelve = RunSim()
+
+    t9 = threading.Thread(target=obj_nine.run_yue, args=(1, 9, 1, 'best-fit'))
+    t9.start()
+
+    t10 = threading.Thread(target=obj_ten.run_yue, args=(2, 10, 1, 'best-fit'))
+    t10.start()
+
+    t11 = threading.Thread(target=obj_eleven.run_yue, args=(4, 11, 1, 'best-fit'))
+    t11.start()
+
+    t12 = threading.Thread(target=obj_twelve.run_yue, args=(8, 12, 1, 'best-fit'))
+    t12.start()
+
     t1.join()
     t2.join()
     t3.join()
@@ -218,3 +245,7 @@ if __name__ == '__main__':
     t6.join()
     t7.join()
     t8.join()
+    t9.join()
+    t10.join()
+    t11.join()
+    t12.join()

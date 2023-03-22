@@ -1,7 +1,7 @@
 from useful_functions.random_generation import set_seed, uniform_rv, exponential_rv
 
 
-def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume):  # pylint: disable=invalid-name
+def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume, req_dist):  # pylint: disable=invalid-name
     """
     Generate all the requests for the simulation.
 
@@ -19,6 +19,8 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume):  # pylint:
     :type bw_dict: dict
     :param assume: Tells us if our request generator is based on Yue or Arash's prior research assumptions
     :type assume: str
+    :param req_dist: The distribution of requests we'd like to generate
+    :type req_dist: dict
     :return: Every request generated
     :rtype: dict
     """
@@ -30,29 +32,13 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume):  # pylint:
 
     set_seed(seed_no=seed_no)
 
-    # Bandwidth ratio generation (50, 100, and 400)
-    if assume == 'arash':
-        bw_ratio_one = 0.0
-        bw_ratio_two = 0.0
-        bw_ratio_three = 0.5
-        bw_ratio_four = 0.0
-        bw_ratio_five = 0.5
-    elif assume == 'yue':
-        bw_ratio_one = 0.0
-        bw_ratio_two = 0.3
-        bw_ratio_three = 0.5
-        bw_ratio_four = 0.0
-        bw_ratio_five = 0.2
-    else:
-        raise NotImplementedError
-
     # Number of requests allocated for each bandwidth
     # TODO: This could potentially not equal the number of requests we think
-    bw_one_req = bw_ratio_one * num_requests
-    bw_two_req = bw_ratio_two * num_requests
-    bw_three_req = bw_ratio_three * num_requests
-    bw_four_req = bw_ratio_four * num_requests
-    bw_five_req = bw_ratio_five * num_requests
+    bw_one_req = req_dist['bw_one'] * num_requests
+    bw_two_req = req_dist['bw_two'] * num_requests
+    bw_three_req = req_dist['bw_three'] * num_requests
+    bw_four_req = req_dist['bw_four'] * num_requests
+    bw_five_req = req_dist['bw_five'] * num_requests
 
     # Monitor the number of requests allocated for each bandwidth
     bands_dict = {'25': bw_one_req, '50': bw_two_req, '100': bw_three_req, '200': bw_four_req, '400': bw_five_req}
