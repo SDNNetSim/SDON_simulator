@@ -56,8 +56,8 @@ class Engine:
         self.cong_arr = np.array([])
         self.block_obj = dict()
 
-        # TODO: Temporary
-        self.requests_used = None
+        # TODO: Change (distance block)
+        # self.requests_used = None
 
     def save_sim_results(self):
         """
@@ -69,8 +69,8 @@ class Engine:
             'ci_rate': self.ci_rate,
             'ci_percent': self.ci_percent,
             # TODO: Change (distance block)
-            # 'num_req': self.sim_input['number_of_request'],
-            'num_req': self.requests_used,
+            'num_req': self.sim_input['number_of_request'],
+            # 'num_req': self.requests_used,
             'misc_info': {
                 # We use link 1 to determine number of cores used (all links are the same at the moment)
                 'cores_used': self.sim_input['physical_topology']['links']['1']['fiber']['num_cores'],
@@ -133,8 +133,8 @@ class Engine:
         :return: None
         """
         # TODO: Change (distance block)
-        # self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
-        self.blocking['simulations'][i] = self.cong_block / self.requests_used
+        self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
+        # self.blocking['simulations'][i] = self.cong_block / self.requests_used
 
     def update_control_obj(self, curr_time, release=False):
         """
@@ -181,16 +181,16 @@ class Engine:
             if resp[1]:
                 self.dist_block += 1
                 # TODO: Change (distance block)
-                self.transponders -= 1
+                # self.transponders -= 1
                 # TODO: Change (distance block)
-                self.blocking_iter -= 1
+                # self.blocking_iter -= 1
             else:
                 self.cong_block += 1
                 # TODO: Change (distance block)
-                self.block_obj[self.control_obj.chosen_bw] += 1
+                # self.block_obj[self.control_obj.chosen_bw] += 1
 
             # TODO: Change (distance block)
-            # self.block_obj[self.control_obj.chosen_bw] += 1
+            self.block_obj[self.control_obj.chosen_bw] += 1
         else:
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
                 "mod_format": resp[0]['mod_format'],
@@ -302,33 +302,32 @@ class Engine:
                 else:
                     raise NotImplementedError
 
-            # TODO: This is temporary
             # TODO: Change (distance block)
-            self.requests_used = self.sim_input['number_of_request'] - self.dist_block
-            self.dist_block = 0
-
-            # It's minus ten because the way we're doing it now it's impossible to reach an exact number of requests
-            while self.requests_used < (self.sim_input['number_of_request'] - 10):
-                self.requests = generate(seed_no=self.seed,
-                                         nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
-                                         mu=self.sim_input['mu'],
-                                         lam=self.sim_input['lambda'],
-                                         num_requests=(self.sim_input['number_of_request'] - self.requests_used),
-                                         bw_dict=self.sim_input['bandwidth_types'],
-                                         assume=self.assume)
-
-                self.sorted_requests = dict(sorted(self.requests.items()))
-
-                for curr_time in self.sorted_requests:
-                    if self.sorted_requests[curr_time]['request_type'] == "arrival":
-                        self.handle_arrival(curr_time)
-                    elif self.sorted_requests[curr_time]['request_type'] == "release":
-                        self.handle_release(curr_time)
-                    else:
-                        raise NotImplementedError
-
-                self.requests_used = self.sim_input['number_of_request'] - self.dist_block
-                self.dist_block = 0
+            # self.requests_used = self.sim_input['number_of_request'] - self.dist_block
+            # self.dist_block = 0
+            #
+            # # It's minus ten because the way we're doing it now it's impossible to reach an exact number of requests
+            # while self.requests_used < (self.sim_input['number_of_request'] - 10):
+            #     self.requests = generate(seed_no=self.seed,
+            #                              nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
+            #                              mu=self.sim_input['mu'],
+            #                              lam=self.sim_input['lambda'],
+            #                              num_requests=(self.sim_input['number_of_request'] - self.requests_used),
+            #                              bw_dict=self.sim_input['bandwidth_types'],
+            #                              assume=self.assume)
+            #
+            #     self.sorted_requests = dict(sorted(self.requests.items()))
+            #
+            #     for curr_time in self.sorted_requests:
+            #         if self.sorted_requests[curr_time]['request_type'] == "arrival":
+            #             self.handle_arrival(curr_time)
+            #         elif self.sorted_requests[curr_time]['request_type'] == "release":
+            #             self.handle_release(curr_time)
+            #         else:
+            #             raise NotImplementedError
+            #
+            #     self.requests_used = self.sim_input['number_of_request'] - self.dist_block
+            #     self.dist_block = 0
 
             # These are percentages of blocking (due to distance or congestion
             if self.blocking_iter > 0:
@@ -337,8 +336,8 @@ class Engine:
 
             # Divide by two since requests has arrivals and departures
             # TODO: Change (distance block)
-            # self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
-            self.trans_arr = np.append(self.trans_arr, self.transponders / self.requests_used)
+            self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
+            # self.trans_arr = np.append(self.trans_arr, self.transponders / self.requests_used)
             self.update_blocking(i)
             # Confidence interval has been reached
             if self.calc_blocking_stats(i):

@@ -7,6 +7,7 @@ from useful_functions.handle_dirs_files import create_dir
 
 
 # TODO: Need to change the name of the plot to differentiate the type (another sub-directory is probably the best)
+# TODO: Label figures?
 
 
 class Blocking:
@@ -167,7 +168,7 @@ class Blocking:
         plt.legend(legend_list)
         plt.xticks(self.x_axis)
         plt.xlim(10, 400)
-        plt.ylim(0.9, 2)
+        plt.ylim(0.9, 3.5)
         self.save_show_plot(file_name='transponders')
 
     def plot_block_percents(self):
@@ -331,7 +332,7 @@ def main():
     # TODO: Clean this up, make it more efficient
     blocking_obj = Blocking()
 
-    # blocking_obj.des_time = '0302/18:43:29'
+    blocking_obj.des_time = '0312/12:09:13'
     # TODO: This is actually in simulation information
     blocking_obj.policy = 'First Fit'
     blocking_obj.weighted = False

@@ -96,7 +96,7 @@ class RunSim:
             'allocation': self.allocation,
         }
 
-    def run_yue(self, max_lps=None, t_num=None):
+    def run_yue(self, max_lps=None, t_num=None, num_cores=1, allocation_method='first-fit'):
         """
         Run the simulator based on Yue Wang's previous research assumptions. The paper can be found with this citation:
         Wang, Yue. Dynamic Traffic Scheduling Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss.
@@ -106,6 +106,10 @@ class RunSim:
         :type max_lps: int
         :param t_num: The thread number or ID used to access files without locking
         :type t_num: int
+        :param num_cores: The number of desired cores
+        :type num_cores: int
+        :param allocation_method: The spectral allocation policy
+        :type allocation_method: str
 
         :return: None
         """
@@ -113,10 +117,10 @@ class RunSim:
         self.spectral_slots = 128
         self.sim_flag = 'yue'
         self.network_name = 'USNet'
-        self.num_cores = 1
+        self.num_cores = num_cores
         self.constant_weight = False
         self.guard_band = 1
-        self.allocation = 'first-fit'
+        self.allocation = allocation_method
 
         if max_lps is not None:
             self.max_lps = max_lps
@@ -170,30 +174,47 @@ class RunSim:
 
 
 if __name__ == '__main__':
+    # TODO: Figure out a better way to do this in the future
     obj_one = RunSim()
     obj_two = RunSim()
     obj_three = RunSim()
     obj_four = RunSim()
-    obj_five = RunSim()
 
-    t1 = threading.Thread(target=obj_one.run_yue, args=(1, None,))
-    # t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1,))
+    # t1 = threading.Thread(target=obj_one.run_yue, args=(1, None,))
+    t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1, 4, 'first-fit'))
     t1.start()
-    #
-    # t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2,))
-    # t2.start()
-    #
-    # t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3,))
-    # t3.start()
 
-    # t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4,))
-    # t4.start()
-    #
-    # t5 = threading.Thread(target=obj_five.run_yue, args=(16, 5,))
-    # t5.start()
+    t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2, 4, 'first-fit'))
+    t2.start()
 
-    # t1.join()
-    # t2.join()
-    # t3.join()
-    # t4.join()
-    # t5.join()
+    t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3, 4, 'first-fit'))
+    t3.start()
+
+    t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4, 4, 'first-fit'))
+    t4.start()
+
+    obj_five = RunSim()
+    obj_six = RunSim()
+    obj_seven = RunSim()
+    obj_eight = RunSim()
+
+    t5 = threading.Thread(target=obj_five.run_yue, args=(1, 5, 7, 'first-fit'))
+    t5.start()
+
+    t6 = threading.Thread(target=obj_six.run_yue, args=(2, 6, 7, 'first-fit'))
+    t6.start()
+
+    t7 = threading.Thread(target=obj_seven.run_yue, args=(4, 7, 7, 'first-fit'))
+    t7.start()
+
+    t8 = threading.Thread(target=obj_eight.run_yue, args=(8, 8, 7, 'first-fit'))
+    t8.start()
+
+    t1.join()
+    t2.join()
+    t3.join()
+    t4.join()
+    t5.join()
+    t6.join()
+    t7.join()
+    t8.join()
