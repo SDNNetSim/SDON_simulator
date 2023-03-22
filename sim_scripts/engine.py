@@ -17,7 +17,7 @@ class Engine:
     """
 
     def __init__(self, sim_input=None, erlang=None, sim_input_fp=None, network_name=None, sim_start=None,
-                 assume='arash', t_num=1, cong_only=None):
+                 assume='arash', t_num=1):
         self.blocking = {
             'simulations': dict(),
             'stats': dict()
@@ -56,7 +56,7 @@ class Engine:
         self.cong_arr = np.array([])
         self.block_obj = dict()
 
-        self.cong_only = cong_only
+        self.cong_only = None
         self.requests_used = None
 
     def save_sim_results(self):
@@ -264,6 +264,7 @@ class Engine:
         if self.sim_input_fp is not None:
             self.load_input()
 
+        self.cong_only = self.sim_input['cong_only']
         self.control_obj.num_cores = self.sim_input['num_cores']
 
         for i in range(self.sim_input['max_iters']):
