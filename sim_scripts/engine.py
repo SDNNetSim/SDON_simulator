@@ -59,10 +59,30 @@ class Engine:
         self.cong_only = None
         self.requests_used = None
 
+        # Determine how many times a request was sliced and how many spectral slots are occupied at this point in time
+        # Slot slice dict
+        self.ss_dict = dict()
+        # Slot slice list to keep a running average
+        self.ss_list = list()
+
+    def get_taken_slots(self):
+        """
+        Returns the number of occupied spectral slots in the entire network.
+        """
+        resp = 0
+        # Divide by two since we have identical bidirectional links
+        for nodes, obj in self.network_spec_db.items():
+            for core in obj['cores_matrix']:
+                slots_taken = len(np.where(core != 0)[0])
+
+                resp += slots_taken
+        return resp / 2
+
     def save_sim_results(self):
         """
         Saves the simulation results to a file like #_erlang.json.
         """
+        # TODO: Need to average all values in ss_list
         if self.cong_only:
             num_req = self.requests_used
         else:
@@ -181,9 +201,11 @@ class Engine:
             self.blocking_iter += 1
             # Blocked, only one transponder used (the original one)
             self.transponders += 1
+            self.ss_dict[self.sorted_requests[curr_time]['id']]['blocked'] = True
             # Returns whether the block was due to distance or congestion
             if resp[1]:
                 if self.cong_only:
+                    # TODO: I believe the bug lies here, don't append a zero to my array to calculate the average
                     self.transponders -= 1
                     self.blocking_iter -= 1
                 else:
@@ -203,6 +225,9 @@ class Engine:
             }})
             self.network_spec_db = resp[1]
             self.transponders += resp[2]
+
+            # Subtracting one because a request will always have one transponder, sliced or not
+            self.ss_dict[self.sorted_requests[curr_time]['id']]['num_slices'] = (resp[2] - 1)
 
     def handle_release(self, curr_time):
         """
@@ -282,6 +307,7 @@ class Engine:
             self.blocking_iter = 0
             self.requests_status = dict()
             self.create_pt()
+            self.slot_slice_dict = dict()
 
             # No seed has been given, go off of the iteration number
             if len(self.sim_input['seeds']) == 0:
@@ -302,7 +328,11 @@ class Engine:
 
             for curr_time in self.sorted_requests:
                 if self.sorted_requests[curr_time]['request_type'] == "arrival":
+                    self.ss_dict[self.sorted_requests[curr_time]['id']] = {'num_slices': 0, 'occ_slots': 0,
+                                                                           'blocked': False}
                     self.handle_arrival(curr_time)
+
+                    self.ss_dict[self.sorted_requests[curr_time]['id']]['occ_slots'] = self.get_taken_slots()
                 elif self.sorted_requests[curr_time]['request_type'] == "release":
                     self.handle_release(curr_time)
                 else:
@@ -346,6 +376,7 @@ class Engine:
             else:
                 # Divide by two since requests has arrivals and departures
                 self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
+            self.ss_list.append(self.ss_dict)
 
             self.update_blocking(i)
             # Confidence interval has been reached
