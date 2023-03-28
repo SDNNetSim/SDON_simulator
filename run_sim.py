@@ -8,7 +8,7 @@ from sim_scripts.engine import Engine
 from useful_functions.handle_dirs_files import create_dir
 
 
-# TODO: Allow command line input
+# TODO: Support for run_arash method is currently outdated
 
 
 class RunSim:
@@ -23,26 +23,26 @@ class RunSim:
         # Assumptions for things like mu, lambda, modulation format/calc, and routing
         self.sim_flag = sim_flag
         self.network_name = None
+        # Determines whether the links all have a weight of one or their actual distances
         self.constant_weight = constant_weight
         self.seeds = list()
         self.num_requests = num_requests
         self.num_cores = num_cores
         self.mu = mu  # pylint: disable=invalid-name
         self.lam = lam
+        # Amount of spectral slots allocated for the guard band
         self.guard_band = guard_band
-        self.allocation = 'first_fit'
-
-        self.sim_start = time.strftime("%m%d_%H:%M:%S")
+        # Allocation policy
+        self.allocation = 'first-fit'
 
         # Frequency for one spectrum slot (GHz)
         self.bw_slot = bw_slot
-        # Maximum allowed light segment slicing (light path slicing)
+        # Maximum allowed light segment slicing (referred to as light path slicing)
         self.max_lps = max_lps
         self.bw_types = None
         self.req_dist = None
-        self.cong_only = None
         self.spectral_slots = spectral_slots
-        # Initialize first link number
+        # Assign links with a numerical value for identification
         self.link_num = 1
 
         # If the confidence interval isn't reached, maximum allowed iterations
@@ -51,6 +51,8 @@ class RunSim:
         self.output_file_name = None
         # Thread number
         self.t_num = 1
+        # Used to save simulation results
+        self.sim_start = time.strftime("%m%d_%H:%M:%S")
 
     @staticmethod
     def save_input(file_name=None, obj=None):
@@ -97,11 +99,9 @@ class RunSim:
             'num_cores': self.num_cores,
             'allocation': self.allocation,
             'request_dist': self.req_dist,
-            'cong_only': self.cong_only,
         }
 
-    def run_yue(self, max_lps=None, t_num=None, num_cores=1, allocation_method='first-fit', req_dist=None,
-                cong_only=None):
+    def run_yue(self, max_lps=None, t_num=None, num_cores=1, allocation_method='first-fit', req_types=None):
         """
         Run the simulator based on Yue Wang's previous research assumptions. The paper can be found with this citation:
         Wang, Yue. Dynamic Traffic Scheduling Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss.
@@ -115,10 +115,8 @@ class RunSim:
         :type num_cores: int
         :param allocation_method: The spectral allocation policy
         :type allocation_method: str
-        :param req_dist: The distribution of the type of requests generated
-        :type req_dist: dict
-        :param cong_only: Whether to generate requests that are blocked ONLY due to congestion and not distance
-        :type cong_only: bool
+        :param req_types: The distribution of the type of requests generated
+        :type req_types: dict
 
         :return: None
         """
@@ -130,8 +128,7 @@ class RunSim:
         self.constant_weight = False
         self.guard_band = 1
         self.allocation = allocation_method
-        self.req_dist = req_dist
-        self.cong_only = cong_only
+        self.req_dist = req_types
 
         if max_lps is not None:
             self.max_lps = max_lps
@@ -183,122 +180,24 @@ class RunSim:
             engine.run()
 
 
+def thread_sims():
+    """
+    Responsible for running the simulations in parallel.
+
+    :return: None
+    """
+    tmp_list = list()
+    for thread_num, thread_obj in tmp_list:
+        curr_obj = RunSim()
+        curr_thread = threading.Thread(target=curr_obj.run_yue, args=(
+            thread_num, thread_obj['max_lps'], thread_obj['num_cores'], thread_obj['allocation'],
+            thread_obj['req_types']))
+
+        curr_thread.start()
+        # Due to the simulations being saved under a directory by its start time
+        if thread_obj['sleep']:
+            time.sleep(2)
+
+
 if __name__ == '__main__':
-    # TODO: Figure out a better way to do this in the future (config file)
-    # Covers four and seven cores for baseline (weighted and unweighted)
-    req_dist = {'25': 0, '50': 0.3, '100': 0.5, '200': 0, '400': 0.2}
-    obj_one = RunSim()
-    obj_two = RunSim()
-    obj_three = RunSim()
-    obj_four = RunSim()
-
-    # t1 = threading.Thread(target=obj_one.run_yue, args=(1, None,))
-    t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1, 4, 'first-fit', req_dist, False))
-    t1.start()
-
-    t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2, 4, 'first-fit', req_dist, False))
-    t2.start()
-
-    t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3, 4, 'first-fit', req_dist, False))
-    t3.start()
-
-    t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4, 4, 'first-fit', req_dist, False))
-    t4.start()
-
-    time.sleep(2)
-
-    obj_five = RunSim()
-    obj_six = RunSim()
-    obj_seven = RunSim()
-    obj_eight = RunSim()
-
-    t5 = threading.Thread(target=obj_five.run_yue, args=(1, 5, 7, 'first-fit', req_dist, False))
-    t5.start()
-
-    t6 = threading.Thread(target=obj_six.run_yue, args=(2, 6, 7, 'first-fit', req_dist, False))
-    t6.start()
-
-    t7 = threading.Thread(target=obj_seven.run_yue, args=(4, 7, 7, 'first-fit', req_dist, False))
-    t7.start()
-
-    t8 = threading.Thread(target=obj_eight.run_yue, args=(8, 8, 7, 'first-fit', req_dist, False))
-    t8.start()
-
-    time.sleep(2)
-
-    obj_nine = RunSim()
-    obj_ten = RunSim()
-    obj_eleven = RunSim()
-    obj_twelve = RunSim()
-
-    # Covers congestion only for one, four, and seven cores (weighted and unweighted)
-    t9 = threading.Thread(target=obj_nine.run_yue, args=(1, 9, 1, 'first-fit', req_dist, True))
-    t9.start()
-
-    t10 = threading.Thread(target=obj_ten.run_yue, args=(2, 10, 1, 'first-fit', req_dist, True))
-    t10.start()
-
-    t11 = threading.Thread(target=obj_eleven.run_yue, args=(4, 11, 1, 'first-fit', req_dist, True))
-    t11.start()
-
-    t12 = threading.Thread(target=obj_twelve.run_yue, args=(8, 12, 1, 'first-fit', req_dist, True))
-    t12.start()
-
-    time.sleep(2)
-
-    obj_thirteen = RunSim()
-    obj_fourteen = RunSim()
-    obj_fifteen = RunSim()
-    obj_sixteen = RunSim()
-
-    t13 = threading.Thread(target=obj_thirteen.run_yue, args=(1, 13, 4, 'first-fit', req_dist, True))
-    t13.start()
-
-    t14 = threading.Thread(target=obj_fourteen.run_yue, args=(2, 14, 4, 'first-fit', req_dist, True))
-    t14.start()
-
-    t15 = threading.Thread(target=obj_fifteen.run_yue, args=(4, 15, 4, 'first-fit', req_dist, True))
-    t15.start()
-
-    t16 = threading.Thread(target=obj_sixteen.run_yue, args=(8, 16, 4, 'first-fit', req_dist, True))
-    t16.start()
-
-    time.sleep(2)
-
-    obj_seventeen = RunSim()
-    obj_eighteen = RunSim()
-    obj_nineteen = RunSim()
-    obj_twenty = RunSim()
-
-    t17 = threading.Thread(target=obj_seventeen.run_yue, args=(1, 17, 7, 'first-fit', req_dist, True))
-    t17.start()
-
-    t18 = threading.Thread(target=obj_eighteen.run_yue, args=(2, 18, 7, 'first-fit', req_dist, True))
-    t18.start()
-
-    t19 = threading.Thread(target=obj_nineteen.run_yue, args=(4, 19, 7, 'first-fit', req_dist, True))
-    t19.start()
-
-    t20 = threading.Thread(target=obj_twenty.run_yue, args=(8, 20, 7, 'first-fit', req_dist, True))
-    t20.start()
-
-    t1.join()
-    t2.join()
-    t3.join()
-    t4.join()
-    t5.join()
-    t6.join()
-    t7.join()
-    t8.join()
-    t9.join()
-    t10.join()
-    t11.join()
-    t12.join()
-    t13.join()
-    t14.join()
-    t15.join()
-    t16.join()
-    t17.join()
-    t18.join()
-    t19.join()
-    t20.join()
+    thread_sims()
