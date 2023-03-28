@@ -184,9 +184,23 @@ class RunSim:
 
 
 if __name__ == '__main__':
-    # TODO: Figure out a better way to do this in the future (config file)
-    # Covers four and seven cores for 100 Gbps WITHOUT distance
-    req_dist = {'25': 0.0, '50': 0.0, '100': 1.0, '200': 0.0, '400': 0.0}
+    """
+    Simulations to be ran:
+        - Number of requests vs. slots occupied info (1, 4, and 7 cores baseline) [12]
+            - This will be more of a line graph
+        - Number of times a request was sliced
+            - This will be a histogram
+            
+            * For every request, have one large dictionary that documents:
+                * The number of slots occupied in the network (could more cores be misleading here?)
+                * The amount of times that request was sliced
+            
+        - Unlimited slicing
+            - 1, 4, and 7 cores
+                - All bandwidths (baseline) [12]
+                - Individual bandwidths [16]
+    """
+    req_dist = {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2}
     obj_one = RunSim()
     obj_two = RunSim()
     obj_three = RunSim()
