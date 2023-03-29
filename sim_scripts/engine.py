@@ -62,31 +62,47 @@ class Engine:
         # Determine how many times a request was sliced and how many spectral slots are occupied at this point in time
         # Slot slice dict
         self.ss_dict = dict()
-        # Slot slice list to keep a running average
-        self.ss_list = list()
 
     def get_taken_slots(self):
         """
         Returns the number of occupied spectral slots in the entire network.
+
+        :return: The number of slots occupied in the network
         """
         resp = 0
-        # Divide by two since we have identical bidirectional links
+        # Divide by two since we have identical bidirectional links for the time being
         for nodes, obj in self.network_spec_db.items():
             for core in obj['cores_matrix']:
                 slots_taken = len(np.where(core != 0)[0])
 
                 resp += slots_taken
-        return resp / 2
+        return int(resp / 2)
 
-    def save_sim_results(self):
+    def save_sim_results(self, i):
         """
         Saves the simulation results to a file like #_erlang.json.
+
+        :param i: The last iteration of the simulation completed
+        :type i: int
+
+        :return: None
         """
-        # TODO: Need to average all values in ss_list
         if self.cong_only:
             num_req = self.requests_used
         else:
             num_req = self.sim_input['number_of_request']
+
+        # The simulation number starts at zero, hence we add one to 'i'
+        for req_id, obj in self.ss_dict.items():
+            # We do not want to consider blocked requests, since this is to see how many times a request was sliced
+            # on average (can't be sliced if it was never alloced)
+            req_sliced = (i + 1) - obj['blocked']
+            if req_sliced == 0:
+                obj['num_slices'] = 0.0
+            else:
+                obj['num_slices'] /= float(req_sliced)
+
+            obj['occ_slots'] /= float(i + 1)
 
         self.blocking['stats'] = {
             'mean': self.mean,
@@ -105,6 +121,7 @@ class Engine:
                 'cong_block': np.mean(self.cong_arr) * 100.0,
                 'blocking_obj': self.block_obj,
                 'allocation': self.sim_input['allocation'],
+                'ss_dict': self.ss_dict,
             }
         }
 
@@ -142,7 +159,7 @@ class Engine:
         if self.ci_percent <= 5:
             print(f'Confidence interval of {round(self.ci_percent, 2)}% reached on simulation {simulation_number + 1}, '
                   f'ending and saving results for Erlang: {self.erlang}')
-            self.save_sim_results()
+            self.save_sim_results(simulation_number)
             return True
 
         return False
@@ -201,7 +218,7 @@ class Engine:
             self.blocking_iter += 1
             # Blocked, only one transponder used (the original one)
             self.transponders += 1
-            self.ss_dict[self.sorted_requests[curr_time]['id']]['blocked'] = True
+            self.ss_dict[self.sorted_requests[curr_time]['id']]['blocked'] += 1
             # Returns whether the block was due to distance or congestion
             if resp[1]:
                 if self.cong_only:
@@ -227,7 +244,9 @@ class Engine:
             self.transponders += resp[2]
 
             # Subtracting one because a request will always have one transponder, sliced or not
-            self.ss_dict[self.sorted_requests[curr_time]['id']]['num_slices'] = (resp[2] - 1)
+            if resp[2] <= 0:
+                raise ValueError
+            self.ss_dict[self.sorted_requests[curr_time]['id']]['num_slices'] += (resp[2] - 1)
 
     def handle_release(self, curr_time):
         """
@@ -307,7 +326,6 @@ class Engine:
             self.blocking_iter = 0
             self.requests_status = dict()
             self.create_pt()
-            self.slot_slice_dict = dict()
 
             # No seed has been given, go off of the iteration number
             if len(self.sim_input['seeds']) == 0:
@@ -328,11 +346,14 @@ class Engine:
 
             for curr_time in self.sorted_requests:
                 if self.sorted_requests[curr_time]['request_type'] == "arrival":
-                    self.ss_dict[self.sorted_requests[curr_time]['id']] = {'num_slices': 0, 'occ_slots': 0,
-                                                                           'blocked': False}
+
+                    if i == 0:
+                        self.ss_dict[self.sorted_requests[curr_time]['id']] = {'num_slices': 0, 'occ_slots': 0,
+                                                                               'blocked': 0}
+
                     self.handle_arrival(curr_time)
 
-                    self.ss_dict[self.sorted_requests[curr_time]['id']]['occ_slots'] = self.get_taken_slots()
+                    self.ss_dict[self.sorted_requests[curr_time]['id']]['occ_slots'] += self.get_taken_slots()
                 elif self.sorted_requests[curr_time]['request_type'] == "release":
                     self.handle_release(curr_time)
                 else:
@@ -376,7 +397,6 @@ class Engine:
             else:
                 # Divide by two since requests has arrivals and departures
                 self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
-            self.ss_list.append(self.ss_dict)
 
             self.update_blocking(i)
             # Confidence interval has been reached
@@ -387,10 +407,12 @@ class Engine:
                 print(f'Iteration {i + 1} out of {self.sim_input["max_iters"]} completed for Erlang: {self.erlang}')
                 block_percent_arr = np.array(list(self.blocking['simulations'].values()))
                 print(f'Mean of blocking: {np.mean(block_percent_arr)}')
-                self.save_sim_results()
+                self.save_sim_results(i)
 
         print(f'Simulation for Erlang: {self.erlang} finished.')
-        self.save_sim_results()
+        # Subtracting one to be consistent, since 'i' (the iteration) starts at zero, but the user input doesn't
+        # consider that
+        self.save_sim_results(self.sim_input['max_iters'] - 1)
 
 
 if __name__ == '__main__':

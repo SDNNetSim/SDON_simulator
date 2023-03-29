@@ -16,10 +16,11 @@ class Blocking:
     """
 
     def __init__(self):
-        self.des_time = None
+        self.des_times = None
+        self.info_dict = None
         self.network_name = 'USNet'
         self.base_path = f'../data/output/{self.network_name}'
-        self.file_info = self.get_file_names()
+        self.file_info = None
 
         self.erlang_arr = np.array([])
         self.blocking_arr = np.array([])
@@ -39,26 +40,32 @@ class Blocking:
         self.lps = True
 
         self.policy = None
-        self.colors = {'None': '#024de3', 't1': '#024de3', 't2': 'orange', 't3': 'green', 't4': '#e30220',
-                       't5': '#6804cc'}
+        self.colors = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']
+        self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
+        self.markers = {1: 'o', 2: '^', 4: 's', 8: 'x'}
+        self.cong_only = False
+
         self.weighted = False
         self.legend_list = list()
+
+        self.occ_slots = dict()
+        self.num_slices = dict()
 
     def save_show_plot(self, file_name=None):
         """
         Saves and shows the current plot in the constructor.
         """
-        plt.savefig(f'./output/{self.network_name}/{self.des_time}/{file_name}')
+        # Save by the most recent time for used plotting
+        create_dir(f'./output/{self.network_name}/{self.des_times[-1]}/')
+        plt.savefig(f'./output/{self.network_name}/{self.des_times[-1]}/{file_name}')
         plt.show()
 
     def get_file_names(self):
         """
         Obtains all the filenames of the output data for each Erlang value.
         """
-        res_dict = dict()
-
         # Default to the last saved directory if one wasn't specified
-        if self.des_time is None:
+        if self.des_times is None:
             tmp_list = list()
             for directory in os.listdir(self.base_path):
                 tmp_list.append(directory)
@@ -72,27 +79,30 @@ class Blocking:
 
             tmp_list.sort()
             latest_time = tmp_list[-1]
-            self.des_time = f'{latest_date}/{latest_time}'
+            self.des_times = f'{latest_date}/{latest_time}'
             create_dir(f'./output/{self.network_name}/{latest_date}/{latest_time}')
 
-        curr_fp = f'{self.base_path}/{self.des_time}/'
-        res_list = sorted([float(f.split('_')[0]) for f in os.listdir(curr_fp)
-                           if os.path.isfile(os.path.join(curr_fp, f))])
+        tmp_dict = dict()
+        res_dict = dict()
+        for curr_time in self.des_times:
+            curr_fp = f'{self.base_path}/{curr_time}/'
+            res_list = sorted([float(f.split('_')[0]) for f in os.listdir(curr_fp)
+                               if os.path.isfile(os.path.join(curr_fp, f))])
 
-        # Then we must have used threading
-        if len(res_list) == 0:
-            tmp_list = sorted(os.listdir(curr_fp))
+            # Then we must have used threading
+            if len(res_list) == 0:
+                tmp_list = sorted(os.listdir(curr_fp))
 
-            for thread_num in tmp_list:
-                # Ignore LS = 16 for the time being, it always exists in thread 5
-                if thread_num == 't5':
-                    continue
-                tmp_fp = f'{curr_fp}{thread_num}/'
-                res_list = sorted([float(f.split('_')[0]) for f in os.listdir(tmp_fp)
-                                   if os.path.isfile(os.path.join(tmp_fp, f))])
-                res_dict[thread_num] = res_list
-        else:
-            res_dict['None'] = res_list
+                for thread_num in tmp_list:
+                    tmp_fp = f'{curr_fp}{thread_num}/'
+                    res_list = sorted([float(f.split('_')[0]) for f in os.listdir(tmp_fp)
+                                       if os.path.isfile(os.path.join(tmp_fp, f))])
+                    tmp_dict[thread_num] = res_list
+            else:
+                tmp_dict['None'] = res_list
+
+            res_dict[curr_time] = tmp_dict
+            tmp_dict = dict()
 
         return res_dict
 
@@ -124,7 +134,15 @@ class Blocking:
         """
         Plots blocking means for all bandwidths vs. Erlang values.
         """
-        plt.title(f'{self.network_name} BP vs. Erlang (Cores = {self.num_cores}) {self.policy}')
+        plt.figure(figsize=(7, 5), dpi=300)
+        if self.weighted and self.cong_only:
+            plt.title(f'{self.network_name} Cong. Weighted BP vs. Erlang ({self.policy})')
+        elif self.weighted:
+            plt.title(f'{self.network_name} Weighted BP vs. Erlang ({self.policy})')
+        elif self.cong_only:
+            plt.title(f'{self.network_name} 400 Gbps Cong. Only BP vs. Erlang ({self.policy})')
+        else:
+            plt.title(f'{self.network_name} 400 Gbps BP vs. Erlang ({self.policy})')
         plt.ylabel('Blocking Probability')
         plt.ylim(10 ** -5, 1)
         plt.yscale('log')
@@ -132,19 +150,26 @@ class Blocking:
         plt.grid()
         plt.xlabel('Erlang')
 
-        for thread, obj in self.plot_dict.items():  # pylint: disable=unused-variable
-            color = self.colors[thread]
-            plt.plot(obj['erlang'], obj['blocking'], color=color)
-            self.legend_list.append(f"LS = {obj['max_lps']}")
-            # TODO: Create a method to plot the best-fit method
-            # else:
-            #     plt.plot(obj['erlang'], obj['blocking'], linestyle='--', color=color)
-            #     # plt.plot(obj['erlang'], obj['blocking'])
-            #     self.legend_list.append(f"LS = {obj['max_lps']} Best-fit")
+        count = 0
+        for curr_time, thread_obj in self.plot_dict.items():
+            color = self.colors[count]
+            line_style = self.line_styles[count]
+            for thread, info_obj in thread_obj.items():  # pylint: disable=unused-variable
+                # LS = 16 considered irrelevant for the time being
+                # color = self.colors[count]
+                if info_obj['max_lps'] == 16 and info_obj['max_lps'] == 16:
+                    continue
+                marker = self.markers[info_obj['max_lps']]
+                plt.plot(info_obj['erlang'], info_obj['blocking'], color=color, linestyle=line_style, marker=marker,
+                         markersize=2.3)
+                self.legend_list.append(f"C ={info_obj['num_cores']} LS ={info_obj['max_lps']}")
+
+                # count += 1
+            count += 1
 
         plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
         plt.xticks(self.x_axis)
-        plt.xlim(10, 400)
+        plt.xlim(self.x_axis[0], self.x_axis[-1])
         plt.legend(self.legend_list)
 
         self.save_show_plot(file_name='blocking')
@@ -153,29 +178,38 @@ class Blocking:
         """
         Plots the average number of transponders
         """
-        plt.title(f'{self.network_name} Transponders vs. Erlang (Cores = {self.num_cores}) {self.policy}')
+        plt.figure(figsize=(7, 5), dpi=300)
+        plt.title(f'{self.network_name} 400 Gbps Transponders vs. Erlang ({self.policy})')
         plt.ylabel('Transponders per Request')
 
         plt.grid()
         plt.xlabel('Erlang')
 
         legend_list = list()
-        for thread, obj in self.plot_dict.items():  # pylint: disable=unused-variable
-            color = self.colors[thread]
-            plt.plot(obj['erlang'], obj['av_trans'], color=color)
-            legend_list.append(f"LS = {obj['max_lps']}")
+        count = 0
+        for curr_time, obj in self.plot_dict.items():
+            for thread, obj_2 in obj.items():  # pylint: disable=unused-variable
+                color = self.colors[count]
+                if obj_2['max_lps'] == 16 and obj_2['max_lps'] == 16:
+                    continue
+                marker = self.markers[obj_2['max_lps']]
+                plt.plot(obj_2['erlang'], obj_2['av_trans'], color=color, marker=marker, markersize=2.3)
+                legend_list.append(f"C={obj_2['num_cores']} LS={obj_2['max_lps']}")
+
+                # count += 1
+            count += 1
 
         plt.legend(legend_list)
         plt.xticks(self.x_axis)
-        plt.xlim(10, 400)
-        plt.ylim(0.9, 3.5)
+        plt.xlim(self.x_axis[0], self.x_axis[-1])
+        plt.ylim(0.9, 4)
         self.save_show_plot(file_name='transponders')
 
     def plot_block_percents(self):
         """
         Plot the reason for blocking as a percentage e.g. due to congestion or distance constraint.
         """
-        figure, axis = plt.subplots(2, 2)  # pylint: disable=unused-variable
+        figure, axis = plt.subplots(2, 2, figsize=(7, 5), dpi=300)  # pylint: disable=unused-variable
         plt.subplots_adjust(left=0.1,
                             bottom=0.1,
                             right=0.9,
@@ -184,30 +218,42 @@ class Blocking:
                             hspace=0.4)
         tmp_lst = [[0, 0], [0, 1], [1, 0], [1, 1]]
         cnt = 0
+        sub_cnt = 0
 
-        for thread, obj in self.plot_dict.items():  # pylint: disable=unused-variable
-            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].grid()
-            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_yticks([20, 40, 60, 80, 100])
-            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['cong_block'])
-            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['dist_block'])
-            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xlim(10, 400)
-            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_ylim(-1, 101)
-            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xticks(self.x_axis)
+        cong_colors = ['#800000', '#ff1a1a', '#ff6666']
+        dist_colors = ['#009900', '#00e600', '#80ff80']
 
-            if cnt == 0:
-                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
-                    f"{self.network_name} (Cores, LS = {self.num_cores}, {obj['max_lps']}) {self.policy}")
-                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].legend(['Congestion', 'Distance'])
-                plt.ylabel('Percent')
-                plt.xlabel('Erlang')
-            else:
-                axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_title(
-                    f"{self.network_name} (Cores, LS = {self.num_cores}, {obj['max_lps']})")
+        for curr_time, obj in self.plot_dict.items():
+            for thread, obj_2 in obj.items():  # pylint: disable=unused-variable
+                axis[tmp_lst[sub_cnt][0], tmp_lst[sub_cnt][1]].grid()
+                axis[tmp_lst[sub_cnt][0], tmp_lst[sub_cnt][1]].set_yticks([20, 40, 60, 80, 100])
+                axis[tmp_lst[sub_cnt][0], tmp_lst[sub_cnt][1]].plot(obj_2['erlang'], obj_2['cong_block'],
+                                                                    color=cong_colors[cnt])
+                axis[tmp_lst[sub_cnt][0], tmp_lst[sub_cnt][1]].plot(obj_2['erlang'], obj_2['dist_block'],
+                                                                    color=dist_colors[cnt])
+                axis[tmp_lst[sub_cnt][0], tmp_lst[sub_cnt][1]].set_xlim(self.x_axis[0], self.x_axis[-1])
+                axis[tmp_lst[sub_cnt][0], tmp_lst[sub_cnt][1]].set_ylim(-1, 101)
+                axis[tmp_lst[sub_cnt][0], tmp_lst[sub_cnt][1]].set_xticks(self.x_axis)
 
+                if sub_cnt == 0:
+                    axis[tmp_lst[sub_cnt][0], tmp_lst[sub_cnt][1]].set_title(
+                        f"{self.network_name} 400 Gbps LS = {obj_2['max_lps']} ({self.policy})")
+                    axis[tmp_lst[sub_cnt][0], tmp_lst[sub_cnt][1]].legend(['Cong.', 'Dist.'])
+                    plt.ylabel('Percent')
+                    plt.xlabel('Erlang')
+                else:
+                    axis[tmp_lst[sub_cnt][0], tmp_lst[sub_cnt][1]].set_title(
+                        f"{self.network_name} LS = {obj_2['max_lps']}")
+
+                if sub_cnt == 2:
+                    axis[tmp_lst[sub_cnt][0], tmp_lst[sub_cnt][1]].legend(['C=1', 'C=1', 'C=4', 'C=4', 'C=7', 'C=7'])
+
+                sub_cnt += 1
+                # Ignore light segment slicing for 16, aka thread 5
+                if sub_cnt == 4:
+                    break
+            sub_cnt = 0
             cnt += 1
-            # Ignore light segment slicing for 16, aka thread 5
-            if cnt == 4:
-                break
 
         self.save_show_plot(file_name='percents')
 
@@ -230,7 +276,7 @@ class Blocking:
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['50'])
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['100'])
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].plot(obj['erlang'], obj['400'])
-            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xlim(10, 400)
+            axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xlim(self.x_axis[0], self.x_axis[-1])
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_ylim(0, 101)
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_yticks([20, 40, 60, 80, 100])
             axis[tmp_lst[cnt][0], tmp_lst[cnt][1]].set_xticks(self.x_axis)
@@ -251,77 +297,150 @@ class Blocking:
                 break
         self.save_show_plot(file_name='bandwidths')
 
+    def plot_slots_taken(self):
+        plt.figure(figsize=(7, 5), dpi=300)
+        plt.title(f'{self.network_name} Request Snapshot vs. Slots Occupied (C = {self.num_cores})')
+        plt.ylabel('Slots Occupied')
+
+        plt.grid()
+        plt.xlabel('Request Number')
+
+        legend_list = list()
+        count = 0
+        for curr_time, obj in self.plot_dict.items():
+            for thread, obj_2 in obj.items():  # pylint: disable=unused-variable
+                for erlang, obj_3 in obj_2['occ_slots'].items():
+                    color = self.colors[count]
+                    marker = self.markers[obj_2['max_lps']]
+
+                    plt.plot(obj_3['req_ids'], obj_3['occ_slots'], color=color, marker=marker, markersize=2.3)
+                    legend_list.append(f"E={int(erlang)} LS={obj_2['max_lps']}")
+                    count += 1
+                count = 0
+
+        plt.legend(legend_list)
+        plt.xlim(0, 10000)
+        plt.ylim(0, 2500)
+        self.save_show_plot(file_name='slots_occupied')
+
+    def plot_num_slices(self):
+        legend_list = list()
+        count = 0
+        for curr_time, obj in self.plot_dict.items():
+            for thread, obj_2 in obj.items():
+                for erlang, slice_lst in obj_2['num_slices'].items():
+                    legend_list.append(f'E={int(erlang)}')
+                    plt.hist(slice_lst, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8], label=f'E={int(erlang)}')
+                    count += 1
+
+        plt.ylim(0, 10000)
+        plt.legend(loc='upper right')
+        self.save_show_plot(file_name='num_slices')
+
+    @staticmethod
+    def sorted_simple_dict(d):
+        return {k: v for k, v in sorted(d.items())}
+
     def get_data(self):  # pylint: disable=too-many-statements
         """
         Retrieves all the desired data for plotting.
         """
-        for thread_num, lst in self.file_info.items():
-            for erlang in lst:
-                if thread_num == 'None':
-                    curr_fp = f'{self.base_path}/{self.des_time}/'
-                else:
-                    curr_fp = f'{self.base_path}/{self.des_time}/{thread_num}/'
+        for curr_time, curr_dict in self.file_info.items():
+            self.plot_dict[curr_time] = dict()
+            tmp_dict = dict()
 
-                with open(f'{curr_fp}/{erlang}_erlang.json', 'r', encoding='utf-8') as curr_f:
-                    curr_dict = json.load(curr_f)
+            for thread_num, lst in curr_dict.items():
+                self.occ_slots = dict()
+                self.num_slices = dict()
+                for erlang in lst:
+                    if thread_num == 'None':
+                        curr_fp = f'{self.base_path}/{curr_time}/'
+                    else:
+                        curr_fp = f'{self.base_path}/{curr_time}/{thread_num}/'
 
-                self.erlang_arr = np.append(self.erlang_arr, erlang)
+                    with open(f'{curr_fp}/{erlang}_erlang.json', 'r', encoding='utf-8') as curr_f:
+                        curr_dict = json.load(curr_f)
 
-                if not self.weighted:
-                    self.blocking_arr = np.append(self.blocking_arr, self.get_blocking(curr_dict))
-                else:
-                    self.blocking_arr = np.append(self.blocking_arr, self.get_weighted_blocking(curr_dict))
+                    self.erlang_arr = np.append(self.erlang_arr, erlang)
 
-                self.trans_arr = np.append(self.trans_arr, curr_dict['stats']['misc_info']['av_transponders'])
-                self.dist_arr = np.append(self.dist_arr, curr_dict['stats']['misc_info']['dist_block'])
-                self.cong_arr = np.append(self.cong_arr, curr_dict['stats']['misc_info']['cong_block'])
-                # TODO: Change (dist block) - Hardcoded for now (The way stats are taken I had to at this time)
-                # self.cong_arr = np.append(self.cong_arr, 100)
+                    if not self.weighted:
+                        self.blocking_arr = np.append(self.blocking_arr, self.get_blocking(curr_dict))
+                    else:
+                        self.blocking_arr = np.append(self.blocking_arr, self.get_weighted_blocking(curr_dict))
 
-                bandwidth_obj = curr_dict['stats']['misc_info']['blocking_obj']
-                total_blocks = bandwidth_obj['50'] + bandwidth_obj['100'] + bandwidth_obj['400']
+                    self.trans_arr = np.append(self.trans_arr, curr_dict['stats']['misc_info']['av_transponders'])
+                    self.dist_arr = np.append(self.dist_arr, curr_dict['stats']['misc_info']['dist_block'])
+                    self.cong_arr = np.append(self.cong_arr, curr_dict['stats']['misc_info']['cong_block'])
 
-                if total_blocks == 0:
-                    self.band_one = np.append(self.band_one, 0)
-                    self.band_two = np.append(self.band_two, 0)
-                    self.band_three = np.append(self.band_three, 0)
-                else:
-                    self.band_one = np.append(self.band_one, ((float(bandwidth_obj['50']) / total_blocks) * 100.0))
-                    self.band_two = np.append(self.band_two, ((float(bandwidth_obj['100']) / total_blocks) * 100.0))
-                    self.band_three = np.append(self.band_three, ((float(bandwidth_obj['400']) / total_blocks) * 100.0))
+                    bandwidth_obj = curr_dict['stats']['misc_info']['blocking_obj']
+                    total_blocks = bandwidth_obj['50'] + bandwidth_obj['100'] + bandwidth_obj['400']
 
-                self.mu = curr_dict['stats']['misc_info']['mu']
-                self.num_cores = curr_dict['stats']['misc_info']['cores_used']
-                self.spectral_slots = curr_dict['stats']['misc_info']['spectral_slots']
-                if self.lps:
-                    max_lps = curr_dict['stats']['misc_info']['max_lps']
-                else:
-                    max_lps = None
+                    if total_blocks == 0:
+                        self.band_one = np.append(self.band_one, 0)
+                        self.band_two = np.append(self.band_two, 0)
+                        self.band_three = np.append(self.band_three, 0)
+                    else:
+                        self.band_one = np.append(self.band_one, ((float(bandwidth_obj['50']) / total_blocks) * 100.0))
+                        self.band_two = np.append(self.band_two, ((float(bandwidth_obj['100']) / total_blocks) * 100.0))
+                        self.band_three = np.append(self.band_three,
+                                                    ((float(bandwidth_obj['400']) / total_blocks) * 100.0))
 
-                # Only plot up to Erlang 400, beyond that is considered not important for the time being
-                if erlang == 400:
-                    break
+                    self.mu = curr_dict['stats']['misc_info']['mu']
+                    self.num_cores = curr_dict['stats']['misc_info']['cores_used']
+                    self.spectral_slots = curr_dict['stats']['misc_info']['spectral_slots']
+                    if self.lps:
+                        max_lps = curr_dict['stats']['misc_info']['max_lps']
+                    else:
+                        max_lps = None
 
-            self.plot_dict[thread_num] = dict()
-            self.plot_dict[thread_num]['erlang'] = self.erlang_arr
-            self.plot_dict[thread_num]['blocking'] = self.blocking_arr
-            self.plot_dict[thread_num]['av_trans'] = self.trans_arr
-            self.plot_dict[thread_num]['max_lps'] = max_lps
-            self.plot_dict[thread_num]['cong_block'] = self.cong_arr
-            self.plot_dict[thread_num]['dist_block'] = self.dist_arr
-            self.plot_dict[thread_num]['50'] = self.band_one
-            self.plot_dict[thread_num]['100'] = self.band_two
-            self.plot_dict[thread_num]['400'] = self.band_three
+                    if erlang == 10 or erlang == 100 or erlang == 400:
+                        self.occ_slots[erlang] = dict()
+                        self.num_slices[erlang] = list()
 
-            self.erlang_arr = np.array([])
-            self.blocking_arr = np.array([])
-            self.trans_arr = np.array([])
-            self.dist_arr = np.array([])
-            self.cong_arr = np.array([])
-            self.band_one = np.array([])
-            self.band_two = np.array([])
-            self.band_three = np.array([])
-            self.erlang_arr = np.array([])
+                        for req_id, ss_obj in curr_dict['stats']['misc_info']['ss_dict'].items():
+                            self.num_slices[erlang].append(ss_obj['num_slices'])
+
+                        self.occ_slots[erlang]['req_ids'] = [curr_id for curr_id in range(0, 11000, 1000)]
+                        self.occ_slots[erlang]['occ_slots'] = list()
+                        for req_id in self.occ_slots[erlang]['req_ids']:
+                            if req_id == 0:
+                                req_id = 1
+                            self.occ_slots[erlang]['occ_slots'].append(
+                                curr_dict['stats']['misc_info']['ss_dict'][f'{req_id}']['occ_slots'])
+
+                    # Only plot up to Erlang 400, beyond that is considered not important for the time being
+                    if erlang == self.x_axis[-1]:
+                        break
+
+                thread_num = int(thread_num[1:])
+                tmp_dict[thread_num] = dict()
+
+                tmp_dict[thread_num]['erlang'] = self.erlang_arr
+                tmp_dict[thread_num]['blocking'] = self.blocking_arr
+                tmp_dict[thread_num]['av_trans'] = self.trans_arr
+                tmp_dict[thread_num]['max_lps'] = max_lps
+                tmp_dict[thread_num]['cong_block'] = self.cong_arr
+                tmp_dict[thread_num]['dist_block'] = self.dist_arr
+                tmp_dict[thread_num]['num_cores'] = curr_dict['stats']['misc_info']['cores_used']
+                tmp_dict[thread_num]['50'] = self.band_one
+                tmp_dict[thread_num]['100'] = self.band_two
+                tmp_dict[thread_num]['400'] = self.band_three
+                tmp_dict[thread_num]['occ_slots'] = self.occ_slots
+                tmp_dict[thread_num]['num_slices'] = self.num_slices
+
+                self.erlang_arr = np.array([])
+                self.blocking_arr = np.array([])
+                self.trans_arr = np.array([])
+                self.dist_arr = np.array([])
+                self.cong_arr = np.array([])
+                self.band_one = np.array([])
+                self.band_two = np.array([])
+                self.band_three = np.array([])
+                self.erlang_arr = np.array([])
+
+            self.plot_dict[curr_time] = tmp_dict
+        # Sort thread numbers for each time
+        self.plot_dict = {k: self.sorted_simple_dict(v) for k, v in sorted(self.plot_dict.items())}
 
 
 def main():
@@ -332,26 +451,20 @@ def main():
     # TODO: Clean this up, make it more efficient
     blocking_obj = Blocking()
 
-    blocking_obj.des_time = '0312/12:09:13'
-    # TODO: This is actually in simulation information
+    # TODO: If it's a list, have something like a dictionary to have any relevant information related to the plots
+    #  {'des_time': {'title': 'some_title'}}
+    # blocking_obj.des_times = ['0312/17:11:11', '0323/09:22:02', '0323/09:22:04']
+    blocking_obj.des_times = ['0329/10:12:37']
     blocking_obj.policy = 'First Fit'
     blocking_obj.weighted = False
+    blocking_obj.cong_only = False
     blocking_obj.file_info = blocking_obj.get_file_names()
     blocking_obj.get_data()
-    blocking_obj.plot_blocking()
-    blocking_obj.plot_transponders()
-    blocking_obj.plot_block_percents()
-    blocking_obj.plot_bandwidths()
-
-    # blocking_obj.plot_dict = dict()
-    # blocking_obj.show = True
-    # blocking_obj.des_time = '0302/21:05:03'
-    # blocking_obj.file_info = blocking_obj.get_file_names()
-    # blocking_obj.get_data()
+    # blocking_obj.plot_slots_taken()
+    blocking_obj.plot_num_slices()
     # blocking_obj.plot_blocking()
     # blocking_obj.plot_transponders()
     # blocking_obj.plot_block_percents()
-    # blocking_obj.plot_bandwidths()
 
 
 if __name__ == '__main__':

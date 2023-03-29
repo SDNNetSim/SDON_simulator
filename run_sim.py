@@ -16,7 +16,7 @@ class RunSim:
     Controls all simulations for this project.
     """
 
-    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=5, spectral_slots=256, num_cores=1,
+    def __init__(self, mu=1.0, lam=2.0, num_requests=10000, max_iters=1, spectral_slots=256, num_cores=1,
                  # pylint: disable=invalid-name
                  bw_slot=12.5, max_lps=1, sim_flag='arash', constant_weight=True, guard_band=1):
 
@@ -198,147 +198,150 @@ if __name__ == '__main__':
         - Unlimited slicing
             - 1, 4, and 7 cores
                 - All bandwidths (baseline) [12]
-                - Individual bandwidths [16]
+                - Individual bandwidths [36]
     """
     req_dist = {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2}
     obj_one = RunSim()
-    # obj_two = RunSim()
-    # obj_three = RunSim()
-    # obj_four = RunSim()
+    obj_two = RunSim()
+    obj_three = RunSim()
+    obj_four = RunSim()
 
-    # t1 = threading.Thread(target=obj_one.run_yue, args=(1, None,))
-    # Covers individual bandwidth 50 Gbps for four and seven cores
-    t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1, 4, 'first-fit', req_dist, True))
+    # Covers baseline single core
+    t1 = threading.Thread(target=obj_one.run_yue, args=(1, 1, 1, 'first-fit', req_dist, False))
     t1.start()
 
-    # t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2, 4, 'first-fit', req_dist, True))
-    # t2.start()
-    #
-    # t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3, 4, 'first-fit', req_dist, True))
-    # t3.start()
-    #
-    # t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4, 4, 'first-fit', req_dist, True))
-    # t4.start()
-    #
-    # time.sleep(2)
-    #
-    # obj_five = RunSim()
-    # obj_six = RunSim()
-    # obj_seven = RunSim()
-    # obj_eight = RunSim()
-    #
-    # t5 = threading.Thread(target=obj_five.run_yue, args=(1, 5, 7, 'first-fit', req_dist, True))
-    # t5.start()
-    #
-    # t6 = threading.Thread(target=obj_six.run_yue, args=(2, 6, 7, 'first-fit', req_dist, True))
-    # t6.start()
-    #
-    # t7 = threading.Thread(target=obj_seven.run_yue, args=(4, 7, 7, 'first-fit', req_dist, True))
-    # t7.start()
-    #
-    # t8 = threading.Thread(target=obj_eight.run_yue, args=(8, 8, 7, 'first-fit', req_dist, True))
-    # t8.start()
-    #
-    # time.sleep(2)
-    #
-    # # Covers four and seven cores for 200 Gbps WITHOUT distance
-    # req_dist = {'25': 0.0, '50': 0.0, '100': 0.0, '200': 1.0, '400': 0.0}
-    #
-    # obj_nine = RunSim()
-    # obj_ten = RunSim()
-    # obj_eleven = RunSim()
-    # obj_twelve = RunSim()
-    #
-    # t9 = threading.Thread(target=obj_nine.run_yue, args=(1, 9, 4, 'first-fit', req_dist, True))
-    # t9.start()
-    #
-    # t10 = threading.Thread(target=obj_ten.run_yue, args=(2, 10, 4, 'first-fit', req_dist, True))
-    # t10.start()
-    #
-    # t11 = threading.Thread(target=obj_eleven.run_yue, args=(4, 11, 4, 'first-fit', req_dist, True))
-    # t11.start()
-    #
-    # t12 = threading.Thread(target=obj_twelve.run_yue, args=(8, 12, 4, 'first-fit', req_dist, True))
-    # t12.start()
-    #
-    # time.sleep(2)
-    #
-    # obj_thirteen = RunSim()
-    # obj_fourteen = RunSim()
-    # obj_fifteen = RunSim()
-    # obj_sixteen = RunSim()
-    #
-    # t13 = threading.Thread(target=obj_thirteen.run_yue, args=(1, 13, 7, 'first-fit', req_dist, True))
-    # t13.start()
-    #
-    # t14 = threading.Thread(target=obj_fourteen.run_yue, args=(2, 14, 7, 'first-fit', req_dist, True))
-    # t14.start()
-    #
-    # t15 = threading.Thread(target=obj_fifteen.run_yue, args=(4, 15, 7, 'first-fit', req_dist, True))
-    # t15.start()
-    #
-    # t16 = threading.Thread(target=obj_sixteen.run_yue, args=(8, 16, 7, 'first-fit', req_dist, True))
-    # t16.start()
-    #
-    # time.sleep(2)
-    #
-    # obj_seventeen = RunSim()
-    # obj_eighteen = RunSim()
-    # obj_nineteen = RunSim()
-    # obj_twenty = RunSim()
-    #
-    # # Covers four and seven cores for 400 Gbps WITHOUT distance
-    # req_dist = {'25': 0.0, '50': 0.0, '100': 0.0, '200': 0.0, '400': 1.0}
-    # t17 = threading.Thread(target=obj_seventeen.run_yue, args=(1, 17, 4, 'first-fit', req_dist, True))
-    # t17.start()
-    #
-    # t18 = threading.Thread(target=obj_eighteen.run_yue, args=(2, 18, 4, 'first-fit', req_dist, True))
-    # t18.start()
-    #
-    # t19 = threading.Thread(target=obj_nineteen.run_yue, args=(4, 19, 4, 'first-fit', req_dist, True))
-    # t19.start()
-    #
-    # t20 = threading.Thread(target=obj_twenty.run_yue, args=(8, 20, 4, 'first-fit', req_dist, True))
-    # t20.start()
-    #
-    # obj_twenty_one = RunSim()
-    # obj_twenty_two = RunSim()
-    # obj_twenty_three = RunSim()
-    # obj_twenty_four = RunSim()
-    #
-    # t21 = threading.Thread(target=obj_twenty_one.run_yue, args=(1, 21, 7, 'first-fit', req_dist, True))
-    # t21.start()
-    #
-    # t22 = threading.Thread(target=obj_twenty_two.run_yue, args=(2, 22, 7, 'first-fit', req_dist, True))
-    # t22.start()
-    #
-    # t23 = threading.Thread(target=obj_twenty_three.run_yue, args=(4, 23, 7, 'first-fit', req_dist, True))
-    # t23.start()
-    #
-    # t24 = threading.Thread(target=obj_twenty_four.run_yue, args=(8, 24, 7, 'first-fit', req_dist, True))
-    # t24.start()
-    #
-    # t1.join()
-    # t2.join()
-    # t3.join()
-    # t4.join()
-    # t5.join()
-    # t6.join()
-    # t7.join()
-    # t8.join()
-    # t9.join()
-    # t10.join()
-    # t11.join()
-    # t12.join()
-    # t13.join()
-    # t14.join()
-    # t15.join()
-    # t16.join()
-    # t17.join()
-    # t18.join()
-    # t19.join()
-    # t20.join()
-    # t21.join()
-    # t22.join()
-    # t23.join()
-    # t24.join()
+    t2 = threading.Thread(target=obj_two.run_yue, args=(2, 2, 1, 'first-fit', req_dist, False))
+    t2.start()
+
+    t3 = threading.Thread(target=obj_three.run_yue, args=(4, 3, 1, 'first-fit', req_dist, False))
+    t3.start()
+
+    t4 = threading.Thread(target=obj_four.run_yue, args=(8, 4, 1, 'first-fit', req_dist, False))
+    t4.start()
+
+    time.sleep(2)
+
+    obj_five = RunSim()
+    obj_six = RunSim()
+    obj_seven = RunSim()
+    obj_eight = RunSim()
+
+    # Covers baseline four cores
+    t5 = threading.Thread(target=obj_five.run_yue, args=(1, 5, 4, 'first-fit', req_dist, False))
+    t5.start()
+
+    t6 = threading.Thread(target=obj_six.run_yue, args=(2, 6, 4, 'first-fit', req_dist, False))
+    t6.start()
+
+    t7 = threading.Thread(target=obj_seven.run_yue, args=(4, 7, 4, 'first-fit', req_dist, False))
+    t7.start()
+
+    t8 = threading.Thread(target=obj_eight.run_yue, args=(8, 8, 4, 'first-fit', req_dist, False))
+    t8.start()
+
+    time.sleep(2)
+
+    obj_nine = RunSim()
+    obj_ten = RunSim()
+    obj_eleven = RunSim()
+    obj_twelve = RunSim()
+
+    # Covers baseline seven cores
+    t9 = threading.Thread(target=obj_nine.run_yue, args=(1, 9, 7, 'first-fit', req_dist, False))
+    t9.start()
+
+    t10 = threading.Thread(target=obj_ten.run_yue, args=(2, 10, 7, 'first-fit', req_dist, False))
+    t10.start()
+
+    t11 = threading.Thread(target=obj_eleven.run_yue, args=(4, 11, 7, 'first-fit', req_dist, False))
+    t11.start()
+
+    t12 = threading.Thread(target=obj_twelve.run_yue, args=(8, 12, 7, 'first-fit', req_dist, False))
+    t12.start()
+
+    time.sleep(2)
+
+    obj_thirteen = RunSim()
+    obj_fourteen = RunSim()
+    obj_fifteen = RunSim()
+    obj_sixteen = RunSim()
+
+    # Covers unlimited slicing single core
+    t13 = threading.Thread(target=obj_thirteen.run_yue, args=(100000, 13, 1, 'first-fit', req_dist, False))
+    t13.start()
+
+    # Covers unlimited slicing four cores
+    t14 = threading.Thread(target=obj_fourteen.run_yue, args=(100000, 14, 4, 'first-fit', req_dist, False))
+    t14.start()
+
+    # Covers unlimited slicing seven cores
+    t15 = threading.Thread(target=obj_fifteen.run_yue, args=(100000, 15, 7, 'first-fit', req_dist, False))
+    t15.start()
+
+    # Covers unlimited slicing 10 cores
+    t16 = threading.Thread(target=obj_sixteen.run_yue, args=(100000, 16, 10, 'first-fit', req_dist, False))
+    t16.start()
+
+    time.sleep(2)
+
+    obj_seventeen = RunSim()
+    obj_eighteen = RunSim()
+    obj_nineteen = RunSim()
+    obj_twenty = RunSim()
+
+    # Covers 50 Gbps only single core
+    req_dist = {'25': 0.0, '50': 1.0, '100': 0.0, '200': 0.0, '400': 0.0}
+    t17 = threading.Thread(target=obj_seventeen.run_yue, args=(1, 17, 1, 'first-fit', req_dist, False))
+    t17.start()
+
+    t18 = threading.Thread(target=obj_eighteen.run_yue, args=(2, 18, 1, 'first-fit', req_dist, False))
+    t18.start()
+
+    t19 = threading.Thread(target=obj_nineteen.run_yue, args=(4, 19, 1, 'first-fit', req_dist, False))
+    t19.start()
+
+    t20 = threading.Thread(target=obj_twenty.run_yue, args=(8, 20, 1, 'first-fit', req_dist, False))
+    t20.start()
+
+    obj_twenty_one = RunSim()
+    obj_twenty_two = RunSim()
+    obj_twenty_three = RunSim()
+    obj_twenty_four = RunSim()
+
+    # Covers 50 Gbps only four cores
+    t21 = threading.Thread(target=obj_twenty_one.run_yue, args=(1, 21, 4, 'first-fit', req_dist, False))
+    t21.start()
+
+    t22 = threading.Thread(target=obj_twenty_two.run_yue, args=(2, 22, 4, 'first-fit', req_dist, False))
+    t22.start()
+
+    t23 = threading.Thread(target=obj_twenty_three.run_yue, args=(4, 23, 4, 'first-fit', req_dist, False))
+    t23.start()
+
+    t24 = threading.Thread(target=obj_twenty_four.run_yue, args=(8, 24, 4, 'first-fit', req_dist, False))
+    t24.start()
+
+    t1.join()
+    t2.join()
+    t3.join()
+    t4.join()
+    t5.join()
+    t6.join()
+    t7.join()
+    t8.join()
+    t9.join()
+    t10.join()
+    t11.join()
+    t12.join()
+    t13.join()
+    t14.join()
+    t15.join()
+    t16.join()
+    t17.join()
+    t18.join()
+    t19.join()
+    t20.join()
+    t21.join()
+    t22.join()
+    t23.join()
+    t24.join()
