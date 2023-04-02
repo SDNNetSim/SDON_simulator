@@ -306,35 +306,59 @@ class Blocking:
         plt.xlabel('Request Number')
 
         legend_list = list()
+        marker_lst = ['o', '^', 's', 'x']
         count = 0
+        marker_count = 0
         for curr_time, obj in self.plot_dict.items():
             for thread, obj_2 in obj.items():  # pylint: disable=unused-variable
                 for erlang, obj_3 in obj_2['occ_slots'].items():
                     color = self.colors[count]
-                    marker = self.markers[obj_2['max_lps']]
+                    marker = marker_lst[marker_count]
 
+                    # obj_3['occ_slots'] = [val / 7 for val in obj_3['occ_slots']]
                     plt.plot(obj_3['req_ids'], obj_3['occ_slots'], color=color, marker=marker, markersize=2.3)
                     legend_list.append(f"E={int(erlang)} LS={obj_2['max_lps']}")
-                    count += 1
-                count = 0
+                    # count += 1
+                    marker_count += 1
+                    if marker_count == 3:
+                        marker_count = 0
+                count += 1
 
-        plt.legend(legend_list)
+        plt.legend(legend_list, loc='upper left')
         plt.xlim(0, 10000)
-        plt.ylim(0, 2500)
+        plt.ylim(0, 3600)
         self.save_show_plot(file_name='slots_occupied')
 
     def plot_num_slices(self):
-        legend_list = list()
+        plt.figure(figsize=(7, 5), dpi=300)
+        plt.title(f'{self.network_name} Number of Slices vs. Occurrences (C = {self.num_cores})')
+        plt.ylabel('Occurrences')
+
+        plt.xlabel('Number of Slices')
+
+        slice_colors = ['#800000', '#ff1a1a', '#ff6666', '#000080', '#1a1aff', '#6666ff', '#00802b', '#1aff66',
+                        '#80ffaa', '#800080', '#ff1aff', '#ff80ff']
+
         count = 0
+        res_list = list()
+        legend_list = list()
         for curr_time, obj in self.plot_dict.items():
             for thread, obj_2 in obj.items():
+                if obj_2['max_lps'] != 8:
+                    continue
                 for erlang, slice_lst in obj_2['num_slices'].items():
-                    legend_list.append(f'E={int(erlang)}')
-                    plt.hist(slice_lst, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8], label=f'E={int(erlang)}')
+                    res_list.append(slice_lst)
+                    legend_list.append(f"E={int(erlang)} L={obj_2['max_lps']}")
+                    # plt.hist(slice_lst, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8], label=f"E={int(erlang)} L={obj_2['max_lps']}",
+                    #          color=self.colors[count], stacked=False, histtype='bar')
                     count += 1
+                # count += 1
+
+        plt.hist(res_list, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8], color=[self.colors[0], self.colors[1], self.colors[2]],
+                 stacked=False, histtype='bar')
 
         plt.ylim(0, 10000)
-        plt.legend(loc='upper right')
+        plt.legend(legend_list, loc='upper right')
         self.save_show_plot(file_name='num_slices')
 
     @staticmethod
@@ -451,10 +475,8 @@ def main():
     # TODO: Clean this up, make it more efficient
     blocking_obj = Blocking()
 
-    # TODO: If it's a list, have something like a dictionary to have any relevant information related to the plots
-    #  {'des_time': {'title': 'some_title'}}
-    # blocking_obj.des_times = ['0312/17:11:11', '0323/09:22:02', '0323/09:22:04']
-    blocking_obj.des_times = ['0329/10:12:37']
+    # blocking_obj.des_times = ['0329/11:50:35', '0323/09:22:02', '0323/09:22:04']
+    blocking_obj.des_times = ['0329/11:50:39']
     blocking_obj.policy = 'First Fit'
     blocking_obj.weighted = False
     blocking_obj.cong_only = False

@@ -308,6 +308,8 @@ if __name__ == '__main__':
     obj_twenty_three = RunSim()
     obj_twenty_four = RunSim()
 
+    time.sleep(2)
+
     # Covers 50 Gbps only four cores
     t21 = threading.Thread(target=obj_twenty_one.run_yue, args=(1, 21, 4, 'first-fit', req_dist, False))
     t21.start()
