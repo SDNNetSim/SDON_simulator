@@ -16,28 +16,28 @@ class Engine:
     Controls the SDN simulation.
     """
 
-    def __init__(self, sim_input=None, erlang=None, sim_input_fp=None, network_name=None, sim_start=None,
-                 assume='arash', t_num=1):
+    def __init__(self, sim_data=None, erlang=None, input_fp=None, net_name=None, sim_start=None,
+                 sim_type='arash', thread_num=1):
         self.blocking = {
             'simulations': dict(),
             'stats': dict()
         }
         self.blocking_iter = 0
-        self.assume = assume
-        self.t_num = t_num
-        self.sim_input_fp = sim_input_fp
-        self.sim_input = sim_input
+        self.assume = sim_type
+        self.t_num = thread_num
+        self.sim_input_fp = input_fp
+        self.sim_input = sim_data
         self.erlang = erlang
         self.seed = 1
         self.sim_start = sim_start
 
-        self.network_name = network_name
+        self.network_name = net_name
         self.network_spec_db = dict()
         self.physical_topology = nx.Graph()
         self.transponders = 0
         self.trans_arr = np.array([])
 
-        self.control_obj = SDNController(sim_assume=assume)
+        self.control_obj = SDNController(sim_assume=sim_type)
 
         self.requests = None
         self.sorted_requests = None
@@ -56,7 +56,6 @@ class Engine:
         self.cong_arr = np.array([])
         self.block_obj = dict()
 
-        self.cong_only = None
         self.requests_used = None
 
         # Determine how many times a request was sliced and how many spectral slots are occupied at this point in time
@@ -87,10 +86,7 @@ class Engine:
 
         :return: None
         """
-        if self.cong_only:
-            num_req = self.requests_used
-        else:
-            num_req = self.sim_input['number_of_request']
+        num_req = self.sim_input['num_reqs']
 
         # The simulation number starts at zero, hence we add one to 'i'
         for req_id, obj in self.ss_dict.items():
@@ -113,14 +109,14 @@ class Engine:
             'misc_info': {
                 # We use link 1 to determine number of cores used (all links are the same at the moment)
                 'cores_used': self.sim_input['physical_topology']['links']['1']['fiber']['num_cores'],
-                'mu': self.sim_input['mu'],
+                'mu': self.sim_input['hold_time_mean'],
                 'spectral_slots': self.sim_input['spectral_slots'],
-                'max_lps': self.sim_input['max_lps'],
+                'max_lps': self.sim_input['max_slices'],
                 'av_transponders': np.mean(self.trans_arr),
                 'dist_block': np.mean(self.dist_arr) * 100.0,
                 'cong_block': np.mean(self.cong_arr) * 100.0,
                 'blocking_obj': self.block_obj,
-                'allocation': self.sim_input['allocation'],
+                'allocation': self.sim_input['alloc_method'],
                 'ss_dict': self.ss_dict,
             }
         }
@@ -172,10 +168,7 @@ class Engine:
         :type i: int
         :return: None
         """
-        if self.cong_only:
-            self.blocking['simulations'][i] = self.cong_block / self.requests_used
-        else:
-            self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['number_of_request']
+        self.blocking['simulations'][i] = self.blocking_iter / self.sim_input['num_reqs']
 
     def update_control_obj(self, curr_time, release=False):
         """
@@ -188,7 +181,7 @@ class Engine:
         :return: None
         """
         self.control_obj.network_db = self.network_spec_db
-        self.control_obj.allocation = self.sim_input['allocation']
+        self.control_obj.allocation = self.sim_input['alloc_method']
 
         self.control_obj.req_id = self.sorted_requests[curr_time]["id"]
         self.control_obj.src = self.sorted_requests[curr_time]["source"]
@@ -199,9 +192,9 @@ class Engine:
         else:
             self.control_obj.path = None
 
-        self.control_obj.mod_formats = self.sim_input['bandwidth_types']
+        self.control_obj.mod_formats = self.sim_input['bw_types']
         self.control_obj.chosen_bw = self.sorted_requests[curr_time]['bandwidth']
-        self.control_obj.max_lps = self.sim_input['max_lps']
+        self.control_obj.max_lps = self.sim_input['max_slices']
 
     def handle_arrival(self, curr_time):
         """
@@ -221,19 +214,11 @@ class Engine:
             self.ss_dict[self.sorted_requests[curr_time]['id']]['blocked'] += 1
             # Returns whether the block was due to distance or congestion
             if resp[1]:
-                if self.cong_only:
-                    # TODO: I believe the bug lies here, don't append a zero to my array to calculate the average
-                    self.transponders -= 1
-                    self.blocking_iter -= 1
-                else:
-                    self.dist_block += 1
+                self.dist_block += 1
             else:
                 self.cong_block += 1
-                if self.cong_only:
-                    self.block_obj[self.control_obj.chosen_bw] += 1
 
-            if not self.cong_only:
-                self.block_obj[self.control_obj.chosen_bw] += 1
+            self.block_obj[self.control_obj.chosen_bw] += 1
         else:
             self.requests_status.update({self.sorted_requests[curr_time]['id']: {
                 "mod_format": resp[0]['mod_format'],
@@ -308,8 +293,7 @@ class Engine:
         if self.sim_input_fp is not None:
             self.load_input()
 
-        self.cong_only = self.sim_input['cong_only']
-        self.control_obj.num_cores = self.sim_input['num_cores']
+        self.control_obj.num_cores = self.sim_input['cores_per_link']
 
         for i in range(self.sim_input['max_iters']):
             if i == 0:
@@ -317,7 +301,7 @@ class Engine:
 
             # Initialize variables for this iteration of the simulation
             tmp_obj = dict()
-            for bandwidth in self.sim_input['bandwidth_types']:
+            for bandwidth in self.sim_input['bw_types']:
                 tmp_obj[bandwidth] = 0
             self.block_obj = tmp_obj
             self.dist_block = 0
@@ -328,19 +312,19 @@ class Engine:
             self.create_pt()
 
             # No seed has been given, go off of the iteration number
-            if len(self.sim_input['seeds']) == 0:
+            if self.sim_input['seeds'] is None:
                 self.seed = i + 1
             else:
                 self.seed = self.sim_input['seeds'][i]
 
             self.requests = generate(seed_no=self.seed,
                                      nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
-                                     mu=self.sim_input['mu'],
-                                     lam=self.sim_input['lambda'],
-                                     num_requests=self.sim_input['number_of_request'],
-                                     bw_dict=self.sim_input['bandwidth_types'],
+                                     mu=self.sim_input['hold_time_mean'],
+                                     lam=self.sim_input['arr_rate_mean'],
+                                     num_requests=self.sim_input['num_reqs'],
+                                     bw_dict=self.sim_input['bw_types'],
                                      assume=self.assume,
-                                     req_dist=self.sim_input['request_dist'])
+                                     req_dist=self.sim_input['req_dist'])
 
             self.sorted_requests = dict(sorted(self.requests.items()))
 
@@ -359,44 +343,13 @@ class Engine:
                 else:
                     raise NotImplementedError
 
-            if self.cong_only:
-                self.requests_used = self.sim_input['number_of_request'] - self.dist_block
-                self.dist_block = 0
-
-                # It's minus ten because the way we're doing it now it's impossible to reach an exact number of requests
-                while self.requests_used < (self.sim_input['number_of_request'] - 10):
-                    self.requests = generate(seed_no=self.seed,
-                                             nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
-                                             mu=self.sim_input['mu'],
-                                             lam=self.sim_input['lambda'],
-                                             num_requests=(self.sim_input['number_of_request'] - self.requests_used),
-                                             bw_dict=self.sim_input['bandwidth_types'],
-                                             assume=self.assume,
-                                             req_dist=self.sim_input['request_dist'])
-
-                    self.sorted_requests = dict(sorted(self.requests.items()))
-
-                    for curr_time in self.sorted_requests:
-                        if self.sorted_requests[curr_time]['request_type'] == "arrival":
-                            self.handle_arrival(curr_time)
-                        elif self.sorted_requests[curr_time]['request_type'] == "release":
-                            self.handle_release(curr_time)
-                        else:
-                            raise NotImplementedError
-
-                    self.requests_used = self.sim_input['number_of_request'] - self.dist_block
-                    self.dist_block = 0
-
             # These are percentages of blocking (due to distance or congestion
             if self.blocking_iter > 0:
                 self.dist_arr = np.append(self.dist_arr, float(self.dist_block) / float(self.blocking_iter))
                 self.cong_arr = np.append(self.cong_arr, float(self.cong_block) / float(self.blocking_iter))
 
-            if self.cong_only:
-                self.trans_arr = np.append(self.trans_arr, self.transponders / self.requests_used)
-            else:
-                # Divide by two since requests has arrivals and departures
-                self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
+            # Divide by two since requests has arrivals and departures
+            self.trans_arr = np.append(self.trans_arr, self.transponders / (float(len(self.requests)) / 2.0))
 
             self.update_blocking(i)
             # Confidence interval has been reached

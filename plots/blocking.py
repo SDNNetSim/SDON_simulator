@@ -32,7 +32,7 @@ class Blocking:
         self.band_three = np.array([])
 
         self.plot_dict = dict()
-        self.x_axis = [10, 100, 200, 300, 400, 500, 600, 700]
+        self.x_axis = [10, 100, 200, 300, 400]
 
         self.mu = None  # pylint: disable=invalid-name
         self.num_cores = None
@@ -152,20 +152,20 @@ class Blocking:
 
         count = 0
         for curr_time, thread_obj in self.plot_dict.items():
-            color = self.colors[count]
+            # color = self.colors[count]
             line_style = self.line_styles[count]
             for thread, info_obj in thread_obj.items():  # pylint: disable=unused-variable
                 # LS = 16 considered irrelevant for the time being
                 color = self.colors[count]
-                if info_obj['max_lps'] != 8 and info_obj['max_lps'] != 8:
-                    continue
+                # if info_obj['max_lps'] != 8 and info_obj['max_lps'] != 8:
+                #     continue
                 # marker = self.markers[info_obj['max_lps']]
-                # plt.plot(info_obj['erlang'], info_obj['blocking'], color=color, linestyle=line_style,
-                #          markersize=2.3)
-                plt.plot(info_obj['erlang'], info_obj['blocking'], color=color,
+                plt.plot(info_obj['erlang'], info_obj['blocking'], color=color, linestyle=line_style,
                          markersize=2.3)
-                # self.legend_list.append(f"C ={info_obj['num_cores']} LS ={info_obj['max_lps']}")
-                self.legend_list.append(f"C ={info_obj['num_cores']}")
+                # plt.plot(info_obj['erlang'], info_obj['blocking'], color=color,
+                #          markersize=2.3)
+                self.legend_list.append(f"C ={info_obj['num_cores']} LS ={info_obj['max_lps']}")
+                # self.legend_list.append(f"C ={info_obj['num_cores']}")
 
                 count += 1
             # count += 1
@@ -193,8 +193,6 @@ class Blocking:
         for curr_time, obj in self.plot_dict.items():
             for thread, obj_2 in obj.items():  # pylint: disable=unused-variable
                 color = self.colors[count]
-                if obj_2['max_lps'] != 8 and obj_2['max_lps'] != 8:
-                    continue
                 # marker = self.markers[obj_2['max_lps']]
                 plt.plot(obj_2['erlang'], obj_2['av_trans'], color=color, markersize=2.3)
                 # legend_list.append(f"C={obj_2['num_cores']} LS={obj_2['max_lps']}")
@@ -486,7 +484,7 @@ def main():
     blocking_obj = Blocking()
 
     # blocking_obj.des_times = ['0329/11:50:35', '0323/09:22:02', '0323/09:22:04']
-    blocking_obj.des_times = ['0329/11:50:35', '0329/11:50:37', '0329/11:50:39']
+    blocking_obj.des_times = ['0406/17:44:42']
     blocking_obj.policy = 'First Fit'
     blocking_obj.weighted = False
     blocking_obj.cong_only = False

@@ -104,27 +104,27 @@ def assign_link_lengths(node_pairings=None, constant_weight=False, network_fp=No
     return response_dict
 
 
-def structure_data(constant_weight=False, network=None):
+def structure_data(const_weight=False, net_name=None):
     """
     The main structure data function.
 
-    :param constant_weight: Determines if we want to set all link lengths to one or not
-    :type constant_weight: bool
+    :param const_weight: Determines if we want to set all link lengths to one or not
+    :type const_weight: bool
     :param network: The desired network name for link weights to be read in
     :type network: str
     :return: A dictionary with a node pair (src, dest): link_length
     :rtype: dict
     """
-    if network == 'USNet':
+    if net_name == 'USNet':
         network_fp = 'data/raw/us_network.txt'
-    elif network == 'NSFNet':
+    elif net_name == 'NSFNet':
         network_fp = 'data/raw/nsf_network.txt'
-    elif network == 'Pan-European':
+    elif net_name == 'Pan-European':
         network_fp = 'data/raw/europe_network.txt'
     else:
-        raise NotImplementedError(f"Unknown network name. Expected USNet, NSFNet, or Pan-European. Got: {network}")
+        raise NotImplementedError(f"Unknown network name. Expected USNet, NSFNet, or Pan-European. Got: {net_name}")
 
-    return assign_link_lengths(constant_weight=constant_weight, network_fp=network_fp)
+    return assign_link_lengths(constant_weight=const_weight, network_fp=network_fp)
 
 
 def main():

@@ -1,7 +1,7 @@
 import math
 
 
-def create_pt(num_cores, nodes_links):
+def create_pt(cores_per_link, network_data):
     """
     Generates information relevant to the physical topology.
 
@@ -22,11 +22,11 @@ def create_pt(num_cores, nodes_links):
     tmp_dict['non_linearity'] = 1.3 * (math.e ** -3)
     tmp_dict['dispersion'] = (16 * math.e ** -6) * ((1550 * math.e ** -9) ** 2) / (
             2 * math.pi * 3 * math.e ** 8)
-    tmp_dict['num_cores'] = num_cores
+    tmp_dict['num_cores'] = cores_per_link
     tmp_dict['fiber_type'] = 0
     link_num = 1
 
-    for nodes, link_len in nodes_links.items():
+    for nodes, link_len in network_data.items():
         source = nodes[0]
         dest = nodes[1]
 
@@ -40,7 +40,7 @@ def create_pt(num_cores, nodes_links):
 
 
 # TODO: Eventually make a config file
-def create_bw_info(assume=None):
+def create_bw_info(sim_type=None):
     """
     Determines the number of spectral slots needed for every modulation format in each bandwidth.
 
@@ -48,7 +48,7 @@ def create_bw_info(assume=None):
     :rtype: dict
     """
     # Max length is in km
-    if assume == 'yue':
+    if sim_type == 'yue':
         bw_info = {
             # TODO: Change (remove 25)
             '25': {'QPSK': {'max_length': 22160, 'slots_needed': 1}, '16-QAM': {'max_length': 9500, 'slots_needed': 1},
@@ -62,7 +62,7 @@ def create_bw_info(assume=None):
             '400': {'QPSK': {'max_length': 1385, 'slots_needed': 16}, '16-QAM': {'max_length': 594, 'slots_needed': 8},
                     '64-QAM': {'max_length': 229, 'slots_needed': 6}},
         }
-    elif assume == 'arash':
+    elif sim_type == 'arash':
         bw_info = {
             '100': {'QPSK': {'slots_needed': 3}},
             '400': {'QPSK': {'slots_needed': 10}},
