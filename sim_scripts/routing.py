@@ -131,7 +131,6 @@ class Routing:
     def shortest_path(self):
         """
         Given a graph with a desired source and destination, find the shortest path with respect to link lengths.
-        Modulation format calculations based on Yue Wang's dissertation.
 
         :return: A tuple containing the shortest path and its modulation format
         :rtype: tuple
