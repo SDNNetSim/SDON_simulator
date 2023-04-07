@@ -185,8 +185,8 @@ class SDNController:
             return self.net_spec_db
 
         routing_obj = Routing(source=self.source, destination=self.dest,
-                              physical_topology=self.topology, network_spec_db=self.net_spec_db,
-                              mod_formats=self.mod_per_bw[self.chosen_bw], bw=self.chosen_bw)
+                              topology=self.topology, net_spec_db=self.net_spec_db,
+                              mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
 
         if self.sim_type == 'yue':
             selected_path, path_mod = routing_obj.shortest_path()

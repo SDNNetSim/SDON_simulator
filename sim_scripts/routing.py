@@ -1,105 +1,147 @@
+# Standard library imports
+from typing import List
+
+# Third-party library imports
 import networkx as nx
 import numpy as np
 
+# Local application imports
 from useful_functions.sim_functions import get_path_mod, find_path_len
 
 
 class Routing:
     """
-    Contains the routing methods for the simulation.
+    This class contains methods for routing packets in a network topology.
     """
 
-    def __init__(self, source, destination, physical_topology, network_spec_db, mod_formats,
-                 slots_needed=None, bw=None):  # pylint: disable=invalid-name
-        self.path = None
+    def __init__(self, source: int, destination: int, topology: nx.Graph, net_spec_db: dict, mod_formats: dict,
+                 slots_needed: int = None, bandwidth: float = None):
+        """
+        Initializes the Routing class.
 
+        :param source: The source node ID.
+        :type source: int
+
+        :param destination: The destination node ID.
+        :type destination: int
+
+        :param topology: The network topology represented as a NetworkX Graph object.
+        :type topology: nx.Graph
+
+        :param net_spec_db: A database of network spectrum.
+        :type net_spec_db: dict
+
+        :param mod_formats: A dict of available modulation formats and their potential reach.
+        :type mod_formats: dict
+
+        :param slots_needed: The number of slots needed for the connection.
+        :type slots_needed: int
+
+        :param bandwidth: The required bandwidth for the connection.
+        :type bandwidth: float
+        """
         self.source = source
         self.destination = destination
-        self.physical_topology = physical_topology
-        self.network_spec_db = network_spec_db
+        self.topology = topology
+        self.net_spec_db = net_spec_db
         self.slots_needed = slots_needed
-        self.bw = bw  # pylint: disable=invalid-name
-
+        self.bandwidth = bandwidth
         self.mod_formats = mod_formats
 
-        self.paths_list = list()
+        # The nodes of a pathway for a given request
+        self.path = []
+        # A list of potential paths
+        self.paths_list = []
 
     def find_least_cong_route(self):
         """
-        Given a list of dictionaries containing the most congested routes for each path,
-        find the least congested route.
+        Finds the least congested route from the list of available paths.
 
         :return: The least congested route
-        :rtype: list
+        :rtype: List[int]
         """
         # Sort dictionary by number of free slots, descending (least congested)
         sorted_paths_list = sorted(self.paths_list, key=lambda d: d['link_info']['free_slots'], reverse=True)
 
         return sorted_paths_list[0]['path']
 
-    def find_most_cong_link(self, path):
+    def find_most_cong_link(self, path: List[int]):
         """
-        Given a list of nodes, or a path, find the most congested link between all nodes. Count how many
-        slots are taken. For multiple cores, the spectrum slots occupied is added for each link.
+        Given a path, find the most congested link between all nodes. Count how many slots are taken.
+        For multiple cores, the number of spectrum slots occupied is added for each link.
 
-        :param path: A given path
-        :type path: list
+        :param path: The path to analyze
+        :type path: list[int]
+        :return: The congestion level of the most congested link in the path
+        :rtype: int
         """
-        res_dict = {'link': None, 'free_slots': None, 'core': None}
+        # Initialize variables to keep track of the most congested link found
+        most_congested_link = None
+        most_congested_slots = -1
 
+        # Iterate over all links in the path
         for i in range(len(path) - 1):
-            cores_matrix = self.network_spec_db[(path[i]), path[i + 1]]['cores_matrix']
-            link_num = self.network_spec_db[(path[i]), path[i + 1]]['link_num']
+            link = self.net_spec_db[(path[i], path[i + 1])]
+            cores_matrix = link['cores_matrix']
 
-            for core_num, core_arr in enumerate(cores_matrix):  # pylint: disable=unused-variable
-                free_slots = len(np.where(core_arr == 0)[0])
-                # We want to find the least amount of free slots
-                if res_dict['free_slots'] is None or free_slots < res_dict['free_slots']:
-                    res_dict['free_slots'] = free_slots
-                    res_dict['link'] = link_num
-                    res_dict['core'] = core_num
+            # Iterate over all cores in the link
+            for core_arr in cores_matrix:
+                free_slots = np.sum(core_arr == 0)
 
-        # Link info is information about the most congested link found
-        self.paths_list.append({'path': path, 'link_info': res_dict})
+                # Check if the current core is more congested than the most congested core found so far
+                if free_slots < most_congested_slots or most_congested_link is None:
+                    most_congested_slots = free_slots
+                    most_congested_link = link
+
+        # Update the list of potential paths with information about the most congested link in the path
+        self.paths_list.append(
+            {'path': path, 'link_info': {'link': most_congested_link, 'free_slots': most_congested_slots}})
+
+        return most_congested_slots
 
     def least_congested_path(self):
         """
-        Given a graph with a desired source and destination, implement the least congested pathway algorithm. (Based on
-        Arash Rezaee's research paper's assumptions)
+        Implementation of the least congested pathway algorithm, based on Arash Rezaee's research paper's assumptions.
 
-        :return: The least congested path
-        :rtype: list
+        :return: The least congested path, or a tuple indicating that the algorithm failed to find a valid path
+        :rtype: list or tuple[bool, bool, bool]
         """
-        paths_obj = nx.shortest_simple_paths(G=self.physical_topology, source=self.source, target=self.destination)
-        min_hops = None
+        # Use NetworkX to find all simple paths between the source and destination nodes
+        all_paths = nx.shortest_simple_paths(self.topology, self.source, self.destination)
 
-        for i, path in enumerate(paths_obj):
-            num_hops = len(path)
-            if i == 0:
-                min_hops = num_hops
-                self.find_most_cong_link(path)
-            else:
-                if num_hops <= min_hops + 1:
-                    self.find_most_cong_link(path)
-                else:
-                    path = self.find_least_cong_route()
-                    return path
+        # Initialize variables to keep track of the best path and its congestion level
+        best_path = None
+        least_congested = np.inf
 
+        # Iterate over all simple paths found
+        for path in all_paths:
+            # Check if the current path is better than the best path found so far
+            congestion = self.find_most_cong_link(path)
+            if congestion < least_congested:
+                least_congested = congestion
+                best_path = path
+
+            # Check if the congestion of the best path found so far is below a threshold
+            if least_congested <= self.slots_needed:
+                return best_path
+
+        # If no valid path was found, return a tuple indicating failure
         return False, False, False
 
     def shortest_path(self):
         """
         Given a graph with a desired source and destination, find the shortest path with respect to link lengths.
+        Modulation format calculations based on Yue Wang's dissertation.
 
-        :return: The shortest path
-        :rtype: list
+        :return: A tuple containing the shortest path and its modulation format
+        :rtype: tuple
         """
-        paths_obj = nx.shortest_simple_paths(G=self.physical_topology, source=self.source, target=self.destination,
+        # This networkx function will always return the shortest paths in order
+        paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
                                              weight='length')
 
-        # Modulation format calculations based on Yue Wang's dissertation
         for path in paths_obj:
-            path_len = find_path_len(path, self.physical_topology)
+            path_len = find_path_len(path, self.topology)
             mod_format = get_path_mod(self.mod_formats, path_len)
 
             return path, mod_format
