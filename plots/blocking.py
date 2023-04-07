@@ -484,7 +484,7 @@ def main():
     blocking_obj = Blocking()
 
     # blocking_obj.des_times = ['0329/11:50:35', '0323/09:22:02', '0323/09:22:04']
-    blocking_obj.des_times = ['0407/15:53:41']
+    blocking_obj.des_times = ['0407/16:39:42']
     blocking_obj.policy = 'First Fit'
     blocking_obj.weighted = False
     blocking_obj.cong_only = False
