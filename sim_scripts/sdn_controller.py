@@ -10,36 +10,32 @@ class SDNController:
     The software defined networking class. Handles events in the simulation.
     """
 
-    def __init__(self, req_id=None, network_db=None, topology=None, num_cores=None, path=None, sim_assume=None,
-                 src=None, dest=None, mod_formats=None, chosen_bw=None, max_lps=None, allocation='first-fit'):
+    def __init__(self, req_id=None, net_spec_db=None, topology=None, cores_per_link=None, path=None, sim_type=None,
+                 source=None, dest=None, mod_per_bw=None, chosen_bw=None, max_slices=None, alloc_method='first-fit',
+                 guard_slots=None):
         self.req_id = req_id
-        self.network_db = network_db
+        self.net_spec_db = net_spec_db
         self.topology = topology
-        self.num_cores = num_cores
+        self.cores_per_link = cores_per_link
         self.path = path
-        self.sim_assume = sim_assume
-        self.allocation = allocation
+        self.sim_type = sim_type
+        self.alloc_method = alloc_method
 
-        self.src = src
+        self.source = source
         self.dest = dest
 
         # Modulation formats for the chosen bandwidth
-        self.mod_formats = mod_formats
+        self.mod_per_bw = mod_per_bw
         self.chosen_bw = chosen_bw
-        self.max_lps = max_lps
+        self.max_slices = max_slices
         # Limit to single core light segment slicing
         self.single_core = False
         self.transponders = 1
         self.dist_block = False
 
-        if self.sim_assume == 'arash':
-            self.guard_band = 0
-        elif self.sim_assume == 'yue':
-            self.guard_band = 1
-        else:
-            raise NotImplementedError
+        self.guard_slots = guard_slots
 
-    def handle_release(self):
+    def release(self):
         """
         Handles a departure event. Finds where a request was previously allocated and releases it by setting the indexes
         to all zeros.
@@ -50,19 +46,19 @@ class SDNController:
             src_dest = (self.path[i], self.path[i + 1])
             dest_src = (self.path[i + 1], self.path[i])
 
-            for core_num in range(self.num_cores):
-                core_arr = self.network_db[src_dest]['cores_matrix'][core_num]
+            for core_num in range(self.cores_per_link):
+                core_arr = self.net_spec_db[src_dest]['cores_matrix'][core_num]
                 req_indexes = np.where(core_arr == self.req_id)
                 guard_bands = np.where(core_arr == (self.req_id * -1))
 
                 for index in req_indexes:
-                    self.network_db[src_dest]['cores_matrix'][core_num][index] = 0
-                    self.network_db[dest_src]['cores_matrix'][core_num][index] = 0
+                    self.net_spec_db[src_dest]['cores_matrix'][core_num][index] = 0
+                    self.net_spec_db[dest_src]['cores_matrix'][core_num][index] = 0
                 for gb_index in guard_bands:
-                    self.network_db[src_dest]['cores_matrix'][core_num][gb_index] = 0
-                    self.network_db[dest_src]['cores_matrix'][core_num][gb_index] = 0
+                    self.net_spec_db[src_dest]['cores_matrix'][core_num][gb_index] = 0
+                    self.net_spec_db[dest_src]['cores_matrix'][core_num][gb_index] = 0
 
-    def handle_arrival(self, start_slot, end_slot, core_num):
+    def allocate(self, start_slot, end_slot, core_num):
         """
         Handles an arrival event. Sets the allocated spectral slots equal to the request ID, the request ID is negative
         for the guard band to differentiate which slots are guard bands for future SNR calculations.
@@ -80,23 +76,23 @@ class SDNController:
             dest_src = (self.path[i + 1], self.path[i])
 
             # Remember, Python list indexing is up to and NOT including!
-            tmp_set = set(self.network_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1])
-            rev_tmp_set = set(self.network_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1])
+            tmp_set = set(self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1])
+            rev_tmp_set = set(self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1])
 
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
 
-            self.network_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
-            self.network_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
+            self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
+            self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
 
             # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
-            if self.guard_band:
-                if self.network_db[src_dest]['cores_matrix'][core_num][end_slot - 1] != 0.0 or \
-                        self.network_db[dest_src]['cores_matrix'][core_num][end_slot - 1] != 0.0:
+            if self.guard_slots:
+                if self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot - 1] != 0.0 or \
+                        self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot - 1] != 0.0:
                     raise BufferError("Attempted to allocate a taken spectrum.")
 
-                self.network_db[src_dest]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
-                self.network_db[dest_src]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
+                self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
+                self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
 
     def allocate_lps(self):
         """
@@ -106,12 +102,12 @@ class SDNController:
         """
         # Indicated whether we blocked due to congestion or a length constraint
         # No slicing is possible
-        if self.chosen_bw == '25' or self.max_lps == 1:
+        if self.chosen_bw == '25' or self.max_slices == 1:
             return False
 
         path_len = find_path_len(self.path, self.topology)
         # Sort the dictionary in descending order by bandwidth
-        mod_formats = sort_dict_keys(self.mod_formats)
+        mod_formats = sort_dict_keys(self.mod_per_bw)
 
         for curr_bw, obj in mod_formats.items():
             # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
@@ -124,7 +120,7 @@ class SDNController:
                 continue
 
             num_slices = int(int(self.chosen_bw) / int(curr_bw))
-            if num_slices > self.max_lps:
+            if num_slices > self.max_slices:
                 break
             # Number of slices minus one to account for the original transponder
             self.transponders += (num_slices - 1)
@@ -132,17 +128,17 @@ class SDNController:
             is_allocated = True
             # Check if all slices can be allocated
             for i in range(num_slices):  # pylint: disable=unused-variable
-                spectrum_assignment = SpectrumAssignment(self.path, obj[tmp_format]['slots_needed'], self.network_db,
-                                                         guard_band=self.guard_band, single_core=self.single_core,
-                                                         is_sliced=True, allocation=self.allocation)
+                spectrum_assignment = SpectrumAssignment(self.path, obj[tmp_format]['slots_needed'], self.net_spec_db,
+                                                         guard_band=self.guard_slots, single_core=self.single_core,
+                                                         is_sliced=True, allocation=self.alloc_method)
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
-                    self.handle_arrival(start_slot=selected_sp['start_slot'], end_slot=selected_sp['end_slot'],
-                                        core_num=selected_sp['core_num'])
+                    self.allocate(start_slot=selected_sp['start_slot'], end_slot=selected_sp['end_slot'],
+                                  core_num=selected_sp['core_num'])
                 # Clear all previously attempted allocations
                 else:
-                    self.handle_release()
+                    self.release()
                     is_allocated = False
                     self.dist_block = False
                     break
@@ -166,7 +162,7 @@ class SDNController:
                 'mod_format': None,
                 'is_sliced': True,
             }
-            return resp, self.network_db, self.transponders
+            return resp, self.net_spec_db, self.transponders
 
         return False, self.dist_block
 
@@ -185,16 +181,16 @@ class SDNController:
         self.dist_block = False
 
         if request_type == "release":
-            self.handle_release()
-            return self.network_db
+            self.release()
+            return self.net_spec_db
 
-        routing_obj = Routing(source=self.src, destination=self.dest,
-                              physical_topology=self.topology, network_spec_db=self.network_db,
-                              mod_formats=self.mod_formats[self.chosen_bw], bw=self.chosen_bw)
+        routing_obj = Routing(source=self.source, destination=self.dest,
+                              physical_topology=self.topology, network_spec_db=self.net_spec_db,
+                              mod_formats=self.mod_per_bw[self.chosen_bw], bw=self.chosen_bw)
 
-        if self.sim_assume == 'yue':
+        if self.sim_type == 'yue':
             selected_path, path_mod = routing_obj.shortest_path()
-        elif self.sim_assume == 'arash':
+        elif self.sim_type == 'arash':
             selected_path = routing_obj.least_congested_path()
             path_mod = 'QPSK'
         else:
@@ -203,10 +199,10 @@ class SDNController:
         if selected_path is not False:
             self.path = selected_path
             if path_mod is not False:
-                slots_needed = self.mod_formats[self.chosen_bw][path_mod]['slots_needed']
-                spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.network_db,
-                                                         guard_band=self.guard_band, is_sliced=False,
-                                                         allocation=self.allocation)
+                slots_needed = self.mod_per_bw[self.chosen_bw][path_mod]['slots_needed']
+                spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.net_spec_db,
+                                                         guard_band=self.guard_slots, is_sliced=False,
+                                                         allocation=self.alloc_method)
 
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
@@ -217,8 +213,8 @@ class SDNController:
                         'is_sliced': False
                     }
 
-                    self.handle_arrival(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
-                    return resp, self.network_db, self.transponders
+                    self.allocate(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
+                    return resp, self.net_spec_db, self.transponders
 
                 self.dist_block = False
                 return self.handle_lps()

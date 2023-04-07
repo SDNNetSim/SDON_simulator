@@ -18,23 +18,24 @@ class NetworkSimulator:
     Controls all simulations for this project.
     """
 
-    def __init__(self, sim_data: Dict = None, seeds: List[int] = None, bw_types: List[int] = None,
+    def __init__(self, sim_data: dict = None, seeds: List[int] = None, mod_per_bw: dict = None,
                  req_dist: List[float] = None, sim_fp: str = None, sim_start: str = None, net_name: str = 'USNet',
-                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 10000, max_iters: int = 1,
+                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 10000, max_iters: int = 2,
                  spectral_slots: int = 256, cores_per_link: int = 1, bw_per_slot: float = 12.5, max_slices: int = 1,
                  sim_type: str = 'arash', const_weight: bool = True, guard_slots: int = 1,
                  alloc_method: str = 'first-fit', thread_num: int = 1):
         """
-        Controls all simulations for this project.
+        Initializes the NetworkSimulator class.
 
         :param sim_data: The final structured simulation input data.
-        :type sim_data: Dict
+        :type sim_data: dict
 
         :param seeds: The seed or seeds to be used for random generation.
         :type seeds: List[int]
 
-        :param bw_types: The bandwidth types that make up the network, for example 50 or 200 Gbps.
-        :type bw_types: List[int]
+        :param mod_per_bw: The bandwidth types that make up the network, for example 50 or 200 Gbps, accompanied by
+                           the information related to their modulation formats.
+        :type mod_per_bw: dict
 
         :param req_dist: The distribution of the bandwidth types, for example 80% 50 Gbps and 20% 200 Gbps.
         :type req_dist: List[float]
@@ -101,7 +102,7 @@ class NetworkSimulator:
 
         self.bw_per_slot = bw_per_slot
         self.max_slices = max_slices
-        self.bw_types = bw_types
+        self.mod_per_bw = mod_per_bw
         self.req_dist = req_dist
         self.spectral_slots = spectral_slots
 
@@ -149,22 +150,22 @@ class NetworkSimulator:
         self.save_input(file_name=bw_file, data=bw_info)
 
         with open(f'./data/input/{bw_file}', 'r', encoding='utf-8') as file_object:
-            bw_types = json.load(file_object)
+            self.mod_per_bw = json.load(file_object)
 
         network_data = structure_data(const_weight=self.const_weight, net_name=self.net_name)
-        physical_topology = create_pt(cores_per_link=self.cores_per_link, network_data=network_data)
+        topology = create_pt(cores_per_link=self.cores_per_link, network_data=network_data)
 
         self.sim_data = {
             'seeds': self.seeds,
             'hold_time_mean': self.hold_time_mean,
             'arr_rate_mean': self.arr_rate_mean,
             'num_reqs': self.num_reqs,
-            'bw_types': bw_types,
+            'mod_per_bw': self.mod_per_bw,
             'max_slices': self.max_slices,
             'max_iters': self.max_iters,
             'spectral_slots': self.spectral_slots,
             'guard_slots': self.guard_slots,
-            'physical_topology': physical_topology,
+            'topology': topology,
             'cores_per_link': self.cores_per_link,
             'alloc_method': self.alloc_method,
             'req_dist': self.req_dist,

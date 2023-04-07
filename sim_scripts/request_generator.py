@@ -1,12 +1,12 @@
 from useful_functions.random_generation import set_seed, uniform_rv, exponential_rv
 
 
-def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume, req_dist):  # pylint: disable=invalid-name
+def generate(seed, nodes, hold_time_mean, arr_rate_mean, num_reqs, mod_per_bw, req_dist):
     """
     Generate all the requests for the simulation.
 
-    :param seed_no: The seed
-    :type seed_no: int
+    :param seed: The seed
+    :type seed: int
     :param nodes: All nodes in the network
     :type nodes: list
     :param mu: The holding time mean
@@ -17,8 +17,6 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume, req_dist): 
     :type num_requests: int
     :param bw_dict: Contains information for each bandwidth and modulation
     :type bw_dict: dict
-    :param assume: Tells us if our request generator is based on Yue or Arash's prior research assumptions
-    :type assume: str
     :param req_dist: The distribution of requests we'd like to generate
     :type req_dist: dict
     :return: Every request generated
@@ -30,25 +28,25 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume, req_dist): 
     # slot
     counter_id = 1
 
-    set_seed(seed_no=seed_no)
+    set_seed(seed=seed)
 
     # Number of requests allocated for each bandwidth
     # TODO: This could potentially not equal the number of requests we think
-    bw_one_req = req_dist['25'] * num_requests
-    bw_two_req = req_dist['50'] * num_requests
-    bw_three_req = req_dist['100'] * num_requests
-    bw_four_req = req_dist['200'] * num_requests
-    bw_five_req = req_dist['400'] * num_requests
+    bw_one_req = req_dist['25'] * num_reqs
+    bw_two_req = req_dist['50'] * num_reqs
+    bw_three_req = req_dist['100'] * num_reqs
+    bw_four_req = req_dist['200'] * num_reqs
+    bw_five_req = req_dist['400'] * num_reqs
 
     # Monitor the number of requests allocated for each bandwidth
     bands_dict = {'25': bw_one_req, '50': bw_two_req, '100': bw_three_req, '200': bw_four_req, '400': bw_five_req}
     # List of all possible bandwidths
-    bands_list = list(bw_dict.keys())
+    bands_list = list(mod_per_bw.keys())
 
     # Multiplied by two, to account for arrival and departure requests
-    while len(requests) < (num_requests * 2):
-        current_time = current_time + exponential_rv(lam)
-        depart_time = current_time + exponential_rv(mu)
+    while len(requests) < (num_reqs * 2):
+        current_time = current_time + exponential_rv(arr_rate_mean)
+        depart_time = current_time + exponential_rv(hold_time_mean)
 
         # We never want our node to equal the length, we start from index 0 in a list! (Node numbers are all minus 1)
         src = nodes[uniform_rv(len(nodes))]
@@ -72,7 +70,7 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume, req_dist): 
                 "depart": depart_time,
                 "request_type": "arrival",
                 "bandwidth": chosen_bw,
-                "mod_formats": bw_dict[chosen_bw],
+                "mod_formats": mod_per_bw[chosen_bw],
                 "start_slot_no": None,
                 "working_path": None,
                 "protection_path": None
@@ -85,7 +83,7 @@ def generate(seed_no, nodes, mu, lam, num_requests, bw_dict, assume, req_dist): 
                 "depart": depart_time,
                 "request_type": "release",
                 "bandwidth": chosen_bw,
-                "mod_formats": bw_dict[chosen_bw],
+                "mod_formats": mod_per_bw[chosen_bw],
                 "start_slot_no": None,
                 "working_path": None,
                 "protection_path": None

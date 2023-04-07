@@ -111,18 +111,18 @@ class Blocking:
         """
         Gets the weighted blocking probability.
         """
-        block_50 = 0.3 * user_dict['stats']['misc_info']['blocking_obj']['50']
-        block_100 = 0.5 * user_dict['stats']['misc_info']['blocking_obj']['100']
-        block_400 = 0.2 * user_dict['stats']['misc_info']['blocking_obj']['400']
+        block_50 = 0.3 * user_dict['misc_stats']['misc_info']['blocking_obj']['50']
+        block_100 = 0.5 * user_dict['misc_stats']['misc_info']['blocking_obj']['100']
+        block_400 = 0.2 * user_dict['misc_stats']['misc_info']['blocking_obj']['400']
 
-        return (block_50 + block_100 + block_400) / (user_dict['stats']['num_req'])
+        return (block_50 + block_100 + block_400) / (user_dict['misc_stats']['num_req'])
 
     @staticmethod
     def get_blocking(user_dict):
         """
         Gets the vanilla blocking probability (the mean).
         """
-        blocking_mean = user_dict['stats']['mean']
+        blocking_mean = user_dict['misc_stats']['blocking_mean']
         # Only one iteration occurred, no mean calculated for now
         if blocking_mean is None:
             blocking_mean = user_dict['simulations']['0']
@@ -204,7 +204,7 @@ class Blocking:
         plt.legend(legend_list)
         plt.xticks(self.x_axis)
         plt.xlim(self.x_axis[0], self.x_axis[-1])
-        plt.ylim(0.9, 1.8)
+        plt.ylim(0.9, 3.5)
         self.save_show_plot(file_name='transponders')
 
     def plot_block_percents(self):
@@ -400,11 +400,11 @@ class Blocking:
                     else:
                         self.blocking_arr = np.append(self.blocking_arr, self.get_weighted_blocking(curr_dict))
 
-                    self.trans_arr = np.append(self.trans_arr, curr_dict['stats']['misc_info']['av_transponders'])
-                    self.dist_arr = np.append(self.dist_arr, curr_dict['stats']['misc_info']['dist_block'])
-                    self.cong_arr = np.append(self.cong_arr, curr_dict['stats']['misc_info']['cong_block'])
+                    self.trans_arr = np.append(self.trans_arr, curr_dict['misc_stats']['trans_mean'])
+                    self.dist_arr = np.append(self.dist_arr, curr_dict['misc_stats']['dist_percent'])
+                    self.cong_arr = np.append(self.cong_arr, curr_dict['misc_stats']['cong_percent'])
 
-                    bandwidth_obj = curr_dict['stats']['misc_info']['blocking_obj']
+                    bandwidth_obj = curr_dict['misc_stats']['block_per_bw']
                     total_blocks = bandwidth_obj['50'] + bandwidth_obj['100'] + bandwidth_obj['400']
 
                     if total_blocks == 0:
@@ -417,11 +417,11 @@ class Blocking:
                         self.band_three = np.append(self.band_three,
                                                     ((float(bandwidth_obj['400']) / total_blocks) * 100.0))
 
-                    self.mu = curr_dict['stats']['misc_info']['mu']
-                    self.num_cores = curr_dict['stats']['misc_info']['cores_used']
-                    self.spectral_slots = curr_dict['stats']['misc_info']['spectral_slots']
+                    self.mu = curr_dict['misc_stats']['hold_time_mean']
+                    self.num_cores = curr_dict['misc_stats']['cores_per_link']
+                    self.spectral_slots = curr_dict['misc_stats']['spectral_slots']
                     if self.lps:
-                        max_lps = curr_dict['stats']['misc_info']['max_lps']
+                        max_lps = curr_dict['misc_stats']['max_slices']
                     else:
                         max_lps = None
 
@@ -429,7 +429,7 @@ class Blocking:
                         self.occ_slots[erlang] = dict()
                         self.num_slices[erlang] = list()
 
-                        for req_id, ss_obj in curr_dict['stats']['misc_info']['ss_dict'].items():
+                        for req_id, ss_obj in curr_dict['misc_stats']['slot_slice_dict'].items():
                             self.num_slices[erlang].append(ss_obj['num_slices'])
 
                         self.occ_slots[erlang]['req_ids'] = [curr_id for curr_id in range(0, 11000, 1000)]
@@ -438,7 +438,7 @@ class Blocking:
                             if req_id == 0:
                                 req_id = 1
                             self.occ_slots[erlang]['occ_slots'].append(
-                                curr_dict['stats']['misc_info']['ss_dict'][f'{req_id}']['occ_slots'])
+                                curr_dict['misc_stats']['slot_slice_dict'][f'{req_id}']['occ_slots'])
 
                     # Only plot up to Erlang 400, beyond that is considered not important for the time being
                     if erlang == self.x_axis[-1]:
@@ -453,7 +453,7 @@ class Blocking:
                 tmp_dict[thread_num]['max_lps'] = max_lps
                 tmp_dict[thread_num]['cong_block'] = self.cong_arr
                 tmp_dict[thread_num]['dist_block'] = self.dist_arr
-                tmp_dict[thread_num]['num_cores'] = curr_dict['stats']['misc_info']['cores_used']
+                tmp_dict[thread_num]['num_cores'] = curr_dict['misc_stats']['cores_per_link']
                 tmp_dict[thread_num]['50'] = self.band_one
                 tmp_dict[thread_num]['100'] = self.band_two
                 tmp_dict[thread_num]['400'] = self.band_three
@@ -484,7 +484,7 @@ def main():
     blocking_obj = Blocking()
 
     # blocking_obj.des_times = ['0329/11:50:35', '0323/09:22:02', '0323/09:22:04']
-    blocking_obj.des_times = ['0406/17:44:42']
+    blocking_obj.des_times = ['0407/15:53:41']
     blocking_obj.policy = 'First Fit'
     blocking_obj.weighted = False
     blocking_obj.cong_only = False

@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def set_seed(seed_no):
+def set_seed(seed):
     """
     Sets the seed for random number generation functions.
 
@@ -9,7 +9,7 @@ def set_seed(seed_no):
     :type seed_no: int
     :return: None
     """
-    np.random.seed(seed_no)
+    np.random.seed(seed)
 
 
 def uniform_rv(scale_param=None):
