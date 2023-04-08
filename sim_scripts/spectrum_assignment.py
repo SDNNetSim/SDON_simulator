@@ -1,75 +1,103 @@
-from itertools import groupby
+# Standard library imports
+import itertools
+from typing import List
 from operator import itemgetter
 
+# Third-party library imports
 import numpy as np
-
-
-# TODO: Find a more efficient, readable, and easier way to do first-fit and best-fit
-# TODO: Different allocations on a bi-directional link are not supported
-# TODO: Neaten up this script (repeat code, efficiency, etc.)
 
 
 class SpectrumAssignment:
     """
-    Finds spectrum slots for a given request.
+    Finds available spectrum slots for a given request.
     """
 
-    def __init__(self, path=None, slots_needed=None, net_spec_db=None, guard_slots=None, single_core=False,
-                 is_sliced=False, alloc_method=None):
-        self.is_free = True
-        self.path = path
+    def __init__(self, path: List[int] = None, slots_needed: int = None, net_spec_db: np.ndarray = None,
+                 guard_slots: int = None, single_core: bool = False, is_sliced: bool = False, alloc_method: str = None):
+        """
+        Initializes the SpectrumAssignment class.
 
-        self.slots_needed = slots_needed
-        self.guard_slots = guard_slots
-        self.net_spec_db = net_spec_db
-        self.cores_matrix = None
-        self.rev_cores_matrix = None
-        self.num_slots = None
-        self.num_cores = None
+        :param path: A list of integers representing the path for the request.
+        :type path: List[int]
+
+        :param slots_needed: An integer representing the number of spectral slots needed to allocate the request.
+        :type slots_needed: int
+
+        :param net_spec_db: A numpy array representing the network spectrum database.
+        :type net_spec_db: numpy.ndarray
+
+        :param guard_slots: An integer representing the number of slots dedicated to the guard band.
+        :type guard_slots: int
+
+        :param single_core: A boolean value indicating whether we are allowed to slice to only a single core or not.
+        :type single_core: bool
+
+        :param is_sliced: A boolean value indicating whether the request is allowed to be sliced.
+        :type is_sliced: bool
+
+        :param alloc_method: A string representing the allocation policy.
+        :type alloc_method: str
+        """
+        self.path = path
         self.single_core = single_core
         self.is_sliced = is_sliced
         self.alloc_method = alloc_method
+        self.slots_needed = slots_needed
+        self.guard_slots = guard_slots
+        self.net_spec_db = net_spec_db
 
+        # The flag to determine whether the request can be allocated
+        self.is_free = True
+        # A matrix containing the cores for each link in the network
+        self.cores_matrix = None
+        # The reversed version of the cores matrix
+        self.rev_cores_matrix = None
+        # The total number of slots per core
+        self.slots_per_core = None
+        # The total number of cores per link
+        self.cores_per_link = None
+
+        # The final response from this class
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
 
     def best_fit_allocation(self):
         """
-        Implements the best-fit allocation policy for spectrum assignment.
+        Searches for and allocates the best-fit super channel on each link along the path.
+
+        :return: None
         """
-        res_list = list()
-        tmp_dict = dict()
+        res_list = []
 
         # Get all available super channels
-        for i in range(len(self.path) - 1):
-            src_dest = (self.path[i], self.path[i + 1])
-            tmp_dict[src_dest] = dict()
-            for core_num in range(self.num_cores):
-                core_arr = self.net_spec_db[src_dest]['cores_matrix'][core_num]
+        for (src, dest) in zip(self.path[:-1], self.path[1:]):
+            for core_num in range(self.cores_per_link):
+                core_arr = self.net_spec_db[(src, dest)]['cores_matrix'][core_num]
                 open_slots_arr = np.where(core_arr == 0)[0]
 
-                # See explanation and reference for this odd syntax below
                 tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
-                              groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-                for channel in tmp_matrix:
+                              itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                for channel in itertools.chain.from_iterable(tmp_matrix):
                     if len(channel) >= self.slots_needed:
-                        res_list.append({'link': src_dest, 'core': core_num, 'channel': channel})
+                        res_list.append({'link': (src, dest), 'core': core_num, 'channel': channel})
 
         # Sort the list of candidate super channels
         sorted_list = sorted(res_list, key=lambda d: len(d['channel']))
+
         for curr_obj in sorted_list:
             for start_index in curr_obj['channel']:
                 end_index = (start_index + self.slots_needed + self.guard_slots) - 1
                 if end_index not in curr_obj['channel']:
                     break
 
-                # TODO: We must always check the first link, here this doesn't do that
                 if len(self.path) > 2:
                     self.check_links(curr_obj['core'], start_index, end_index + self.guard_slots)
 
                 if self.is_free is not False or len(self.path) <= 2:
                     self.response = {'core_num': curr_obj['core'], 'start_slot': start_index,
                                      'end_slot': end_index + self.guard_slots}
-                    return
+            else:
+                continue
+            break
 
     def check_links(self, core_num, start_slot, end_slot):
         """
@@ -78,33 +106,56 @@ class SpectrumAssignment:
 
         :param core_num: The core in which to look for the free spectrum
         :type core_num: int
+
         :param start_slot: The starting index of the potentially free spectrum
         :type start_slot: int
+
         :param end_slot: The ending index
         :type end_slot: int
-        """
-        # TODO: Check reverse cores matrix
-        for i, node in enumerate(self.path):  # pylint: disable=unused-variable
-            if i == len(self.path) - 1:
-                break
 
-            # Contains source and destination names
+        :return: None
+        """
+        self.is_free = True
+        for i in range(len(self.path) - 1):
             sub_path = (self.path[i], self.path[i + 1])
             rev_sub_path = (self.path[i + 1], self.path[i])
 
-            spec_set = set(self.net_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot])
-            rev_spec_set = set(self.net_spec_db[rev_sub_path]['cores_matrix'][core_num][start_slot:end_slot])
-
-            if (spec_set, rev_spec_set) != ({0}, {0}):
+            if not self._sub_path_has_free_spectrum(sub_path, core_num, start_slot, end_slot):
                 self.is_free = False
                 return
 
-            self.is_free = True
+            if not self._sub_path_has_free_spectrum(rev_sub_path, core_num, start_slot, end_slot):
+                self.is_free = False
+                return
+
+    def _sub_path_has_free_spectrum(self, sub_path, core_num, start_slot, end_slot):
+        """
+        Check whether a sub-path has the same spectrum assignment as the given core and whether the
+        spectrum in the given range is free.
+
+        :param sub_path: The sub-path to check
+        :type sub_path: Tuple[str, str]
+
+        :param core_num: The core in which to look for the free spectrum
+        :type core_num: int
+
+        :param start_slot: The starting index of the potentially free spectrum
+        :type start_slot: int
+
+        :param end_slot: The ending index
+        :type end_slot: int
+
+        :return: True if the spectrum is free and assigned to the given core, False otherwise
+        """
+        spec_arr = self.net_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot]
+        return set(spec_arr) == {0}
 
     def first_fit_allocation(self):
         """
-        Loops through each core and find the starting and ending indexes of where the request
-        can be assigned. First-fit allocation policy.
+        Loops through each core and finds the starting and ending indexes of where the request can be assigned using the
+        first-fit allocation policy.
+
+        :return: None
         """
         for core_num, core_arr in enumerate(self.cores_matrix):
             # To account for single core light segment slicing
@@ -114,7 +165,7 @@ class SpectrumAssignment:
             open_slots_arr = np.where(core_arr == 0)[0]
             # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
             open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                                 groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                                 itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
 
             # First fit allocation
             for tmp_arr in open_slots_matrix:
@@ -134,9 +185,10 @@ class SpectrumAssignment:
 
     def find_free_spectrum(self):
         """
-        Controls this class.
+        Finds available spectrum to allocate a request based on the chosen allocation policy.
 
-        :return: The available core, starting index, and ending index. False otherwise.
+        :return: A dictionary with the available core, starting index, and ending index if available.
+                 Otherwise, returns False.
         :rtype: dict or bool
         """
         # Ensure spectrum from 'A' to 'B' and 'B' to 'A' are free
@@ -146,9 +198,8 @@ class SpectrumAssignment:
         if self.cores_matrix is None or self.rev_cores_matrix is None:
             raise ValueError('Bi-directional link not found in network spectrum database.')
 
-        self.num_slots = np.shape(self.cores_matrix)[1]
-        # TODO: Check this
-        self.num_cores = np.shape(self.cores_matrix)[0]
+        self.slots_per_core = len(self.cores_matrix[0])
+        self.cores_per_link = len(self.cores_matrix)
 
         if self.alloc_method == 'best-fit':
             self.best_fit_allocation()
@@ -158,7 +209,7 @@ class SpectrumAssignment:
             raise NotImplementedError
 
         # If the start slot is none, a request couldn't be allocated
-        if self.response['start_slot'] is not None:
-            return self.response
+        if self.response['start_slot'] is None:
+            return False
 
-        return False
+        return self.response

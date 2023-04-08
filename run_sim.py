@@ -270,6 +270,7 @@ def run(threads):
             future = executor.submit(class_inst.run_yue, thread_params['max_slices'], thread_num,
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
                                      thread_params['req_dist'])
+
             futures.append(future)
 
         for future in concurrent.futures.as_completed(futures):

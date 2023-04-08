@@ -158,7 +158,7 @@ class SDNController:
         path_length = find_path_len(self.path, self.topology)
         modulation_formats = sort_dict_keys(self.mod_per_bw)
 
-        for bandwidth, modulation_dict in modulation_formats:
+        for bandwidth, modulation_dict in modulation_formats.items():
             if int(bandwidth) >= int(self.chosen_bw):
                 continue
 

@@ -418,7 +418,7 @@ class Engine(SDNController):
 
         for iteration in range(self.sim_data["max_iters"]):
             if iteration == 0:
-                print(f"Simulation started for Erlang: {self.erlang}.")
+                print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
 
             self.init_iter_vars()
             self.create_topology()
