@@ -225,7 +225,7 @@ class Engine(SDNController):
         request = self.reqs_dict[curr_time]
         self.req_id = request['id']
         self.source = request['source']
-        self.dest = request['destination']
+        self.destination = request['destination']
         self.path = None
         self.chosen_bw = request['bandwidth']
 
@@ -270,7 +270,7 @@ class Engine(SDNController):
         request = self.reqs_dict[curr_time]
         self.req_id = request['id']
         self.source = request['source']
-        self.dest = request['destination']
+        self.destination = request['destination']
         self.chosen_bw = request['bandwidth']
 
         if self.reqs_dict[curr_time]['id'] in self.reqs_status:

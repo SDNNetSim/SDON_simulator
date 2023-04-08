@@ -14,21 +14,21 @@ class SpectrumAssignment:
     Finds spectrum slots for a given request.
     """
 
-    def __init__(self, path=None, slots_needed=None, network_spec_db=None, guard_band=None, single_core=False,
-                 is_sliced=False, allocation='first-fit'):
+    def __init__(self, path=None, slots_needed=None, net_spec_db=None, guard_slots=None, single_core=False,
+                 is_sliced=False, alloc_method=None):
         self.is_free = True
         self.path = path
 
         self.slots_needed = slots_needed
-        self.guard_band = guard_band
-        self.network_spec_db = network_spec_db
+        self.guard_slots = guard_slots
+        self.net_spec_db = net_spec_db
         self.cores_matrix = None
         self.rev_cores_matrix = None
         self.num_slots = None
         self.num_cores = None
         self.single_core = single_core
         self.is_sliced = is_sliced
-        self.allocation = allocation
+        self.alloc_method = alloc_method
 
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
 
@@ -44,7 +44,7 @@ class SpectrumAssignment:
             src_dest = (self.path[i], self.path[i + 1])
             tmp_dict[src_dest] = dict()
             for core_num in range(self.num_cores):
-                core_arr = self.network_spec_db[src_dest]['cores_matrix'][core_num]
+                core_arr = self.net_spec_db[src_dest]['cores_matrix'][core_num]
                 open_slots_arr = np.where(core_arr == 0)[0]
 
                 # See explanation and reference for this odd syntax below
@@ -58,17 +58,17 @@ class SpectrumAssignment:
         sorted_list = sorted(res_list, key=lambda d: len(d['channel']))
         for curr_obj in sorted_list:
             for start_index in curr_obj['channel']:
-                end_index = (start_index + self.slots_needed + self.guard_band) - 1
+                end_index = (start_index + self.slots_needed + self.guard_slots) - 1
                 if end_index not in curr_obj['channel']:
                     break
 
                 # TODO: We must always check the first link, here this doesn't do that
                 if len(self.path) > 2:
-                    self.check_links(curr_obj['core'], start_index, end_index + self.guard_band)
+                    self.check_links(curr_obj['core'], start_index, end_index + self.guard_slots)
 
                 if self.is_free is not False or len(self.path) <= 2:
                     self.response = {'core_num': curr_obj['core'], 'start_slot': start_index,
-                                     'end_slot': end_index + self.guard_band}
+                                     'end_slot': end_index + self.guard_slots}
                     return
 
     def check_links(self, core_num, start_slot, end_slot):
@@ -92,8 +92,8 @@ class SpectrumAssignment:
             sub_path = (self.path[i], self.path[i + 1])
             rev_sub_path = (self.path[i + 1], self.path[i])
 
-            spec_set = set(self.network_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot])
-            rev_spec_set = set(self.network_spec_db[rev_sub_path]['cores_matrix'][core_num][start_slot:end_slot])
+            spec_set = set(self.net_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot])
+            rev_spec_set = set(self.net_spec_db[rev_sub_path]['cores_matrix'][core_num][start_slot:end_slot])
 
             if (spec_set, rev_spec_set) != ({0}, {0}):
                 self.is_free = False
@@ -118,18 +118,18 @@ class SpectrumAssignment:
 
             # First fit allocation
             for tmp_arr in open_slots_matrix:
-                if len(tmp_arr) >= (self.slots_needed + self.guard_band):
+                if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
                     for start_index in tmp_arr:
-                        end_index = (start_index + self.slots_needed + self.guard_band) - 1
+                        end_index = (start_index + self.slots_needed + self.guard_slots) - 1
                         if end_index not in tmp_arr:
                             break
 
                         if len(self.path) > 2:
-                            self.check_links(core_num, start_index, end_index + self.guard_band)
+                            self.check_links(core_num, start_index, end_index + self.guard_slots)
 
                         if self.is_free is not False or len(self.path) <= 2:
                             self.response = {'core_num': core_num, 'start_slot': start_index,
-                                             'end_slot': end_index + self.guard_band}
+                                             'end_slot': end_index + self.guard_slots}
                             return
 
     def find_free_spectrum(self):
@@ -140,8 +140,8 @@ class SpectrumAssignment:
         :rtype: dict or bool
         """
         # Ensure spectrum from 'A' to 'B' and 'B' to 'A' are free
-        self.cores_matrix = self.network_spec_db[(self.path[0], self.path[1])]['cores_matrix']
-        self.rev_cores_matrix = self.network_spec_db[(self.path[1], self.path[0])]['cores_matrix']
+        self.cores_matrix = self.net_spec_db[(self.path[0], self.path[1])]['cores_matrix']
+        self.rev_cores_matrix = self.net_spec_db[(self.path[1], self.path[0])]['cores_matrix']
 
         if self.cores_matrix is None or self.rev_cores_matrix is None:
             raise ValueError('Bi-directional link not found in network spectrum database.')
@@ -150,9 +150,9 @@ class SpectrumAssignment:
         # TODO: Check this
         self.num_cores = np.shape(self.cores_matrix)[0]
 
-        if self.allocation == 'best-fit':
+        if self.alloc_method == 'best-fit':
             self.best_fit_allocation()
-        elif self.allocation == 'first-fit':
+        elif self.alloc_method == 'first-fit':
             self.first_fit_allocation()
         else:
             raise NotImplementedError
