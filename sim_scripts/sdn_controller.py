@@ -11,8 +11,7 @@ from sim_scripts.spectrum_assignment import SpectrumAssignment
 from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
 
 
-# TODO: Potential transistor calculation bug (may be caused by spectrum assignment)
-#       Check each of those methods carefully
+# TODO: Potential transistor calculation bug
 
 class SDNController:
     """

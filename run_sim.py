@@ -280,12 +280,13 @@ def run(threads):
 if __name__ == '__main__':
     threads_obj = []
     for max_slices in [1, 2, 4, 8]:
-        thread = {
-            'max_slices': max_slices,
-            'cores_per_link': 1,
-            'alloc_method': 'first-fit',
-            'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2}
-        }
-        threads_obj.append(thread)
+        for cores_per_link in [1, 4, 7]:
+            thread = {
+                'max_slices': max_slices,
+                'cores_per_link': cores_per_link,
+                'alloc_method': 'first-fit',
+                'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2}
+            }
+            threads_obj.append(thread)
 
     run(threads_obj)
