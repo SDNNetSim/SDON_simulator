@@ -153,41 +153,48 @@ class SDNController:
         if self.chosen_bw == '25' or self.max_slices == 1:
             return False
 
-        path_length = find_path_len(self.path, self.topology)
+        path_len = find_path_len(self.path, self.topology)
+        # Sort the dictionary in descending order by bandwidth
         modulation_formats = sort_dict_keys(self.mod_per_bw)
 
         for bandwidth, modulation_dict in modulation_formats.items():
-            # We cannot slice a bandwidth into a larger or equal bandwidth
+            # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
             if int(bandwidth) >= int(self.chosen_bw):
                 continue
 
-            tmp_format = get_path_mod(modulation_dict, path_length)
+            tmp_format = get_path_mod(modulation_dict, path_len)
             if tmp_format is False:
+                self.dist_block = True
                 continue
 
             num_slices = int(int(self.chosen_bw) / int(bandwidth))
             if num_slices > self.max_slices:
-                continue
+                break
+            # Number of slices minus one to account for the original transponder
+            self.num_transponders += (num_slices - 1)
 
-            self.num_transponders += num_slices - 1
-
+            is_allocated = True
+            # Check if all slices can be allocated
             for _ in range(num_slices):
-                slots_needed = modulation_dict[tmp_format]['slots_needed']
-                spectrum_assignment = SpectrumAssignment(path=self.path, slots_needed=slots_needed,
-                                                         net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
-                                                         single_core=self.single_core, is_sliced=True,
-                                                         alloc_method=self.alloc_method)
+                spectrum_assignment = SpectrumAssignment(path=self.path,
+                                                         slots_needed=modulation_dict[tmp_format]['slots_needed'],
+                                                         net_spec_db=self.net_spec_db,
+                                                         guard_slots=self.guard_slots, single_core=self.single_core,
+                                                         is_sliced=True, alloc_method=self.alloc_method)
                 selected_spectrum = spectrum_assignment.find_free_spectrum()
 
-                if selected_spectrum is False:
-                    # Release all previously attempted slices from the network
+                if selected_spectrum is not False:
+                    self.allocate(start_slot=selected_spectrum['start_slot'], end_slot=selected_spectrum['end_slot'],
+                                  core_num=selected_spectrum['core_num'])
+                # Clear all previously attempted allocations
+                else:
                     self.release()
-                    return False
+                    is_allocated = False
+                    self.dist_block = False
+                    break
 
-                self.allocate(start_slot=selected_spectrum['start_slot'], end_slot=selected_spectrum['end_slot'],
-                              core_num=selected_spectrum['core_num'])
-
-            return True
+            if is_allocated:
+                return True
 
         return False
 
