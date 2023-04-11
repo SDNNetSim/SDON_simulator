@@ -31,7 +31,6 @@ def generate(seed: int, nodes: list, hold_time_mean: float, arr_rate_mean: float
     :return: A dictionary with the generated requests.
     :rtype: dict
     """
-
     # Initialize variables
     requests = {}
     current_time = 0
@@ -41,7 +40,7 @@ def generate(seed: int, nodes: list, hold_time_mean: float, arr_rate_mean: float
                         mod_per_bw}
     bandwidth_list = list(mod_per_bw.keys())
 
-    # Generate requests
+    # Generate requests, multiply number of requests by two since we have arrival and departure types
     while len(requests) < (num_reqs * 2):
         current_time += exponential_rv(arr_rate_mean)
         depart_time = current_time + exponential_rv(hold_time_mean)
