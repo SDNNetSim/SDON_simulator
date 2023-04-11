@@ -68,7 +68,7 @@ class SpectrumAssignment:
         """
         res_list = []
 
-        # Get all available super channels
+        # Get all potential super channels
         for (src, dest) in zip(self.path[:-1], self.path[1:]):
             for core_num in range(self.cores_per_link):
                 core_arr = self.net_spec_db[(src, dest)]['cores_matrix'][core_num]
@@ -90,7 +90,7 @@ class SpectrumAssignment:
                     break
 
                 if len(self.path) > 2:
-                    self.check_links(curr_obj['core'], start_index, end_index + self.guard_slots)
+                    self.check_other_links(curr_obj['core'], start_index, end_index + self.guard_slots)
 
                 if self.is_free is not False or len(self.path) <= 2:
                     self.response = {'core_num': curr_obj['core'], 'start_slot': start_index,
@@ -99,7 +99,7 @@ class SpectrumAssignment:
                 continue
             break
 
-    def check_links(self, core_num, start_slot, end_slot):
+    def check_other_links(self, core_num, start_slot, end_slot):
         """
         Given that one link is available, check all other links in the path. Core and spectrum assignments
         MUST be the same.
@@ -117,20 +117,20 @@ class SpectrumAssignment:
         """
         self.is_free = True
         for i in range(len(self.path) - 1):
-            sub_path = (self.path[i], self.path[i + 1])
-            rev_sub_path = (self.path[i + 1], self.path[i])
+            link = (self.path[i], self.path[i + 1])
+            rev_link = (self.path[i + 1], self.path[i])
 
-            if not self._sub_path_has_free_spectrum(sub_path, core_num, start_slot, end_slot):
+            if not self._link_has_free_spectrum(link, core_num, start_slot, end_slot):
                 self.is_free = False
                 return
 
-            if not self._sub_path_has_free_spectrum(rev_sub_path, core_num, start_slot, end_slot):
+            if not self._link_has_free_spectrum(rev_link, core_num, start_slot, end_slot):
                 self.is_free = False
                 return
 
-    def _sub_path_has_free_spectrum(self, sub_path, core_num, start_slot, end_slot):
+    def _link_has_free_spectrum(self, sub_path, core_num, start_slot, end_slot):
         """
-        Check whether a sub-path has the same spectrum assignment as the given core and whether the
+        Check whether a link has the same spectrum assignment as the given core and whether the
         spectrum in the given range is free.
 
         :param sub_path: The sub-path to check
@@ -147,8 +147,8 @@ class SpectrumAssignment:
 
         :return: True if the spectrum is free and assigned to the given core, False otherwise
         """
-        spec_arr = self.net_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot]
-        return set(spec_arr) == {0}
+        link = self.net_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot]
+        return set(link) == {0.0}
 
     def first_fit_allocation(self):
         """
@@ -158,7 +158,7 @@ class SpectrumAssignment:
         :return: None
         """
         for core_num, core_arr in enumerate(self.cores_matrix):
-            # To account for single core light segment slicing
+            # To account for ONLY single core light segment slicing
             if core_num > 0 and self.single_core and self.is_sliced:
                 break
 
@@ -176,7 +176,7 @@ class SpectrumAssignment:
                             break
 
                         if len(self.path) > 2:
-                            self.check_links(core_num, start_index, end_index + self.guard_slots)
+                            self.check_other_links(core_num, start_index, end_index + self.guard_slots)
 
                         if self.is_free is not False or len(self.path) <= 2:
                             self.response = {'core_num': core_num, 'start_slot': start_index,
