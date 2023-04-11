@@ -104,7 +104,7 @@ def assign_link_lengths(node_pairings=None, constant_weight=False, network_fp=No
     return response_dict
 
 
-def structure_data(const_weight=False, net_name=None):
+def create_network(const_weight=False, net_name=None):
     """
     The main structure data function.
 

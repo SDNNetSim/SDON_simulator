@@ -7,7 +7,7 @@ from typing import List, Dict
 import concurrent.futures
 
 # Local application imports
-from handle_data.structure_data import structure_data
+from handle_data.structure_data import create_network
 from handle_data.generate_data import create_bw_info, create_pt
 from sim_scripts.engine import Engine
 from useful_functions.handle_dirs_files import create_dir
@@ -19,7 +19,7 @@ class NetworkSimulator:
     """
 
     def __init__(self, sim_data: dict = None, seeds: List[int] = None, mod_per_bw: dict = None,
-                 req_dist: List[float] = None, sim_fp: str = None, sim_start: str = None, net_name: str = 'USNet',
+                 req_dist: List[dict] = None, sim_fp: str = None, sim_start: str = None, net_name: str = 'USNet',
                  hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 10000, max_iters: int = 2,
                  spectral_slots: int = 256, cores_per_link: int = 1, bw_per_slot: float = 12.5, max_slices: int = 1,
                  sim_type: str = 'arash', const_weight: bool = True, guard_slots: int = 1,
@@ -38,7 +38,7 @@ class NetworkSimulator:
         :type mod_per_bw: dict
 
         :param req_dist: The distribution of the bandwidth types, for example 80% 50 Gbps and 20% 200 Gbps.
-        :type req_dist: List[float]
+        :type req_dist: List[dict]
 
         :param sim_fp: The path to the input file for the simulation.
         :type sim_fp: str
@@ -83,7 +83,7 @@ class NetworkSimulator:
         :param alloc_method: The allocation policy for a request.
         :type alloc_method: str
 
-        :param thread_num: Used to identify classes running in parallel.
+        :param thread_num: Used to identify simulations running in parallel.
         :type thread_num: int
         """
         self.sim_data = sim_data
@@ -111,8 +111,7 @@ class NetworkSimulator:
 
         self.thread_num = thread_num
 
-    @staticmethod
-    def save_input(file_name: str = None, data: Dict = None):
+    def save_input(self, file_name: str = None, data: Dict = None):
         """
         Saves simulation input data. Does not save bandwidth data, as that is intended to be a constant and unchanged
         file.
@@ -125,7 +124,7 @@ class NetworkSimulator:
 
         :return: None
         """
-        create_dir('data/input')
+        create_dir(f'data/input/{self.net_name}/{self.sim_start}')
         create_dir('data/output')
 
         with open(f'data/input/{file_name}', 'w', encoding='utf-8') as file:
@@ -152,7 +151,7 @@ class NetworkSimulator:
         with open(f'./data/input/{bw_file}', 'r', encoding='utf-8') as file_object:
             self.mod_per_bw = json.load(file_object)
 
-        network_data = structure_data(const_weight=self.const_weight, net_name=self.net_name)
+        network_data = create_network(const_weight=self.const_weight, net_name=self.net_name)
         topology = create_pt(cores_per_link=self.cores_per_link, network_data=network_data)
 
         self.sim_data = {
@@ -190,8 +189,6 @@ class NetworkSimulator:
 
         :param req_dist: Distribution of requests to use.
         :type req_dist: str
-
-        :raises: NotImplementedError if max_slicing is None.
 
         :return: None
         """
@@ -246,7 +243,7 @@ class NetworkSimulator:
 
             self.save_input(file_name='sim_input.json', data=self.sim_data)
 
-            engine = Engine(self.sim_data, erlang=erlang, net_name=self.net_name, sim_start=self.sim_start,
+            engine = Engine(sim_data=self.sim_data, erlang=erlang, net_name=self.net_name, sim_start=self.sim_start,
                             sim_type=self.sim_type)
             engine.run()
 
