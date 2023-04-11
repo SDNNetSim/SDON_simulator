@@ -56,7 +56,6 @@ class Blocking:
         Saves and shows the current plot in the constructor.
         """
         # Save by the most recent time for used plotting
-        print(self.des_times[-1])
         create_dir(f'./output/{self.network_name}/{self.des_times[-1]}')
         plt.savefig(f'./output/{self.network_name}/{self.des_times[-1]}/{file_name}')
         plt.show()
@@ -209,7 +208,7 @@ class Blocking:
         plt.legend(legend_list)
         plt.xticks(self.x_axis)
         plt.xlim(self.x_axis[0], self.x_axis[-1])
-        plt.ylim(0.9, 3.5)
+        plt.ylim(0.9, 2)
         self.save_show_plot(file_name='transponders')
 
     def plot_block_percents(self):
@@ -489,7 +488,7 @@ def main():
     blocking_obj = Blocking()
 
     # blocking_obj.des_times = ['0329/11:50:35', '0323/09:22:02', '0323/09:22:04']
-    blocking_obj.des_times = ['0411/11:47:39']
+    blocking_obj.des_times = ['0411/12:12:22']
     blocking_obj.policy = 'First Fit'
     blocking_obj.weighted = False
     blocking_obj.cong_only = False
