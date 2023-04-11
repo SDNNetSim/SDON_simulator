@@ -111,6 +111,9 @@ class NetworkSimulator:
 
         self.thread_num = thread_num
 
+        # The date and current time derived from the simulation start
+        self.date, self.curr_time = self.sim_start.split('_')[0], self.sim_start.split('_')[1]
+
     def save_input(self, file_name: str = None, data: Dict = None):
         """
         Saves simulation input data. Does not save bandwidth data, as that is intended to be a constant and unchanged
@@ -124,10 +127,11 @@ class NetworkSimulator:
 
         :return: None
         """
-        create_dir(f'data/input/{self.net_name}/{self.sim_start}')
+        create_dir(f'data/input/{self.net_name}/{self.date}/{self.curr_time}')
         create_dir('data/output')
 
-        with open(f'data/input/{file_name}', 'w', encoding='utf-8') as file:
+        with open(f'data/input/{self.net_name}/{self.date}/{self.curr_time}/{file_name}', 'w',
+                  encoding='utf-8') as file:
             json.dump(data, file, indent=4)
 
     def create_input(self):
@@ -148,7 +152,8 @@ class NetworkSimulator:
 
         self.save_input(file_name=bw_file, data=bw_info)
 
-        with open(f'./data/input/{bw_file}', 'r', encoding='utf-8') as file_object:
+        with open(f'./data/input/{self.net_name}/{self.date}/{self.curr_time}/{bw_file}', 'r',
+                  encoding='utf-8') as file_object:
             self.mod_per_bw = json.load(file_object)
 
         network_data = create_network(const_weight=self.const_weight, net_name=self.net_name)
@@ -220,9 +225,11 @@ class NetworkSimulator:
             self.save_input(file_name=file_name, data=self.sim_data)
             engine = Engine(sim_data=self.sim_data, erlang=erlang, net_name=self.net_name,
                             sim_start=self.sim_start, sim_type=self.sim_type,
-                            input_fp=f'./data/input/{file_name}', thread_num=thread_num)
+                            input_fp=f'./data/input/{self.net_name}/{self.date}/{self.curr_time}/{file_name}',
+                            thread_num=thread_num)
             engine.run()
 
+    # TODO: This method does not have support at this point in time
     def run_arash(self):
         """
         Runs a simulation using the Arash simulation flag. Reference: https://doi.org/10.1016/j.comnet.2020.107755.
@@ -261,8 +268,7 @@ def run(threads):
         futures = []
 
         for thread_num, thread_params in enumerate(threads, start=1):
-            class_inst = NetworkSimulator()
-            class_inst.sim_start = time.strftime("%m%d_%H:%M:%S")
+            class_inst = NetworkSimulator(sim_start=time.strftime("%m%d_%H:%M:%S"))
 
             future = executor.submit(class_inst.run_yue, thread_params['max_slices'], thread_num,
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
@@ -277,7 +283,7 @@ def run(threads):
 if __name__ == '__main__':
     threads_obj = []
     for max_slices in [1, 2, 4, 8]:
-        for cores_per_link in [1, 4, 7]:
+        for cores_per_link in [1]:
             thread = {
                 'max_slices': max_slices,
                 'cores_per_link': cores_per_link,

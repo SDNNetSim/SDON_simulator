@@ -53,12 +53,7 @@ def create_bw_info(sim_type: str = None):
     if sim_type not in ['yue', 'arash', None]:
         raise NotImplementedError(f"Invalid simulation type '{sim_type}'")
 
-    # define a template for bandwidth information
-    bw_info = {
-        'QPSK': {'slots_needed': None},
-        '16-QAM': {'slots_needed': None},
-        '64-QAM': {'slots_needed': None}
-    }
+    bw_info = dict()
 
     # fill the template with maximum lengths for the given bandwidth
     if sim_type == 'yue':
