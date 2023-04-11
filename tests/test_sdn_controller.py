@@ -1,6 +1,6 @@
+import unittest
 import numpy as np
 import networkx as nx
-import unittest
 
 from sim_scripts.sdn_controller import SDNController
 
