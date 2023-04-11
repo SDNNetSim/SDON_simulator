@@ -1,21 +1,19 @@
+# Standard library imports
 import os
 
 
-def create_dir(file_path=None):
+def create_dir(file_path: str):
     """
-    Checks if a directory exists, if it doesn't create one.
+    Create a directory at the specified file path if it doesn't already exist.
 
-    :param file_path: The file path
+    :param file_path: The path to the file whose parent directory should be created.
     :type file_path: str
+
     :return: None
     """
     if file_path is None:
-        raise ValueError(f'Expecting a valid file path, got: {file_path}')
+        raise ValueError("File path cannot be None.")
 
-    # Iteratively check if the file path exists
-    split_path = file_path.split('/')
-    curr_path = ''
-    for i in range(len(split_path)):  # pylint: disable=consider-using-enumerate
-        curr_path += split_path[i] + '/'
-        if not os.path.exists(curr_path):
-            os.mkdir(curr_path)
+    # Get the absolute path of the parent directory and create it if it doesn't exist
+    parent_dir_path = os.path.abspath(os.path.join(file_path, os.pardir))
+    os.makedirs(parent_dir_path, exist_ok=True)
