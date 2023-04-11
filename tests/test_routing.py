@@ -6,8 +6,7 @@ from sim_scripts.routing import Routing
 
 class TestRouting(unittest.TestCase):
     """
-    This class contains unit tests for methods found in the Routing class. These belong to the sim_scripts.routing
-    module.
+    This class contains unit tests for methods found in the Routing class.
     """
 
     def setUp(self):

@@ -122,27 +122,30 @@ class SDNController:
 
         :return: None
         """
+        if self.guard_slots:
+            end_slot = end_slot - 1
+
         for src, dest in zip(self.path, self.path[1:]):
             src_dest = (src, dest)
             dest_src = (dest, src)
 
             # Remember, Python list indexing is up to and NOT including!
-            tmp_set = set(self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1])
-            rev_tmp_set = set(self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1])
+            tmp_set = set(self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot])
+            rev_tmp_set = set(self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot])
 
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
 
-            self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
-            self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
+            self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
+            self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
 
             if self.guard_slots:
-                if self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot - 1] != 0.0 or \
-                        self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot - 1] != 0.0:
+                if self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot] != 0.0 or \
+                        self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot] != 0.0:
                     raise BufferError("Attempted to allocate a taken spectrum.")
 
-                self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
-                self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
+                self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
+                self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
 
     def allocate_lps(self):
         """
