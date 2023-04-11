@@ -72,6 +72,7 @@ class Routing:
 
         :param path: The path to analyze
         :type path: list[int]
+
         :return: The congestion level of the most congested link in the path
         :rtype: int
         """
