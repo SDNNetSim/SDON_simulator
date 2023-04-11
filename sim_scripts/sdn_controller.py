@@ -1,6 +1,5 @@
 # Standard library imports
 import numpy as np
-from typing import Dict
 
 # Third-party library imports
 import networkx as nx
@@ -11,7 +10,7 @@ from sim_scripts.spectrum_assignment import SpectrumAssignment
 from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
 
 
-# TODO: Potential transistor calculation bug
+# TODO: Potential transponder calculation bug
 
 class SDNController:
     """
@@ -139,7 +138,6 @@ class SDNController:
             self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
             self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
 
-            # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
             if self.guard_slots:
                 if self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot - 1] != 0.0 or \
                         self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot - 1] != 0.0:
@@ -161,6 +159,7 @@ class SDNController:
         modulation_formats = sort_dict_keys(self.mod_per_bw)
 
         for bandwidth, modulation_dict in modulation_formats.items():
+            # We cannot slice a bandwidth into a larger or equal bandwidth
             if int(bandwidth) >= int(self.chosen_bw):
                 continue
 
@@ -175,13 +174,15 @@ class SDNController:
             self.num_transponders += num_slices - 1
 
             for _ in range(num_slices):
-                slot_range = modulation_dict[tmp_format]['slots_needed']
-                spectrum_assignment = SpectrumAssignment(self.path, slot_range, self.net_spec_db,
-                                                         guard_slots=self.guard_slots, single_core=self.single_core,
-                                                         is_sliced=True, alloc_method=self.alloc_method)
+                slots_needed = modulation_dict[tmp_format]['slots_needed']
+                spectrum_assignment = SpectrumAssignment(path=self.path, slots_needed=slots_needed,
+                                                         net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
+                                                         single_core=self.single_core, is_sliced=True,
+                                                         alloc_method=self.alloc_method)
                 selected_spectrum = spectrum_assignment.find_free_spectrum()
 
                 if selected_spectrum is False:
+                    # Release all previously attempted slices from the network
                     self.release()
                     return False
 
@@ -224,7 +225,6 @@ class SDNController:
         """
         # Even if the request is blocked, we still use one transponder
         self.num_transponders = 1
-        # Whether the block is due to a distance constraint, else is a congestion constraint
         self.dist_block = False
 
         if request_type == "release":
@@ -247,9 +247,9 @@ class SDNController:
             self.path = selected_path
             if path_mod is not False:
                 slots_needed = self.mod_per_bw[self.chosen_bw][path_mod]['slots_needed']
-                spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.net_spec_db,
-                                                         guard_slots=self.guard_slots, is_sliced=False,
-                                                         alloc_method=self.alloc_method)
+                spectrum_assignment = SpectrumAssignment(path=self.path, slots_needed=slots_needed,
+                                                         net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
+                                                         is_sliced=False, alloc_method=self.alloc_method)
 
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
@@ -266,7 +266,7 @@ class SDNController:
                 # Attempt to slice the request due to a congestion constraint
                 return self.handle_lps()
 
-            # Attempt to slice the request due to a distance constraint
+            # Attempt to slice the request due to a reach constraint
             return self.handle_lps()
 
         raise NotImplementedError
