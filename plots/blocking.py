@@ -56,7 +56,8 @@ class Blocking:
         Saves and shows the current plot in the constructor.
         """
         # Save by the most recent time for used plotting
-        create_dir(f'./output/{self.network_name}/{self.des_times[-1]}/')
+        print(self.des_times[-1])
+        create_dir(f'./output/{self.network_name}/{self.des_times[-1]}')
         plt.savefig(f'./output/{self.network_name}/{self.des_times[-1]}/{file_name}')
         plt.show()
 
@@ -159,8 +160,8 @@ class Blocking:
                 color = self.colors[count]
                 # if info_obj['max_lps'] != 8 and info_obj['max_lps'] != 8:
                 #     continue
-                if info_obj['max_lps'] != 8:
-                    continue
+                # if info_obj['max_lps'] != 8:
+                #     continue
                 marker = self.markers[info_obj['max_lps']]
                 plt.plot(info_obj['erlang'], info_obj['blocking'], color=color, linestyle=line_style,
                          marker=marker, markersize=2.3)
@@ -195,8 +196,8 @@ class Blocking:
         for curr_time, obj in self.plot_dict.items():
             for thread, obj_2 in obj.items():  # pylint: disable=unused-variable
                 color = self.colors[count]
-                if obj_2['max_lps'] != 8:
-                    continue
+                # if obj_2['max_lps'] != 8:
+                #     continue
                 marker = self.markers[obj_2['max_lps']]
                 plt.plot(obj_2['erlang'], obj_2['av_trans'], color=color, markersize=2.3)
                 # legend_list.append(f"C={obj_2['num_cores']} LS={obj_2['max_lps']}")
@@ -488,7 +489,7 @@ def main():
     blocking_obj = Blocking()
 
     # blocking_obj.des_times = ['0329/11:50:35', '0323/09:22:02', '0323/09:22:04']
-    blocking_obj.des_times = ['0408/13:45:17']
+    blocking_obj.des_times = ['0411/11:47:39']
     blocking_obj.policy = 'First Fit'
     blocking_obj.weighted = False
     blocking_obj.cong_only = False

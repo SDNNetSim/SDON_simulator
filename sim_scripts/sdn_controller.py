@@ -10,8 +10,6 @@ from sim_scripts.spectrum_assignment import SpectrumAssignment
 from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
 
 
-# TODO: Potential transponder calculation bug
-
 class SDNController:
     """
     Handles spectrum allocation for a request in the simulation.
