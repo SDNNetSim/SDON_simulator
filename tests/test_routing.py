@@ -1,67 +1,74 @@
 import unittest
-import networkx as nx
 import numpy as np
+import networkx as nx
 from sim_scripts.routing import Routing
 
 
 class TestRouting(unittest.TestCase):
     """
-    This class tests the sim_scripts.routing module.
+    This class contains unit tests for methods found in the Routing class. These belong to the sim_scripts.routing
+    module.
     """
 
     def setUp(self):
         """
-        Set up the test environment.
+        Sets up this class.
         """
-        self.routing = Routing()
         self.topology = nx.Graph()
-        self.topology.add_edges_from([(1, 2), (2, 3), (3, 4), (1, 3), (2, 4)])
-        self.net_spec_db = {'link1': {'free_slots': 100, 'mod_format': 'QAM16'},
-                            'link2': {'free_slots': 50, 'mod_format': 'QAM8'},
-                            'link3': {'free_slots': 10, 'mod_format': 'BPSK'}}
-        self.mod_formats = {'QAM16': 100, 'QAM8': 50, 'BPSK': 10}
+        self.topology.add_edge(0, 1, free_slots=10, length=10)
+        self.topology.add_edge(1, 2, free_slots=8, length=50)
+        self.topology.add_edge(2, 3, free_slots=5, length=10)
+        self.topology.add_edge(3, 4, free_slots=12, length=12)
+        self.net_spec_db = {
+            (0, 1): {'cores_matrix': np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])},
+            (1, 2): {'cores_matrix': np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])},
+            (2, 3): {'cores_matrix': np.array([[0, 0, 0], [0, 0, 0]])},
+            (3, 4): {'cores_matrix': np.array([[0, 1, 0], [1, 0, 0]])}
+        }
+        self.mod_formats = {'QPSK': {'max_length': 150}, '16-QAM': {'max_length': 100}, '64-QAM': {'max_length': 50}}
+        self.routing = Routing(0, 4, self.topology, self.net_spec_db, self.mod_formats, 5, 200)
 
-    def test_find_least_cong_route(self):
+    def test_find_least_cong_path(self):
         """
-        Test find_least_cong_route() method with a non-empty path list.
+        Tests the least congested path method.
         """
-        routing = Routing(1, 4, self.topology, self.net_spec_db, self.mod_formats, slots_needed=5, bandwidth=10)
-        routing.paths_list = [{'path': [1, 2, 3, 4], 'link_info': self.net_spec_db['link1']},
-                              {'path': [1, 3, 4], 'link_info': self.net_spec_db['link2']},
-                              {'path': [1, 2, 4], 'link_info': self.net_spec_db['link3']}]
-        expected_output = [1, 2, 3, 4]
-        self.assertEqual(routing.find_least_cong_route(), expected_output)
-
-    def test_find_least_cong_route_with_empty_path_list(self):
-        """
-        Test find_least_cong_route() method with an empty path list.
-        """
-        routing = Routing(1, 4, self.topology, self.net_spec_db, self.mod_formats, slots_needed=5, bandwidth=10)
-        routing.paths_list = []
-        with self.assertRaises(IndexError):
-            routing.find_least_cong_route()
+        self.routing.paths_list = [
+            {'path': [0, 1, 2, 3, 4], 'link_info': {'free_slots': 3}},
+            {'path': [5, 6, 7, 8, 9], 'link_info': {'free_slots': 6}},
+            {'path': [10, 11, 12, 13, 14], 'link_info': {'free_slots': 1}},
+            {'path': [15, 16, 17, 18, 19], 'link_info': {'free_slots': 10}},
+        ]
+        least_cong_path = self.routing.find_least_cong_path()
+        self.assertEqual([15, 16, 17, 18, 19], least_cong_path)
 
     def test_find_most_cong_link(self):
         """
-        Test the find_most_cong_link() method.
+        Tests the most congested link method. This method returns the number of free slots on the most occupied core,
+        checking all links within the network.
         """
-        # Test with a path where all links have the same amount of congestion
-        path = [0, 1, 2, 3]
-        self.routing.net_spec_db = {(0, 1): {'cores_matrix': np.array([[1, 1, 0], [0, 1, 0]])},
-                                    (1, 2): {'cores_matrix': np.array([[0, 0, 1], [1, 0, 0]])},
-                                    (2, 3): {'cores_matrix': np.array([[0, 0, 0], [1, 1, 0]])}}
-        self.assertEqual(self.routing.find_most_cong_link(path), 0)
+        # Test case 1: One link fully congested
+        path = [0, 1, 2]
+        self.assertEqual(0, self.routing.find_most_cong_link(path))
 
-        # Test with a path where one link is more congested than the others
-        path = [0, 1, 2, 3]
-        self.routing.net_spec_db = {(0, 1): {'cores_matrix': np.array([[1, 0, 0], [1, 0, 0]])},
-                                    (1, 2): {'cores_matrix': np.array([[0, 0, 1], [1, 1, 0]])},
-                                    (2, 3): {'cores_matrix': np.array([[0, 0, 0], [0, 1, 0]])}}
-        self.assertEqual(self.routing.find_most_cong_link(path), 1)
+        # Test case 2: All links fully free
+        path = [1, 2, 3]
+        self.assertEqual(3, self.routing.find_most_cong_link(path))
 
-        # Test with a path where all links are fully congested
-        path = [0, 1, 2, 3]
-        self.routing.net_spec_db = {(0, 1): {'cores_matrix': np.array([[1, 1, 1], [1, 1, 1]])},
-                                    (1, 2): {'cores_matrix': np.array([[1, 1, 1], [1, 1, 1]])},
-                                    (2, 3): {'cores_matrix': np.array([[1, 1, 1], [1, 1, 1]])}}
-        self.assertEqual(self.routing.find_most_cong_link(path), 0)
+        # Test case 3: Path with 3 links, mixed congestion
+        path = [1, 2, 3, 4]
+        self.assertEqual(2, self.routing.find_most_cong_link(path))
+
+    def test_shortest_path(self):
+        """
+        Tests the shortest path method.
+        """
+        expected_path = [0, 1, 2, 3, 4]
+        expected_mod_format = '16-QAM'
+        path, mod_format = self.routing.shortest_path()
+
+        self.assertEqual(path, expected_path)
+        self.assertEqual(mod_format, expected_mod_format)
+
+
+if __name__ == '__main__':
+    unittest.main()

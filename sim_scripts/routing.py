@@ -53,11 +53,11 @@ class Routing:
         # A list of potential paths
         self.paths_list = []
 
-    def find_least_cong_route(self):
+    def find_least_cong_path(self):
         """
-        Finds the least congested route from the list of available paths.
+        Finds the least congested path from the list of available paths.
 
-        :return: The least congested route
+        :return: The least congested path
         :rtype: List[int]
         """
         # Sort dictionary by number of free slots, descending (least congested)
@@ -110,21 +110,21 @@ class Routing:
         # Use NetworkX to find all simple paths between the source and destination nodes
         all_paths = nx.shortest_simple_paths(self.topology, self.source, self.destination)
 
-        # Initialize variables to keep track of the best path and its congestion level
-        best_path = None
-        least_congested = np.inf
+        min_hops = None
 
-        # Iterate over all simple paths found
-        for path in all_paths:
-            # Check if the current path is better than the best path found so far
-            congestion = self.find_most_cong_link(path)
-            if congestion < least_congested:
-                least_congested = congestion
-                best_path = path
-
-            # Check if the congestion of the best path found so far is below a threshold
-            if least_congested <= self.slots_needed:
-                return best_path
+        # Iterate over all simple paths found until the number of hops exceeds the minimum hops plus one
+        for i, path in all_paths:
+            num_hops = len(path)
+            if i == 0:
+                min_hops = num_hops
+                self.find_most_cong_link(path)
+            else:
+                if num_hops <= min_hops + 1:
+                    self.find_most_cong_link(path)
+                # We exceeded minimum hops plus one, return the best path
+                else:
+                    least_cong_path = self.find_least_cong_path()
+                    return least_cong_path
 
         # If no valid path was found, return a tuple indicating failure
         return False, False, False
