@@ -81,8 +81,8 @@ def assign_link_lengths(node_pairings: dict = None, constant_weight: bool = Fals
     :rtype: dict
     """
     response_dict = {}
-    with open(network_fp, 'r', encoding='utf-8') as f:
-        for line in f:
+    with open(network_fp, 'r', encoding='utf-8') as file_obj:
+        for line in file_obj:
             src, dest, link_len_str = line.strip().split('\t')
             link_len = int(link_len_str) if not constant_weight else 1
 
