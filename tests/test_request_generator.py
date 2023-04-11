@@ -4,7 +4,7 @@ from sim_scripts.request_generator import generate
 
 class TestGenerateFunction(unittest.TestCase):
     """
-    This class contains unit tests for the `generate` function in the `my_module` module.
+    This class contains unit tests for the `generate` function in the sim_scripts.request_generator module.
     """
 
     def test_generate_function(self):

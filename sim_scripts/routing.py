@@ -14,8 +14,8 @@ class Routing:
     This class contains methods for routing packets in a network topology.
     """
 
-    def __init__(self, source: int, destination: int, topology: nx.Graph, net_spec_db: dict, mod_formats: dict,
-                 slots_needed: int = None, bandwidth: float = None):
+    def __init__(self, source: int = None, destination: int = None, topology: nx.Graph = None, net_spec_db: dict = None,
+                 mod_formats: dict = None, slots_needed: int = None, bandwidth: float = None):
         """
         Initializes the Routing class.
 

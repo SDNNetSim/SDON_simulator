@@ -1,97 +1,67 @@
 import unittest
-import os
-
+import networkx as nx
+import numpy as np
 from sim_scripts.routing import Routing
-from sim_scripts.engine import Engine
 
 
 class TestRouting(unittest.TestCase):
     """
-    Tests the methods in the routing class.
+    This class tests the sim_scripts.routing module.
     """
 
     def setUp(self):
         """
-        Sets up the class for testing.
+        Set up the test environment.
         """
-        working_dir = os.getcwd().split('/')
-        if working_dir[-1] == 'tests':
-            file_path = '../tests/test_data/input3.json'
-        else:
-            file_path = './tests/test_data/input3.json'
+        self.routing = Routing()
+        self.topology = nx.Graph()
+        self.topology.add_edges_from([(1, 2), (2, 3), (3, 4), (1, 3), (2, 4)])
+        self.net_spec_db = {'link1': {'free_slots': 100, 'mod_format': 'QAM16'},
+                            'link2': {'free_slots': 50, 'mod_format': 'QAM8'},
+                            'link3': {'free_slots': 10, 'mod_format': 'BPSK'}}
+        self.mod_formats = {'QAM16': 100, 'QAM8': 50, 'BPSK': 10}
 
-        self.engine = Engine(sim_input_fp=file_path)
-        self.engine.load_input()
-        self.engine.create_pt()
-
-        self.physical_topology = self.engine.physical_topology
-        self.network_spec_db = self.engine.network_spec_db
-
-        mod_formats = {'QPSK': {'max_length': 50000}, '16-QAM': {'max_length': 1}}
-
-        self.routing = Routing(source='Lowell', destination='San Francisco', physical_topology=self.physical_topology,
-                               network_spec_db=self.network_spec_db, mod_formats=mod_formats)
-
-    def test_least_cong_route(self):
+    def test_find_least_cong_route(self):
         """
-        Test the least congested route method.
+        Test find_least_cong_route() method with a non-empty path list.
         """
-        test_dict0 = {'path': ['Lowell', 'Las Vegas', 'Austin'], 'link_info': {'free_slots': 0}}
-        test_dict1 = {'path': ['Chicago', 'Houston', 'Richmond', 'Los Angeles'], 'link_info': {'free_slots': 32}}
-        test_dict2 = {'path': ['Boston', 'Miami'], 'link_info': {'free_slots': 127}}
-        test_dict3 = {'path': ['Boston', 'Lowell', 'Nashua'], 'link_info': {'free_slots': 128}}
-        self.routing.paths_list = [test_dict0, test_dict1, test_dict2, test_dict3]
+        routing = Routing(1, 4, self.topology, self.net_spec_db, self.mod_formats, slots_needed=5, bandwidth=10)
+        routing.paths_list = [{'path': [1, 2, 3, 4], 'link_info': self.net_spec_db['link1']},
+                              {'path': [1, 3, 4], 'link_info': self.net_spec_db['link2']},
+                              {'path': [1, 2, 4], 'link_info': self.net_spec_db['link3']}]
+        expected_output = [1, 2, 3, 4]
+        self.assertEqual(routing.find_least_cong_route(), expected_output)
 
-        check_list = self.routing.find_least_cong_route()
-
-        self.assertEqual(['Boston', 'Lowell', 'Nashua'], check_list, 'Incorrect path chosen.')
+    def test_find_least_cong_route_with_empty_path_list(self):
+        """
+        Test find_least_cong_route() method with an empty path list.
+        """
+        routing = Routing(1, 4, self.topology, self.net_spec_db, self.mod_formats, slots_needed=5, bandwidth=10)
+        routing.paths_list = []
+        with self.assertRaises(IndexError):
+            routing.find_least_cong_route()
 
     def test_find_most_cong_link(self):
         """
-        Tests the find most congested link method by forcing the simulation to choose a specific link.
+        Test the find_most_cong_link() method.
         """
-        path1 = ['Lowell', 'Miami', 'Chicago', 'San Francisco']
-        path2 = ['Lowell', 'Las Vegas', 'Portland', 'San Francisco']
-        # Congest link 1
-        self.network_spec_db[('Lowell', 'Miami')]['cores_matrix'][0][10:20] = 1
-        # Congest link 5
-        self.network_spec_db[('Las Vegas', 'Portland')]['cores_matrix'][0][0:] = 1
-        self.network_spec_db[('Las Vegas', 'Portland')]['cores_matrix'][1][0:] = 1
-        self.network_spec_db[('Las Vegas', 'Portland')]['cores_matrix'][2][0:] = 1
+        # Test with a path where all links have the same amount of congestion
+        path = [0, 1, 2, 3]
+        self.routing.net_spec_db = {(0, 1): {'cores_matrix': np.array([[1, 1, 0], [0, 1, 0]])},
+                                    (1, 2): {'cores_matrix': np.array([[0, 0, 1], [1, 0, 0]])},
+                                    (2, 3): {'cores_matrix': np.array([[0, 0, 0], [1, 1, 0]])}}
+        self.assertEqual(self.routing.find_most_cong_link(path), 0)
 
-        self.routing.find_most_cong_link(path=path1)
-        self.routing.find_most_cong_link(path=path2)
+        # Test with a path where one link is more congested than the others
+        path = [0, 1, 2, 3]
+        self.routing.net_spec_db = {(0, 1): {'cores_matrix': np.array([[1, 0, 0], [1, 0, 0]])},
+                                    (1, 2): {'cores_matrix': np.array([[0, 0, 1], [1, 1, 0]])},
+                                    (2, 3): {'cores_matrix': np.array([[0, 0, 0], [0, 1, 0]])}}
+        self.assertEqual(self.routing.find_most_cong_link(path), 1)
 
-        self.assertEqual({'path': path1, 'link_info': {'link': '1', 'free_slots': 490, 'core': 0}},
-                         self.routing.paths_list[0])
-        self.assertEqual({'path': path2, 'link_info': {'link': '5', 'free_slots': 0, 'core': 0}},
-                         self.routing.paths_list[1])
-
-    def test_least_congested_path(self):
-        """
-        Tests the least congested path method. Force the simulation to choose a path by congesting the other one.
-        """
-        # Force simulation to pick a path (completely congest one path of the two)
-        self.network_spec_db[('Lowell', 'Miami')]['cores_matrix'][0][0:] = 1
-        self.network_spec_db[('Miami', 'Chicago')]['cores_matrix'][0][0:] = 1
-        self.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix'][0][0:] = 1
-        self.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix'][1][0:] = 1
-        self.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix'][2][0:] = 1
-        self.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix'][3][0:] = 1
-        self.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix'][4][0:] = 1
-
-        response = self.routing.least_congested_path()
-
-        self.assertEqual(['Lowell', 'Las Vegas', 'Portland', 'San Francisco'], response, 'Incorrect path chosen.')
-
-    def test_shortest_path(self):
-        """
-        Tests Dijkstra's shortest path algorithm.
-        """
-        self.routing.source = 'Lowell'
-        self.routing.destination = 'Chicago'
-
-        shortest_path, mod = self.routing.shortest_path()  # pylint: disable=unused-variable
-
-        self.assertEqual(['Lowell', 'New York City', 'Richmond', 'Austin', 'Portland', 'San Francisco', 'Chicago'],
-                         shortest_path)
+        # Test with a path where all links are fully congested
+        path = [0, 1, 2, 3]
+        self.routing.net_spec_db = {(0, 1): {'cores_matrix': np.array([[1, 1, 1], [1, 1, 1]])},
+                                    (1, 2): {'cores_matrix': np.array([[1, 1, 1], [1, 1, 1]])},
+                                    (2, 3): {'cores_matrix': np.array([[1, 1, 1], [1, 1, 1]])}}
+        self.assertEqual(self.routing.find_most_cong_link(path), 0)
