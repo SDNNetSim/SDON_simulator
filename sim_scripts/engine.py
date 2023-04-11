@@ -68,7 +68,7 @@ class Engine(SDNController):
         self.trans_arr = np.array([])
         # Contains the requests generated in a simulation
         self.reqs_dict = None
-        # Holds relevant information of requests that have been allocated in a simulation
+        # Holds relevant information of requests that have been ALLOCATED in a simulation
         self.reqs_status = dict()
 
         # The mean of the blocking probability
@@ -234,6 +234,7 @@ class Engine(SDNController):
         # Request was blocked
         if not resp[0]:
             self.num_blocked_reqs += 1
+            # Add original transponder used to the request
             self.num_trans += 1
             self.slot_slice_dict[self.req_id]['times_blocked'] += 1
 
@@ -253,9 +254,9 @@ class Engine(SDNController):
                 "is_sliced": response_data['is_sliced']
             }})
 
-            # Minus one to not double count the original transponder used
             self.num_trans += num_transponders
 
+            # The original transponder used for the request is subtracted, since we want the number of slices
             self.slot_slice_dict[self.req_id]['num_slices'] += num_transponders - 1
 
     def handle_release(self, curr_time):
