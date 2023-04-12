@@ -21,19 +21,33 @@ class TestSDNController(unittest.TestCase):
             },
             (2, 1): {
                 'cores_matrix': np.zeros((10, 100))
-            }
+            },
+            (2, 3): {
+                'cores_matrix': np.zeros((10, 100))
+            },
+            (3, 2): {
+                'cores_matrix': np.zeros((10, 100))
+            },
         }
+
         self.topology = nx.Graph()
+        self.topology.add_edge(0, 1, free_slots=10, length=100)
+        self.topology.add_edge(1, 2, free_slots=8, length=1000)
+        self.topology.add_edge(2, 3, free_slots=5, length=10)
+        self.topology.add_edge(3, 4, free_slots=12, length=12)
+
         self.cores_per_link = 10
         self.path = [1, 2]
         self.sim_type = "yue"
         self.alloc_method = "first-fit"
         self.source = 1
         self.destination = 2
-        self.mod_per_bw = {}
+        self.mod_per_bw = {str(bw): {mod: {"max_length": 10, "slots_needed": 1} for mod in ["QPSK", "16-QAM", "64-QAM"]}
+                           for bw in [25, 50]}
         self.chosen_bw = '100'
         self.max_slices = 1
         self.guard_slots = 0
+
         self.sdn_controller = SDNController(
             req_id=self.req_id,
             net_spec_db=self.net_spec_db,
@@ -109,3 +123,57 @@ class TestSDNController(unittest.TestCase):
         """
         self.net_spec_db[(1, 2)]['cores_matrix'][0][:6] = np.ones(6, dtype=np.float64)
         self.assertRaises(BufferError, self.sdn_controller.allocate, 0, 5, 0)
+
+    def test_allocate_lps_with_unsuccessful_lps(self):
+        """
+        Test the allocate_lps method when we have a bandwidth of 25 or maximum allowed slicing equal to one.
+        """
+        self.sdn_controller.chosen_bw = '25'
+        self.sdn_controller.max_slices = 2
+        result = self.sdn_controller.allocate_lps()
+        self.assertFalse(result)
+
+        self.sdn_controller.chosen_bw = '400'
+        self.sdn_controller.max_slices = 1
+        result = self.sdn_controller.allocate_lps()
+        self.assertFalse(result)
+
+    def test_allocate_lps_with_dist_block(self):
+        """
+        Test allocate_lps to ensure a block due to a distance constraint is raised correctly.
+        """
+        self.sdn_controller.chosen_bw = '400'
+        self.sdn_controller.max_slices = 8
+        result = self.sdn_controller.allocate_lps()
+
+        self.assertFalse(result)
+        self.assertTrue(self.sdn_controller.dist_block)
+
+    def test_allocate_lps_with_successful_lps(self):
+        """
+        Test allocate_lps to check for a successful light path slice.
+        """
+        self.sdn_controller.path = [2, 3]
+        self.sdn_controller.req_id = 4
+        self.sdn_controller.max_slices = 2
+        self.sdn_controller.guard_slots = 1
+
+        # Congest the forward directional link
+        self.net_spec_db[(2, 3)]['cores_matrix'] = np.ones((10, 100))
+        self.net_spec_db[(2, 3)]['cores_matrix'][1, 4:6] = 0
+        self.net_spec_db[(2, 3)]['cores_matrix'][1, 98:] = 0
+
+        # Congest the opposite direction on the same link
+        self.net_spec_db[(3, 2)]['cores_matrix'] = np.ones((10, 100))
+        self.net_spec_db[(3, 2)]['cores_matrix'][1, 4:6] = 0
+        self.net_spec_db[(3, 2)]['cores_matrix'][1, 98:] = 0
+
+        result = self.sdn_controller.allocate_lps()
+        self.assertTrue(result)
+        # Check actual request allocation
+        self.assertTrue(np.all(self.net_spec_db[(2, 3)]['cores_matrix'][1][4:6] == [4, -4]))
+        self.assertTrue(np.all(self.net_spec_db[(3, 2)]['cores_matrix'][1][4:6] == [4, -4]))
+
+        # Check the guard band
+        self.assertTrue(np.all(self.net_spec_db[(2, 3)]['cores_matrix'][1][98:] == [4, -4]))
+        self.assertTrue(np.all(self.net_spec_db[(3, 2)]['cores_matrix'][1][98:] == [4, -4]))
