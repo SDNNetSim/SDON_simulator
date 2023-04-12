@@ -1,15 +1,17 @@
+# Third-party library imports
 import numpy as np
 
 
-def set_seed(seed_no):
+def set_seed(seed):
     """
     Sets the seed for random number generation functions.
 
-    :param seed_no: The seed
-    :type seed_no: int
+    :param seed: The seed
+    :type seed: int
+
     :return: None
     """
-    np.random.seed(seed_no)
+    np.random.seed(seed)
 
 
 def uniform_rv(scale_param=None):
@@ -18,6 +20,7 @@ def uniform_rv(scale_param=None):
 
     :param scale_param: A scale parameter
     :type scale_param: float
+
     :return: A uniform random variable
     :rtype: int
     """
@@ -33,6 +36,7 @@ def exponential_rv(scale_param):
 
     :param scale_param: A scale parameter
     :type scale_param: float
+
     :return: An exponential random variable
     :rtype: float
     """

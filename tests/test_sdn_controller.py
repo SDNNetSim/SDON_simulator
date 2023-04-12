@@ -1,157 +1,179 @@
 import unittest
-import os
-import json
-
 import numpy as np
+import networkx as nx
 
-from sim_scripts.engine import Engine
 from sim_scripts.sdn_controller import SDNController
 
 
 class TestSDNController(unittest.TestCase):
     """
-    Tests the SDN controller class.
+    This class contains unit tests for methods found in the SDNController class.
     """
 
     def setUp(self):
         """
-        Set up the class for testing.
+        Sets up this class.
         """
-        # TODO: Eventually have one setup script for creating topology and things like that
-        working_dir = os.getcwd().split('/')
-        if working_dir[-1] == 'tests':
-            file_path = './test_data/'
-        else:
-            file_path = './tests/test_data/'
+        self.req_id = 1
+        self.net_spec_db = {
+            (1, 2): {
+                'cores_matrix': np.zeros((10, 100))
+            },
+            (2, 1): {
+                'cores_matrix': np.zeros((10, 100))
+            },
+            (2, 3): {
+                'cores_matrix': np.zeros((10, 100))
+            },
+            (3, 2): {
+                'cores_matrix': np.zeros((10, 100))
+            },
+        }
 
-        self.engine = Engine(sim_input_fp=file_path + 'input3.json')
-        self.engine.load_input()
-        self.engine.create_pt()
+        self.topology = nx.Graph()
+        self.topology.add_edge(0, 1, free_slots=10, length=100)
+        self.topology.add_edge(1, 2, free_slots=8, length=1000)
+        self.topology.add_edge(2, 3, free_slots=5, length=10)
+        self.topology.add_edge(3, 4, free_slots=12, length=12)
 
-        self.topology = self.engine.physical_topology
-        self.network_db = self.engine.network_spec_db
+        self.cores_per_link = 10
+        self.path = [1, 2]
+        self.sim_type = "yue"
+        self.alloc_method = "first-fit"
+        self.source = 1
+        self.destination = 2
+        self.mod_per_bw = {str(bw): {mod: {"max_length": 10, "slots_needed": 1} for mod in ["QPSK", "16-QAM", "64-QAM"]}
+                           for bw in [25, 50]}
+        self.chosen_bw = '100'
+        self.max_slices = 1
+        self.guard_slots = 0
 
-        with open(file_path + 'bandwidth_info.json', 'r', encoding='utf-8') as file_obj:
-            mod_formats = json.load(file_obj)
+        self.sdn_controller = SDNController(
+            req_id=self.req_id,
+            net_spec_db=self.net_spec_db,
+            topology=self.topology,
+            cores_per_link=self.cores_per_link,
+            path=self.path,
+            sim_type=self.sim_type,
+            alloc_method=self.alloc_method,
+            source=self.source,
+            destination=self.destination,
+            mod_per_bw=self.mod_per_bw,
+            chosen_bw=self.chosen_bw,
+            max_slices=self.max_slices,
+            guard_slots=self.guard_slots
+        )
 
-        self.controller = SDNController(req_id=7, network_db=self.network_db, topology=self.topology, num_cores=1,
-                                        mod_formats=mod_formats, sim_assume='arash')
-        self.controller.path = ['Lowell', 'Miami', 'Chicago', 'San Francisco']
-        self.controller.guard_band = 1
-        self.controller.req_id = 7
-        self.controller.chosen_bw = '100'
-        self.controller.max_lps = 4
-
-    def test_handle_release(self):
+    def test_release(self):
         """
-        Test that a link has been released of its resources properly.
+        Tests the release method.
         """
-        for i in range(len(self.controller.path) - 1):
-            src_dest = (self.controller.path[i], self.controller.path[i + 1])
-            dest_src = (self.controller.path[i + 1], self.controller.path[i])
+        # Allocate the link in both directions
+        self.net_spec_db[(1, 2)]['cores_matrix'][0][0] = self.req_id
+        self.net_spec_db[(1, 2)]['cores_matrix'][0][1] = -self.req_id
+        self.net_spec_db[(2, 1)]['cores_matrix'][0][0] = self.req_id
+        self.net_spec_db[(2, 1)]['cores_matrix'][0][1] = -self.req_id
 
-            self.network_db[src_dest]['cores_matrix'][0][5:15] = self.controller.req_id
-            # For the guard band
-            self.network_db[src_dest]['cores_matrix'][0][15] = self.controller.req_id * -1
+        self.sdn_controller.release()
 
-            self.network_db[dest_src]['cores_matrix'][0][5:15] = self.controller.req_id
-            self.network_db[dest_src]['cores_matrix'][0][15] = self.controller.req_id * -1
+        # Test forward direction
+        self.assertTrue(np.array_equal(
+            self.net_spec_db[(1, 2)]['cores_matrix'][0],
+            np.zeros((100,))
+        ))
 
-        self.controller.network_db = self.network_db
-        self.controller.handle_release()
+        # Test backward direction
+        self.assertTrue(np.array_equal(
+            self.net_spec_db[(2, 1)]['cores_matrix'][0],
+            np.zeros((100,))
+        ))
 
-        for i in range(len(self.controller.path) - 1):
-            # TODO: Assuming dest_src works if src_dest works (remember, we have bi-directional links)
-            src_dest = (self.controller.path[i], self.controller.path[i + 1])
-
-            req_indexes = np.where(self.controller.network_db[src_dest]['cores_matrix'][0] == self.controller.req_id)[0]
-            gb_indexes = np.where(self.controller.network_db[src_dest]['cores_matrix'][0] == self.controller.req_id)[
-                             0] * -1
-
-            self.assertEqual(0, len(req_indexes), 'The request still exists in the network.')
-            self.assertEqual(0, len(gb_indexes), 'The guard band still exists in the network.')
-
-    def test_handle_arrival(self):
+    def test_allocate_with_guard_band(self):
         """
-        Test that a link has allocated its resources properly.
+        Test the allocate method with a guard band.
         """
-        self.controller.network_db = self.network_db
-        self.controller.handle_arrival(core_num=0, start_slot=20, end_slot=25)
+        self.sdn_controller.guard_slots = 1
+        # Allocate five slots, guard band included
+        self.sdn_controller.allocate(0, 5, 0)
 
-        for i in range(len(self.controller.path) - 1):
-            src_dest = (self.controller.path[i], self.controller.path[i + 1])
+        # Check actual request allocation
+        self.assertTrue(np.all(self.net_spec_db[(1, 2)]['cores_matrix'][0][:4] == self.req_id))
+        self.assertTrue(np.all(self.net_spec_db[(2, 1)]['cores_matrix'][0][:4] == self.req_id))
 
-            req_arr = self.controller.network_db[src_dest]['cores_matrix'][0][20:24]
-            guard_band = self.controller.network_db[src_dest]['cores_matrix'][0][24]
+        # Check guard band
+        self.assertEqual(self.net_spec_db[(1, 2)]['cores_matrix'][0][4], self.req_id * -1)
+        self.assertEqual(self.net_spec_db[(2, 1)]['cores_matrix'][0][4], self.req_id * -1)
 
-            exp_arr = [7.0, 7.0, 7.0, 7.0]
-            self.assertEqual(exp_arr, list(req_arr),
-                             f'Request was not allocated properly, expected {exp_arr} and got {req_arr}')
-            self.assertEqual(-7, guard_band,
-                             f'Guard band was not allocated properly. Expected -10 and got {guard_band}')
-
-    def test_single_core_lps(self):
+    def test_allocate_without_guard_band(self):
         """
-        Test that a request has been sliced into light segments properly in a single core.
+        Test allocate without a guard band.
         """
-        self.controller.network_db = self.network_db
-        self.controller.single_core = True
+        self.sdn_controller.guard_slots = 0
+        self.sdn_controller.allocate(0, 5, 0)
 
-        # Congest all links except the end and beginning of the array
-        for i in range(len(self.controller.path) - 1):
-            src_dest = (self.controller.path[i], self.controller.path[i + 1])
-            dest_src = (self.controller.path[i + 1], self.controller.path[i])
+        self.assertTrue(np.all(self.net_spec_db[(1, 2)]['cores_matrix'][0][:5] == self.req_id))
+        self.assertTrue(np.all(self.net_spec_db[(2, 1)]['cores_matrix'][0][:5] == self.req_id))
 
-            self.network_db[src_dest]['cores_matrix'][0][2:-2] = 1
-            self.network_db[dest_src]['cores_matrix'][0][2:-2] = 1
+        self.assertEqual(self.sdn_controller.net_spec_db[(1, 2)]['cores_matrix'][0][5], 0.0)
+        self.assertEqual(self.sdn_controller.net_spec_db[(2, 1)]['cores_matrix'][0][5], 0.0)
 
-        self.controller.handle_lps()
-
-        # Ensure no slicing occurred on anything but the first core
-        check_arr = self.controller.network_db[('Lowell', 'Miami')]['cores_matrix'][1]
-        ind_arr = np.where((check_arr == 7) | (check_arr == -7))[0]
-        self.assertEqual(0, len(ind_arr), 'Slicing occurred on multiple cores.')
-
-        # Ensure slicing occurred in the expected indexes
-        check_arr = self.controller.network_db[('Lowell', 'Miami')]['cores_matrix'][0]
-        ind_arr = np.where((check_arr == 7) | (check_arr == -7))[0]
-        exp_ind = [0, 1, 498, 499]
-        self.assertTrue(np.alltrue(ind_arr == exp_ind),
-                        f'Slicing occurred in indexes {ind_arr} when it should have occurred in {exp_ind}')
-
-    def test_multi_core_lps(self):
+    def test_allocate_conflict(self):
         """
-        Test that a request has been sliced into light segments properly in multiple cores.
+        Test allocate when there is a spectrum utilization conflict.
         """
-        self.controller.single_core = False
+        self.net_spec_db[(1, 2)]['cores_matrix'][0][:6] = np.ones(6, dtype=np.float64)
+        self.assertRaises(BufferError, self.sdn_controller.allocate, 0, 5, 0)
 
-        # Congest all links except the beginning of the array
-        for i in range(len(self.controller.path) - 1):
-            src_dest = (self.controller.path[i], self.controller.path[i + 1])
-            dest_src = (self.controller.path[i + 1], self.controller.path[i])
+    def test_allocate_lps_with_unsuccessful_lps(self):
+        """
+        Test the allocate_lps method when we have a bandwidth of 25 or maximum allowed slicing equal to one.
+        """
+        self.sdn_controller.chosen_bw = '25'
+        self.sdn_controller.max_slices = 2
+        result = self.sdn_controller.allocate_lps()
+        self.assertFalse(result)
 
-            self.network_db[src_dest]['cores_matrix'][0][2:] = 1
-            self.network_db[dest_src]['cores_matrix'][0][2:] = 1
+        self.sdn_controller.chosen_bw = '400'
+        self.sdn_controller.max_slices = 1
+        result = self.sdn_controller.allocate_lps()
+        self.assertFalse(result)
 
-            self.network_db[src_dest]['cores_matrix'][1][0:-2] = 1
-            self.network_db[dest_src]['cores_matrix'][1][0:-2] = 1
+    def test_allocate_lps_with_dist_block(self):
+        """
+        Test allocate_lps to ensure a block due to a distance constraint is raised correctly.
+        """
+        self.sdn_controller.chosen_bw = '400'
+        self.sdn_controller.max_slices = 8
+        result = self.sdn_controller.allocate_lps()
 
-        self.controller.handle_lps()
+        self.assertFalse(result)
+        self.assertTrue(self.sdn_controller.dist_block)
 
-        # Check the first core
-        check_arr = self.controller.network_db[('Lowell', 'Miami')]['cores_matrix'][0]
-        ind_arr = np.where((check_arr == 7) | (check_arr == -7))[0]
-        exp_ind = [0, 1]
-        self.assertTrue(np.alltrue(ind_arr == exp_ind),
-                        f'Slicing occurred in indexes {ind_arr} when it should have occurred in {exp_ind}')
+    def test_allocate_lps_with_successful_lps(self):
+        """
+        Test allocate_lps to check for a successful light path slice.
+        """
+        self.sdn_controller.path = [2, 3]
+        self.sdn_controller.req_id = 4
+        self.sdn_controller.max_slices = 2
+        self.sdn_controller.guard_slots = 1
 
-        # Check the second core
-        check_arr = self.controller.network_db[('Lowell', 'Miami')]['cores_matrix'][1]
-        ind_arr = np.where((check_arr == 7) | (check_arr == -7))[0]
-        exp_ind = [498, 499]
-        self.assertTrue(np.alltrue(ind_arr == exp_ind),
-                        f'Slicing occurred in indexes {ind_arr} when it should have occurred in {exp_ind}')
+        # Congest the forward directional link
+        self.net_spec_db[(2, 3)]['cores_matrix'] = np.ones((10, 100))
+        self.net_spec_db[(2, 3)]['cores_matrix'][1, 4:6] = 0
+        self.net_spec_db[(2, 3)]['cores_matrix'][1, 98:] = 0
 
+        # Congest the opposite direction on the same link
+        self.net_spec_db[(3, 2)]['cores_matrix'] = np.ones((10, 100))
+        self.net_spec_db[(3, 2)]['cores_matrix'][1, 4:6] = 0
+        self.net_spec_db[(3, 2)]['cores_matrix'][1, 98:] = 0
 
-if __name__ == '__main__':
-    unittest.main()
+        result = self.sdn_controller.allocate_lps()
+        self.assertTrue(result)
+        # Check actual request allocation
+        self.assertTrue(np.all(self.net_spec_db[(2, 3)]['cores_matrix'][1][4:6] == [4, -4]))
+        self.assertTrue(np.all(self.net_spec_db[(3, 2)]['cores_matrix'][1][4:6] == [4, -4]))
+
+        # Check the guard band
+        self.assertTrue(np.all(self.net_spec_db[(2, 3)]['cores_matrix'][1][98:] == [4, -4]))
+        self.assertTrue(np.all(self.net_spec_db[(3, 2)]['cores_matrix'][1][98:] == [4, -4]))

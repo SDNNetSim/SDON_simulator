@@ -1,274 +1,62 @@
 import unittest
 import numpy as np
-
 from sim_scripts.spectrum_assignment import SpectrumAssignment
-
-
-# TODO: Neaten up this script (more efficient)
 
 
 class TestSpectrumAssignment(unittest.TestCase):
     """
-    Tests the spectrum assignment methods.
+    This class contains unit tests for methods found in the SpectrumAssignment class.
     """
 
     def setUp(self):
         """
-        Sets up the class for testing.
+        Sets up this class.
         """
-        path = ['Lowell', 'Boston', 'Miami', 'Chicago', 'San Francisco']
-        self.network_spec_db = dict()
+        self.net_spec_db = {(0, 1): {'cores_matrix': np.array([[0, 1, 0, 0, 0],
+                                                               [1, 0, 1, 0, 0],
+                                                               [0, 0, 0, 1, 0],
+                                                               [0, 0, 0, 0, 0]])},
+                            (1, 0): {'cores_matrix': np.array([[0, 1, 0, 0, 0],
+                                                               [1, 0, 1, 0, 0],
+                                                               [0, 0, 0, 1, 0],
+                                                               [0, 0, 0, 0, 0]])},
+                            (1, 2): {'cores_matrix': np.array([[1, 1, 1, 1, 1],
+                                                               [1, 1, 1, 1, 0],
+                                                               [0, 1, 1, 1, 0],
+                                                               [1, 0, 1, 0, 1]])},
+                            (2, 1): {'cores_matrix': np.array([[1, 1, 1, 1, 1],
+                                                               [1, 1, 1, 1, 0],
+                                                               [0, 1, 1, 1, 0],
+                                                               [1, 0, 1, 0, 1]])}
+                            }
 
-        for i in range(len(path) - 1):
-            curr_tuple = (path[i], path[i + 1])
-            rev_curr_tuple = (path[i + 1], path[i])
-            num_cores = 2
-
-            core_matrix = np.zeros((num_cores, 256))
-            self.network_spec_db[curr_tuple] = {}
-            self.network_spec_db[rev_curr_tuple] = {}
-            self.network_spec_db[curr_tuple]['cores_matrix'] = core_matrix
-            self.network_spec_db[rev_curr_tuple]['cores_matrix'] = core_matrix
-
-        self.spec_obj = SpectrumAssignment(path=path, slots_needed=100, network_spec_db=self.network_spec_db,
-                                           guard_band=1)
-
-    def test_free_spectrum_1(self):
+    def test_best_fit_allocation(self):
         """
-        Test where all spectrum slots are available with a request of size 1.
+        Tests the best_fit_allocation method.
         """
-        self.spec_obj.slots_needed = 1
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 0, 'start_slot': 0, 'end_slot': 2}, response,
-                         'Incorrect assignment received')
+        spectrum_assignment = SpectrumAssignment([0, 1], 1, self.net_spec_db, 1)
+        spectrum_assignment.cores_per_link = 4
+        spectrum_assignment.best_fit_allocation()
 
-    def test_free_spectrum_100(self):
+        self.assertEqual(spectrum_assignment.response, {'core_num': 1, 'start_slot': 3, 'end_slot': 5})
+
+    def test_check_other_links(self):
         """
-        Test where all spectrum slots are available with a request of size 100.
+        Tests the check_other_links method.
         """
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 0, 'start_slot': 0, 'end_slot': 101}, response,
-                         'Incorrect assignment received')
+        spectrum_assignment = SpectrumAssignment([0, 1, 2], 1, self.net_spec_db, 1)
+        spectrum_assignment.cores_per_link = 4
+        spectrum_assignment.check_other_links(1, 3, 5)
 
-    def test_full_spectrum(self):
+        self.assertFalse(spectrum_assignment.is_free)
+
+    def test_first_fit_allocation(self):
         """
-        Test where all spectrum slots in one link are full.
+        Tests the first_fit_allocation method.
         """
-        core_matrix = self.spec_obj.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix']
-        rev_core_matrix = self.spec_obj.network_spec_db[('San Francisco', 'Chicago')]['cores_matrix']
+        spectrum_assignment = SpectrumAssignment([0, 1], 1, self.net_spec_db, 1)
+        spectrum_assignment.cores_per_link = 4
+        spectrum_assignment.cores_matrix = self.net_spec_db[(0, 1)]['cores_matrix']
+        spectrum_assignment.first_fit_allocation()
 
-        num_cores = np.shape(core_matrix)[0]
-
-        for i in range(num_cores):
-            core_matrix[i][0:] = 1
-            rev_core_matrix[i][0:] = 1
-
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual(False, response)
-
-    def test_forced_spectrum_assignment(self):
-        """
-        Make only one core able to allocate a request. Ensure the simulator chooses the correct one.
-        """
-        core_matrix = self.spec_obj.network_spec_db[('Miami', 'Chicago')]['cores_matrix']
-        rev_core_matrix = self.spec_obj.network_spec_db[('Chicago', 'Miami')]['cores_matrix']
-
-        num_cores = np.shape(core_matrix)[0]
-        for i in range(num_cores):
-            if i == 0:
-                core_matrix[i][0:50] = 1
-                core_matrix[i][151:] = 1
-                rev_core_matrix[i][0:50] = 1
-                rev_core_matrix[i][151:] = 1
-            else:
-                core_matrix[i][0:] = 1
-                rev_core_matrix[i][0:] = 1
-
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 0, 'start_slot': 50, 'end_slot': 151}, response,
-                         'Incorrect assignment received')
-
-    def test_one_direction_free(self):
-        """
-        Test when all links from 'A' to 'B' full, but from 'B' to 'A' free.
-        """
-        core_matrix = self.spec_obj.network_spec_db[('Miami', 'Chicago')]['cores_matrix']
-
-        num_cores = np.shape(core_matrix)[0]
-        for i in range(num_cores):
-            core_matrix[i][0:] = 1
-
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual(False, response)
-
-    def test_back_spectrum_1(self):
-        """
-        Test when the ending slots of a spectrum are free, the request is allocated properly for requests of size 1.
-        """
-        core_matrix = self.spec_obj.network_spec_db[('Miami', 'Chicago')]['cores_matrix']
-        rev_core_matrix = self.spec_obj.network_spec_db[('Chicago', 'Miami')]['cores_matrix']
-
-        num_cores = np.shape(core_matrix)[0]
-        for i in range(num_cores):
-            core_matrix[i][:-2] = 1
-            rev_core_matrix[i][:-2] = 1
-
-        self.spec_obj.slots_needed = 1
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 0, 'start_slot': 254, 'end_slot': 256}, response,
-                         'Incorrect assignment received for a request of size 1.')
-
-    def test_back_spectrum_4(self):
-        """
-        Test when the ending slots of a spectrum are free, the request is allocated properly for requests of size 4.
-        """
-        core_matrix = self.spec_obj.network_spec_db[('Boston', 'Miami')]['cores_matrix']
-        rev_core_matrix = self.spec_obj.network_spec_db[('Miami', 'Boston')]['cores_matrix']
-
-        num_cores = np.shape(core_matrix)[0]
-        for i in range(num_cores):
-            core_matrix[i][:-5] = 1
-            rev_core_matrix[i][:-5] = 1
-
-        self.spec_obj.slots_needed = 4
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 0, 'start_slot': 251, 'end_slot': 256}, response,
-                         'Incorrect assignment received for a request of size 4.')
-
-    def test_front_spectrum_1(self):
-        """
-        Test when the beginning slots of a spectrum are free, the request is allocated properly for requests of size 1.
-        """
-        core_matrix = self.spec_obj.network_spec_db[('Lowell', 'Boston')]['cores_matrix']
-        rev_core_matrix = self.spec_obj.network_spec_db[('Boston', 'Lowell')]['cores_matrix']
-
-        num_cores = np.shape(core_matrix)[0]
-        for i in range(num_cores):
-            core_matrix[i][5:] = 1
-            rev_core_matrix[i][5:] = 1
-
-        self.spec_obj.slots_needed = 1
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 0, 'start_slot': 0, 'end_slot': 2}, response,
-                         'Incorrect assignment received for a request of size 1.')
-
-    def test_front_spectrum_4(self):
-        """
-        Test when the beginning slots of a spectrum are free, the request is allocated properly for requests of size 4.
-        """
-        core_matrix = self.spec_obj.network_spec_db[('Boston', 'Miami')]['cores_matrix']
-        rev_core_matrix = self.spec_obj.network_spec_db[('Miami', 'Boston')]['cores_matrix']
-
-        num_cores = np.shape(core_matrix)[0]
-        for i in range(num_cores):
-            core_matrix[i][5:] = 1
-            rev_core_matrix[i][5:] = 1
-
-        self.spec_obj.slots_needed = 4
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 0, 'start_slot': 0, 'end_slot': 5}, response,
-                         'Incorrect assignment received for a request of size 4.')
-
-    # TODO: Test different core allocations for best-fit
-    def test_best_fit_1(self):
-        """
-        Test the best-fit spectrum allocation policy for a request of size 1.
-        """
-        self.spec_obj.allocation = 'best-fit'
-        self.spec_obj.slots_needed = 1
-        core_matrix = self.spec_obj.network_spec_db[('Boston', 'Miami')]['cores_matrix']
-        rev_core_matrix = self.spec_obj.network_spec_db[('Miami', 'Boston')]['cores_matrix']
-
-        # Make three available windows, ensure the smallest one is picked
-        window_one = [5, 50]
-        window_two = [100, 103]
-        window_three = [200, 250]
-
-        num_cores = np.shape(core_matrix)[0]
-        for i in range(num_cores):
-            core_matrix[i][0:] = 1
-            rev_core_matrix[i][0:] = 1
-
-            # Open select windows
-            core_matrix[i][window_one[0]:window_one[1]] = 0
-            rev_core_matrix[i][window_one[0]:window_one[1]] = 0
-
-            core_matrix[i][window_two[0]:window_two[1]] = 0
-            rev_core_matrix[i][window_two[0]:window_two[1]] = 0
-
-            core_matrix[i][window_three[0]:window_three[1]] = 0
-            rev_core_matrix[i][window_three[0]:window_three[1]] = 0
-
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 0, 'start_slot': 100, 'end_slot': 102}, response,
-                         'Incorrect assignment received for a request of size 1.')
-
-    def test_best_fit_4(self):
-        """
-        Test the best-fit spectrum allocation policy for a request of size 4.
-        """
-        self.spec_obj.allocation = 'best-fit'
-        self.spec_obj.slots_needed = 4
-        core_matrix = self.spec_obj.network_spec_db[('Lowell', 'Boston')]['cores_matrix']
-        rev_core_matrix = self.spec_obj.network_spec_db[('Boston', 'Lowell')]['cores_matrix']
-
-        # Make three available windows, ensure the smallest one is picked
-        window_one = [50, 55]
-        window_two = [200, 201]
-        window_three = [0, 10]
-
-        num_cores = np.shape(core_matrix)[0]
-        for i in range(num_cores):
-            core_matrix[i][0:] = 1
-            rev_core_matrix[i][0:] = 1
-
-            if i == 0:
-                core_matrix[i][window_one[0]:window_one[1]] = 0
-                rev_core_matrix[i][window_one[0]:window_one[1]] = 0
-
-            core_matrix[i][window_two[0]:window_two[1]] = 0
-            rev_core_matrix[i][window_two[0]:window_two[1]] = 0
-
-            core_matrix[i][window_three[0]:window_three[1]] = 0
-            rev_core_matrix[i][window_three[0]:window_three[1]] = 0
-
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 0, 'start_slot': 50, 'end_slot': 55}, response,
-                         'Incorrect assignment received for a request of size 4.')
-
-    def test_best_fit_multi_core(self):
-        """
-        Test to see if multiple cores have different open windows, the correct one is selected.
-        """
-        self.spec_obj.allocation = 'best-fit'
-        self.spec_obj.slots_needed = 4
-        core_matrix = self.spec_obj.network_spec_db[('Boston', 'Miami')]['cores_matrix']
-        rev_core_matrix = self.spec_obj.network_spec_db[('Miami', 'Boston')]['cores_matrix']
-
-        window_one = [0, 1]
-        window_two = [150, 155]
-        window_three = [200, 255]
-
-        num_cores = np.shape(core_matrix)[0]
-        for i in range(num_cores):
-            core_matrix[i][0:] = 1
-            rev_core_matrix[i][0:] = 1
-
-            # Have a different window allocated for the first core
-            if i == 0:
-                core_matrix[i][window_one[0]:window_one[1]] = 0
-                rev_core_matrix[i][window_one[0]:window_one[1]] = 0
-            else:
-                core_matrix[i][window_two[0]:window_two[1]] = 0
-                rev_core_matrix[i][window_two[0]:window_two[1]] = 0
-
-                core_matrix[i][window_three[0]:window_three[1]] = 0
-                rev_core_matrix[i][window_three[0]:window_three[1]] = 0
-
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 1, 'start_slot': 150, 'end_slot': 155}, response,
-                         'Incorrect assignment received for a request.')
-
-
-if __name__ == '__main__':
-    unittest.main()
+        self.assertEqual(spectrum_assignment.response, {'core_num': 0, 'start_slot': 2, 'end_slot': 4})
