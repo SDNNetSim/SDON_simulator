@@ -12,7 +12,7 @@ class SpectrumAssignment:
     Finds available spectrum slots for a given request.
     """
 
-    def __init__(self, path: List[int] = None, slots_needed: int = None, net_spec_db: np.ndarray = None,
+    def __init__(self, path: List[int] = None, slots_needed: int = None, net_spec_db: dict = None,
                  guard_slots: int = None, single_core: bool = False, is_sliced: bool = False, alloc_method: str = None):
         """
         Initializes the SpectrumAssignment class.
@@ -23,8 +23,8 @@ class SpectrumAssignment:
         :param slots_needed: An integer representing the number of spectral slots needed to allocate the request.
         :type slots_needed: int
 
-        :param net_spec_db: A numpy array representing the network spectrum database.
-        :type net_spec_db: numpy.ndarray
+        :param net_spec_db: A dictionary representing the network spectrum database.
+        :type net_spec_db: dict
 
         :param guard_slots: An integer representing the number of slots dedicated to the guard band.
         :type guard_slots: int
@@ -76,28 +76,26 @@ class SpectrumAssignment:
 
                 tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
                               itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-                for channel in itertools.chain.from_iterable(tmp_matrix):
+                for channel in tmp_matrix:
                     if len(channel) >= self.slots_needed:
                         res_list.append({'link': (src, dest), 'core': core_num, 'channel': channel})
 
         # Sort the list of candidate super channels
         sorted_list = sorted(res_list, key=lambda d: len(d['channel']))
 
-        for curr_obj in sorted_list:
-            for start_index in curr_obj['channel']:
+        for channel_dict in sorted_list:
+            for start_index in channel_dict['channel']:
                 end_index = (start_index + self.slots_needed + self.guard_slots) - 1
-                if end_index not in curr_obj['channel']:
+                if end_index not in channel_dict['channel']:
                     break
 
                 if len(self.path) > 2:
-                    self.check_other_links(curr_obj['core'], start_index, end_index + self.guard_slots)
+                    self.check_other_links(channel_dict['core'], start_index, end_index + self.guard_slots)
 
                 if self.is_free is not False or len(self.path) <= 2:
-                    self.response = {'core_num': curr_obj['core'], 'start_slot': start_index,
+                    self.response = {'core_num': channel_dict['core'], 'start_slot': start_index,
                                      'end_slot': end_index + self.guard_slots}
-            else:
-                continue
-            break
+                    return
 
     def check_other_links(self, core_num, start_slot, end_slot):
         """
