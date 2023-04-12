@@ -5,3 +5,4 @@ Useful Functions Module Documentation
 
     random_generation
     handle_dirs_files
+    sim_functions
