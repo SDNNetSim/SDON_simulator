@@ -122,6 +122,7 @@ class Engine(SDNController):
 
         :return: None
         """
+        # TODO: Fix the average number of slices and slots occupied averages, they are not correct
         # Remember that iterations start at zero, hence the reason we add one to the iteration param
         for request_id, request_data in self.slot_slice_dict.items():  # pylint: disable=unused-variable
             # We do not want to consider blocked requests, since this is to see how many times a request was sliced
