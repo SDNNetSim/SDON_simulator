@@ -122,21 +122,7 @@ class Engine(SDNController):
 
         :return: None
         """
-        # TODO: Fix the average number of slices and slots occupied averages, they are not correct
-        # Remember that iterations start at zero, hence the reason we add one to the iteration param
-        for request_id, request_data in self.slot_slice_dict.items():  # pylint: disable=unused-variable
-            # We do not want to consider blocked requests, since this is to see how many times a request was sliced
-            # on average (can't be sliced if it was never allocated)
-            requests_sliced = (iteration + 1) - request_data['times_blocked']
-            if requests_sliced == 0:
-                request_data['num_slices'] = 0.0
-            else:
-                # Average the number of slices over all iterations that occurred
-                request_data['num_slices'] /= float(requests_sliced)
-
-            # Average the number of occupied slots over all iterations that occurred
-            request_data['occ_slots'] /= float(iteration + 1)
-
+        # TODO: Calculate average number of slicing, slots, and blocking for multiple iterations (no support as of now)
         self.stats_dict['misc_stats'] = {
             'blocking_mean': self.blocking_mean,
             'blocking_variance': self.blocking_variance,
