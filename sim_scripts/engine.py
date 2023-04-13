@@ -105,7 +105,7 @@ class Engine(SDNController):
         :rtype: int
         """
         occupied_slots = 0
-        for node, data in self.net_spec_db.items():  # pylint: disable=unused-variable
+        for _, data in self.net_spec_db.items():
             for core in data['cores_matrix']:
                 occupied_slots += len(np.where(core != 0)[0])
 
@@ -221,7 +221,7 @@ class Engine(SDNController):
         :param curr_time: The arrival time of the request
         :type curr_time: float
 
-        :return: None
+        :return: The number of transponders used for the request
         """
         request = self.reqs_dict[curr_time]
         self.req_id = request['id']
@@ -236,6 +236,7 @@ class Engine(SDNController):
         if not resp[0]:
             self.num_blocked_reqs += 1
             # Add original transponder used to the request
+            # TODO: Should we be calculating transponders on requests that were never allocated?
             self.num_trans += 1
             self.slot_slice_dict[self.req_id]['times_blocked'] += 1
 
@@ -247,6 +248,9 @@ class Engine(SDNController):
 
             # Update how many times this bandwidth type has been blocked
             self.block_per_bw[self.chosen_bw] += 1
+
+            # Only one transponder used (the original for the request)
+            return 1
         else:
             response_data, num_transponders = resp[0], resp[2]
             self.reqs_status.update({self.req_id: {
@@ -257,8 +261,7 @@ class Engine(SDNController):
 
             self.num_trans += num_transponders
 
-            # The original transponder used for the request is subtracted, since we want the number of slices
-            self.slot_slice_dict[self.req_id]['num_slices'] += num_transponders - 1
+            return num_transponders
 
     def handle_release(self, curr_time):
         """
@@ -392,6 +395,27 @@ class Engine(SDNController):
             self.cong_block_arr = np.append(self.cong_block_arr,
                                             float(self.num_cong_block) / float(self.num_blocked_reqs))
 
+    def update_slot_slice_dict(self, request_number, num_transponders):
+        """
+        Updates the slot slice dictionary with information about the current request.
+
+        :param request_number: Represents the request number we're about to allocate
+        :type request_number: int
+
+        :param num_transponders: The number of transponders the request used
+        :type num_transponders: int
+        """
+        self.slot_slice_dict[request_number] = {'occ_slots': 0, 'blocking_prob': 0, 'num_slices': 0}
+
+        occupied_slots = self.get_total_occupied_slots()
+        self.slot_slice_dict[request_number]["occ_slots"] = occupied_slots
+
+        blocking_prob = self.num_blocked_reqs / request_number
+        self.slot_slice_dict[request_number]["blocking_prob"] = blocking_prob
+
+        # The original transponder used for the request is subtracted, since we want the number of slices
+        self.slot_slice_dict[request_number]['num_slices'] = num_transponders - 1
+
     def init_iter_vars(self):
         """
         Initializes the variables for a single iteration of the simulation.
@@ -428,19 +452,11 @@ class Engine(SDNController):
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
 
-            for curr_time in self.reqs_dict:
+            for request_number, curr_time in enumerate(self.reqs_dict, start=1):
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
-                    if iteration == 0:
-                        self.slot_slice_dict[self.reqs_dict[curr_time]["id"]] = {
-                            "num_slices": 0,
-                            "occ_slots": 0,
-                            "times_blocked": 0,
-                        }
-                    self.slot_slice_dict[self.reqs_dict[curr_time]["id"]][
-                        "occ_slots"] += self.get_total_occupied_slots()
-
-                    self.handle_arrival(curr_time)
+                    num_transponders = self.handle_arrival(curr_time)
+                    self.update_slot_slice_dict(request_number, num_transponders)
                 elif req_type == "release":
                     self.handle_release(curr_time)
                 else:
