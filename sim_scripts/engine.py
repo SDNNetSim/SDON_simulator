@@ -238,7 +238,6 @@ class Engine(SDNController):
             # Add original transponder used to the request
             # TODO: Should we be calculating transponders on requests that were never allocated?
             self.num_trans += 1
-            self.slot_slice_dict[self.req_id]['times_blocked'] += 1
 
             # Determine if blocking was due to distance or congestion
             if resp[1]:
