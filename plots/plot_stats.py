@@ -30,7 +30,7 @@ class PlotStats:
         # Miscellaneous customizations visually
         self.colors = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
-        self.markers = {1: 'o', 2: '^', 4: 's', 8: 'x'}
+        self.markers = ['o', '^', 's', 'x']
         self.x_ticks = [10, 100, 200, 300, 400]
 
         self.get_data()
@@ -177,7 +177,7 @@ class PlotStats:
         for _, thread_obj in self.plot_dict.items():
             color = self.colors[style_count]
             line_style = self.line_styles[style_count]
-            marker = self.markers[thread_obj['max_slices']]
+            marker = self.markers[style_count]
 
             plt.plot(thread_obj['erlang_vals'], thread_obj['blocking_vals'], color=color, linestyle=line_style,
                      marker=marker, markersize=2.3)
@@ -217,9 +217,9 @@ class PlotStats:
             marker_count = 1
             style_count += 1
 
-        plt.legend(legend_list, loc='upper left')
-        plt.xlim(0, 10000)
-        self._save_plot(file_name='slots_occupied')
+        plt.legend(legend_list)
+        plt.xlim(1000, 10000)
+        self._save_plot(file_name='block_per_request')
         plt.show()
 
     def plot_transponders(self):
@@ -270,7 +270,7 @@ class PlotStats:
             style_count += 1
 
         plt.legend(legend_list, loc='upper left')
-        plt.xlim(0, 10000)
+        plt.xlim(1000, 10000)
         plt.ylim(0, 4100)
         self._save_plot(file_name='slots_occupied')
         plt.show()
