@@ -49,7 +49,7 @@ class PlotStats:
             self.data_dir = os.path.join(self.data_dir, f'{self.latest_date}/{self.latest_time}')
 
         files_dict = {}
-        for thread in os.listdir(self.data_dir):
+        for thread in sorted(os.listdir(self.data_dir)):
             curr_fp = os.path.join(self.data_dir, thread)
             files_dict[thread] = list()
             for erlang_file in os.listdir(curr_fp):
@@ -119,7 +119,7 @@ class PlotStats:
         :param file_name: A string representing the name of the file to save the plot as
         :type file_name: str
         """
-        file_path = f'./output/{self.net_name}/{self.latest_date}/{self.latest_time}/'
+        file_path = f'./output/{self.net_name}/{self.latest_date}/{self.latest_time}'
         create_dir(file_path)
         plt.savefig(f'{file_path}/{file_name}.png')
 
@@ -165,7 +165,7 @@ class PlotStats:
 
         style_count = 0
         legend_list = list()
-        for thread, thread_obj in self.plot_dict.items():  # pylint: disable=unused-variable
+        for _, thread_obj in self.plot_dict.items():
             color = self.colors[style_count]
             line_style = self.line_styles[style_count]
             marker = self.markers[thread_obj['max_slices']]
@@ -212,18 +212,21 @@ class PlotStats:
 
         legend_list = list()
         style_count = 0
+        marker_count = 1
         for _, thread_obj in self.plot_dict.items():
             color = self.colors[style_count]
 
             for erlang in thread_obj['taken_slots']:
-                marker = self.markers[thread_obj['max_slices']]
+                marker = self.markers[marker_count]
 
                 request_numbers = thread_obj['taken_slots'][erlang].keys()
                 slots_occupied = thread_obj['taken_slots'][erlang].values()
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
                 legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                marker_count += 1
 
+            marker_count = 1
             style_count += 1
 
         plt.legend(legend_list, loc='upper left')
@@ -263,9 +266,9 @@ def main():
     Controls this script.
     """
     plot_obj = PlotStats(net_name='USNet')
-    # plot_obj.plot_blocking()
-    # plot_obj.plot_transponders()
-    # plot_obj.plot_slots_taken()
+    plot_obj.plot_blocking()
+    plot_obj.plot_transponders()
+    plot_obj.plot_slots_taken()
     plot_obj.plot_num_slices()
 
 

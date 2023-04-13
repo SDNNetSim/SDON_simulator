@@ -437,11 +437,14 @@ class Engine(SDNController):
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
 
-            for request_number, curr_time in enumerate(self.reqs_dict, start=1):
+            request_number = 1
+            for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
                     num_transponders = self.handle_arrival(curr_time)
                     self.update_slot_slice_dict(request_number, num_transponders)
+
+                    request_number += 1
                 elif req_type == "release":
                     self.handle_release(curr_time)
                 else:
