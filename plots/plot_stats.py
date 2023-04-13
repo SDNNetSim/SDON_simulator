@@ -74,6 +74,7 @@ class PlotStats:
                 'max_slices': None,
                 'num_slices': {},
                 'taken_slots': {},
+                'block_per_req': {},
             }
             for erlang in erlang_values:
                 curr_fp = os.path.join(self.data_dir, f'{thread}/{erlang}_erlang.json')
@@ -101,6 +102,7 @@ class PlotStats:
 
                 if erlang in (10, 100, 700):
                     self.plot_dict[thread]['taken_slots'][erlang] = dict()
+                    self.plot_dict[thread]['block_per_req'][erlang] = dict()
                     self.plot_dict[thread]['num_slices'][erlang] = list()
 
                     for request_number, request_info in erlang_dict['misc_stats']['slot_slice_dict'].items():
@@ -109,6 +111,8 @@ class PlotStats:
                             self.plot_dict[thread]['taken_slots'][erlang][request_number] = request_info['occ_slots'] / \
                                                                                             erlang_dict['misc_stats'][
                                                                                                 'cores_per_link']
+                            self.plot_dict[thread]['block_per_req'][erlang][request_number] = request_info[
+                                'blocking_prob']
 
                         self.plot_dict[thread]['num_slices'][erlang].append(request_info['num_slices'])
 
@@ -123,7 +127,7 @@ class PlotStats:
         create_dir(file_path)
         plt.savefig(f'{file_path}/{file_name}.png')
 
-    def _setup_plot(self, title, y_label, x_label, grid=True, x_ticks=True):
+    def _setup_plot(self, title, y_label, x_label, grid=True, y_ticks=True, x_ticks=True):
         """
         Set up a Matplotlib plot with a given title, y-axis label, and x-axis label.
 
@@ -139,6 +143,10 @@ class PlotStats:
         :param grid: A boolean indicating whether to show a grid on the plot.
         :type grid: bool
 
+        :param y_ticks: Determines if we'd like to plot the default for y_ticks, which is blocking probability
+                        (log scale)
+        :type y_ticks: bool
+
         :param x_ticks: Determines if we'd like to plot the default for x_ticks, which are Erlang values
         :type x_ticks: bool
         """
@@ -146,6 +154,10 @@ class PlotStats:
         plt.title(title)
         plt.ylabel(y_label)
         plt.xlabel(x_label)
+
+        if y_ticks:
+            plt.ylim(10 ** -5, 1)
+            plt.yscale('log')
 
         if x_ticks:
             plt.xticks(self.x_ticks)
@@ -159,9 +171,6 @@ class PlotStats:
         Plots the blocking probability for each Erlang value.
         """
         self._setup_plot(f'{self.net_name} BP vs. Erlang', 'Blocking Probability', 'Erlang')
-
-        plt.ylim(10 ** -5, 1)
-        plt.yscale('log')
 
         style_count = 0
         legend_list = list()
@@ -182,11 +191,42 @@ class PlotStats:
         self._save_plot(file_name='blocking')
         plt.show()
 
+    def plot_blocking_per_request(self):
+        """
+        Plots the blocking probability, but for each request at that point in time.
+        """
+        self._setup_plot(f'{self.net_name} Request Snapshot vs. Blocking Probability', 'Blocking Probability',
+                         'Request Number', x_ticks=False)
+
+        legend_list = list()
+        style_count = 0
+        marker_count = 1
+        for _, thread_obj in self.plot_dict.items():
+            color = self.colors[style_count]
+
+            for erlang in thread_obj['block_per_req']:
+                marker = self.markers[marker_count]
+
+                request_numbers = thread_obj['block_per_req'][erlang].keys()
+                slots_occupied = thread_obj['block_per_req'][erlang].values()
+                plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
+
+                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                marker_count += 1
+
+            marker_count = 1
+            style_count += 1
+
+        plt.legend(legend_list, loc='upper left')
+        plt.xlim(0, 10000)
+        self._save_plot(file_name='slots_occupied')
+        plt.show()
+
     def plot_transponders(self):
         """
         Plots the average number of transponders used for each Erlang value.
         """
-        self._setup_plot(f'{self.net_name} Transponders vs. Erlang', 'Transponders', 'Erlang')
+        self._setup_plot(f'{self.net_name} Transponders vs. Erlang', 'Transponders', 'Erlang', y_ticks=False)
         plt.ylim(0.9, 2)
 
         legend_list = list()
@@ -208,7 +248,7 @@ class PlotStats:
         Plots the number of slots taken in the entire network for certain request snapshots.
         """
         self._setup_plot(f'{self.net_name} Request Snapshot vs. Slots Occupied', 'Slots Occupied', 'Request Number',
-                         x_ticks=False)
+                         y_ticks=False, x_ticks=False)
 
         legend_list = list()
         style_count = 0
@@ -240,7 +280,7 @@ class PlotStats:
         Plots the number of times all requests have been sliced.
         """
         self._setup_plot(f'{self.net_name} Number of Slices vs. Occurrences', 'Occurrences', 'Number of Slices',
-                         x_ticks=False, grid=False)
+                         y_ticks=False, x_ticks=False, grid=False)
 
         erlang_colors = ['#0000b3', '#3333ff', '#9999ff', '#b30000', '#ff3333', '#ff9999', '#00b33c', '#00ff55',
                          '#99ffbb', '#b36b00', '#ff9900', '#ffb84d']
@@ -269,7 +309,8 @@ def main():
     plot_obj.plot_blocking()
     plot_obj.plot_transponders()
     plot_obj.plot_slots_taken()
-    plot_obj.plot_num_slices()
+    # plot_obj.plot_num_slices()
+    plot_obj.plot_blocking_per_request()
 
 
 if __name__ == '__main__':
