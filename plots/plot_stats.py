@@ -104,8 +104,11 @@ class PlotStats:
                     self.plot_dict[thread]['num_slices'][erlang] = list()
 
                     for request_number, request_info in erlang_dict['misc_stats']['slot_slice_dict'].items():
-                        if int(request_number) % 1000 == 0 or int(request_number) == 1:
-                            self.plot_dict[thread]['taken_slots'][erlang] = request_info['occ_slots']
+                        request_number = int(request_number)
+                        if request_number % 1000 == 0 or request_number == 1:
+                            self.plot_dict[thread]['taken_slots'][erlang][request_number] = request_info['occ_slots'] / \
+                                                                                            erlang_dict['misc_stats'][
+                                                                                                'cores_per_link']
 
                         self.plot_dict[thread]['num_slices'][erlang].append(request_info['num_slices'])
 
@@ -120,7 +123,7 @@ class PlotStats:
         create_dir(file_path)
         plt.savefig(f'{file_path}/{file_name}.png')
 
-    def _setup_plot(self, title, y_label, x_label, grid=True):
+    def _setup_plot(self, title, y_label, x_label, grid=True, x_ticks=True):
         """
         Set up a Matplotlib plot with a given title, y-axis label, and x-axis label.
 
@@ -135,14 +138,18 @@ class PlotStats:
 
         :param grid: A boolean indicating whether to show a grid on the plot.
         :type grid: bool
+
+        :param x_ticks: Determines if we'd like to plot the default for x_ticks, which are Erlang values
+        :type x_ticks: bool
         """
         plt.figure(figsize=(7, 5), dpi=300)
         plt.title(title)
         plt.ylabel(y_label)
         plt.xlabel(x_label)
 
-        plt.xticks(self.x_ticks)
-        plt.xlim(self.x_ticks[0], self.x_ticks[-1])
+        if x_ticks:
+            plt.xticks(self.x_ticks)
+            plt.xlim(self.x_ticks[0], self.x_ticks[-1])
 
         if grid:
             plt.grid()
@@ -196,14 +203,70 @@ class PlotStats:
         self._save_plot(file_name='transponders')
         plt.show()
 
+    def plot_slots_taken(self):
+        """
+        Plots the number of slots taken in the entire network for certain request snapshots.
+        """
+        self._setup_plot(f'{self.net_name} Request Snapshot vs. Slots Occupied', 'Slots Occupied', 'Request Number',
+                         x_ticks=False)
+
+        legend_list = list()
+        style_count = 0
+        for _, thread_obj in self.plot_dict.items():
+            color = self.colors[style_count]
+
+            for erlang in thread_obj['taken_slots']:
+                marker = self.markers[thread_obj['max_slices']]
+
+                request_numbers = thread_obj['taken_slots'][erlang].keys()
+                slots_occupied = thread_obj['taken_slots'][erlang].values()
+                plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
+
+                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+
+            style_count += 1
+
+        plt.legend(legend_list, loc='upper left')
+        plt.xlim(0, 10000)
+        plt.ylim(0, 4100)
+        self._save_plot(file_name='slots_occupied')
+        plt.show()
+
+    def plot_num_slices(self):
+        """
+        Plots the number of times all requests have been sliced.
+        """
+        self._setup_plot(f'{self.net_name} Number of Slices vs. Occurrences', 'Occurrences', 'Number of Slices',
+                         x_ticks=False, grid=False)
+
+        erlang_colors = ['#0000b3', '#3333ff', '#9999ff', '#b30000', '#ff3333', '#ff9999', '#00b33c', '#00ff55',
+                         '#99ffbb', '#b36b00', '#ff9900', '#ffb84d']
+
+        hist_list = list()
+        legend_list = list()
+        for _, thread_obj in self.plot_dict.items():
+            for erlang, slices_lst in thread_obj['num_slices'].items():
+                hist_list.append(slices_lst)
+                legend_list.append(f"E={int(erlang)} LS={thread_obj['max_slices']}")
+
+        plt.hist(hist_list, stacked=False, histtype='bar', edgecolor='black', rwidth=1, color=erlang_colors)
+
+        plt.ylim(0, 10000)
+        plt.xlim(0, 8)
+        plt.legend(legend_list, loc='upper right')
+        self._save_plot(file_name='num_slices')
+        plt.show()
+
 
 def main():
     """
     Controls this script.
     """
     plot_obj = PlotStats(net_name='USNet')
-    plot_obj.plot_blocking()
-    plot_obj.plot_transponders()
+    # plot_obj.plot_blocking()
+    # plot_obj.plot_transponders()
+    # plot_obj.plot_slots_taken()
+    plot_obj.plot_num_slices()
 
 
 if __name__ == '__main__':
