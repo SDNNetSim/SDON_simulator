@@ -14,7 +14,8 @@ class PlotStats:
     A class for computing and plotting statistical analysis for simulations.
     """
 
-    def __init__(self, net_name: str, data_dir: str = None, latest_date: str = None, latest_time: str = None):
+    def __init__(self, net_name: str, data_dir: str = None, latest_date: str = None, latest_time: str = None,
+                 plot_threads: list = None):
         """
         Initializes the PlotStats class.
         """
@@ -23,6 +24,8 @@ class PlotStats:
         self.data_dir = data_dir
         self.latest_date = latest_date
         self.latest_time = latest_time
+        # Desired threads to be plotted
+        self.plot_threads = plot_threads
         self.file_info = self.get_file_info()
 
         # The final dictionary containing information for all plots
@@ -40,7 +43,7 @@ class PlotStats:
         Obtains all the filenames of the output data from the simulations.
         """
         # Default to the latest time if a data directory wasn't specified
-        if self.data_dir is None:
+        if self.latest_date is None or self.latest_time is None:
             self.data_dir = f'../data/output/{self.net_name}/'
             dir_list = os.listdir(self.data_dir)
             self.latest_date = sorted(dir_list)[-1]
@@ -49,7 +52,10 @@ class PlotStats:
             self.data_dir = os.path.join(self.data_dir, f'{self.latest_date}/{self.latest_time}')
 
         files_dict = {}
+        self.data_dir = f'../data/output/{self.net_name}/{self.latest_date}/{self.latest_time}'
         for thread in sorted(os.listdir(self.data_dir)):
+            if thread not in self.plot_threads:
+                continue
             curr_fp = os.path.join(self.data_dir, thread)
             files_dict[thread] = list()
             for erlang_file in os.listdir(curr_fp):
@@ -107,7 +113,7 @@ class PlotStats:
 
                     for request_number, request_info in erlang_dict['misc_stats']['slot_slice_dict'].items():
                         request_number = int(request_number)
-                        if request_number % 1000 == 0 or request_number == 1:
+                        if request_number % 100 == 0 or request_number == 1:
                             self.plot_dict[thread]['taken_slots'][erlang][request_number] = request_info['occ_slots'] / \
                                                                                             erlang_dict['misc_stats'][
                                                                                                 'cores_per_link']
@@ -218,7 +224,7 @@ class PlotStats:
             style_count += 1
 
         plt.legend(legend_list)
-        plt.xlim(1000, 10000)
+        plt.xlim(0, 500)
         self._save_plot(file_name='block_per_request')
         plt.show()
 
@@ -270,7 +276,7 @@ class PlotStats:
             style_count += 1
 
         plt.legend(legend_list, loc='upper left')
-        plt.xlim(1000, 10000)
+        plt.xlim(0, 500)
         plt.ylim(0, 4100)
         self._save_plot(file_name='slots_occupied')
         plt.show()
@@ -283,18 +289,20 @@ class PlotStats:
                          y_ticks=False, x_ticks=False, grid=False)
 
         erlang_colors = ['#0000b3', '#3333ff', '#9999ff', '#b30000', '#ff3333', '#ff9999', '#00b33c', '#00ff55',
-                         '#99ffbb', '#b36b00', '#ff9900', '#ffb84d']
+                         '#99ffbb']
 
         hist_list = list()
         legend_list = list()
         for _, thread_obj in self.plot_dict.items():
+            if thread_obj['max_slices'] == 1:
+                continue
             for erlang, slices_lst in thread_obj['num_slices'].items():
                 hist_list.append(slices_lst)
                 legend_list.append(f"E={int(erlang)} LS={thread_obj['max_slices']}")
 
         plt.hist(hist_list, stacked=False, histtype='bar', edgecolor='black', rwidth=1, color=erlang_colors)
 
-        plt.ylim(0, 10000)
+        plt.ylim(0, 500)
         plt.xlim(0, 8)
         plt.legend(legend_list, loc='upper right')
         self._save_plot(file_name='num_slices')
@@ -305,12 +313,13 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet')
+    plot_obj = PlotStats(net_name='USNet', latest_date='0413', latest_time='13:11:17',
+                         plot_threads=['t1', 't2', 't3', 't4'])
+    plot_obj.plot_blocking_per_request()
     plot_obj.plot_blocking()
     plot_obj.plot_transponders()
     plot_obj.plot_slots_taken()
-    # plot_obj.plot_num_slices()
-    plot_obj.plot_blocking_per_request()
+    plot_obj.plot_num_slices()
 
 
 if __name__ == '__main__':

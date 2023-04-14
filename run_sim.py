@@ -280,9 +280,10 @@ def run(threads):
             future.result()
 
 
+# TODO: Only support for one iteration (for now, change back eventually based on prior commits)
 if __name__ == '__main__':
     threads_obj = []
-    for max_slices in [1, 2, 4, 8]:
+    for max_slices in [1]:
         for cores_per_link in [1]:
             thread = {
                 'max_slices': max_slices,

@@ -113,12 +113,9 @@ class Engine(SDNController):
         total_occ_slots = int(occupied_slots / 2)
         return total_occ_slots
 
-    def save_sim_results(self, iteration):
+    def save_sim_results(self):
         """
         Saves the simulation results to a file like #_erlang.json.
-
-        :param iteration: The last iteration of the simulation completed
-        :type iteration: int
 
         :return: None
         """
@@ -175,7 +172,7 @@ class Engine(SDNController):
         if self.block_ci_percent <= 5:
             print(f'Confidence interval of {round(self.block_ci_percent, 2)}% reached on simulation '
                   f'{iteration + 1}, ending and saving results for Erlang: {self.erlang}')
-            self.save_sim_results(iteration)
+            self.save_sim_results()
             return True
 
         return False
@@ -236,17 +233,17 @@ class Engine(SDNController):
 
             # Only one transponder used (the original for the request)
             return 1
-        else:
-            response_data, num_transponders = resp[0], resp[2]
-            self.reqs_status.update({self.req_id: {
-                "mod_format": response_data['mod_format'],
-                "path": response_data['path'],
-                "is_sliced": response_data['is_sliced']
-            }})
 
-            self.num_trans += num_transponders
+        response_data, num_transponders = resp[0], resp[2]
+        self.reqs_status.update({self.req_id: {
+            "mod_format": response_data['mod_format'],
+            "path": response_data['path'],
+            "is_sliced": response_data['is_sliced']
+        }})
 
-            return num_transponders
+        self.num_trans += num_transponders
+
+        return num_transponders
 
     def handle_release(self, curr_time):
         """
@@ -439,6 +436,8 @@ class Engine(SDNController):
 
             request_number = 1
             for curr_time in self.reqs_dict:
+                if request_number == 1000:
+                    print('Begin debug')
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
                     num_transponders = self.handle_arrival(curr_time)
@@ -459,7 +458,7 @@ class Engine(SDNController):
             if (iteration + 1) % 10 == 0 or iteration == 0:
                 self.print_iter_stats(iteration)
 
-            self.save_sim_results(iteration)
+            self.save_sim_results()
 
         print(f"Simulation for Erlang: {self.erlang} finished.")
-        self.save_sim_results(self.sim_data["max_iters"] - 1)
+        self.save_sim_results()
