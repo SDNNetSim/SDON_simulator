@@ -88,8 +88,11 @@ class Engine(SDNController):
         self.num_cong_block = 0
         # Array used to take an average of the congestion blocks across multiple simulation iterations
         self.cong_block_arr = np.array([])
-        # Determine how many times a request was sliced and how many spectral slots are occupied at this point in time
-        self.slot_slice_dict = dict()
+        # A dictionary holding "snapshots" of each request. Info related to how many spectral slots are occupied,
+        # active requests, and how many times this particular request was sliced
+        self.request_snapshots = dict()
+        # Holds the request numbers of all the requests currently active in the network
+        self.active_requests = set()
 
         # Initialize the constructor of the SDNController class
         super().__init__(alloc_method=self.sim_data['alloc_method'],
@@ -101,17 +104,39 @@ class Engine(SDNController):
         """
         Returns the total number of occupied spectral slots in the network.
 
-        :return: The total number of occupied spectral slots in the network.
+        :return: The total number of occupied spectral slots in the network
         :rtype: int
         """
+        self.active_requests = set()
         occupied_slots = 0
+
         for _, data in self.net_spec_db.items():
             for core in data['cores_matrix']:
+                for request_id in core:
+                    if request_id > 0:
+                        self.active_requests.add(request_id)
                 occupied_slots += len(np.where(core != 0)[0])
 
         # Divide by 2 since there are identical bidirectional links
         total_occ_slots = int(occupied_slots / 2)
         return total_occ_slots
+
+    def get_total_guard_slots(self):
+        """
+        Returns the total number of guard bands occupying spectral slots in the network.
+
+        :return: The total number of guard bands in the network
+        :rtype: int
+        """
+        guard_slots = 0
+        for _, data in self.net_spec_db.items():
+            for core in data['cores_matrix']:
+                # All guard bands are a negative version of the request ID number
+                guard_slots += len(np.where(core < 0)[0])
+
+        # Divide by 2 since there are identical bidirectional links
+        total_guard_slots = int(guard_slots / 2)
+        return total_guard_slots
 
     def save_sim_results(self):
         """
@@ -135,7 +160,7 @@ class Engine(SDNController):
             'cong_percent': np.mean(self.cong_block_arr) * 100.0,
             'block_per_bw': self.block_per_bw,
             'alloc_method': self.sim_data['alloc_method'],
-            'slot_slice_dict': self.slot_slice_dict,
+            'request_snapshots': self.request_snapshots,
         }
 
         base_fp = f"data/output/{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
@@ -377,9 +402,9 @@ class Engine(SDNController):
             self.cong_block_arr = np.append(self.cong_block_arr,
                                             float(self.num_cong_block) / float(self.num_blocked_reqs))
 
-    def update_slot_slice_dict(self, request_number, num_transponders):
+    def update_request_snapshots_dict(self, request_number, num_transponders):
         """
-        Updates the slot slice dictionary with information about the current request.
+        Updates the request snapshot dictionary with information about the current request.
 
         :param request_number: Represents the request number we're about to allocate
         :type request_number: int
@@ -387,16 +412,20 @@ class Engine(SDNController):
         :param num_transponders: The number of transponders the request used
         :type num_transponders: int
         """
-        self.slot_slice_dict[request_number] = {'occ_slots': 0, 'blocking_prob': 0, 'num_slices': 0}
+        self.request_snapshots[request_number] = {'occ_slots': 0, 'guard_bands': 0, 'blocking_prob': 0, 'num_slices': 0,
+                                                  'active_requests': 0}
 
         occupied_slots = self.get_total_occupied_slots()
-        self.slot_slice_dict[request_number]["occ_slots"] = occupied_slots
+        guard_bands = self.get_total_guard_slots()
+
+        self.request_snapshots[request_number]['occ_slots'] = occupied_slots
+        self.request_snapshots[request_number]['guard_bands'] = guard_bands
+        self.request_snapshots[request_number]['active_requests'] = len(self.active_requests)
 
         blocking_prob = self.num_blocked_reqs / request_number
-        self.slot_slice_dict[request_number]["blocking_prob"] = blocking_prob
+        self.request_snapshots[request_number]["blocking_prob"] = blocking_prob
 
-        # The original transponder used for the request is subtracted, since we want the number of slices
-        self.slot_slice_dict[request_number]['num_slices'] = num_transponders - 1
+        self.request_snapshots[request_number]['num_slices'] = num_transponders
 
     def init_iter_vars(self):
         """
@@ -436,12 +465,10 @@ class Engine(SDNController):
 
             request_number = 1
             for curr_time in self.reqs_dict:
-                if request_number == 1000:
-                    print('Begin debug')
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
                     num_transponders = self.handle_arrival(curr_time)
-                    self.update_slot_slice_dict(request_number, num_transponders)
+                    self.update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1
                 elif req_type == "release":
