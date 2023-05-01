@@ -53,7 +53,11 @@ class PlotStats:
 
         files_dict = {}
         self.data_dir = f'../data/output/{self.net_name}/{self.latest_date}/{self.latest_time}'
-        for thread in sorted(os.listdir(self.data_dir)):
+
+        # Sort by thread number
+        dirs = os.listdir(self.data_dir)
+        sorted_dirs = sorted(dirs, key=lambda x: int(x[1:]))
+        for thread in sorted_dirs:
             if thread not in self.plot_threads:
                 continue
             curr_fp = os.path.join(self.data_dir, thread)
@@ -113,7 +117,8 @@ class PlotStats:
 
                     for request_number, request_info in erlang_dict['misc_stats']['slot_slice_dict'].items():
                         request_number = int(request_number)
-                        if request_number % 100 == 0 or request_number == 1:
+                        # TODO: Change back?
+                        if request_number % 1 == 0 or request_number == 1:
                             self.plot_dict[thread]['taken_slots'][erlang][request_number] = request_info['occ_slots'] / \
                                                                                             erlang_dict['misc_stats'][
                                                                                                 'cores_per_link']
@@ -211,11 +216,25 @@ class PlotStats:
             color = self.colors[style_count]
 
             for erlang in thread_obj['block_per_req']:
+                # TODO: Change
+                request_numbers = list()
+                slots_occupied = list()
+                lst = list(thread_obj['block_per_req'][erlang].values())
+                run_sum = 0
+                for i, x in enumerate(lst, start=1):
+                    run_sum += x
+
+                    if i % 1000 == 0:
+                        request_numbers.append(i)
+                        slots_occupied.append(run_sum / i)
+
                 marker = self.markers[marker_count]
 
-                request_numbers = thread_obj['block_per_req'][erlang].keys()
-                slots_occupied = thread_obj['block_per_req'][erlang].values()
+                # request_numbers = thread_obj['block_per_req'][erlang].keys()
+                # slots_occupied = thread_obj['block_per_req'][erlang].values()
+                # TODO: Change back
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
+                # plt.plot(request_numbers, slots_occupied, color=color)
 
                 legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
                 marker_count += 1
@@ -224,7 +243,7 @@ class PlotStats:
             style_count += 1
 
         plt.legend(legend_list)
-        plt.xlim(0, 500)
+        plt.xlim(1000, 10000)
         self._save_plot(file_name='block_per_request')
         plt.show()
 
@@ -261,12 +280,25 @@ class PlotStats:
         marker_count = 1
         for _, thread_obj in self.plot_dict.items():
             color = self.colors[style_count]
-
             for erlang in thread_obj['taken_slots']:
+                # TODO: Change
+                request_numbers = list()
+                slots_occupied = list()
+                lst = list(thread_obj['taken_slots'][erlang].values())
+                result = []
+                run_sum = 0
+                for i, x in enumerate(lst, start=1):
+                    run_sum += x
+                    # result.append(run_sum / (i + 1))
+
+                    if i % 1000 == 0:
+                        request_numbers.append(i)
+                        slots_occupied.append(run_sum / i)
+
                 marker = self.markers[marker_count]
 
-                request_numbers = thread_obj['taken_slots'][erlang].keys()
-                slots_occupied = thread_obj['taken_slots'][erlang].values()
+                # request_numbers = thread_obj['taken_slots'][erlang].keys()
+                # slots_occupied = thread_obj['taken_slots'][erlang].values()
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
                 legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
@@ -276,7 +308,7 @@ class PlotStats:
             style_count += 1
 
         plt.legend(legend_list, loc='upper left')
-        plt.xlim(0, 500)
+        plt.xlim(1000, 10000)
         plt.ylim(0, 4100)
         self._save_plot(file_name='slots_occupied')
         plt.show()
@@ -288,21 +320,25 @@ class PlotStats:
         self._setup_plot(f'{self.net_name} Number of Slices vs. Occurrences', 'Occurrences', 'Number of Slices',
                          y_ticks=False, x_ticks=False, grid=False)
 
+        # TODO: Change
         erlang_colors = ['#0000b3', '#3333ff', '#9999ff', '#b30000', '#ff3333', '#ff9999', '#00b33c', '#00ff55',
                          '#99ffbb']
 
         hist_list = list()
         legend_list = list()
         for _, thread_obj in self.plot_dict.items():
+            # No slicing will occur
             if thread_obj['max_slices'] == 1:
                 continue
             for erlang, slices_lst in thread_obj['num_slices'].items():
                 hist_list.append(slices_lst)
                 legend_list.append(f"E={int(erlang)} LS={thread_obj['max_slices']}")
 
-        plt.hist(hist_list, stacked=False, histtype='bar', edgecolor='black', rwidth=1, color=erlang_colors)
+        # TODO: Change
+        bins = [0, 2, 4, 8]
+        plt.hist(hist_list, stacked=False, histtype='bar', edgecolor='black', rwidth=1, color=erlang_colors, bins=bins)
 
-        plt.ylim(0, 500)
+        plt.ylim(0, 10000)
         plt.xlim(0, 8)
         plt.legend(legend_list, loc='upper right')
         self._save_plot(file_name='num_slices')
@@ -313,13 +349,13 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0413', latest_time='13:11:17',
-                         plot_threads=['t1', 't2', 't3', 't4'])
-    plot_obj.plot_blocking_per_request()
+    plot_obj = PlotStats(net_name='USNet', latest_date='0416', latest_time='13:10:12',
+                         plot_threads=['t7', 't8', 't9'])
     plot_obj.plot_blocking()
+    plot_obj.plot_blocking_per_request()
     plot_obj.plot_transponders()
     plot_obj.plot_slots_taken()
-    plot_obj.plot_num_slices()
+    # plot_obj.plot_num_slices()
 
 
 if __name__ == '__main__':
