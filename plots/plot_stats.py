@@ -85,6 +85,8 @@ class PlotStats:
                 'num_slices': {},
                 'taken_slots': {},
                 'block_per_req': {},
+                'active_requests': {},
+                'guard_bands': {},
             }
             for erlang in erlang_values:
                 curr_fp = os.path.join(self.data_dir, f'{thread}/{erlang}_erlang.json')
@@ -110,12 +112,14 @@ class PlotStats:
 
                 self.plot_dict[thread]['max_slices'] = erlang_dict['misc_stats']['max_slices']
 
-                if erlang in (10, 100, 700):
+                if erlang in (10, 100, 400):
                     self.plot_dict[thread]['taken_slots'][erlang] = dict()
                     self.plot_dict[thread]['block_per_req'][erlang] = dict()
+                    self.plot_dict[thread]['active_requests'][erlang] = dict()
+                    self.plot_dict[thread]['guard_bands'][erlang] = dict()
                     self.plot_dict[thread]['num_slices'][erlang] = list()
 
-                    for request_number, request_info in erlang_dict['misc_stats']['slot_slice_dict'].items():
+                    for request_number, request_info in erlang_dict['misc_stats']['request_snapshots'].items():
                         request_number = int(request_number)
                         # TODO: Change back?
                         if request_number % 1 == 0 or request_number == 1:
@@ -124,8 +128,44 @@ class PlotStats:
                                                                                                 'cores_per_link']
                             self.plot_dict[thread]['block_per_req'][erlang][request_number] = request_info[
                                 'blocking_prob']
+                            self.plot_dict[thread]['active_requests'][erlang][request_number] = request_info[
+                                                                                                    'active_requests'] / \
+                                                                                                erlang_dict[
+                                                                                                    'misc_stats'][
+                                                                                                    'cores_per_link']
+
+                            self.plot_dict[thread]['guard_bands'][erlang][request_number] = request_info[
+                                                                                                'guard_bands'] / \
+                                                                                            erlang_dict['misc_stats'][
+                                                                                                'cores_per_link']
 
                         self.plot_dict[thread]['num_slices'][erlang].append(request_info['num_slices'])
+
+    @staticmethod
+    def running_average(lst, interval):
+        """
+        Given a list, takes a running average of that list and appends at specific intervals.
+
+        :param lst: A list of floats or ints
+        :type lst: list
+
+        :param interval: Determines the intervals for the running averages
+        :type interval: int
+
+        :return: A list of request numbers for specific intervals and the running averages up until each interval
+        """
+        request_numbers = list()
+        averages = list()
+
+        run_sum = 0
+        for i, value in enumerate(lst, start=1):
+            run_sum += value
+
+            if i % interval == 0:
+                request_numbers.append(i)
+                averages.append(run_sum / i)
+
+        return request_numbers, averages
 
     def _save_plot(self, file_name):
         """
@@ -216,23 +256,13 @@ class PlotStats:
             color = self.colors[style_count]
 
             for erlang in thread_obj['block_per_req']:
-                # TODO: Change
-                request_numbers = list()
-                slots_occupied = list()
                 lst = list(thread_obj['block_per_req'][erlang].values())
-                run_sum = 0
-                for i, x in enumerate(lst, start=1):
-                    run_sum += x
-
-                    if i % 1000 == 0:
-                        request_numbers.append(i)
-                        slots_occupied.append(run_sum / i)
-
+                request_numbers, slots_occupied = self.running_average(lst=lst, interval=500)
                 marker = self.markers[marker_count]
 
+                # TODO: Change back
                 # request_numbers = thread_obj['block_per_req'][erlang].keys()
                 # slots_occupied = thread_obj['block_per_req'][erlang].values()
-                # TODO: Change back
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
                 # plt.plot(request_numbers, slots_occupied, color=color)
 
@@ -281,22 +311,11 @@ class PlotStats:
         for _, thread_obj in self.plot_dict.items():
             color = self.colors[style_count]
             for erlang in thread_obj['taken_slots']:
-                # TODO: Change
-                request_numbers = list()
-                slots_occupied = list()
                 lst = list(thread_obj['taken_slots'][erlang].values())
-                result = []
-                run_sum = 0
-                for i, x in enumerate(lst, start=1):
-                    run_sum += x
-                    # result.append(run_sum / (i + 1))
-
-                    if i % 1000 == 0:
-                        request_numbers.append(i)
-                        slots_occupied.append(run_sum / i)
-
+                request_numbers, slots_occupied = self.running_average(lst=lst, interval=500)
                 marker = self.markers[marker_count]
 
+                # TODO: Change back
                 # request_numbers = thread_obj['taken_slots'][erlang].keys()
                 # slots_occupied = thread_obj['taken_slots'][erlang].values()
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
@@ -320,7 +339,6 @@ class PlotStats:
         self._setup_plot(f'{self.net_name} Number of Slices vs. Occurrences', 'Occurrences', 'Number of Slices',
                          y_ticks=False, x_ticks=False, grid=False)
 
-        # TODO: Change
         erlang_colors = ['#0000b3', '#3333ff', '#9999ff', '#b30000', '#ff3333', '#ff9999', '#00b33c', '#00ff55',
                          '#99ffbb']
 
@@ -334,8 +352,7 @@ class PlotStats:
                 hist_list.append(slices_lst)
                 legend_list.append(f"E={int(erlang)} LS={thread_obj['max_slices']}")
 
-        # TODO: Change
-        bins = [0, 2, 4, 8]
+        bins = [2, 4, 8]
         plt.hist(hist_list, stacked=False, histtype='bar', edgecolor='black', rwidth=1, color=erlang_colors, bins=bins)
 
         plt.ylim(0, 10000)
@@ -344,17 +361,83 @@ class PlotStats:
         self._save_plot(file_name='num_slices')
         plt.show()
 
+    def plot_active_requests(self):
+        """
+        Plots the amount of active requests in the network at specific intervals.
+        """
+        self._setup_plot(f'{self.net_name} Request Snapshot vs. Active Requests', 'Active Requests', 'Request Number',
+                         y_ticks=False, x_ticks=False)
+
+        legend_list = list()
+        style_count = 0
+        marker_count = 1
+        for _, thread_obj in self.plot_dict.items():
+            color = self.colors[style_count]
+            for erlang in thread_obj['active_requests']:
+                request_numbers = [key for key in thread_obj['active_requests'][erlang].keys() if
+                                   key % 500 == 0]
+
+                active_requests = [thread_obj['active_requests'][erlang][index] for index in request_numbers]
+
+                marker = self.markers[marker_count]
+                plt.plot(request_numbers, active_requests, color=color, marker=marker, markersize=2.3)
+
+                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                marker_count += 1
+
+            marker_count = 1
+            style_count += 1
+
+        plt.legend(legend_list, loc='upper left')
+        plt.xlim(1000, 10000)
+        plt.ylim(0, 1300)
+        self._save_plot(file_name='active_requests')
+        plt.show()
+
+    def plot_guard_bands(self):
+        """
+        Plots the number of guard bands being used in the network on average.
+        """
+        self._setup_plot(f'{self.net_name} Request Snapshot vs. Guard Bands', 'Guard Bands', 'Request Number',
+                         y_ticks=False, x_ticks=False)
+
+        legend_list = list()
+        style_count = 0
+        marker_count = 1
+        for _, thread_obj in self.plot_dict.items():
+            color = self.colors[style_count]
+            for erlang in thread_obj['guard_bands']:
+                lst = list(thread_obj['guard_bands'][erlang].values())
+                request_numbers, guard_bands = self.running_average(lst=lst, interval=500)
+
+                marker = self.markers[marker_count]
+                plt.plot(request_numbers, guard_bands, color=color, marker=marker, markersize=2.3)
+
+                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                marker_count += 1
+
+            marker_count = 1
+            style_count += 1
+
+        plt.legend(legend_list, loc='upper left')
+        plt.xlim(1000, 10000)
+        plt.ylim(0, 1200)
+        self._save_plot(file_name='guard_bands')
+        plt.show()
+
 
 def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0416', latest_time='13:10:12',
-                         plot_threads=['t7', 't8', 't9'])
-    plot_obj.plot_blocking()
-    plot_obj.plot_blocking_per_request()
-    plot_obj.plot_transponders()
-    plot_obj.plot_slots_taken()
+    plot_obj = PlotStats(net_name='USNet', latest_date='0501', latest_time='17:59:10',
+                         plot_threads=['t2', 't5', 't8', 't11'])
+    # plot_obj.plot_blocking()
+    # plot_obj.plot_blocking_per_request()
+    # plot_obj.plot_transponders()
+    # plot_obj.plot_slots_taken()
+    plot_obj.plot_active_requests()
+    # plot_obj.plot_guard_bands()
     # plot_obj.plot_num_slices()
 
 
