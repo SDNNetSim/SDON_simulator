@@ -260,11 +260,7 @@ class PlotStats:
                 request_numbers, slots_occupied = self.running_average(lst=lst, interval=500)
                 marker = self.markers[marker_count]
 
-                # TODO: Change back
-                # request_numbers = thread_obj['block_per_req'][erlang].keys()
-                # slots_occupied = thread_obj['block_per_req'][erlang].values()
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
-                # plt.plot(request_numbers, slots_occupied, color=color)
 
                 legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
                 marker_count += 1
@@ -315,9 +311,6 @@ class PlotStats:
                 request_numbers, slots_occupied = self.running_average(lst=lst, interval=500)
                 marker = self.markers[marker_count]
 
-                # TODO: Change back
-                # request_numbers = thread_obj['taken_slots'][erlang].keys()
-                # slots_occupied = thread_obj['taken_slots'][erlang].values()
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
                 legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
