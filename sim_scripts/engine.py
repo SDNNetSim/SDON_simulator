@@ -107,13 +107,14 @@ class Engine(SDNController):
 
     def get_total_occupied_slots(self):
         """
-        Returns the total number of occupied spectral slots in the network.
+        Returns the total number of occupied spectral slots and spectral slots occupied by a guard band in the network.
 
-        :return: The total number of occupied spectral slots in the network
-        :rtype: int
+        :return: The total number of occupied spectral slots and guard bands in the network
+        :rtype: tuple
         """
         self.active_requests = set()
         occupied_slots = 0
+        guard_slots = 0
 
         for _, data in self.net_spec_db.items():
             for core in data['cores_matrix']:
@@ -121,27 +122,12 @@ class Engine(SDNController):
                     if request_id > 0:
                         self.active_requests.add(request_id)
                 occupied_slots += len(np.where(core != 0)[0])
-
-        # Divide by 2 since there are identical bidirectional links
-        total_occ_slots = int(occupied_slots / 2)
-        return total_occ_slots
-
-    def get_total_guard_slots(self):
-        """
-        Returns the total number of guard bands occupying spectral slots in the network.
-
-        :return: The total number of guard bands in the network
-        :rtype: int
-        """
-        guard_slots = 0
-        for _, data in self.net_spec_db.items():
-            for core in data['cores_matrix']:
-                # All guard bands are a negative version of the request ID number
                 guard_slots += len(np.where(core < 0)[0])
 
         # Divide by 2 since there are identical bidirectional links
+        total_occ_slots = int(occupied_slots / 2)
         total_guard_slots = int(guard_slots / 2)
-        return total_guard_slots
+        return total_occ_slots, total_guard_slots
 
     def save_sim_results(self):
         """
@@ -420,8 +406,7 @@ class Engine(SDNController):
         self.request_snapshots[request_number] = {'occ_slots': 0, 'guard_bands': 0, 'blocking_prob': 0, 'num_slices': 0,
                                                   'active_requests': 0}
 
-        occupied_slots = self.get_total_occupied_slots()
-        guard_bands = self.get_total_guard_slots()
+        occupied_slots, guard_bands = self.get_total_occupied_slots()
 
         self.request_snapshots[request_number]['occ_slots'] = occupied_slots
         self.request_snapshots[request_number]['guard_bands'] = guard_bands
