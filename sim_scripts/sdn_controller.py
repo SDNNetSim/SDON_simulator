@@ -264,7 +264,7 @@ class SDNController:
 
                 if remaining_bw == 0:
                     return resp
-                elif int(bandwidth) > remaining_bw:
+                if int(bandwidth) > remaining_bw:
                     break
 
         self.release()
