@@ -201,6 +201,7 @@ class SDNController:
 
         return False
 
+    # TODO: Write tests for this method
     def allocate_advanced_lps(self):
         """
         Attempts to perform an improved version of light path slicing (LPS) to allocate a request. An 'improved version'
@@ -219,6 +220,7 @@ class SDNController:
         # TODO: Check this
         num_slices = 1
 
+        # TODO: Attempt to move some of this code to a static method
         for bandwidth, modulation_dict in modulation_formats.items():
             # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
             if int(bandwidth) >= int(self.chosen_bw):
@@ -274,6 +276,7 @@ class SDNController:
         :return: A tuple containing the response and the updated network database or False and self.dist_block
         """
         # TODO: Change (Some type of flag)
+        # TODO: Also change the dictionary to be more informative about the bandwidths used while slicing
         # if self.allocate_lps():
         if self.allocate_advanced_lps():
             resp = {
