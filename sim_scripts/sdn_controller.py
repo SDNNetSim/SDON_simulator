@@ -217,7 +217,6 @@ class SDNController:
 
         remaining_bw = int(self.chosen_bw)
         # TODO: Check this
-        # TODO: Find a better way to track what was sliced and where (dictionary or something)
         num_slices = 1
 
         for bandwidth, modulation_dict in modulation_formats.items():
@@ -231,7 +230,7 @@ class SDNController:
                 continue
 
             while True:
-                # TODO: Move to a static method?
+                # TODO: Check to make sure best-fit works
                 # Check if we can allocate current bandwidth (best-fit)
                 spectrum_assignment = SpectrumAssignment(path=self.path,
                                                          slots_needed=modulation_dict[tmp_format]['slots_needed'],
@@ -261,8 +260,8 @@ class SDNController:
                 elif int(bandwidth) > remaining_bw:
                     break
 
-            self.release()
-            return False
+        self.release()
+        return False
 
     def handle_lps(self):
         """

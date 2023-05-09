@@ -283,7 +283,7 @@ def run(threads):
 # TODO: Only support for one iteration (for now, change back eventually based on prior commits)
 if __name__ == '__main__':
     threads_obj = []
-    for max_slices in [2]:
+    for max_slices in [8]:
         for cores_per_link in [1]:
             thread = {
                 'max_slices': max_slices,
