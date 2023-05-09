@@ -292,15 +292,16 @@ def run(threads):
 # TODO: Only support for one iteration (for now, change back eventually based on prior commits)
 if __name__ == '__main__':
     threads_obj = []
-    for max_slices in [1, 2, 4, 8]:
-        for cores_per_link in [1, 4, 7]:
-            thread = {
-                'max_slices': max_slices,
-                'cores_per_link': cores_per_link,
-                'alloc_method': 'first-fit',
-                'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
-                'dynamic_lps': False,
-            }
-            threads_obj.append(thread)
+    for dynamic_flag in [True, False]:
+        for max_slices in [1, 2, 4, 8]:
+            for cores_per_link in [1, 4, 7]:
+                thread = {
+                    'max_slices': max_slices,
+                    'cores_per_link': cores_per_link,
+                    'alloc_method': 'first-fit',
+                    'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
+                    'dynamic_lps': dynamic_flag,
+                }
+                threads_obj.append(thread)
 
     run(threads_obj)
