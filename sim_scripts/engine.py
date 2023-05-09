@@ -118,9 +118,9 @@ class Engine(SDNController):
 
         for _, data in self.net_spec_db.items():
             for core in data['cores_matrix']:
-                for request_id in core:
-                    if request_id > 0:
-                        self.active_requests.add(request_id)
+                requests = set(core[core > 0])
+                for req_num in requests:
+                    self.active_requests.add(req_num)
                 occupied_slots += len(np.where(core != 0)[0])
                 guard_slots += len(np.where(core < 0)[0])
 
