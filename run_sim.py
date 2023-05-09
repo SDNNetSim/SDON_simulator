@@ -23,7 +23,7 @@ class NetworkSimulator:
                  hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 10000, max_iters: int = 1,
                  spectral_slots: int = 256, cores_per_link: int = 1, bw_per_slot: float = 12.5, max_slices: int = 1,
                  sim_type: str = 'arash', const_weight: bool = True, guard_slots: int = 1,
-                 alloc_method: str = 'first-fit', thread_num: int = 1):
+                 alloc_method: str = 'first-fit', dynamic_lps: bool = False, thread_num: int = 1):
         """
         Initializes the NetworkSimulator class.
 
@@ -83,6 +83,10 @@ class NetworkSimulator:
         :param alloc_method: The allocation policy for a request.
         :type alloc_method: str
 
+        :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
+                            request to multiple different bandwidths if set to true.
+        :type dynamic_lps: bool
+
         :param thread_num: Used to identify simulations running in parallel.
         :type thread_num: int
         """
@@ -97,6 +101,7 @@ class NetworkSimulator:
         self.arr_rate_mean = arr_rate_mean
         self.guard_slots = guard_slots
         self.alloc_method = alloc_method
+        self.dynamic_lps = dynamic_lps
 
         self.sim_start = sim_start
 
@@ -175,7 +180,7 @@ class NetworkSimulator:
             'req_dist': self.req_dist,
         }
 
-    def run_yue(self, max_slices, thread_num, cores_per_link, alloc_method, req_dist):
+    def run_yue(self, max_slices, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps):
         """
         Runs a Yue-based simulation with the specified parameters. Reference: Wang, Yue. Dynamic Traffic Scheduling
         Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
@@ -195,6 +200,9 @@ class NetworkSimulator:
         :param req_dist: Distribution of requests to use.
         :type req_dist: str
 
+        :param dynamic_lps: Flag to determine dynamic light path slicing ability for any given run.
+        :type dynamic_lps: bool
+
         :return: None
         """
         self.hold_time_mean = 0.2
@@ -206,6 +214,7 @@ class NetworkSimulator:
         self.cores_per_link = cores_per_link
 
         self.alloc_method = alloc_method
+        self.dynamic_lps = dynamic_lps
         self.req_dist = req_dist
 
         self.max_slices = max_slices
@@ -226,7 +235,7 @@ class NetworkSimulator:
             engine = Engine(sim_data=self.sim_data, erlang=erlang, net_name=self.net_name,
                             sim_start=self.sim_start, sim_type=self.sim_type,
                             input_fp=f'./data/input/{self.net_name}/{self.date}/{self.curr_time}/{file_name}',
-                            thread_num=thread_num)
+                            thread_num=thread_num, dynamic_lps=dynamic_lps)
             engine.run()
 
     # TODO: This method does not have support at this point in time
@@ -272,7 +281,7 @@ def run(threads):
 
             future = executor.submit(class_inst.run_yue, thread_params['max_slices'], thread_num,
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
-                                     thread_params['req_dist'])
+                                     thread_params['req_dist'], thread_params['dynamic_lps'])
 
             futures.append(future)
 
@@ -283,13 +292,14 @@ def run(threads):
 # TODO: Only support for one iteration (for now, change back eventually based on prior commits)
 if __name__ == '__main__':
     threads_obj = []
-    for max_slices in [1, 8]:
-        for cores_per_link in [1, 4]:
+    for max_slices in [8]:
+        for cores_per_link in [1]:
             thread = {
                 'max_slices': max_slices,
                 'cores_per_link': cores_per_link,
                 'alloc_method': 'first-fit',
-                'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2}
+                'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
+                'dynamic_lps': False,
             }
             threads_obj.append(thread)
 

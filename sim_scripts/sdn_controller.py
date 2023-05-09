@@ -18,7 +18,7 @@ class SDNController:
     def __init__(self, req_id: int = None, net_spec_db: dict = None, topology: nx.Graph = None,
                  cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
                  source: int = None, destination: int = None, mod_per_bw: dict = None, chosen_bw: str = None,
-                 max_slices: int = None, guard_slots: int = None):
+                 max_slices: int = None, guard_slots: int = None, dynamic_lps: bool = None):
         """
         Initializes the SDNController class.
 
@@ -60,6 +60,10 @@ class SDNController:
 
         :param guard_slots: The amount of slots to be allocated for the guard band.
         :type guard_slots: int
+
+        :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
+                            request to multiple different bandwidths if set to true.
+        :type dynamic_lps: bool
         """
         self.req_id = req_id
         self.net_spec_db = net_spec_db
@@ -68,6 +72,7 @@ class SDNController:
         self.path = path
         self.sim_type = sim_type
         self.alloc_method = alloc_method
+        self.dynamic_lps = dynamic_lps
 
         self.source = source
         self.destination = destination
@@ -197,18 +202,20 @@ class SDNController:
                     break
 
             if is_allocated:
-                return True
+                return {bandwidth: tmp_format}
 
         return False
 
     # TODO: Write tests for this method
-    def allocate_advanced_lps(self):
+    def allocate_dynamic_lps(self):
         """
         Attempts to perform an improved version of light path slicing (LPS) to allocate a request. An 'improved version'
-        refers to allocating multiple different types of bit-rates for slicing, rather than just one.
+        refers to allocating multiple different types of bit-rates for slicing, rather than only one.
 
         :return: True if advanced LPS is successfully carried out, False otherwise
         """
+        resp = dict()
+
         if self.max_slices == 1:
             return False
 
@@ -217,10 +224,8 @@ class SDNController:
         modulation_formats = sort_dict_keys(self.mod_per_bw)
 
         remaining_bw = int(self.chosen_bw)
-        # TODO: Check this
         num_slices = 1
 
-        # TODO: Attempt to move some of this code to a static method
         for bandwidth, modulation_dict in modulation_formats.items():
             # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
             if int(bandwidth) >= int(self.chosen_bw):
@@ -232,8 +237,6 @@ class SDNController:
                 continue
 
             while True:
-                # TODO: Check to make sure best-fit works
-                # Check if we can allocate current bandwidth (best-fit)
                 spectrum_assignment = SpectrumAssignment(path=self.path,
                                                          slots_needed=modulation_dict[tmp_format]['slots_needed'],
                                                          net_spec_db=self.net_spec_db,
@@ -242,9 +245,11 @@ class SDNController:
                 selected_spectrum = spectrum_assignment.find_free_spectrum()
 
                 if selected_spectrum is not False:
+                    resp.update({bandwidth: tmp_format})
+
                     self.allocate(start_slot=selected_spectrum['start_slot'], end_slot=selected_spectrum['end_slot'],
                                   core_num=selected_spectrum['core_num'])
-                    # If we can allocate, subtract from remaining
+
                     remaining_bw -= int(bandwidth)
                     num_slices += 1
 
@@ -258,7 +263,7 @@ class SDNController:
                     break
 
                 if remaining_bw == 0:
-                    return True
+                    return resp
                 elif int(bandwidth) > remaining_bw:
                     break
 
@@ -267,7 +272,7 @@ class SDNController:
 
     def handle_lps(self):
         """
-        This method attempts to perform light path slicing (LPS) to allocate a request.
+        This method attempts to perform light path slicing (LPS) or dynamic LPS to allocate a request.
         If successful, it returns a response containing the allocated path, modulation format,
         and the number of transponders used. Otherwise, it returns a tuple of False and the
         value of self.dist_block indicating whether the allocation failed due to congestion or
@@ -275,16 +280,14 @@ class SDNController:
 
         :return: A tuple containing the response and the updated network database or False and self.dist_block
         """
-        # TODO: Change (Some type of flag)
-        # TODO: Also change the dictionary to be more informative about the bandwidths used while slicing
-        # if self.allocate_lps():
-        if self.allocate_advanced_lps():
-            resp = {
-                'path': self.path,
-                'mod_format': None,
-                'is_sliced': True,
-            }
-            return resp, self.net_spec_db, self.num_transponders
+
+        if not self.dynamic_lps:
+            resp = self.allocate_lps()
+        else:
+            resp = self.allocate_dynamic_lps()
+
+        if resp is not False:
+            return {'path': self.path, 'mod_format': resp, 'is_sliced': True}, self.net_spec_db, self.num_transponders
 
         return False, self.dist_block
 
