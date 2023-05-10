@@ -34,7 +34,7 @@ class PlotStats:
         self.colors = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
         self.markers = ['o', '^', 's', 'x']
-        self.x_ticks = [10, 100, 200, 300, 400]
+        self.x_ticks = [10, 100, 200, 300, 400, 500, 600, 700]
 
         self.get_data()
 
@@ -260,11 +260,7 @@ class PlotStats:
                 request_numbers, slots_occupied = self.running_average(lst=lst, interval=500)
                 marker = self.markers[marker_count]
 
-                # TODO: Change back
-                # request_numbers = thread_obj['block_per_req'][erlang].keys()
-                # slots_occupied = thread_obj['block_per_req'][erlang].values()
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
-                # plt.plot(request_numbers, slots_occupied, color=color)
 
                 legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
                 marker_count += 1
@@ -315,9 +311,6 @@ class PlotStats:
                 request_numbers, slots_occupied = self.running_average(lst=lst, interval=500)
                 marker = self.markers[marker_count]
 
-                # TODO: Change back
-                # request_numbers = thread_obj['taken_slots'][erlang].keys()
-                # slots_occupied = thread_obj['taken_slots'][erlang].values()
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
                 legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
@@ -430,13 +423,13 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0501', latest_time='17:59:10',
-                         plot_threads=['t2', 't5', 't8', 't11'])
-    # plot_obj.plot_blocking()
+    plot_obj = PlotStats(net_name='USNet', latest_date='0509', latest_time='11:21:53',
+                         plot_threads=['t1', 't2', 't3', 't4'])
+    plot_obj.plot_blocking()
     # plot_obj.plot_blocking_per_request()
     # plot_obj.plot_transponders()
     # plot_obj.plot_slots_taken()
-    plot_obj.plot_active_requests()
+    # plot_obj.plot_active_requests()
     # plot_obj.plot_guard_bands()
     # plot_obj.plot_num_slices()
 

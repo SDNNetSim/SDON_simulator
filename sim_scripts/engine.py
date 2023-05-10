@@ -17,7 +17,7 @@ class Engine(SDNController):
     """
 
     def __init__(self, sim_data: dict = None, erlang: float = None, input_fp: str = None, net_name: str = None,
-                 sim_start: str = None, sim_type: str = 'arash', thread_num: int = 1):
+                 sim_start: str = None, sim_type: str = 'arash', thread_num: int = 1, dynamic_lps: bool = None):
         """
         Initializes the Engine class.
 
@@ -41,6 +41,10 @@ class Engine(SDNController):
 
         :param thread_num: A number to identify threads when saving data.
         :type thread_num: int
+
+        :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
+                            request to multiple different bandwidths if set to true.
+        :type dynamic_lps: bool
         """
         self.sim_type = sim_type
         self.thread_num = thread_num
@@ -49,6 +53,7 @@ class Engine(SDNController):
         self.erlang = erlang
         self.sim_start = sim_start
         self.net_name = net_name
+        self.dynamic_lps = dynamic_lps
 
         # Holds statistical information for each iteration in a given simulation.
         self.stats_dict = {
@@ -98,45 +103,31 @@ class Engine(SDNController):
         super().__init__(alloc_method=self.sim_data['alloc_method'],
                          mod_per_bw=self.sim_data['mod_per_bw'], max_slices=self.sim_data['max_slices'],
                          cores_per_link=self.sim_data['cores_per_link'], guard_slots=self.sim_data['guard_slots'],
-                         sim_type=self.sim_type)
+                         sim_type=self.sim_type, dynamic_lps=self.dynamic_lps)
 
     def get_total_occupied_slots(self):
         """
-        Returns the total number of occupied spectral slots in the network.
+        Returns the total number of occupied spectral slots and spectral slots occupied by a guard band in the network.
 
-        :return: The total number of occupied spectral slots in the network
-        :rtype: int
+        :return: The total number of occupied spectral slots and guard bands in the network
+        :rtype: tuple
         """
         self.active_requests = set()
         occupied_slots = 0
-
-        for _, data in self.net_spec_db.items():
-            for core in data['cores_matrix']:
-                for request_id in core:
-                    if request_id > 0:
-                        self.active_requests.add(request_id)
-                occupied_slots += len(np.where(core != 0)[0])
-
-        # Divide by 2 since there are identical bidirectional links
-        total_occ_slots = int(occupied_slots / 2)
-        return total_occ_slots
-
-    def get_total_guard_slots(self):
-        """
-        Returns the total number of guard bands occupying spectral slots in the network.
-
-        :return: The total number of guard bands in the network
-        :rtype: int
-        """
         guard_slots = 0
+
         for _, data in self.net_spec_db.items():
             for core in data['cores_matrix']:
-                # All guard bands are a negative version of the request ID number
+                requests = set(core[core > 0])
+                for req_num in requests:
+                    self.active_requests.add(req_num)
+                occupied_slots += len(np.where(core != 0)[0])
                 guard_slots += len(np.where(core < 0)[0])
 
         # Divide by 2 since there are identical bidirectional links
+        total_occ_slots = int(occupied_slots / 2)
         total_guard_slots = int(guard_slots / 2)
-        return total_guard_slots
+        return total_occ_slots, total_guard_slots
 
     def save_sim_results(self):
         """
@@ -415,8 +406,7 @@ class Engine(SDNController):
         self.request_snapshots[request_number] = {'occ_slots': 0, 'guard_bands': 0, 'blocking_prob': 0, 'num_slices': 0,
                                                   'active_requests': 0}
 
-        occupied_slots = self.get_total_occupied_slots()
-        guard_bands = self.get_total_guard_slots()
+        occupied_slots, guard_bands = self.get_total_occupied_slots()
 
         self.request_snapshots[request_number]['occ_slots'] = occupied_slots
         self.request_snapshots[request_number]['guard_bands'] = guard_bands
@@ -425,6 +415,8 @@ class Engine(SDNController):
         blocking_prob = self.num_blocked_reqs / request_number
         self.request_snapshots[request_number]["blocking_prob"] = blocking_prob
 
+        if num_transponders % 2 != 0 and self.max_slices > 1 and num_transponders > 1:
+            raise EnvironmentError('Number of transponders used is odd.')
         self.request_snapshots[request_number]['num_slices'] = num_transponders
 
     def init_iter_vars(self):
