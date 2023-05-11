@@ -179,7 +179,7 @@ class SDNController:
             if num_slices > self.max_slices:
                 break
             # Number of slices minus one to account for the original transponder
-            self.num_transponders += (num_slices - 1)
+            self.num_transponders = num_slices
 
             is_allocated = True
             # Check if all slices can be allocated
@@ -263,6 +263,7 @@ class SDNController:
                     break
 
                 if remaining_bw == 0:
+                    self.num_transponders = num_slices
                     return resp
                 if int(bandwidth) > remaining_bw:
                     break

@@ -62,7 +62,10 @@ class PlotStats:
                 continue
             curr_fp = os.path.join(self.data_dir, thread)
             files_dict[thread] = list()
-            for erlang_file in os.listdir(curr_fp):
+
+            files = os.listdir(curr_fp)
+            sorted_files = sorted(files, key=lambda x: float(x.split('_')[0]))
+            for erlang_file in sorted_files:
                 files_dict[thread].append(erlang_file.split('_')[0])
 
         return files_dict
@@ -232,7 +235,8 @@ class PlotStats:
 
             plt.plot(thread_obj['erlang_vals'], thread_obj['blocking_vals'], color=color, linestyle=line_style,
                      marker=marker, markersize=2.3)
-            legend_list.append(f"C ={thread_obj['cores_per_link']} LS ={thread_obj['max_slices']}")
+            # TODO: Change
+            legend_list.append(f"C ={thread_obj['cores_per_link']} ALS ={thread_obj['max_slices']}")
 
             style_count += 1
 
@@ -262,7 +266,8 @@ class PlotStats:
 
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
-                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                # TODO: Change
+                legend_list.append(f"E={erlang} ALS={thread_obj['max_slices']}")
                 marker_count += 1
 
             marker_count = 1
@@ -278,7 +283,7 @@ class PlotStats:
         Plots the average number of transponders used for each Erlang value.
         """
         self._setup_plot(f'{self.net_name} Transponders vs. Erlang', 'Transponders', 'Erlang', y_ticks=False)
-        plt.ylim(0.9, 2)
+        # plt.ylim(0.9, 2)
 
         legend_list = list()
         style_count = 0
@@ -286,7 +291,8 @@ class PlotStats:
             color = self.colors[style_count]
 
             plt.plot(thread_obj['erlang_vals'], thread_obj['average_transponders'], color=color)
-            legend_list.append(f"C={thread_obj['cores_per_link']} LS={thread_obj['max_slices']}")
+            # TODO: Change
+            legend_list.append(f"C={thread_obj['cores_per_link']} ALS={thread_obj['max_slices']}")
 
             style_count += 1
 
@@ -313,7 +319,8 @@ class PlotStats:
 
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
-                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                # TODO: Change
+                legend_list.append(f"E={erlang} ALS={thread_obj['max_slices']}")
                 marker_count += 1
 
             marker_count = 1
@@ -375,7 +382,8 @@ class PlotStats:
                 marker = self.markers[marker_count]
                 plt.plot(request_numbers, active_requests, color=color, marker=marker, markersize=2.3)
 
-                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                # TODO: Change
+                legend_list.append(f"E={erlang} ALS={thread_obj['max_slices']}")
                 marker_count += 1
 
             marker_count = 1
@@ -383,7 +391,7 @@ class PlotStats:
 
         plt.legend(legend_list, loc='upper left')
         plt.xlim(1000, 10000)
-        plt.ylim(0, 1300)
+        plt.ylim(0, 400)
         self._save_plot(file_name='active_requests')
         plt.show()
 
@@ -406,7 +414,8 @@ class PlotStats:
                 marker = self.markers[marker_count]
                 plt.plot(request_numbers, guard_bands, color=color, marker=marker, markersize=2.3)
 
-                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                # TODO: Change
+                legend_list.append(f"E={erlang} ALS={thread_obj['max_slices']}")
                 marker_count += 1
 
             marker_count = 1
@@ -423,15 +432,15 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0509', latest_time='11:21:53',
-                         plot_threads=['t1', 't2', 't3', 't4'])
+    plot_obj = PlotStats(net_name='USNet', latest_date='0510', latest_time='16:39:02',
+                         plot_threads=['t1', 't4', 't7', 't10'])
     plot_obj.plot_blocking()
-    # plot_obj.plot_blocking_per_request()
-    # plot_obj.plot_transponders()
-    # plot_obj.plot_slots_taken()
-    # plot_obj.plot_active_requests()
-    # plot_obj.plot_guard_bands()
-    # plot_obj.plot_num_slices()
+    plot_obj.plot_blocking_per_request()
+    plot_obj.plot_transponders()
+    plot_obj.plot_slots_taken()
+    plot_obj.plot_active_requests()
+    plot_obj.plot_guard_bands()
+    plot_obj.plot_num_slices()
 
 
 if __name__ == '__main__':

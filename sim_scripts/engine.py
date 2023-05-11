@@ -152,6 +152,7 @@ class Engine(SDNController):
             'block_per_bw': self.block_per_bw,
             'alloc_method': self.sim_data['alloc_method'],
             'request_snapshots': self.request_snapshots,
+            'dynamic_lps': self.dynamic_lps,
         }
 
         base_fp = f"data/output/{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
