@@ -416,8 +416,8 @@ class Engine(SDNController):
         blocking_prob = self.num_blocked_reqs / request_number
         self.request_snapshots[request_number]["blocking_prob"] = blocking_prob
 
-        if num_transponders % 2 != 0 and self.max_slices > 1 and num_transponders > 1:
-            raise EnvironmentError('Number of transponders used is odd.')
+        # if num_transponders % 2 != 0 and self.max_slices > 1 and num_transponders > 1:
+        #     raise EnvironmentError('Number of transponders used is odd.')
         self.request_snapshots[request_number]['num_slices'] = num_transponders
 
     def init_iter_vars(self):
