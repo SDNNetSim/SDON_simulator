@@ -178,7 +178,6 @@ class SDNController:
             num_slices = int(int(self.chosen_bw) / int(bandwidth))
             if num_slices > self.max_slices:
                 break
-            # Number of slices minus one to account for the original transponder
             self.num_transponders = num_slices
 
             is_allocated = True
