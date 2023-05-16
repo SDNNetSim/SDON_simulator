@@ -101,7 +101,7 @@ class Engine(SDNController):
 
         # Initialize the constructor of the SDNController class
         super().__init__(alloc_method=self.sim_data['alloc_method'],
-                         mod_per_bw=self.sim_data['mod_per_bw'], max_slices=self.sim_data['max_slices'],
+                         mod_per_bw=self.sim_data['mod_per_bw'], max_segments=self.sim_data['max_segments'],
                          cores_per_link=self.sim_data['cores_per_link'], guard_slots=self.sim_data['guard_slots'],
                          sim_type=self.sim_type, dynamic_lps=self.dynamic_lps)
 
@@ -145,14 +145,14 @@ class Engine(SDNController):
             'cores_per_link': self.sim_data['topology']['links']['1']['fiber']['num_cores'],
             'hold_time_mean': self.sim_data['hold_time_mean'],
             'spectral_slots': self.sim_data['spectral_slots'],
-            'max_slices': self.sim_data['max_slices'],
+            'max_segments': self.sim_data['max_segments'],
             'trans_mean': np.mean(self.trans_arr),
             'dist_percent': np.mean(self.dist_block_arr) * 100.0,
             'cong_percent': np.mean(self.cong_block_arr) * 100.0,
             'block_per_bw': self.block_per_bw,
             'alloc_method': self.sim_data['alloc_method'],
-            'request_snapshots': self.request_snapshots,
             'dynamic_lps': self.dynamic_lps,
+            'request_snapshots': self.request_snapshots,
         }
 
         base_fp = f"data/output/{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
@@ -404,8 +404,8 @@ class Engine(SDNController):
         :param num_transponders: The number of transponders the request used
         :type num_transponders: int
         """
-        self.request_snapshots[request_number] = {'occ_slots': 0, 'guard_bands': 0, 'blocking_prob': 0, 'num_slices': 0,
-                                                  'active_requests': 0}
+        self.request_snapshots[request_number] = {'occ_slots': 0, 'guard_bands': 0, 'blocking_prob': 0,
+                                                  'num_segments': 0, 'active_requests': 0}
 
         occupied_slots, guard_bands = self.get_total_occupied_slots()
 
@@ -416,9 +416,7 @@ class Engine(SDNController):
         blocking_prob = self.num_blocked_reqs / request_number
         self.request_snapshots[request_number]["blocking_prob"] = blocking_prob
 
-        # if num_transponders % 2 != 0 and self.max_slices > 1 and num_transponders > 1:
-        #     raise EnvironmentError('Number of transponders used is odd.')
-        self.request_snapshots[request_number]['num_slices'] = num_transponders
+        self.request_snapshots[request_number]['num_segments'] = num_transponders
 
     def init_iter_vars(self):
         """
