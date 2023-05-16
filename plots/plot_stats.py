@@ -30,6 +30,7 @@ class PlotStats:
 
         # The final dictionary containing information for all plots
         self.plot_dict = {}
+        self.num_cores = None
         # Miscellaneous customizations visually
         self.colors = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
@@ -62,7 +63,10 @@ class PlotStats:
                 continue
             curr_fp = os.path.join(self.data_dir, thread)
             files_dict[thread] = list()
-            for erlang_file in os.listdir(curr_fp):
+
+            files = os.listdir(curr_fp)
+            sorted_files = sorted(files, key=lambda x: float(x.split('_')[0]))
+            for erlang_file in sorted_files:
                 files_dict[thread].append(erlang_file.split('_')[0])
 
         return files_dict
@@ -111,6 +115,7 @@ class PlotStats:
                 self.plot_dict[thread]['spectral_slots'] = erlang_dict['misc_stats']['spectral_slots']
 
                 self.plot_dict[thread]['max_slices'] = erlang_dict['misc_stats']['max_slices']
+                self.num_cores = erlang_dict['misc_stats']['cores_per_link']
 
                 if erlang in (10, 100, 400):
                     self.plot_dict[thread]['taken_slots'][erlang] = dict()
@@ -176,7 +181,7 @@ class PlotStats:
         """
         file_path = f'./output/{self.net_name}/{self.latest_date}/{self.latest_time}'
         create_dir(file_path)
-        plt.savefig(f'{file_path}/{file_name}.png')
+        plt.savefig(f'{file_path}/{file_name}_core{self.num_cores}.png')
 
     def _setup_plot(self, title, y_label, x_label, grid=True, y_ticks=True, x_ticks=True):
         """
@@ -221,7 +226,7 @@ class PlotStats:
         """
         Plots the blocking probability for each Erlang value.
         """
-        self._setup_plot(f'{self.net_name} BP vs. Erlang', 'Blocking Probability', 'Erlang')
+        self._setup_plot(f'{self.net_name} BP vs. Erlang (C={self.num_cores})', 'Blocking Probability', 'Erlang')
 
         style_count = 0
         legend_list = list()
@@ -232,6 +237,7 @@ class PlotStats:
 
             plt.plot(thread_obj['erlang_vals'], thread_obj['blocking_vals'], color=color, linestyle=line_style,
                      marker=marker, markersize=2.3)
+            # TODO: Change
             legend_list.append(f"C ={thread_obj['cores_per_link']} LS ={thread_obj['max_slices']}")
 
             style_count += 1
@@ -246,8 +252,8 @@ class PlotStats:
         """
         Plots the blocking probability, but for each request at that point in time.
         """
-        self._setup_plot(f'{self.net_name} Request Snapshot vs. Blocking Probability', 'Blocking Probability',
-                         'Request Number', x_ticks=False)
+        self._setup_plot(f'{self.net_name} Request Snapshot vs. Blocking Probability (C={self.num_cores})',
+                         'Blocking Probability', 'Request Number', x_ticks=False)
 
         legend_list = list()
         style_count = 0
@@ -262,6 +268,7 @@ class PlotStats:
 
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
+                # TODO: Change
                 legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
                 marker_count += 1
 
@@ -277,8 +284,9 @@ class PlotStats:
         """
         Plots the average number of transponders used for each Erlang value.
         """
-        self._setup_plot(f'{self.net_name} Transponders vs. Erlang', 'Transponders', 'Erlang', y_ticks=False)
-        plt.ylim(0.9, 2)
+        self._setup_plot(f'{self.net_name} Transponders vs. Erlang (C={self.num_cores})', 'Transponders', 'Erlang',
+                         y_ticks=False)
+        plt.ylim(0.9, 1.6)
 
         legend_list = list()
         style_count = 0
@@ -286,6 +294,7 @@ class PlotStats:
             color = self.colors[style_count]
 
             plt.plot(thread_obj['erlang_vals'], thread_obj['average_transponders'], color=color)
+            # TODO: Change
             legend_list.append(f"C={thread_obj['cores_per_link']} LS={thread_obj['max_slices']}")
 
             style_count += 1
@@ -298,7 +307,8 @@ class PlotStats:
         """
         Plots the number of slots taken in the entire network for certain request snapshots.
         """
-        self._setup_plot(f'{self.net_name} Request Snapshot vs. Slots Occupied', 'Slots Occupied', 'Request Number',
+        self._setup_plot(f'{self.net_name} Request Snapshot vs. Slots Occupied (C={self.num_cores})', 'Slots Occupied',
+                         'Request Number',
                          y_ticks=False, x_ticks=False)
 
         legend_list = list()
@@ -313,6 +323,7 @@ class PlotStats:
 
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
+                # TODO: Change
                 legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
                 marker_count += 1
 
@@ -325,11 +336,12 @@ class PlotStats:
         self._save_plot(file_name='slots_occupied')
         plt.show()
 
-    def plot_num_slices(self):
+    def plot_num_segments(self):
         """
-        Plots the number of times all requests have been sliced.
+        Plots the number of segments each request has been sliced into.
         """
-        self._setup_plot(f'{self.net_name} Number of Slices vs. Occurrences', 'Occurrences', 'Number of Slices',
+        self._setup_plot(f'{self.net_name} Number of Segments vs. Occurrences (C={self.num_cores})', 'Occurrences',
+                         'Number of Segments',
                          y_ticks=False, x_ticks=False, grid=False)
 
         erlang_colors = ['#0000b3', '#3333ff', '#9999ff', '#b30000', '#ff3333', '#ff9999', '#00b33c', '#00ff55',
@@ -341,24 +353,27 @@ class PlotStats:
             # No slicing will occur
             if thread_obj['max_slices'] == 1:
                 continue
+            # TODO: Change this dictionary label
             for erlang, slices_lst in thread_obj['num_slices'].items():
                 hist_list.append(slices_lst)
+                # TODO: Change
                 legend_list.append(f"E={int(erlang)} LS={thread_obj['max_slices']}")
 
-        bins = [2, 4, 8]
+        bins = [1, 2, 3, 4, 5, 6, 7, 8]
         plt.hist(hist_list, stacked=False, histtype='bar', edgecolor='black', rwidth=1, color=erlang_colors, bins=bins)
 
         plt.ylim(0, 10000)
         plt.xlim(0, 8)
         plt.legend(legend_list, loc='upper right')
-        self._save_plot(file_name='num_slices')
+        self._save_plot(file_name='num_segments')
         plt.show()
 
     def plot_active_requests(self):
         """
         Plots the amount of active requests in the network at specific intervals.
         """
-        self._setup_plot(f'{self.net_name} Request Snapshot vs. Active Requests', 'Active Requests', 'Request Number',
+        self._setup_plot(f'{self.net_name} Request Snapshot vs. Active Requests (C={self.num_cores})',
+                         'Active Requests', 'Request Number',
                          y_ticks=False, x_ticks=False)
 
         legend_list = list()
@@ -375,6 +390,7 @@ class PlotStats:
                 marker = self.markers[marker_count]
                 plt.plot(request_numbers, active_requests, color=color, marker=marker, markersize=2.3)
 
+                # TODO: Change
                 legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
                 marker_count += 1
 
@@ -383,7 +399,7 @@ class PlotStats:
 
         plt.legend(legend_list, loc='upper left')
         plt.xlim(1000, 10000)
-        plt.ylim(0, 1300)
+        plt.ylim(0, 400)
         self._save_plot(file_name='active_requests')
         plt.show()
 
@@ -391,7 +407,8 @@ class PlotStats:
         """
         Plots the number of guard bands being used in the network on average.
         """
-        self._setup_plot(f'{self.net_name} Request Snapshot vs. Guard Bands', 'Guard Bands', 'Request Number',
+        self._setup_plot(f'{self.net_name} Request Snapshot vs. Guard Bands (C={self.num_cores})', 'Guard Bands',
+                         'Request Number',
                          y_ticks=False, x_ticks=False)
 
         legend_list = list()
@@ -406,6 +423,7 @@ class PlotStats:
                 marker = self.markers[marker_count]
                 plt.plot(request_numbers, guard_bands, color=color, marker=marker, markersize=2.3)
 
+                # TODO: Change
                 legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
                 marker_count += 1
 
@@ -423,15 +441,15 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0509', latest_time='11:21:53',
-                         plot_threads=['t1', 't2', 't3', 't4'])
+    plot_obj = PlotStats(net_name='USNet', latest_date='0512', latest_time='10:57:30',
+                         plot_threads=['t3', 't6', 't9', 't12'])
     plot_obj.plot_blocking()
-    # plot_obj.plot_blocking_per_request()
-    # plot_obj.plot_transponders()
-    # plot_obj.plot_slots_taken()
-    # plot_obj.plot_active_requests()
-    # plot_obj.plot_guard_bands()
-    # plot_obj.plot_num_slices()
+    plot_obj.plot_blocking_per_request()
+    plot_obj.plot_transponders()
+    plot_obj.plot_slots_taken()
+    plot_obj.plot_active_requests()
+    plot_obj.plot_guard_bands()
+    plot_obj.plot_num_segments()
 
 
 if __name__ == '__main__':

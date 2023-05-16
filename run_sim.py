@@ -21,7 +21,7 @@ class NetworkSimulator:
     def __init__(self, sim_data: dict = None, seeds: List[int] = None, mod_per_bw: dict = None,
                  req_dist: List[dict] = None, sim_fp: str = None, sim_start: str = None, net_name: str = 'USNet',
                  hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 10000, max_iters: int = 1,
-                 spectral_slots: int = 256, cores_per_link: int = 1, bw_per_slot: float = 12.5, max_slices: int = 1,
+                 spectral_slots: int = 256, cores_per_link: int = 1, bw_per_slot: float = 12.5, max_segments: int = 1,
                  sim_type: str = 'arash', const_weight: bool = True, guard_slots: int = 1,
                  alloc_method: str = 'first-fit', dynamic_lps: bool = False, thread_num: int = 1):
         """
@@ -67,8 +67,8 @@ class NetworkSimulator:
         :param bw_per_slot: The frequency for one spectrum slot (GHz).
         :type bw_per_slot: float
 
-        :param max_slices: The maximum allowed light segment slicing (light path slicing).
-        :type max_slices: int
+        :param max_segments: The maximum allowed light segments a single request may be sliced into.
+        :type max_segments: int
 
         :param sim_type: A flag to determine which simulation to run and with which assumptions for the simulation.
         :type sim_type: str
@@ -106,7 +106,7 @@ class NetworkSimulator:
         self.sim_start = sim_start
 
         self.bw_per_slot = bw_per_slot
-        self.max_slices = max_slices
+        self.max_segments = max_segments
         self.mod_per_bw = mod_per_bw
         self.req_dist = req_dist
         self.spectral_slots = spectral_slots
@@ -170,7 +170,7 @@ class NetworkSimulator:
             'arr_rate_mean': self.arr_rate_mean,
             'num_reqs': self.num_reqs,
             'mod_per_bw': self.mod_per_bw,
-            'max_slices': self.max_slices,
+            'max_segments': self.max_segments,
             'max_iters': self.max_iters,
             'spectral_slots': self.spectral_slots,
             'guard_slots': self.guard_slots,
@@ -180,13 +180,13 @@ class NetworkSimulator:
             'req_dist': self.req_dist,
         }
 
-    def run_yue(self, max_slices, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps):
+    def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps):
         """
         Runs a Yue-based simulation with the specified parameters. Reference: Wang, Yue. Dynamic Traffic Scheduling
         Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
 
-        :param max_slices: Maximum number of light-paths to generate.
-        :type max_slices: int
+        :param max_segments: Maximum number of light segments one request may be broken into.
+        :type max_segments: int
 
         :param thread_num: Unique identifier for the simulation.
         :type thread_num: int
@@ -217,7 +217,7 @@ class NetworkSimulator:
         self.dynamic_lps = dynamic_lps
         self.req_dist = req_dist
 
-        self.max_slices = max_slices
+        self.max_segments = max_segments
         self.thread_num = thread_num
 
         for arr_rate_mean in range(2, 143, 2):
@@ -279,7 +279,7 @@ def run(threads):
         for thread_num, thread_params in enumerate(threads, start=1):
             class_inst = NetworkSimulator(sim_start=time.strftime("%m%d_%H:%M:%S"))
 
-            future = executor.submit(class_inst.run_yue, thread_params['max_slices'], thread_num,
+            future = executor.submit(class_inst.run_yue, thread_params['max_segments'], thread_num,
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
                                      thread_params['req_dist'], thread_params['dynamic_lps'])
 
@@ -293,10 +293,10 @@ def run(threads):
 if __name__ == '__main__':
     threads_obj = []
     for dynamic_flag in [True, False]:
-        for max_slices in [1, 2, 4, 8]:
+        for max_segments in [1, 2, 4, 8]:
             for cores_per_link in [1, 4, 7]:
                 thread = {
-                    'max_slices': max_slices,
+                    'max_segments': max_segments,
                     'cores_per_link': cores_per_link,
                     'alloc_method': 'first-fit',
                     'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},

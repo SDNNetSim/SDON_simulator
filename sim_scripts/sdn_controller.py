@@ -18,7 +18,7 @@ class SDNController:
     def __init__(self, req_id: int = None, net_spec_db: dict = None, topology: nx.Graph = None,
                  cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
                  source: int = None, destination: int = None, mod_per_bw: dict = None, chosen_bw: str = None,
-                 max_slices: int = None, guard_slots: int = None, dynamic_lps: bool = None):
+                 max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None):
         """
         Initializes the SDNController class.
 
@@ -55,8 +55,8 @@ class SDNController:
         :param chosen_bw: The chosen bandwidth for this request.
         :type chosen_bw: str
 
-        :param max_slices: The maximum number of slices allowed.
-        :type max_slices: int
+        :param max_segments: The maximum number of light segments allowed for a single request.
+        :type max_segments: int
 
         :param guard_slots: The amount of slots to be allocated for the guard band.
         :type guard_slots: int
@@ -78,7 +78,7 @@ class SDNController:
         self.destination = destination
         self.mod_per_bw = mod_per_bw
         self.chosen_bw = chosen_bw
-        self.max_slices = max_slices
+        self.max_segments = max_segments
         self.guard_slots = guard_slots
 
         # Determines if light slicing is limited to a single core or not
@@ -158,7 +158,7 @@ class SDNController:
 
         :return: True if LPS is successfully carried out, False otherwise
         """
-        if self.chosen_bw == '25' or self.max_slices == 1:
+        if self.chosen_bw == '25' or self.max_segments == 1:
             return False
 
         path_len = find_path_len(self.path, self.topology)
@@ -175,15 +175,14 @@ class SDNController:
                 self.dist_block = True
                 continue
 
-            num_slices = int(int(self.chosen_bw) / int(bandwidth))
-            if num_slices > self.max_slices:
+            num_segments = int(int(self.chosen_bw) / int(bandwidth))
+            if num_segments > self.max_segments:
                 break
-            # Number of slices minus one to account for the original transponder
-            self.num_transponders += (num_slices - 1)
+            self.num_transponders = num_segments
 
             is_allocated = True
             # Check if all slices can be allocated
-            for _ in range(num_slices):
+            for _ in range(num_segments):
                 spectrum_assignment = SpectrumAssignment(path=self.path,
                                                          slots_needed=modulation_dict[tmp_format]['slots_needed'],
                                                          net_spec_db=self.net_spec_db,
@@ -206,7 +205,6 @@ class SDNController:
 
         return False
 
-    # TODO: Write tests for this method
     def allocate_dynamic_lps(self):
         """
         Attempts to perform an improved version of light path slicing (LPS) to allocate a request. An 'improved version'
@@ -216,7 +214,7 @@ class SDNController:
         """
         resp = dict()
 
-        if self.max_slices == 1:
+        if self.max_segments == 1:
             return False
 
         path_len = find_path_len(self.path, self.topology)
@@ -224,7 +222,7 @@ class SDNController:
         modulation_formats = sort_dict_keys(self.mod_per_bw)
 
         remaining_bw = int(self.chosen_bw)
-        num_slices = 1
+        num_segments = 0
 
         for bandwidth, modulation_dict in modulation_formats.items():
             # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
@@ -251,9 +249,9 @@ class SDNController:
                                   core_num=selected_spectrum['core_num'])
 
                     remaining_bw -= int(bandwidth)
-                    num_slices += 1
+                    num_segments += 1
 
-                    if num_slices > self.max_slices:
+                    if num_segments > self.max_segments:
                         self.release()
                         # TODO: This is technically misleading, wasn't due to congestion or distance
                         self.dist_block = False
@@ -263,6 +261,7 @@ class SDNController:
                     break
 
                 if remaining_bw == 0:
+                    self.num_transponders = num_segments
                     return resp
                 if int(bandwidth) > remaining_bw:
                     break
