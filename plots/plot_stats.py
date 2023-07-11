@@ -85,8 +85,8 @@ class PlotStats:
                 'hold_time_mean': None,
                 'cores_per_link': None,
                 'spectral_slots': None,
-                'max_slices': None,
-                'num_slices': {},
+                'max_segments': None,
+                'num_segments': {},
                 'taken_slots': {},
                 'block_per_req': {},
                 'active_requests': {},
@@ -114,7 +114,7 @@ class PlotStats:
                 self.plot_dict[thread]['cores_per_link'] = erlang_dict['misc_stats']['cores_per_link']
                 self.plot_dict[thread]['spectral_slots'] = erlang_dict['misc_stats']['spectral_slots']
 
-                self.plot_dict[thread]['max_slices'] = erlang_dict['misc_stats']['max_slices']
+                self.plot_dict[thread]['max_segments'] = erlang_dict['misc_stats']['max_segments']
                 self.num_cores = erlang_dict['misc_stats']['cores_per_link']
 
                 if erlang in (10, 100, 400):
@@ -122,7 +122,7 @@ class PlotStats:
                     self.plot_dict[thread]['block_per_req'][erlang] = dict()
                     self.plot_dict[thread]['active_requests'][erlang] = dict()
                     self.plot_dict[thread]['guard_bands'][erlang] = dict()
-                    self.plot_dict[thread]['num_slices'][erlang] = list()
+                    self.plot_dict[thread]['num_segments'][erlang] = list()
 
                     for request_number, request_info in erlang_dict['misc_stats']['request_snapshots'].items():
                         request_number = int(request_number)
@@ -144,7 +144,7 @@ class PlotStats:
                                                                                             erlang_dict['misc_stats'][
                                                                                                 'cores_per_link']
 
-                        self.plot_dict[thread]['num_slices'][erlang].append(request_info['num_slices'])
+                        self.plot_dict[thread]['num_segments'][erlang].append(request_info['num_segments'])
 
     @staticmethod
     def running_average(lst, interval):
@@ -238,7 +238,7 @@ class PlotStats:
             plt.plot(thread_obj['erlang_vals'], thread_obj['blocking_vals'], color=color, linestyle=line_style,
                      marker=marker, markersize=2.3)
             # TODO: Change
-            legend_list.append(f"C ={thread_obj['cores_per_link']} LS ={thread_obj['max_slices']}")
+            legend_list.append(f"C ={thread_obj['cores_per_link']} ALS ={thread_obj['max_segments']}")
 
             style_count += 1
 
@@ -269,7 +269,7 @@ class PlotStats:
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
                 # TODO: Change
-                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -295,7 +295,7 @@ class PlotStats:
 
             plt.plot(thread_obj['erlang_vals'], thread_obj['average_transponders'], color=color)
             # TODO: Change
-            legend_list.append(f"C={thread_obj['cores_per_link']} LS={thread_obj['max_slices']}")
+            legend_list.append(f"C={thread_obj['cores_per_link']} ALS={thread_obj['max_segments']}")
 
             style_count += 1
 
@@ -324,7 +324,7 @@ class PlotStats:
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
                 # TODO: Change
-                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -351,13 +351,12 @@ class PlotStats:
         legend_list = list()
         for _, thread_obj in self.plot_dict.items():
             # No slicing will occur
-            if thread_obj['max_slices'] == 1:
+            if thread_obj['max_segments'] == 1:
                 continue
-            # TODO: Change this dictionary label
-            for erlang, slices_lst in thread_obj['num_slices'].items():
+            for erlang, slices_lst in thread_obj['num_segments'].items():
                 hist_list.append(slices_lst)
                 # TODO: Change
-                legend_list.append(f"E={int(erlang)} LS={thread_obj['max_slices']}")
+                legend_list.append(f"E={int(erlang)} ALS={thread_obj['max_segments']}")
 
         bins = [1, 2, 3, 4, 5, 6, 7, 8]
         plt.hist(hist_list, stacked=False, histtype='bar', edgecolor='black', rwidth=1, color=erlang_colors, bins=bins)
@@ -391,7 +390,7 @@ class PlotStats:
                 plt.plot(request_numbers, active_requests, color=color, marker=marker, markersize=2.3)
 
                 # TODO: Change
-                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -424,7 +423,7 @@ class PlotStats:
                 plt.plot(request_numbers, guard_bands, color=color, marker=marker, markersize=2.3)
 
                 # TODO: Change
-                legend_list.append(f"E={erlang} LS={thread_obj['max_slices']}")
+                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -441,7 +440,7 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0512', latest_time='10:57:30',
+    plot_obj = PlotStats(net_name='USNet', latest_date='0516', latest_time='10:58:53',
                          plot_threads=['t3', 't6', 't9', 't12'])
     plot_obj.plot_blocking()
     plot_obj.plot_blocking_per_request()
