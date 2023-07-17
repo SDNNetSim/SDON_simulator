@@ -292,8 +292,8 @@ def run(threads):
 if __name__ == '__main__':
     threads_obj = []
     for dynamic_flag in [False]:
-        for max_segments in [1, 2, 4, 8]:
-            for cores_per_link in [1, 4, 7]:
+        for max_segments in [1]:
+            for cores_per_link in [1]:
                 thread = {
                     'max_segments': max_segments,
                     'cores_per_link': cores_per_link,

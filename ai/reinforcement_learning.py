@@ -43,7 +43,7 @@ class QLearning:
         """
         Plots reward values vs. episodes.
         """
-        pass
+        raise NotImplementedError
 
     # TODO: Add better reward scheme (based on congestion, distance, mod format, SNR, etc.)
     #   Potentially based on time for example, congestion at first and distance later (different reward weights)

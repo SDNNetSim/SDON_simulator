@@ -146,6 +146,10 @@ class Engine(SDNController):
 
         :return: None
         """
+        for req_num, obj in self.request_snapshots.items():
+            for key, lst in obj.items():
+                obj[key] = np.mean(lst)
+
         self.stats_dict['misc_stats'] = {
             'blocking_mean': self.blocking_mean,
             'blocking_variance': self.blocking_variance,
@@ -159,7 +163,7 @@ class Engine(SDNController):
             'trans_mean': np.mean(self.trans_arr),
             'dist_percent': np.mean(self.dist_block_arr) * 100.0,
             'cong_percent': np.mean(self.cong_block_arr) * 100.0,
-            'block_per_bw': {key: value / self.sim_data["max_iters"] for key, value in self.block_per_bw.items()},
+            'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
             'alloc_method': self.sim_data['alloc_method'],
             'dynamic_lps': self.dynamic_lps,
             'request_snapshots': self.request_snapshots,

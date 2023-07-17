@@ -129,7 +129,7 @@ class PlotStats:
 
                     for request_number, request_info in erlang_dict['misc_stats']['request_snapshots'].items():
                         request_number = int(request_number)
-                        # TODO: Change back?
+                        # Plot every 'x' amount of request snapshots
                         if request_number % 1 == 0 or request_number == 1:
                             self.plot_dict[thread]['taken_slots'][erlang][request_number] = request_info['occ_slots'] / \
                                                                                             erlang_dict['misc_stats'][
@@ -436,8 +436,8 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0713', latest_time='17:46:08',
-                         plot_threads=['t1'])
+    plot_obj = PlotStats(net_name='USNet', latest_date='0717', latest_time='12:37:19',
+                         plot_threads=['t1', 't4', 't7', 't10'])
     plot_obj.plot_blocking()
     plot_obj.plot_blocking_per_request()
     plot_obj.plot_transponders()
