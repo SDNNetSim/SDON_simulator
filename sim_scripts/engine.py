@@ -111,6 +111,8 @@ class Engine(SDNController):
         # Holds the request numbers of all the requests currently active in the network
         self.active_requests = set()
         self.q_obj = QLearning()
+        self.q_obj.topology = self.topology
+        self.q_obj.setup_environment()
 
         # Initialize the constructor of the SDNController class
         super().__init__(alloc_method=self.sim_data['alloc_method'],
@@ -461,6 +463,7 @@ class Engine(SDNController):
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
+            self.q_obj.seed = seed
 
             request_number = 1
             for curr_time in self.reqs_dict:

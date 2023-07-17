@@ -15,7 +15,7 @@ class QLearning:
     """
 
     def __init__(self, epsilon: float = 0.1, epsilon_decay: float = 0.01, episodes: int = 1000, learn_rate: float = 0.1,
-                 discount: float = 0.95):
+                 discount: float = 0.95, topology: nx.Graph = None):
         """
         Initializes the QLearning class.
 
@@ -34,6 +34,9 @@ class QLearning:
         :param discount: The discount factor in the bellman equation to determine the balance between current and
                          future rewards.
         :type discount: float
+
+        :param topology: The network topology.
+        :type: topology: nx.Graph
         """
         # Contains all state and action value pairs
         self.q_table = None
@@ -43,9 +46,20 @@ class QLearning:
         self.episodes = episodes
         self.learn_rate = learn_rate
         self.discount = discount
+        self.topology = topology
 
         # Statistics used for plotting
         self.rewards_dict = {'episode': [], 'average': [], 'min': [], 'max': [], 'rewards': []}
+
+    @staticmethod
+    def set_seed(seed: int = None):
+        """
+        Used to set the seed for controlling 'random' generation.
+
+        :param seed: The seed to be set for numpy random generation.
+        :type seed: int
+        """
+        np.random.seed(seed)
 
     def plot_rewards(self):
         """
@@ -89,17 +103,10 @@ class QLearning:
 
             self.q_table[(state, new_state)] = new_q
 
-    def setup_episode(self, seed, topology):
+    def setup_environment(self):
         """
-        Initializes a single episode, which is synonymous with one simulation.
-
-        :param seed: The random seed.
-        :type seed: int
-
-        :param topology: The network topology.
-        :type topology: nx.Graph
+        Initializes the environment.
         """
-        np.random.seed(seed)
         # Init q-table for USNet, a 24 node network
         self.q_table = np.zeros(24, 24)
 
@@ -110,12 +117,12 @@ class QLearning:
                     continue
 
                 # A link exists between these nodes, init to zero
-                if source in topology.neighbors(destination):
+                if source in self.topology.neighbors(destination):
                     self.q_table[(source, destination)] = 0
                 else:
                     self.q_table[(source, destination)] = np.nan
 
-    def route(self, source, destination, topology, mod_formats):
+    def route(self, source, destination, mod_formats):
         """
         Determines a route from source to destination using Q-Learning.
 
@@ -125,33 +132,30 @@ class QLearning:
         :param destination: The destination node.
         :type destination: int
 
-        :param topology: The network topology.
-        :type topology: nx.Graph
-
         :param mod_formats: Modulation formats for a selected bandwidth and their potential reach.
-        :type mod_formats:
+        :type mod_formats: dict
 
         :return: The path from source to destination.
         :rtype: list
         """
         path = [source]
         while True:
-            random_float = np.random.random_sample()
+            random_float = np.round(np.random.uniform(0, 1), decimals=1)
             while True:
                 # Choose a random action with respect to epsilon
                 if random_float < self.epsilon:
-                    next_node = self.q_table[np.random.randint(24)]
+                    next_node = np.random.randint(24)
                 else:
                     next_node = np.argmax(self.q_table[source])
 
-                q_value = self.q_table[(source, next_node)]
+                q_value = self.q_table[(int(source), next_node)]
                 # No connection exists between these nodes
                 if np.isnan(q_value):
                     continue
 
                 path.append(next_node)
                 if next_node == destination:
-                    path_len = find_path_len(path, topology)
+                    path_len = find_path_len(path, self.topology)
                     mod_format = get_path_mod(mod_formats, path_len)
                     return path, mod_format
 

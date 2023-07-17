@@ -320,7 +320,6 @@ class SDNController:
 
         if self.sim_type == 'yue':
             selected_path, path_mod = self.routing_obj.route(source=self.source, destination=self.destination,
-                                                             topology=self.topology,
                                                              mod_formats=self.mod_per_bw[self.chosen_bw])
         elif self.sim_type == 'arash':
             selected_path = self.routing_obj.least_congested_path()
