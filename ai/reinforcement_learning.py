@@ -19,20 +19,21 @@ class QLearning:
         """
         Initializes the QLearning class.
 
-        :param epsilon: Parameter in the bellman equation to determine degree of randomness
+        :param epsilon: Parameter in the bellman equation to determine degree of randomness.
         :type epsilon: float
 
-        :param epsilon_decay: Determines the decay in the degree of randomness for every episode
+        :param epsilon_decay: Determines the decay in the degree of randomness for every episode.
         :type epsilon_decay: float
 
-        :param episodes: The number of iterations or simulations
+        :param episodes: The number of iterations or simulations.
         :type episodes: int
 
-        :param learn_rate: The learning rate, alpha, in the bellman equation
+        :param learn_rate: The learning rate, alpha, in the bellman equation.
         :type learn_rate: float
 
         :param discount: The discount factor in the bellman equation to determine the balance between current and
-                         future rewards
+                         future rewards.
+        :type discount: float
         """
         # Contains all state and action value pairs
         self.q_table = None
@@ -58,13 +59,13 @@ class QLearning:
         """
         The custom environment that updates the Q-table with respect to a reward policy.
 
-        :param routed: If a request was successfully routed or not
+        :param routed: If a request was successfully routed or not.
         :type routed: bool
 
-        :param path: The path taken from source to destination
+        :param path: The path taken from source to destination.
         :type path: list
 
-        :return: The reward value
+        :return: The reward value.
         :rtype: int
         """
         if routed:
@@ -92,10 +93,10 @@ class QLearning:
         """
         Initializes a single episode, which is synonymous with one simulation.
 
-        :param seed: The random seed
+        :param seed: The random seed.
         :type seed: int
 
-        :param topology: The network topology
+        :param topology: The network topology.
         :type topology: nx.Graph
         """
         np.random.seed(seed)
@@ -118,13 +119,19 @@ class QLearning:
         """
         Determines a route from source to destination using Q-Learning.
 
-        :param source: The source node
+        :param source: The source node.
         :type source: int
 
-        :param destination: The destination node
+        :param destination: The destination node.
         :type destination: int
 
-        :return: The path from source to destination
+        :param topology: The network topology.
+        :type topology: nx.Graph
+
+        :param mod_formats: Modulation formats for a selected bandwidth and their potential reach.
+        :type mod_formats:
+
+        :return: The path from source to destination.
         :rtype: list
         """
         path = [source]
