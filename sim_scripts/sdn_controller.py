@@ -18,7 +18,8 @@ class SDNController:
     def __init__(self, req_id: int = None, net_spec_db: dict = None, topology: nx.Graph = None,
                  cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
                  source: int = None, destination: int = None, mod_per_bw: dict = None, chosen_bw: str = None,
-                 max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None):
+                 max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None,
+                 routing_obj: object = None):
         """
         Initializes the SDNController class.
 
@@ -64,6 +65,9 @@ class SDNController:
         :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
                             request to multiple different bandwidths if set to true.
         :type dynamic_lps: bool
+
+        :param routing_obj: A class to handle everything related to routing.
+        :type routing_obj: object
         """
         self.req_id = req_id
         self.net_spec_db = net_spec_db
@@ -73,6 +77,7 @@ class SDNController:
         self.sim_type = sim_type
         self.alloc_method = alloc_method
         self.dynamic_lps = dynamic_lps
+        self.routing_obj = routing_obj
 
         self.source = source
         self.destination = destination
@@ -285,9 +290,10 @@ class SDNController:
             resp = self.allocate_dynamic_lps()
 
         if resp is not False:
-            return {'path': self.path, 'mod_format': resp, 'is_sliced': True}, self.net_spec_db, self.num_transponders
+            return {'path': self.path, 'mod_format': resp,
+                    'is_sliced': True}, self.net_spec_db, self.num_transponders, self.path
 
-        return False, self.dist_block
+        return False, self.dist_block, self.path
 
     def handle_event(self, request_type):
         """
@@ -307,14 +313,15 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        routing_obj = Routing(source=self.source, destination=self.destination,
-                              topology=self.topology, net_spec_db=self.net_spec_db,
-                              mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
+        if self.routing_obj is None:
+            self.routing_obj = Routing(source=self.source, destination=self.destination,
+                                       topology=self.topology, net_spec_db=self.net_spec_db,
+                                       mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
 
         if self.sim_type == 'yue':
-            selected_path, path_mod = routing_obj.shortest_path()
+            selected_path, path_mod = self.routing_obj.route()
         elif self.sim_type == 'arash':
-            selected_path = routing_obj.least_congested_path()
+            selected_path = self.routing_obj.least_congested_path()
             path_mod = 'QPSK'
         else:
             raise NotImplementedError
@@ -337,7 +344,7 @@ class SDNController:
                     }
 
                     self.allocate(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
-                    return resp, self.net_spec_db, self.num_transponders
+                    return resp, self.net_spec_db, self.num_transponders, self.path
 
                 # Attempt to slice the request due to a congestion constraint
                 return self.handle_lps()

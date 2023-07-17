@@ -9,6 +9,7 @@ import numpy as np
 from sim_scripts.request_generator import generate
 from sim_scripts.sdn_controller import SDNController
 from useful_functions.handle_dirs_files import create_dir
+from ai.reinforcement_learning import QLearning
 
 
 class Engine(SDNController):
@@ -109,12 +110,13 @@ class Engine(SDNController):
             }
         # Holds the request numbers of all the requests currently active in the network
         self.active_requests = set()
+        self.q_obj = QLearning()
 
         # Initialize the constructor of the SDNController class
         super().__init__(alloc_method=self.sim_data['alloc_method'],
                          mod_per_bw=self.sim_data['mod_per_bw'], max_segments=self.sim_data['max_segments'],
                          cores_per_link=self.sim_data['cores_per_link'], guard_slots=self.sim_data['guard_slots'],
-                         sim_type=self.sim_type, dynamic_lps=self.dynamic_lps)
+                         sim_type=self.sim_type, dynamic_lps=self.dynamic_lps, routing_obj=self.q_obj)
 
     def get_total_occupied_slots(self):
         """
@@ -245,6 +247,8 @@ class Engine(SDNController):
         self.chosen_bw = request['bandwidth']
 
         resp = self.handle_event(request_type='arrival')
+
+        self.q_obj.update_environment(routed=resp[0], path=resp[-1])
 
         # Request was blocked
         if not resp[0]:

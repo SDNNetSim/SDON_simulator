@@ -1,5 +1,12 @@
+# Third party imports
 import numpy as np
 import networkx as nx
+
+# Local application imports
+from useful_functions.sim_functions import get_path_mod, find_path_len
+
+
+# TODO: Topology is hard coded in some methods
 
 
 class QLearning:
@@ -47,7 +54,7 @@ class QLearning:
 
     # TODO: Add better reward scheme (based on congestion, distance, mod format, SNR, etc.)
     #   Potentially based on time for example, congestion at first and distance later (different reward weights)
-    def environment(self, routed, path):
+    def update_environment(self, routed, path):
         """
         The custom environment that updates the Q-table with respect to a reward policy.
 
@@ -107,8 +114,7 @@ class QLearning:
                 else:
                     self.q_table[(source, destination)] = np.nan
 
-    # TODO: Save the results and the q-table after every simulation?
-    def route(self, source, destination):
+    def route(self, source, destination, topology, mod_formats):
         """
         Determines a route from source to destination using Q-Learning.
 
@@ -138,7 +144,9 @@ class QLearning:
 
                 path.append(next_node)
                 if next_node == destination:
-                    return path
+                    path_len = find_path_len(path, topology)
+                    mod_format = get_path_mod(mod_formats, path_len)
+                    return path, mod_format
 
 
 if __name__ == '__main__':
