@@ -436,15 +436,15 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0717', latest_time='12:37:19',
+    plot_obj = PlotStats(net_name='USNet', latest_date='0717', latest_time='16:34:43',
                          plot_threads=['t1', 't4', 't7', 't10'])
     plot_obj.plot_blocking()
-    plot_obj.plot_blocking_per_request()
-    plot_obj.plot_transponders()
-    plot_obj.plot_slots_taken()
-    plot_obj.plot_active_requests()
-    plot_obj.plot_guard_bands()
-    plot_obj.plot_num_segments()
+    # plot_obj.plot_blocking_per_request()
+    # plot_obj.plot_transponders()
+    # plot_obj.plot_slots_taken()
+    # plot_obj.plot_active_requests()
+    # plot_obj.plot_guard_bands()
+    # plot_obj.plot_num_segments()
 
 
 if __name__ == '__main__':

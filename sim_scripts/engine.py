@@ -100,19 +100,9 @@ class Engine(SDNController):
         # A dictionary holding "snapshots" of each request. Info related to how many spectral slots are occupied,
         # active requests, and how many times this particular request was sliced
         self.request_snapshots = {}
-        for request_number in range(1, self.sim_data['num_reqs'] + 1):
-            self.request_snapshots[request_number] = {
-                'occ_slots': [],
-                'guard_bands': [],
-                'blocking_prob': [],
-                'num_segments': [],
-                'active_requests': []
-            }
         # Holds the request numbers of all the requests currently active in the network
         self.active_requests = set()
         self.q_obj = QLearning()
-        self.q_obj.topology = self.topology
-        self.q_obj.setup_environment()
 
         # Initialize the constructor of the SDNController class
         super().__init__(alloc_method=self.sim_data['alloc_method'],
@@ -423,7 +413,10 @@ class Engine(SDNController):
         """
         occupied_slots, guard_bands = self.get_total_occupied_slots()
 
-        self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
+        try:
+            self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
+        except AttributeError:
+            print("here")
         self.request_snapshots[request_number]['guard_bands'].append(guard_bands)
         self.request_snapshots[request_number]['active_requests'].append(len(self.active_requests))
 
@@ -444,6 +437,14 @@ class Engine(SDNController):
         self.num_trans = 0
         self.num_blocked_reqs = 0
         self.reqs_status = dict()
+        for request_number in range(1, self.sim_data['num_reqs'] + 1):
+            self.request_snapshots[request_number] = {
+                'occ_slots': [],
+                'guard_bands': [],
+                'blocking_prob': [],
+                'num_segments': [],
+                'active_requests': []
+            }
 
     def run(self):
         """
@@ -460,10 +461,14 @@ class Engine(SDNController):
 
             self.init_iter_vars()
             self.create_topology()
+            self.q_obj.topology = self.topology
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
             self.q_obj.seed = seed
+
+            if iteration == 0:
+                self.q_obj.setup_environment()
 
             request_number = 1
             for curr_time in self.reqs_dict:
