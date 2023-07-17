@@ -101,11 +101,11 @@ class Engine(SDNController):
         self.request_snapshots = {}
         for request_number in range(1, self.sim_data['num_reqs'] + 1):
             self.request_snapshots[request_number] = {
-                'occ_slots': 0,
-                'guard_bands': 0,
-                'blocking_prob': 0,
-                'num_segments': 0,
-                'active_requests': 0
+                'occ_slots': [],
+                'guard_bands': [],
+                'blocking_prob': [],
+                'num_segments': [],
+                'active_requests': []
             }
         # Holds the request numbers of all the requests currently active in the network
         self.active_requests = set()
