@@ -253,7 +253,6 @@ class SDNController:
 
                     if num_segments > self.max_segments:
                         self.release()
-                        # TODO: This is technically misleading, wasn't due to congestion or distance
                         self.dist_block = False
                         return False
                 else:

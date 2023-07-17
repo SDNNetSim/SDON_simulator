@@ -145,3 +145,12 @@ class Routing:
             mod_format = get_path_mod(self.mod_formats, path_len)
 
             return path, mod_format
+
+    def q_routing(self):
+        """
+        Given a graph with a source and destination, find a path using the Q-learning RL algorithm.
+
+        :return: A tuple containing the "best" path according to the Q-table and the modulation format
+        :rtype: tuple
+        """
+        pass

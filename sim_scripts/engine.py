@@ -61,7 +61,10 @@ class Engine(SDNController):
             'misc_stats': dict()
         }
         # The amount of times a type of bandwidth request was blocked
-        self.block_per_bw = dict()
+        tmp_obj = dict()
+        for bandwidth in self.sim_data['mod_per_bw']:
+            tmp_obj[bandwidth] = 0
+        self.block_per_bw = tmp_obj
         # The number of requests that have been blocked in a simulation.
         self.num_blocked_reqs = 0
         # The network spectrum database
@@ -95,7 +98,15 @@ class Engine(SDNController):
         self.cong_block_arr = np.array([])
         # A dictionary holding "snapshots" of each request. Info related to how many spectral slots are occupied,
         # active requests, and how many times this particular request was sliced
-        self.request_snapshots = dict()
+        self.request_snapshots = {}
+        for request_number in range(1, self.sim_data['num_reqs'] + 1):
+            self.request_snapshots[request_number] = {
+                'occ_slots': 0,
+                'guard_bands': 0,
+                'blocking_prob': 0,
+                'num_segments': 0,
+                'active_requests': 0
+            }
         # Holds the request numbers of all the requests currently active in the network
         self.active_requests = set()
 
@@ -135,7 +146,6 @@ class Engine(SDNController):
 
         :return: None
         """
-        # TODO: Calculate average number of slicing, slots, and blocking for multiple iterations (no support as of now)
         self.stats_dict['misc_stats'] = {
             'blocking_mean': self.blocking_mean,
             'blocking_variance': self.blocking_variance,
@@ -149,7 +159,7 @@ class Engine(SDNController):
             'trans_mean': np.mean(self.trans_arr),
             'dist_percent': np.mean(self.dist_block_arr) * 100.0,
             'cong_percent': np.mean(self.cong_block_arr) * 100.0,
-            'block_per_bw': self.block_per_bw,
+            'block_per_bw': {key: value / self.sim_data["max_iters"] for key, value in self.block_per_bw.items()},
             'alloc_method': self.sim_data['alloc_method'],
             'dynamic_lps': self.dynamic_lps,
             'request_snapshots': self.request_snapshots,
@@ -235,10 +245,7 @@ class Engine(SDNController):
         # Request was blocked
         if not resp[0]:
             self.num_blocked_reqs += 1
-            # Add original transponder used to the request
-            # TODO: Should we be calculating transponders on requests that were never allocated?
-            self.num_trans += 1
-
+            # No transponders used
             # Determine if blocking was due to distance or congestion
             if resp[1]:
                 self.num_dist_block += 1
@@ -379,7 +386,7 @@ class Engine(SDNController):
 
         :return: None
         """
-        self.trans_arr = np.append(self.trans_arr, self.num_trans / self.sim_data['num_reqs'])
+        self.trans_arr = np.append(self.trans_arr, self.num_trans / (self.sim_data['num_reqs'] - self.num_blocked_reqs))
 
     def update_blocking_distribution(self):
         """
@@ -404,19 +411,16 @@ class Engine(SDNController):
         :param num_transponders: The number of transponders the request used
         :type num_transponders: int
         """
-        self.request_snapshots[request_number] = {'occ_slots': 0, 'guard_bands': 0, 'blocking_prob': 0,
-                                                  'num_segments': 0, 'active_requests': 0}
-
         occupied_slots, guard_bands = self.get_total_occupied_slots()
 
-        self.request_snapshots[request_number]['occ_slots'] = occupied_slots
-        self.request_snapshots[request_number]['guard_bands'] = guard_bands
-        self.request_snapshots[request_number]['active_requests'] = len(self.active_requests)
+        self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
+        self.request_snapshots[request_number]['guard_bands'].append(guard_bands)
+        self.request_snapshots[request_number]['active_requests'].append(len(self.active_requests))
 
         blocking_prob = self.num_blocked_reqs / request_number
-        self.request_snapshots[request_number]["blocking_prob"] = blocking_prob
+        self.request_snapshots[request_number]["blocking_prob"].append(blocking_prob)
 
-        self.request_snapshots[request_number]['num_segments'] = num_transponders
+        self.request_snapshots[request_number]['num_segments'].append(num_transponders)
 
     def init_iter_vars(self):
         """
@@ -425,10 +429,6 @@ class Engine(SDNController):
         :return: None
         """
         # Initialize variables for this iteration of the simulation
-        tmp_obj = dict()
-        for bandwidth in self.sim_data['mod_per_bw']:
-            tmp_obj[bandwidth] = 0
-        self.block_per_bw = tmp_obj
         self.num_dist_block = 0
         self.num_cong_block = 0
         self.num_trans = 0

@@ -45,6 +45,8 @@ class QLearning:
         """
         pass
 
+    # TODO: Add better reward scheme (based on congestion, distance, mod format, SNR, etc.)
+    #   Potentially based on time for example, congestion at first and distance later (different reward weights)
     def environment(self, routed, path):
         """
         The custom environment that updates the Q-table with respect to a reward policy.

@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 from useful_functions.handle_dirs_files import create_dir
 
 
+# TODO: Bring back congestion vs. distance blocking
+
+
 class PlotStats:
     """
     A class for computing and plotting statistical analysis for simulations.
@@ -237,8 +240,7 @@ class PlotStats:
 
             plt.plot(thread_obj['erlang_vals'], thread_obj['blocking_vals'], color=color, linestyle=line_style,
                      marker=marker, markersize=2.3)
-            # TODO: Change
-            legend_list.append(f"C ={thread_obj['cores_per_link']} ALS ={thread_obj['max_segments']}")
+            legend_list.append(f"C ={thread_obj['cores_per_link']} LS ={thread_obj['max_segments']}")
 
             style_count += 1
 
@@ -268,8 +270,7 @@ class PlotStats:
 
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
-                # TODO: Change
-                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
+                legend_list.append(f"E={erlang} LS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -294,8 +295,7 @@ class PlotStats:
             color = self.colors[style_count]
 
             plt.plot(thread_obj['erlang_vals'], thread_obj['average_transponders'], color=color)
-            # TODO: Change
-            legend_list.append(f"C={thread_obj['cores_per_link']} ALS={thread_obj['max_segments']}")
+            legend_list.append(f"C={thread_obj['cores_per_link']} LS={thread_obj['max_segments']}")
 
             style_count += 1
 
@@ -323,8 +323,7 @@ class PlotStats:
 
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
-                # TODO: Change
-                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
+                legend_list.append(f"E={erlang} LS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -355,8 +354,7 @@ class PlotStats:
                 continue
             for erlang, slices_lst in thread_obj['num_segments'].items():
                 hist_list.append(slices_lst)
-                # TODO: Change
-                legend_list.append(f"E={int(erlang)} ALS={thread_obj['max_segments']}")
+                legend_list.append(f"E={int(erlang)} LS={thread_obj['max_segments']}")
 
         bins = [1, 2, 3, 4, 5, 6, 7, 8]
         plt.hist(hist_list, stacked=False, histtype='bar', edgecolor='black', rwidth=1, color=erlang_colors, bins=bins)
@@ -389,8 +387,7 @@ class PlotStats:
                 marker = self.markers[marker_count]
                 plt.plot(request_numbers, active_requests, color=color, marker=marker, markersize=2.3)
 
-                # TODO: Change
-                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
+                legend_list.append(f"E={erlang} LS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -422,8 +419,7 @@ class PlotStats:
                 marker = self.markers[marker_count]
                 plt.plot(request_numbers, guard_bands, color=color, marker=marker, markersize=2.3)
 
-                # TODO: Change
-                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
+                legend_list.append(f"E={erlang} LS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -440,8 +436,8 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0516', latest_time='10:58:53',
-                         plot_threads=['t3', 't6', 't9', 't12'])
+    plot_obj = PlotStats(net_name='USNet', latest_date='0713', latest_time='17:46:08',
+                         plot_threads=['t1'])
     plot_obj.plot_blocking()
     plot_obj.plot_blocking_per_request()
     plot_obj.plot_transponders()
