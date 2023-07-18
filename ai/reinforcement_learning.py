@@ -1,5 +1,5 @@
 # Standard library imports
-import json
+import os
 
 # Third party imports
 import numpy as np
@@ -69,24 +69,26 @@ class QLearning:
         """
         raise NotImplementedError
 
-    def save_table(self, file_name):
+    def save_table(self, path):
         """
         Saves the current Q-table.
 
-        :param file_name: The name of the file.
-        :type file_name: str
+        :param path: The path for the table to be saved.
+        :type path: str
         """
-        create_dir(f'./q_tables/{file_name}')
-        np.save(f'./q_tables/{file_name}', self.q_table)
+        create_dir(f'ai/q_tables/{path}')
 
-    def load_table(self, file_name):
+        with open(f'{os.getcwd()}/ai/q_tables/{path}/trained_table.npy', 'wb') as f:
+            np.save(f, self.q_table)
+
+    def load_table(self, path):
         """
         Loads a saved Q-table.
 
-        :param file_name: The name of the file.
-        :type file_name: str
+        :param path: The path for the table to be loaded.
+        :type path: str
         """
-        self.q_table = np.load(f'./q_tables/{file_name}')
+        self.q_table = np.load(f'{os.getcwd()}/ai/q_tables/{path}/trained_table.npy')
 
     def update_environment(self, routed: bool, path: list, free_slots: int):
         """

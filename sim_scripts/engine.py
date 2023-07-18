@@ -12,7 +12,7 @@ from useful_functions.handle_dirs_files import create_dir
 from ai.reinforcement_learning import QLearning
 
 
-# TODO: All different Q-tables are being used for different Erlang values.
+# TODO: How the Q-table is used for training/testing at the moment doesn't make a whole lot of sense
 
 
 class Engine(SDNController):
@@ -192,10 +192,14 @@ class Engine(SDNController):
             'train_iters': self.train_iters
         }
 
-        base_fp = f"data/output/{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
+        base_fp = f"data/output/"
+        sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
+
+        self.q_obj.save_table(path=f'{sim_info}')
+
         # Save threads to child directories
         if self.thread_num is not None:
-            base_fp += f"/t{self.thread_num}"
+            base_fp += f"/{sim_info}/t{self.thread_num}"
         create_dir(base_fp)
 
         with open(f"{base_fp}/{self.erlang}_erlang.json", 'w', encoding='utf-8') as file_path:
@@ -489,7 +493,12 @@ class Engine(SDNController):
 
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
-                self.q_obj.setup_environment()
+
+                sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
+                if self.erlang == 10:
+                    self.q_obj.setup_environment()
+                else:
+                    self.q_obj.load_table(path=sim_info)
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
