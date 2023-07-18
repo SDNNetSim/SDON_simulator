@@ -488,6 +488,7 @@ class Engine(SDNController):
             self.calculate_block_percent(iteration)
             self.update_blocking_distribution()
             self.update_transponders()
+            # TODO: Don't use for Q-Learning training
             if self.check_confidence_interval(iteration):
                 return
 

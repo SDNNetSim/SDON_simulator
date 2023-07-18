@@ -84,6 +84,7 @@ class QLearning:
         :return: The reward value.
         :rtype: int
         """
+        # TODO: Change
         if isinstance(path, bool):
             return
 
