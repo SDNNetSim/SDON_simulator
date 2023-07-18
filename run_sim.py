@@ -284,7 +284,8 @@ def run(threads):
 
             future = executor.submit(class_inst.run_yue, thread_params['max_segments'], thread_num,
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
-                                     thread_params['req_dist'], thread_params['dynamic_lps'])
+                                     thread_params['req_dist'], thread_params['dynamic_lps'],
+                                     thread_params['train_iters'])
 
             futures.append(future)
 
