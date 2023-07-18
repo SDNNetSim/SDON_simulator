@@ -20,7 +20,7 @@ class NetworkSimulator:
 
     def __init__(self, sim_data: dict = None, seeds: List[int] = None, mod_per_bw: dict = None,
                  req_dist: List[dict] = None, sim_fp: str = None, sim_start: str = None, net_name: str = 'USNet',
-                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 1000, max_iters: int = 5,
+                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 100000, max_iters: int = 5,
                  spectral_slots: int = 256, cores_per_link: int = 1, bw_per_slot: float = 12.5, max_segments: int = 1,
                  sim_type: str = 'arash', const_weight: bool = True, guard_slots: int = 1,
                  alloc_method: str = 'first-fit', dynamic_lps: bool = False, thread_num: int = 1):

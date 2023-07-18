@@ -6,11 +6,6 @@ import networkx as nx
 from useful_functions.sim_functions import get_path_mod, find_path_len
 
 
-# TODO: Topology is hard coded in some methods
-# TODO: Fix variable types
-# TODO: Ask ChatGPT to improve code efficiency
-
-
 class QLearning:
     """
     Controls methods related to the Q-learning reinforcement learning algorithm.
@@ -69,9 +64,7 @@ class QLearning:
         """
         raise NotImplementedError
 
-    # TODO: Add better reward scheme (based on congestion, distance, mod format, SNR, etc.)
-    #   Potentially based on time for example, congestion at first and distance later (different reward weights)
-    def update_environment(self, routed, path):
+    def update_environment(self, routed: bool, path: list, free_slots: int):
         """
         The custom environment that updates the Q-table with respect to a reward policy.
 
@@ -81,17 +74,25 @@ class QLearning:
         :param path: The path taken from source to destination.
         :type path: list
 
+        :param free_slots: The total number of available slots after request allocation in the path.
+        :type free_slots: int
+
         :return: The reward value.
         :rtype: int
         """
-        # TODO: Change
-        if isinstance(path, bool):
-            return
+        reward = 0
+        if not isinstance(free_slots, bool):
+            # Penalize by path length and number of nodes
+            path_len = float(find_path_len(path=path, topology=self.topology))
+            num_nodes = float(len(path))
 
-        if routed:
-            reward = 1.0
+            if routed:
+                reward += ((100.0 * float(free_slots)) - path_len - num_nodes)
+            else:
+                reward -= (1000.0 - path_len - num_nodes)
         else:
-            reward = -1.0
+            # No path found due to the Q-table
+            reward -= 10000.0
 
         for i in range(len(path) - 1):
             state = int(path[i])
@@ -113,11 +114,12 @@ class QLearning:
         """
         Initializes the environment.
         """
+        total_nodes = self.topology.number_of_nodes()
         # Init q-table for USNet, a 24 node network
-        self.q_table = np.zeros((24, 24))
+        self.q_table = np.zeros((total_nodes, total_nodes))
 
-        for source in range(0, 24):
-            for destination in range(0, 24):
+        for source in range(0, total_nodes):
+            for destination in range(0, total_nodes):
                 if source == destination:
                     self.q_table[(source, destination)] = np.nan
                     continue
@@ -128,7 +130,52 @@ class QLearning:
                 else:
                     self.q_table[(source, destination)] = np.nan
 
-    def route(self, source, destination, mod_formats):
+    def _sort_q_values(self, last_node: int):
+        """
+        Given a row in the Q-table, sort the indexes based on their corresponding Q-values.
+
+        :param last_node: The last node chosen in the path, aka the current row.
+        :type last_node: int
+
+        :return: The sorted indexes in the row based on their Q-values.
+        :rtype: list
+        """
+        array_to_sort = self.q_table[last_node]
+        # Create a mask to ignore nan values
+        mask = ~np.isnan(array_to_sort)
+        # Sort ignoring non-nan values but keeping original indexes
+        sorted_indexes = np.argsort(-array_to_sort[mask])
+        sorted_original_indexes = np.where(mask)[0][sorted_indexes]
+
+        return sorted_original_indexes
+
+    @staticmethod
+    def _find_next_best(path: list, indexes: list):
+        """
+        Given a node already exists in a path, attempt to find the next best one.
+
+        :param path: The nodes already chosen in a single path.
+        :type path: list
+
+        :param indexes: The sorted indexes of the descending Q-values in the Q-table.
+        :type indexes: list
+
+        :return: The next node or a boolean if no nodes could be found.
+        :rtype: int or bool
+        """
+        curr_index = 0
+        while True:
+            try:
+                next_node = indexes[curr_index + 1]
+            except IndexError:
+                return False
+
+            if str(next_node) in path:
+                curr_index = curr_index + 1
+            else:
+                return next_node
+
+    def route(self, source: int, destination: int, mod_formats: dict):
         """
         Determines a route from source to destination using Q-Learning.
 
@@ -144,50 +191,34 @@ class QLearning:
         :return: The path from source to destination.
         :rtype: list
         """
-        # TODO: This code is painful, make it better
-        path = [source]
-        last_node = int(source)
         while True:
+            path = [source]
+            last_node = int(source)
             while True:
-                random_float = np.round(np.random.uniform(0, 1), decimals=1)
                 # Choose a random action with respect to epsilon
+                random_float = np.round(np.random.uniform(0, 1), decimals=1)
                 if random_float < self.epsilon:
-                    next_node = np.random.randint(24)
+                    next_node = np.random.randint(self.topology.number_of_nodes())
                     random_node = True
                 else:
-                    # TODO: Bug, it alternates between the same two nodes in some cases
-                    #   - Generate a list of two, if there's a problem pick the second
-                    # Get the array for sorting
-                    array_to_sort = self.q_table[last_node]
-
-                    # Create a mask to ignore nan values
-                    mask = ~np.isnan(array_to_sort)
-
-                    # Sort the non-nan values in descending order while keeping the original indices
-                    sorted_indices = np.argsort(-array_to_sort[mask])
-                    sorted_original_indices = np.where(mask)[0][sorted_indices]
+                    # Sorted Q-values in a single row
+                    sorted_values = self._sort_q_values(last_node=last_node)
+                    next_node = sorted_values[0]
                     random_node = False
-                    next_node = sorted_original_indices[0]
 
                 q_value = self.q_table[(last_node, next_node)]
                 # No connection exists between these nodes
                 if np.isnan(q_value) or str(next_node) in path:
+                    # Attempt to choose another node
                     if random_node:
                         continue
+                    # Try to assign the next best node
                     else:
-                        # TODO: We have a case where all the nodes are in the path, no more actual values...
-                        #   - I would penalize here
-                        #   - This reward scheme is wack
-                        #   - Think I need a new reward scheme?
-                        index = 0
-                        while str(next_node) in path:
-                            try:
-                                next_node = sorted_original_indices[index + 1]
-                            except IndexError:
-                                self.update_environment(routed=False, path=path)
-                                return False, False
-                            if str(next_node) in path:
-                                index = index + 1
+                        next_node = self._find_next_best(path=path, indexes=sorted_values)
+                        # Blocking caused by the Q-table, penalize and try again
+                        if not next_node:
+                            self.update_environment(routed=False, path=path, free_slots=False)
+                            break
 
                 path.append(str(next_node))
                 last_node = next_node
