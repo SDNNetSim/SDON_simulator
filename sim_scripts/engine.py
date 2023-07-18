@@ -12,9 +12,6 @@ from useful_functions.handle_dirs_files import create_dir
 from ai.reinforcement_learning import QLearning
 
 
-# TODO: How the Q-table is used for training/testing at the moment doesn't make a whole lot of sense
-
-
 class Engine(SDNController):
     """
     Controls the simulation.
@@ -520,11 +517,9 @@ class Engine(SDNController):
             self.calculate_block_percent(iteration)
             self.update_blocking_distribution()
             self.update_transponders()
-            # Confidence interval not checked for training
-            # TODO: How to use this for ML/RL?
-            # if iteration > self.train_iters:
-            #     if self.check_confidence_interval(iteration):
-            #         return
+            # TODO: Change (need a flag)
+            # if self.check_confidence_interval(iteration):
+            #     return
 
             if (iteration + 1) % 5 == 0 or iteration == 0:
                 self.print_iter_stats(iteration)

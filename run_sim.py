@@ -295,7 +295,6 @@ def run(threads):
 
 if __name__ == '__main__':
     threads_obj = []
-    # TODO: I don't think train_iters is even needed
     for train_iters in [5]:
         for dynamic_flag in [False]:
             for max_segments in [1]:
