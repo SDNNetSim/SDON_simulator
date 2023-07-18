@@ -240,6 +240,7 @@ class Engine(SDNController):
 
         resp = self.handle_event(request_type='arrival')
 
+        # TODO: Improve
         self.q_obj.update_environment(routed=resp[0], path=resp[-1])
 
         # Request was blocked
@@ -413,6 +414,7 @@ class Engine(SDNController):
         """
         occupied_slots, guard_bands = self.get_total_occupied_slots()
 
+        # TODO: Improve
         try:
             self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
         except AttributeError:
