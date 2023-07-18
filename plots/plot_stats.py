@@ -4,6 +4,7 @@ import json
 
 # Third-party imports
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
@@ -103,12 +104,9 @@ class PlotStats:
                 erlang = int(erlang.split('.')[0])
                 self.plot_dict[thread]['erlang_vals'].append(erlang)
 
-                # Only one iteration occurred, a mean was not calculated
-                if erlang_dict['misc_stats']['blocking_mean'] is None:
-                    self.plot_dict[thread]['blocking_vals'].append(erlang_dict['block_per_sim']["0"])
-                else:
-                    self.plot_dict[thread]['blocking_vals'].append(erlang_dict['misc_stats']['blocking_mean'])
-
+                # TODO: Change back
+                self.plot_dict[thread]['blocking_vals'].append(np.min(list(erlang_dict['block_per_sim'].values())))
+                # self.plot_dict[thread]['blocking_vals'].append(np.average(list(erlang_dict['block_per_sim'].values())))
                 self.plot_dict[thread]['average_transponders'].append(erlang_dict['misc_stats']['trans_mean'])
                 self.plot_dict[thread]['distance_block'].append(erlang_dict['misc_stats']['dist_percent'])
                 self.plot_dict[thread]['cong_block'].append(erlang_dict['misc_stats']['cong_percent'])
@@ -436,7 +434,7 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0718', latest_time='14:53:41',
+    plot_obj = PlotStats(net_name='USNet', latest_date='0718', latest_time='16:06:57',
                          plot_threads=['t1'])
     plot_obj.plot_blocking()
     # plot_obj.plot_blocking_per_request()
