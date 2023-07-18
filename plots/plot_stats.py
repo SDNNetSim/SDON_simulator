@@ -434,7 +434,7 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0718', latest_time='16:06:57',
+    plot_obj = PlotStats(net_name='USNet', latest_date='0718', latest_time='16:26:21',
                          plot_threads=['t1'])
     plot_obj.plot_blocking()
     # plot_obj.plot_blocking_per_request()

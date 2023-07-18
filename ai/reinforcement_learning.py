@@ -10,13 +10,22 @@ from useful_functions.sim_functions import get_path_mod, find_path_len
 from useful_functions.handle_dirs_files import create_dir
 
 
+# TODO: Also save hyper params
+# TODO: Test
+# TODO: Better reward scheme
+# TODO: Q-table for each LS?
+# TODO: Tune hyper-params
+# TODO: Significant plots
+# TODO: Q-tables not used properly technically, used for one type of Erlang and then is never used for that Erlang
+
+
 class QLearning:
     """
     Controls methods related to the Q-learning reinforcement learning algorithm.
     """
 
-    def __init__(self, epsilon: float = 0.1, epsilon_decay: float = 0.01, episodes: int = 1000, learn_rate: float = 0.1,
-                 discount: float = 0.95, topology: nx.Graph = None):
+    def __init__(self, epsilon: float = 0.2, epsilon_decay: float = 0.01, episodes: int = 1000, learn_rate: float = 0.5,
+                 discount: float = 0.2, topology: nx.Graph = None):
         """
         Initializes the QLearning class.
 
