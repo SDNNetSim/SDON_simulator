@@ -1,9 +1,13 @@
+# Standard library imports
+import json
+
 # Third party imports
 import numpy as np
 import networkx as nx
 
 # Local application imports
 from useful_functions.sim_functions import get_path_mod, find_path_len
+from useful_functions.handle_dirs_files import create_dir
 
 
 class QLearning:
@@ -64,6 +68,25 @@ class QLearning:
         Plots reward values vs. episodes.
         """
         raise NotImplementedError
+
+    def save_table(self, file_name):
+        """
+        Saves the current Q-table.
+
+        :param file_name: The name of the file.
+        :type file_name: str
+        """
+        create_dir(f'./q_tables/{file_name}')
+        np.save(f'./q_tables/{file_name}', self.q_table)
+
+    def load_table(self, file_name):
+        """
+        Loads a saved Q-table.
+
+        :param file_name: The name of the file.
+        :type file_name: str
+        """
+        self.q_table = np.load(f'./q_tables/{file_name}')
 
     def update_environment(self, routed: bool, path: list, free_slots: int):
         """
@@ -199,6 +222,7 @@ class QLearning:
                 # Choose a random action with respect to epsilon
                 random_float = np.round(np.random.uniform(0, 1), decimals=1)
                 if random_float < self.epsilon:
+                    # TODO: Only select node randomly for connections that exist
                     next_node = np.random.randint(self.topology.number_of_nodes())
                     random_node = True
                 else:

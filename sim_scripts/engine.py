@@ -12,6 +12,9 @@ from useful_functions.handle_dirs_files import create_dir
 from ai.reinforcement_learning import QLearning
 
 
+# TODO: All different Q-tables are being used for different Erlang values.
+
+
 class Engine(SDNController):
     """
     Controls the simulation.
@@ -480,19 +483,17 @@ class Engine(SDNController):
             self.load_input()
 
         for iteration in range(self.sim_data["max_iters"]):
-            if iteration == 0:
-                print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
-
             self.init_iter_vars()
             self.create_topology()
             self.q_obj.topology = self.topology
 
+            if iteration == 0:
+                print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
+                self.q_obj.setup_environment()
+
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
             self.q_obj.seed = seed
-
-            if iteration == 0:
-                self.q_obj.setup_environment()
 
             request_number = 1
             for curr_time in self.reqs_dict:
@@ -511,10 +512,10 @@ class Engine(SDNController):
             self.update_blocking_distribution()
             self.update_transponders()
             # Confidence interval not checked for training
-            # TODO: Should this be used?
-            if iteration > self.train_iters:
-                if self.check_confidence_interval(iteration):
-                    return
+            # TODO: How to use this for ML/RL?
+            # if iteration > self.train_iters:
+            #     if self.check_confidence_interval(iteration):
+            #         return
 
             if (iteration + 1) % 5 == 0 or iteration == 0:
                 self.print_iter_stats(iteration)
