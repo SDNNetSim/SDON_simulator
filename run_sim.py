@@ -20,7 +20,7 @@ class NetworkSimulator:
 
     def __init__(self, sim_data: dict = None, seeds: List[int] = None, mod_per_bw: dict = None,
                  req_dist: List[dict] = None, sim_fp: str = None, sim_start: str = None, net_name: str = 'USNet',
-                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 100, max_iters: int = 5,
+                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 100, max_iters: int = 10,
                  spectral_slots: int = 256, cores_per_link: int = 1, bw_per_slot: float = 12.5, max_segments: int = 1,
                  sim_type: str = 'arash', const_weight: bool = True, guard_slots: int = 1,
                  alloc_method: str = 'first-fit', dynamic_lps: bool = False, thread_num: int = 1):
@@ -180,7 +180,7 @@ class NetworkSimulator:
             'req_dist': self.req_dist,
         }
 
-    def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps):
+    def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps, train_iters):
         """
         Runs a Yue-based simulation with the specified parameters. Reference: Wang, Yue. Dynamic Traffic Scheduling
         Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
@@ -202,6 +202,9 @@ class NetworkSimulator:
 
         :param dynamic_lps: Flag to determine dynamic light path slicing ability for any given run.
         :type dynamic_lps: bool
+
+        :param: train_iters: The amount of iterations that will be considered for ML/RL training
+        :type train_iters: int
 
         :return: None
         """
@@ -235,7 +238,7 @@ class NetworkSimulator:
             engine = Engine(sim_data=self.sim_data, erlang=erlang, net_name=self.net_name,
                             sim_start=self.sim_start, sim_type=self.sim_type,
                             input_fp=f'./data/input/{self.net_name}/{self.date}/{self.curr_time}/{file_name}',
-                            thread_num=thread_num, dynamic_lps=dynamic_lps)
+                            thread_num=thread_num, dynamic_lps=dynamic_lps, train_iters=train_iters)
             engine.run()
 
     # TODO: This method does not have support at this point in time
@@ -291,16 +294,18 @@ def run(threads):
 
 if __name__ == '__main__':
     threads_obj = []
-    for dynamic_flag in [False]:
-        for max_segments in [1]:
-            for cores_per_link in [1]:
-                thread = {
-                    'max_segments': max_segments,
-                    'cores_per_link': cores_per_link,
-                    'alloc_method': 'first-fit',
-                    'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
-                    'dynamic_lps': dynamic_flag,
-                }
-                threads_obj.append(thread)
+    for train_iters in [5]:
+        for dynamic_flag in [False]:
+            for max_segments in [1]:
+                for cores_per_link in [1]:
+                    thread = {
+                        'max_segments': max_segments,
+                        'cores_per_link': cores_per_link,
+                        'alloc_method': 'first-fit',
+                        'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
+                        'dynamic_lps': dynamic_flag,
+                        'train_iters': train_iters,
+                    }
+                    threads_obj.append(thread)
 
     run(threads_obj)

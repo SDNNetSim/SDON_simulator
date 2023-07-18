@@ -18,7 +18,8 @@ class Engine(SDNController):
     """
 
     def __init__(self, sim_data: dict = None, erlang: float = None, input_fp: str = None, net_name: str = None,
-                 sim_start: str = None, sim_type: str = 'arash', thread_num: int = 1, dynamic_lps: bool = None):
+                 sim_start: str = None, sim_type: str = 'arash', thread_num: int = 1, dynamic_lps: bool = None,
+                 train_iters: int = None):
         """
         Initializes the Engine class.
 
@@ -46,6 +47,9 @@ class Engine(SDNController):
         :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
                             request to multiple different bandwidths if set to true.
         :type dynamic_lps: bool
+
+        :param: train_iters: The amount of iterations used for ML/RL training.
+        :type train_iters: int
         """
         self.sim_type = sim_type
         self.thread_num = thread_num
@@ -55,6 +59,7 @@ class Engine(SDNController):
         self.sim_start = sim_start
         self.net_name = net_name
         self.dynamic_lps = dynamic_lps
+        self.train_iters = train_iters
 
         # Holds statistical information for each iteration in a given simulation.
         self.stats_dict = {
@@ -181,6 +186,7 @@ class Engine(SDNController):
             'alloc_method': self.sim_data['alloc_method'],
             'dynamic_lps': self.dynamic_lps,
             'request_snapshots': self.request_snapshots,
+            'train_iters': self.train_iters
         }
 
         base_fp = f"data/output/{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
@@ -504,11 +510,12 @@ class Engine(SDNController):
             self.calculate_block_percent(iteration)
             self.update_blocking_distribution()
             self.update_transponders()
-            # TODO: Don't use for Q-Learning training
-            # if self.check_confidence_interval(iteration):
-            #     return
+            # Confidence interval not checked for training
+            if iteration > self.train_iters:
+                if self.check_confidence_interval(iteration):
+                    return
 
-            if (iteration + 1) % 10 == 0 or iteration == 0:
+            if (iteration + 1) % 5 == 0 or iteration == 0:
                 self.print_iter_stats(iteration)
 
             self.save_sim_results()

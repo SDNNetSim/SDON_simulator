@@ -105,7 +105,7 @@ class PlotStats:
 
                 # Only one iteration occurred, a mean was not calculated
                 if erlang_dict['misc_stats']['blocking_mean'] is None:
-                    self.plot_dict[thread]['blocking_vals'].append(erlang_dict['misc_stats']['block_per_sim'][0])
+                    self.plot_dict[thread]['blocking_vals'].append(erlang_dict['block_per_sim']["0"])
                 else:
                     self.plot_dict[thread]['blocking_vals'].append(erlang_dict['misc_stats']['blocking_mean'])
 
@@ -436,8 +436,8 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0717', latest_time='16:34:43',
-                         plot_threads=['t1', 't4', 't7', 't10'])
+    plot_obj = PlotStats(net_name='USNet', latest_date='0718', latest_time='14:33:19',
+                         plot_threads=['t1'])
     plot_obj.plot_blocking()
     # plot_obj.plot_blocking_per_request()
     # plot_obj.plot_transponders()
