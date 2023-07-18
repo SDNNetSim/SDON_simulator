@@ -49,7 +49,7 @@ class QLearning:
         self.rewards_dict = {'episode': [], 'average': [], 'min': [], 'max': [], 'rewards': []}
 
     @staticmethod
-    def set_seed(seed: int = None):
+    def set_seed(seed: int):
         """
         Used to set the seed for controlling 'random' generation.
 

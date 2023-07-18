@@ -134,6 +134,26 @@ class Engine(SDNController):
         total_guard_slots = int(guard_slots / 2)
         return total_occ_slots, total_guard_slots
 
+    def get_path_free_slots(self, path: list):
+        """
+        Returns the number of available spectral slots in the given path.
+
+        :param path: The path to find available spectral slots.
+        :type path: list
+
+        :return: The total number of free spectral slots in the path.
+        :rtype: int
+        """
+        self.active_requests = set()
+        free_slots = 0
+
+        for src, dest in zip(path, path[1:]):
+            src_dest = (src, dest)
+            for core in self.net_spec_db[src_dest]['cores_matrix']:
+                free_slots += len(np.where(core == 0)[0])
+
+        return free_slots
+
     def save_sim_results(self):
         """
         Saves the simulation results to a file like #_erlang.json.
@@ -240,8 +260,8 @@ class Engine(SDNController):
 
         resp = self.handle_event(request_type='arrival')
 
-        # TODO: Improve
-        self.q_obj.update_environment(routed=resp[0], path=resp[-1])
+        free_slots = self.get_path_free_slots(path=resp[-1])
+        self.q_obj.update_environment(routed=resp[0], path=resp[-1], free_slots=free_slots)
 
         # Request was blocked
         if not resp[0]:
@@ -414,11 +434,7 @@ class Engine(SDNController):
         """
         occupied_slots, guard_bands = self.get_total_occupied_slots()
 
-        # TODO: Improve
-        try:
-            self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
-        except AttributeError:
-            print("here")
+        self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
         self.request_snapshots[request_number]['guard_bands'].append(guard_bands)
         self.request_snapshots[request_number]['active_requests'].append(len(self.active_requests))
 
@@ -489,8 +505,8 @@ class Engine(SDNController):
             self.update_blocking_distribution()
             self.update_transponders()
             # TODO: Don't use for Q-Learning training
-            if self.check_confidence_interval(iteration):
-                return
+            # if self.check_confidence_interval(iteration):
+            #     return
 
             if (iteration + 1) % 10 == 0 or iteration == 0:
                 self.print_iter_stats(iteration)
