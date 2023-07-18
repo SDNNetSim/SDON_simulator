@@ -40,6 +40,7 @@ class QLearning:
         self.epsilon = epsilon
         # TODO: Use epsilon decay
         self.epsilon_decay = epsilon_decay
+        # TODO: How should we be using episodes as of now?
         self.episodes = episodes
         self.learn_rate = learn_rate
         self.discount = discount

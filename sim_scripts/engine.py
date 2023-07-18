@@ -511,6 +511,7 @@ class Engine(SDNController):
             self.update_blocking_distribution()
             self.update_transponders()
             # Confidence interval not checked for training
+            # TODO: Should this be used?
             if iteration > self.train_iters:
                 if self.check_confidence_interval(iteration):
                     return
