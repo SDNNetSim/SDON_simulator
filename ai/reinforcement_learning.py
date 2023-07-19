@@ -73,6 +73,8 @@ class QLearning:
         :type amount: float
         """
         self.epsilon -= amount
+        if self.epsilon < 0.0:
+            raise ValueError(f'Epsilon should be greater than 0 but it is {self.epsilon}')
 
     def plot_rewards(self):
         """
@@ -273,7 +275,6 @@ class QLearning:
                 # Node has already been chosen, force to choose again for the time being
                 if str(next_node) in path:
                     # Attempt to choose another node
-                    # TODO: This may get stuck again, choosing the same random node over and over
                     if random_node:
                         continue
                     # Try to assign the next best node
