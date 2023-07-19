@@ -259,7 +259,9 @@ class QLearning:
                 if random_float < self.epsilon:
                     # Only generate a random number for links that exists
                     valid_indexes = np.where(~np.isnan(self.q_table[last_node]))[0]
-                    next_node = np.random.randint(len(valid_indexes))
+                    chosen_index = np.random.randint(len(valid_indexes))
+
+                    next_node = valid_indexes[chosen_index]
                     random_node = True
                 else:
                     # Sorted Q-values in a single row
