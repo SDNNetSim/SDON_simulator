@@ -12,6 +12,9 @@ from useful_functions.handle_dirs_files import create_dir
 from ai.reinforcement_learning import QLearning
 
 
+# TODO: Use Q-learning discount factor
+
+
 class Engine(SDNController):
     """
     Controls the simulation.
@@ -498,10 +501,9 @@ class Engine(SDNController):
                 if self.erlang == 10:
                     self.q_obj.setup_environment()
                 else:
-                    if self.is_training:
-                        self.q_obj.load_table(path=sim_info, max_segments=self.max_segments)
-                    else:
-                        self.q_obj.load_table(path=self.sim_data['trained_table'], max_segments=self.max_segments)
+                    self.q_obj.load_table(path=sim_info, max_segments=self.max_segments)
+                if not self.is_training:
+                    self.q_obj.load_table(path=self.sim_data['trained_table'], max_segments=self.max_segments)
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)

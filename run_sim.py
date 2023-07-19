@@ -297,7 +297,8 @@ def run(threads):
             future = executor.submit(class_inst.run_yue, thread_params['max_segments'], thread_num,
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
                                      thread_params['req_dist'], thread_params['dynamic_lps'],
-                                     thread_params['is_training'])
+                                     thread_params['is_training'], thread_params['max_iters'],
+                                     thread_params['trained_table'])
 
             futures.append(future)
 
@@ -308,7 +309,7 @@ def run(threads):
 if __name__ == '__main__':
     threads_obj = []
     # TODO: Seeds probably need to be adjusted for training/testing, find a better way
-    for is_training in [True]:
+    for is_training in [False]:
         for max_iters in [10]:
             for dynamic_flag in [False]:
                 for max_segments in [8]:
@@ -320,7 +321,7 @@ if __name__ == '__main__':
                             'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
                             'dynamic_lps': dynamic_flag,
                             'is_training': is_training,
-                            'trained_table': 'ai/q_tables/0719/15:35:02/',
+                            'trained_table': 'USNet/0719/14:18:35/',
                             'max_iters': max_iters
                         }
                         threads_obj.append(thread)
