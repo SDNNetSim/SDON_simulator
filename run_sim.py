@@ -180,7 +180,8 @@ class NetworkSimulator:
             'req_dist': self.req_dist,
         }
 
-    def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps, is_training):
+    def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps, is_training,
+                max_iters, trained_table):
         """
         Runs a Yue-based simulation with the specified parameters. Reference: Wang, Yue. Dynamic Traffic Scheduling
         Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
@@ -206,6 +207,12 @@ class NetworkSimulator:
         :param: is_training: Determines if we are training or testing ML/RL methods.
         :type is_training: bool
 
+        :param max_iters: Determines the maximum number of iterations.
+        :type max_iters: int
+
+        :param trained_table: The trained Q-table path to be used for testing.
+        :type trained_table: str
+
         :return: None
         """
         self.hold_time_mean = 0.2
@@ -220,6 +227,7 @@ class NetworkSimulator:
         self.dynamic_lps = dynamic_lps
         self.req_dist = req_dist
 
+        self.max_iters = max_iters
         self.max_segments = max_segments
         self.thread_num = thread_num
 
@@ -229,11 +237,15 @@ class NetworkSimulator:
             self.arr_rate_mean = float(arr_rate_mean)
             self.create_input()
 
+            # TODO: This is sort of inconsistent and lazy
+            self.sim_data['trained_table'] = trained_table
+
             if self.thread_num is None:
                 file_name = 'sim_input.json'
             else:
                 file_name = f'sim_input_{self.thread_num}.json'
 
+            # TODO: Why not put all of this in sim input?
             self.save_input(file_name=file_name, data=self.sim_data)
             engine = Engine(sim_data=self.sim_data, erlang=erlang, net_name=self.net_name,
                             sim_start=self.sim_start, sim_type=self.sim_type,
@@ -295,18 +307,22 @@ def run(threads):
 
 if __name__ == '__main__':
     threads_obj = []
+    # TODO: Seeds probably need to be adjusted for training/testing, find a better way
     for is_training in [True]:
-        for dynamic_flag in [False]:
-            for max_segments in [8]:
-                for cores_per_link in [1]:
-                    thread = {
-                        'max_segments': max_segments,
-                        'cores_per_link': cores_per_link,
-                        'alloc_method': 'first-fit',
-                        'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
-                        'dynamic_lps': dynamic_flag,
-                        'is_training': is_training,
-                    }
-                    threads_obj.append(thread)
+        for max_iters in [10]:
+            for dynamic_flag in [False]:
+                for max_segments in [8]:
+                    for cores_per_link in [1]:
+                        thread = {
+                            'max_segments': max_segments,
+                            'cores_per_link': cores_per_link,
+                            'alloc_method': 'first-fit',
+                            'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
+                            'dynamic_lps': dynamic_flag,
+                            'is_training': is_training,
+                            'trained_table': 'ai/q_tables/0719/15:35:02/',
+                            'max_iters': max_iters
+                        }
+                        threads_obj.append(thread)
 
     run(threads_obj)

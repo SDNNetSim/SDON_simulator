@@ -15,6 +15,7 @@ from useful_functions.handle_dirs_files import create_dir
 # TODO: Better reward scheme
 # TODO: Tune hyper-params
 # TODO: Significant plots
+# TODO: Adaptive reward scheme
 
 
 class QLearning:
@@ -271,7 +272,6 @@ class QLearning:
                     next_node = sorted_values[0]
                     random_node = False
 
-                q_value = self.q_table[(last_node, next_node)]
                 # Node has already been chosen, force to choose again for the time being
                 if str(next_node) in path:
                     # Attempt to choose another node

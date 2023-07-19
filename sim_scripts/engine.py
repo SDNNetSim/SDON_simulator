@@ -192,7 +192,8 @@ class Engine(SDNController):
         base_fp = f"data/output/"
         sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
 
-        self.q_obj.save_table(path=f'{sim_info}', max_segments=self.max_segments)
+        if self.is_training:
+            self.q_obj.save_table(path=f'{sim_info}', max_segments=self.max_segments)
 
         # Save threads to child directories
         if self.thread_num is not None:
@@ -491,11 +492,16 @@ class Engine(SDNController):
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
 
+                # TODO: Eventually move this to a Q-method or something, along with all other code in this simulator
+                #   - We want to easily switch between multiple ML/RL methods and that isn't the case right now
                 sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
                 if self.erlang == 10:
                     self.q_obj.setup_environment()
                 else:
-                    self.q_obj.load_table(path=sim_info, max_segments=self.max_segments)
+                    if self.is_training:
+                        self.q_obj.load_table(path=sim_info, max_segments=self.max_segments)
+                    else:
+                        self.q_obj.load_table(path=self.sim_data['trained_table'], max_segments=self.max_segments)
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
