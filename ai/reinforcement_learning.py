@@ -1,5 +1,6 @@
 # Standard library imports
 import os
+import json
 
 # Third party imports
 import numpy as np
@@ -10,13 +11,10 @@ from useful_functions.sim_functions import get_path_mod, find_path_len
 from useful_functions.handle_dirs_files import create_dir
 
 
-# TODO: Also save hyper params
-# TODO: Test
+# TODO: Write tests for these methods and check sim scripts for other tests as well
 # TODO: Better reward scheme
-# TODO: Q-table for each LS?
 # TODO: Tune hyper-params
 # TODO: Significant plots
-# TODO: Q-tables not used properly technically, used for one type of Erlang and then is never used for that Erlang
 
 
 class QLearning:
@@ -24,16 +22,13 @@ class QLearning:
     Controls methods related to the Q-learning reinforcement learning algorithm.
     """
 
-    def __init__(self, epsilon: float = 0.2, epsilon_decay: float = 0.01, episodes: int = 1000, learn_rate: float = 0.5,
+    def __init__(self, epsilon: float = 0.2, episodes: int = 1000, learn_rate: float = 0.5,
                  discount: float = 0.2, topology: nx.Graph = None):
         """
         Initializes the QLearning class.
 
         :param epsilon: Parameter in the bellman equation to determine degree of randomness.
         :type epsilon: float
-
-        :param epsilon_decay: Determines the decay in the degree of randomness for every episode.
-        :type epsilon_decay: float
 
         :param episodes: The number of iterations or simulations.
         :type episodes: int
@@ -51,9 +46,7 @@ class QLearning:
         # Contains all state and action value pairs
         self.q_table = None
         self.epsilon = epsilon
-        # TODO: Use epsilon decay
-        self.epsilon_decay = epsilon_decay
-        # TODO: How should we be using episodes as of now?
+        # TODO: How should we be using episodes?
         self.episodes = episodes
         self.learn_rate = learn_rate
         self.discount = discount
@@ -72,32 +65,63 @@ class QLearning:
         """
         np.random.seed(seed)
 
+    def decay_epsilon(self, amount: float):
+        """
+        Decays our epsilon value by a specified amount.
+
+        :param amount: The amount to decay epsilon by.
+        :type amount: float
+        """
+        self.epsilon -= amount
+
     def plot_rewards(self):
         """
         Plots reward values vs. episodes.
         """
         raise NotImplementedError
 
-    def save_table(self, path):
+    def save_table(self, path: str, max_segments: int):
         """
-        Saves the current Q-table.
+        Saves the current Q-table and hyperparameters used to create it.
 
         :param path: The path for the table to be saved.
         :type path: str
+
+        :param max_segments: The number of light segments allowed for a single request.
+        :type max_segments: int
         """
         create_dir(f'ai/q_tables/{path}')
 
-        with open(f'{os.getcwd()}/ai/q_tables/{path}/trained_table.npy', 'wb') as f:
+        with open(f'{os.getcwd()}/ai/q_tables/{path}/trained_table_ls{max_segments}.npy', 'wb') as f:
             np.save(f, self.q_table)
 
-    def load_table(self, path):
+        params_dict = {
+            'epsilon': self.epsilon,
+            'episodes': self.episodes,
+            'learn_rate': self.learn_rate,
+            'discount_factor': self.discount,
+            'reward_info': self.rewards_dict
+        }
+        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_ls{max_segments}.json', 'w') as f:
+            json.dump(params_dict, f)
+
+    def load_table(self, path: str, max_segments: int):
         """
-        Loads a saved Q-table.
+        Loads a saved Q-table and previous hyperparameters.
 
         :param path: The path for the table to be loaded.
         :type path: str
+
+        :param max_segments: The number of light segments allowed for a single request.
+        :type max_segments: int
         """
-        self.q_table = np.load(f'{os.getcwd()}/ai/q_tables/{path}/trained_table.npy')
+        self.q_table = np.load(f'{os.getcwd()}/ai/q_tables/{path}/trained_table_ls{max_segments}.npy')
+
+        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_ls{max_segments}.json') as f:
+            params_obj = json.load(f)
+            self.epsilon = params_obj['epsilon']
+            self.learn_rate = params_obj['learn_rate']
+            self.discount = params_obj['discount_factor']
 
     def update_environment(self, routed: bool, path: list, free_slots: int):
         """
@@ -233,8 +257,9 @@ class QLearning:
                 # Choose a random action with respect to epsilon
                 random_float = np.round(np.random.uniform(0, 1), decimals=1)
                 if random_float < self.epsilon:
-                    # TODO: Only select node randomly for connections that exist
-                    next_node = np.random.randint(self.topology.number_of_nodes())
+                    # Only generate a random number for links that exists
+                    valid_indexes = np.where(~np.isnan(self.q_table[last_node]))[0]
+                    next_node = np.random.randint(len(valid_indexes))
                     random_node = True
                 else:
                     # Sorted Q-values in a single row
@@ -243,9 +268,10 @@ class QLearning:
                     random_node = False
 
                 q_value = self.q_table[(last_node, next_node)]
-                # No connection exists between these nodes
-                if np.isnan(q_value) or str(next_node) in path:
+                # Node has already been chosen, force to choose again for the time being
+                if str(next_node) in path:
                     # Attempt to choose another node
+                    # TODO: This may get stuck again, choosing the same random node over and over
                     if random_node:
                         continue
                     # Try to assign the next best node
