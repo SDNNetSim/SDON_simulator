@@ -19,7 +19,7 @@ class Engine(SDNController):
 
     def __init__(self, sim_data: dict = None, erlang: float = None, input_fp: str = None, net_name: str = None,
                  sim_start: str = None, sim_type: str = 'arash', thread_num: int = 1, dynamic_lps: bool = None,
-                 train_iters: int = None):
+                 is_training: bool = None):
         """
         Initializes the Engine class.
 
@@ -48,8 +48,8 @@ class Engine(SDNController):
                             request to multiple different bandwidths if set to true.
         :type dynamic_lps: bool
 
-        :param: train_iters: The amount of iterations used for ML/RL training.
-        :type train_iters: int
+        :param: is_training: Determines if we are training or testing ML/RL methods.
+        :type is_training: bool
         """
         self.sim_type = sim_type
         self.thread_num = thread_num
@@ -59,7 +59,7 @@ class Engine(SDNController):
         self.sim_start = sim_start
         self.net_name = net_name
         self.dynamic_lps = dynamic_lps
-        self.train_iters = train_iters
+        self.is_training = is_training
 
         # Holds statistical information for each iteration in a given simulation.
         self.stats_dict = {
@@ -186,13 +186,13 @@ class Engine(SDNController):
             'alloc_method': self.sim_data['alloc_method'],
             'dynamic_lps': self.dynamic_lps,
             'request_snapshots': self.request_snapshots,
-            'train_iters': self.train_iters
+            'is_training': self.is_training
         }
 
         base_fp = f"data/output/"
         sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
 
-        self.q_obj.save_table(path=f'{sim_info}')
+        self.q_obj.save_table(path=f'{sim_info}', max_segments=self.max_segments)
 
         # Save threads to child directories
         if self.thread_num is not None:
@@ -495,7 +495,7 @@ class Engine(SDNController):
                 if self.erlang == 10:
                     self.q_obj.setup_environment()
                 else:
-                    self.q_obj.load_table(path=sim_info)
+                    self.q_obj.load_table(path=sim_info, max_segments=self.max_segments)
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
@@ -517,9 +517,10 @@ class Engine(SDNController):
             self.calculate_block_percent(iteration)
             self.update_blocking_distribution()
             self.update_transponders()
-            # TODO: Change (need a flag)
-            # if self.check_confidence_interval(iteration):
-            #     return
+            # Some form of ML/RL is being used, ignore confidence intervals for training
+            if not self.is_training:
+                if self.check_confidence_interval(iteration):
+                    return
 
             if (iteration + 1) % 5 == 0 or iteration == 0:
                 self.print_iter_stats(iteration)
