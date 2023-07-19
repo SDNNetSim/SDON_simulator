@@ -180,7 +180,7 @@ class NetworkSimulator:
             'req_dist': self.req_dist,
         }
 
-    def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps, train_iters):
+    def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps, is_training):
         """
         Runs a Yue-based simulation with the specified parameters. Reference: Wang, Yue. Dynamic Traffic Scheduling
         Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
@@ -203,8 +203,8 @@ class NetworkSimulator:
         :param dynamic_lps: Flag to determine dynamic light path slicing ability for any given run.
         :type dynamic_lps: bool
 
-        :param: train_iters: The amount of iterations that will be considered for ML/RL training
-        :type train_iters: int
+        :param: is_training: Determines if we are training or testing ML/RL methods.
+        :type is_training: bool
 
         :return: None
         """
@@ -238,7 +238,7 @@ class NetworkSimulator:
             engine = Engine(sim_data=self.sim_data, erlang=erlang, net_name=self.net_name,
                             sim_start=self.sim_start, sim_type=self.sim_type,
                             input_fp=f'./data/input/{self.net_name}/{self.date}/{self.curr_time}/{file_name}',
-                            thread_num=thread_num, dynamic_lps=dynamic_lps, train_iters=train_iters)
+                            thread_num=thread_num, dynamic_lps=dynamic_lps, is_training=is_training)
             engine.run()
 
     # TODO: This method does not have support at this point in time
@@ -285,7 +285,7 @@ def run(threads):
             future = executor.submit(class_inst.run_yue, thread_params['max_segments'], thread_num,
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
                                      thread_params['req_dist'], thread_params['dynamic_lps'],
-                                     thread_params['train_iters'])
+                                     thread_params['is_training'])
 
             futures.append(future)
 
@@ -295,9 +295,9 @@ def run(threads):
 
 if __name__ == '__main__':
     threads_obj = []
-    for train_iters in [5]:
+    for is_training in [True]:
         for dynamic_flag in [False]:
-            for max_segments in [1]:
+            for max_segments in [8]:
                 for cores_per_link in [1]:
                     thread = {
                         'max_segments': max_segments,
@@ -305,7 +305,7 @@ if __name__ == '__main__':
                         'alloc_method': 'first-fit',
                         'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
                         'dynamic_lps': dynamic_flag,
-                        'train_iters': train_iters,
+                        'is_training': is_training,
                     }
                     threads_obj.append(thread)
 
