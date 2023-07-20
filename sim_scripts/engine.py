@@ -12,9 +12,6 @@ from useful_functions.handle_dirs_files import create_dir
 from ai.reinforcement_learning import QLearning
 
 
-# TODO: Use Q-learning discount factor
-
-
 class Engine(SDNController):
     """
     Controls the simulation.
@@ -500,9 +497,9 @@ class Engine(SDNController):
                 sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
                 if self.erlang == 10:
                     self.q_obj.setup_environment()
-                else:
+                elif self.is_training:
                     self.q_obj.load_table(path=sim_info, max_segments=self.max_segments)
-                if not self.is_training:
+                else:
                     self.q_obj.load_table(path=self.sim_data['trained_table'], max_segments=self.max_segments)
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
@@ -525,12 +522,18 @@ class Engine(SDNController):
             self.calculate_block_percent(iteration)
             self.update_blocking_distribution()
             self.update_transponders()
+
+            # Decay epsilon for half of the iterations evenly each time
+            if 1 <= iteration <= iteration // 2 and self.is_training:
+                decay_amount = (self.q_obj.epsilon / (iteration // 2) - 1)
+                self.q_obj.decay_epsilon(amount=decay_amount)
+
             # Some form of ML/RL is being used, ignore confidence intervals for training
             if not self.is_training:
                 if self.check_confidence_interval(iteration):
                     return
 
-            if (iteration + 1) % 5 == 0 or iteration == 0:
+            if (iteration + 1) % 20 == 0 or iteration == 0:
                 self.print_iter_stats(iteration)
 
             self.save_sim_results()
