@@ -104,7 +104,7 @@ class PlotStats:
                 erlang = int(erlang.split('.')[0])
                 self.plot_dict[thread]['erlang_vals'].append(erlang)
 
-                # TODO: Change back
+                # TODO: Change back (Need a way to determine training vs. testing)
                 self.plot_dict[thread]['blocking_vals'].append(np.min(list(erlang_dict['block_per_sim'].values())))
                 # self.plot_dict[thread]['blocking_vals'].append(np.average(list(erlang_dict['block_per_sim'].values())))
                 self.plot_dict[thread]['average_transponders'].append(erlang_dict['misc_stats']['trans_mean'])
@@ -434,7 +434,7 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0718', latest_time='16:26:21',
+    plot_obj = PlotStats(net_name='USNet', latest_date='0719', latest_time='14:54:53',
                          plot_threads=['t1'])
     plot_obj.plot_blocking()
     # plot_obj.plot_blocking_per_request()

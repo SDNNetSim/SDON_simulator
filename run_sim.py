@@ -237,7 +237,6 @@ class NetworkSimulator:
             self.arr_rate_mean = float(arr_rate_mean)
             self.create_input()
 
-            # TODO: This is sort of inconsistent and lazy
             self.sim_data['trained_table'] = trained_table
 
             if self.thread_num is None:
@@ -309,10 +308,10 @@ def run(threads):
 if __name__ == '__main__':
     threads_obj = []
     # TODO: Seeds probably need to be adjusted for training/testing, find a better way
-    for is_training in [False]:
-        for max_iters in [10]:
+    for is_training in [True]:
+        for max_iters in [5]:
             for dynamic_flag in [False]:
-                for max_segments in [8]:
+                for max_segments in [1]:
                     for cores_per_link in [1]:
                         thread = {
                             'max_segments': max_segments,
@@ -321,7 +320,7 @@ if __name__ == '__main__':
                             'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
                             'dynamic_lps': dynamic_flag,
                             'is_training': is_training,
-                            'trained_table': 'USNet/0719/14:18:35/',
+                            'trained_table': 'USNet/0719/14:48:47/',
                             'max_iters': max_iters
                         }
                         threads_obj.append(thread)
