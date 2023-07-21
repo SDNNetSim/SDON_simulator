@@ -19,7 +19,7 @@ class SDNController:
                  cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
                  source: int = None, destination: int = None, mod_per_bw: dict = None, chosen_bw: str = None,
                  max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None,
-                 routing_obj: object = None):
+                 routing_obj: object = None, spectrum_obj: object = None):
         """
         Initializes the SDNController class.
 
@@ -68,6 +68,9 @@ class SDNController:
 
         :param routing_obj: A class to handle everything related to routing.
         :type routing_obj: object
+
+        :param spectrum_obj: A class to handle everything related to spectrum assignment.
+        :type spectrum_obj: object
         """
         self.req_id = req_id
         self.net_spec_db = net_spec_db
@@ -78,6 +81,8 @@ class SDNController:
         self.alloc_method = alloc_method
         self.dynamic_lps = dynamic_lps
         self.routing_obj = routing_obj
+        # TODO: Unused for the time being
+        self.spectrum_obj = spectrum_obj
 
         self.source = source
         self.destination = destination
@@ -313,19 +318,20 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
+        # Default routing object
         if self.routing_obj is None:
             self.routing_obj = Routing(source=self.source, destination=self.destination,
                                        topology=self.topology, net_spec_db=self.net_spec_db,
                                        mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
-
-        if self.sim_type == 'yue':
+            if self.sim_type == 'yue':
+                selected_path, path_mod = self.routing_obj.shortest_path()
+            else:
+                selected_path = self.routing_obj.least_congested_path()
+                path_mod = 'QPSK'
+        else:
+            # Used for routing related to artificial intelligence
             selected_path, path_mod = self.routing_obj.route(source=self.source, destination=self.destination,
                                                              mod_formats=self.mod_per_bw[self.chosen_bw])
-        elif self.sim_type == 'arash':
-            selected_path = self.routing_obj.least_congested_path()
-            path_mod = 'QPSK'
-        else:
-            raise NotImplementedError
 
         if selected_path is not False:
             self.path = selected_path
