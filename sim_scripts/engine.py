@@ -9,7 +9,7 @@ import numpy as np
 from sim_scripts.request_generator import generate
 from sim_scripts.sdn_controller import SDNController
 from useful_functions.handle_dirs_files import create_dir
-from ai.reinforcement_learning import QLearning
+from useful_functions.sim_functions import *
 
 
 class Engine(SDNController):
@@ -107,13 +107,17 @@ class Engine(SDNController):
         self.request_snapshots = {}
         # Holds the request numbers of all the requests currently active in the network
         self.active_requests = set()
-        self.q_obj = QLearning()
+        # A class that holds different functions related to routing, if None, a default is applied in SDNController
+        self.routing_obj = None
+        # A class that holds different functions related to spectrum assignment
+        self.spectrum_obj = None
 
         # Initialize the constructor of the SDNController class
         super().__init__(alloc_method=self.sim_data['alloc_method'],
                          mod_per_bw=self.sim_data['mod_per_bw'], max_segments=self.sim_data['max_segments'],
                          cores_per_link=self.sim_data['cores_per_link'], guard_slots=self.sim_data['guard_slots'],
-                         sim_type=self.sim_type, dynamic_lps=self.dynamic_lps, routing_obj=self.q_obj)
+                         sim_type=self.sim_type, dynamic_lps=self.dynamic_lps, routing_obj=self.routing_obj,
+                         spectrum_obj=self.spectrum_obj)
 
     def get_total_occupied_slots(self):
         """
@@ -169,6 +173,8 @@ class Engine(SDNController):
             for key, lst in obj.items():
                 obj[key] = np.mean(lst)
 
+        # TODO: Change (ML/RL)
+        #   - I'm thinking an ai dict
         self.stats_dict['misc_stats'] = {
             'blocking_mean': self.blocking_mean,
             'blocking_variance': self.blocking_variance,
@@ -192,8 +198,7 @@ class Engine(SDNController):
         base_fp = f"data/output/"
         sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
 
-        if self.is_training:
-            self.q_obj.save_table(path=f'{sim_info}', max_segments=self.max_segments)
+        save_ai_obj(path=sim_info, max_segments=self.max_segments, sim_data=self.sim_data)
 
         # Save threads to child directories
         if self.thread_num is not None:
@@ -272,7 +277,7 @@ class Engine(SDNController):
         resp = self.handle_event(request_type='arrival')
 
         free_slots = self.get_path_free_slots(path=resp[-1])
-        self.q_obj.update_environment(routed=resp[0], path=resp[-1], free_slots=free_slots)
+        update_ai_obj(update_env=True, routed=resp[0], path=[resp[-1]], free_slots=free_slots)
 
         # Request was blocked
         if not resp[0]:
@@ -485,26 +490,20 @@ class Engine(SDNController):
             self.load_input()
 
         for iteration in range(self.sim_data["max_iters"]):
-            self.init_iter_vars()
-            self.create_topology()
-            self.q_obj.topology = self.topology
-
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
 
-                # TODO: Eventually move this to a Q-method or something, along with all other code in this simulator
-                #   - We want to easily switch between multiple ML/RL methods and that isn't the case right now
-                sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
-                if self.erlang == 10:
-                    self.q_obj.setup_environment()
-                elif self.is_training:
-                    self.q_obj.load_table(path=sim_info, max_segments=self.max_segments)
-                else:
-                    self.q_obj.load_table(path=self.sim_data['trained_table'], max_segments=self.max_segments)
+            self.init_iter_vars()
+            self.create_topology()
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
-            self.q_obj.seed = seed
+
+            if self.sim_data['ai_algorithm'] is not None and iteration == 0:
+                sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
+                self.routing_obj, self.spectrum_obj = setup_ai_obj(sim_data=self.sim_data, topology=self.topology,
+                                                                   sim_info=sim_info,
+                                                                   max_segments=self.max_segments, seed=seed)
 
             request_number = 1
             for curr_time in self.reqs_dict:
@@ -523,13 +522,10 @@ class Engine(SDNController):
             self.update_blocking_distribution()
             self.update_transponders()
 
-            # Decay epsilon for half of the iterations evenly each time
-            if 1 <= iteration <= iteration // 2 and self.is_training:
-                decay_amount = (self.q_obj.epsilon / (iteration // 2) - 1)
-                self.q_obj.decay_epsilon(amount=decay_amount)
+            update_ai_obj(sim_data=self.sim_data, iteration=iteration)
 
             # Some form of ML/RL is being used, ignore confidence intervals for training
-            if not self.is_training:
+            if self.sim_data['is_training'] is None or not self.sim_data['is_training']:
                 if self.check_confidence_interval(iteration):
                     return
 
