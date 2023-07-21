@@ -317,8 +317,8 @@ def run(threads):
 
 if __name__ == '__main__':
     threads_obj = []
-    for is_training in [False]:
-        for max_iters in [5]:
+    for is_training in [True]:
+        for max_iters in [10]:
             for dynamic_flag in [False]:
                 for max_segments in [1]:
                     for cores_per_link in [1]:
