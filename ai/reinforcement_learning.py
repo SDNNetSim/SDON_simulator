@@ -94,7 +94,7 @@ class QLearning:
         """
         create_dir(f'ai/q_tables/{path}')
 
-        with open(f'{os.getcwd()}/ai/q_tables/{path}/trained_table_ls{max_segments}.npy', 'wb') as f:
+        with open(f'{os.getcwd()}/ai/q_tables/{path}/train_table_ls{max_segments}.npy', 'wb') as f:
             np.save(f, self.q_table)
 
         params_dict = {
@@ -117,7 +117,7 @@ class QLearning:
         :param max_segments: The number of light segments allowed for a single request.
         :type max_segments: int
         """
-        self.q_table = np.load(f'{os.getcwd()}/ai/q_tables/{path}/trained_table_ls{max_segments}.npy')
+        self.q_table = np.load(f'{os.getcwd()}/ai/q_tables/{path}/train_table_ls{max_segments}.npy')
 
         with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_ls{max_segments}.json') as f:
             params_obj = json.load(f)
