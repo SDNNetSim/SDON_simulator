@@ -75,16 +75,15 @@ class AIMethods:
     def _q_spectrum(self):
         raise NotImplementedError
 
-    # TODO: Change source and dest to string types
-    def _q_routing(self, source: int, destination: int, mod_formats: dict):
+    def _q_routing(self, source: str, destination: str, mod_formats: dict):
         """
         Given a request, determines the path from source to destination.
 
         :param source: The source node.
-        :type source: int
+        :type source: str
 
         :param destination: The destination node.
-        :type destination: int
+        :type destination: str
 
         :param mod_formats: Modulation format info related to the size of the request (in Gbps).
         :type mod_formats: dict

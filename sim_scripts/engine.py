@@ -501,7 +501,7 @@ class Engine(SDNController):
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
 
-                # TODO: Able to tune hyperparameters
+                # TODO: Allow us to tune hyperparameters
                 self.ai_obj.setup(erlang=self.erlang, trained_table=self.sim_info)
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1

@@ -10,9 +10,6 @@ import numpy as np
 from useful_functions.handle_dirs_files import create_dir
 
 
-# TODO: Bring back congestion vs. distance blocking
-
-
 class PlotStats:
     """
     A class for computing and plotting statistical analysis for simulations.
@@ -105,8 +102,9 @@ class PlotStats:
                 self.plot_dict[thread]['erlang_vals'].append(erlang)
 
                 # TODO: Change back (Need a way to determine training vs. testing)
-                self.plot_dict[thread]['blocking_vals'].append(np.min(list(erlang_dict['block_per_sim'].values())))
-                # self.plot_dict[thread]['blocking_vals'].append(np.average(list(erlang_dict['block_per_sim'].values())))
+                # self.plot_dict[thread]['blocking_vals'].append(np.min(list(erlang_dict['block_per_sim'].values())))
+                self.plot_dict[thread]['blocking_vals'].append(np.average(list(erlang_dict['block_per_sim'].values())))
+                # self.plot_dict[thread]['blocking_vals'].append(erlang_dict['misc_stats']['blocking_mean'])
                 self.plot_dict[thread]['average_transponders'].append(erlang_dict['misc_stats']['trans_mean'])
                 self.plot_dict[thread]['distance_block'].append(erlang_dict['misc_stats']['dist_percent'])
                 self.plot_dict[thread]['cong_block'].append(erlang_dict['misc_stats']['cong_percent'])
@@ -333,6 +331,7 @@ class PlotStats:
         self._save_plot(file_name='slots_occupied')
         plt.show()
 
+    # TODO: Bugfix needed? Some LS are not equal to 1, 2, 4, or 8
     def plot_num_segments(self):
         """
         Plots the number of segments each request has been sliced into.
@@ -429,12 +428,15 @@ class PlotStats:
         self._save_plot(file_name='guard_bands')
         plt.show()
 
+    def plot_dist_cong(self):
+        raise NotImplementedError
+
 
 def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0719', latest_time='14:54:53',
+    plot_obj = PlotStats(net_name='USNet', latest_date='0724', latest_time='13:38:54',
                          plot_threads=['t1'])
     plot_obj.plot_blocking()
     # plot_obj.plot_blocking_per_request()
@@ -443,6 +445,7 @@ def main():
     # plot_obj.plot_active_requests()
     # plot_obj.plot_guard_bands()
     # plot_obj.plot_num_segments()
+    # plot_obj.plot_dist_cong()
 
 
 if __name__ == '__main__':
