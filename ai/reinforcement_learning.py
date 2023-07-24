@@ -92,8 +92,8 @@ class QLearning:
         """
         create_dir(f'ai/q_tables/{path}')
 
-        with open(f'{os.getcwd()}/ai/q_tables/{path}/train_table_ls{max_segments}.npy', 'wb') as f:
-            np.save(f, self.q_table)
+        with open(f'{os.getcwd()}/ai/q_tables/{path}/train_table_ls{max_segments}.npy', 'wb') as file:
+            np.save(file, self.q_table)
 
         params_dict = {
             'epsilon': self.epsilon,
@@ -102,8 +102,9 @@ class QLearning:
             'discount_factor': self.discount,
             'reward_info': self.rewards_dict
         }
-        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_ls{max_segments}.json', 'w') as f:
-            json.dump(params_dict, f)
+        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_ls{max_segments}.json', 'w',
+                  encoding='utf-8') as file:
+            json.dump(params_dict, file)
 
     def load_table(self, path: str, max_segments: int):
         """
@@ -117,8 +118,8 @@ class QLearning:
         """
         self.q_table = np.load(f'{os.getcwd()}/ai/q_tables/{path}/train_table_ls{max_segments}.npy')
 
-        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_ls{max_segments}.json') as f:
-            params_obj = json.load(f)
+        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_ls{max_segments}.json', encoding='utf-8') as file:
+            params_obj = json.load(file)
             self.epsilon = params_obj['epsilon']
             self.learn_rate = params_obj['learn_rate']
             self.discount = params_obj['discount_factor']
@@ -275,12 +276,11 @@ class QLearning:
                     if random_node:
                         continue
                     # Try to assign the next best node
-                    else:
-                        next_node = self._find_next_best(path=path, indexes=sorted_values)
-                        # Blocking caused by the Q-table, penalize and try again
-                        if not next_node:
-                            self.update_environment(routed=False, path=path, free_slots=False)
-                            break
+                    next_node = self._find_next_best(path=path, indexes=sorted_values)
+                    # Blocking caused by the Q-table, penalize and try again
+                    if not next_node:
+                        self.update_environment(routed=False, path=path, free_slots=False)
+                        break
 
                 path.append(str(next_node))
                 last_node = next_node
