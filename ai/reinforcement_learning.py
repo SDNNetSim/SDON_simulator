@@ -13,6 +13,7 @@ from useful_functions.handle_dirs_files import create_dir
 
 # TODO: Better reward scheme (Adaptive?)
 # TODO: Significant plots
+# TODO: Move class to a separate file
 
 
 class QLearning:
@@ -92,6 +93,7 @@ class QLearning:
         """
         create_dir(f'ai/q_tables/{path}')
 
+        # TODO: Save a different named table that was used in testing
         with open(f'{os.getcwd()}/ai/q_tables/{path}/train_table_ls{max_segments}.npy', 'wb') as file:
             np.save(file, self.q_table)
 
