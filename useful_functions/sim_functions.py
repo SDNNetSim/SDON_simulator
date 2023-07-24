@@ -71,8 +71,8 @@ class AIMethods:
     Contains methods related to artificial intelligence for the simulator.
     """
 
-    def __init__(self, algorithm: str, sim_info: str, max_segments: int, is_training: bool, topology: nx.Graph,
-                 seed: int):
+    def __init__(self, algorithm: str = None, sim_info: str = None, max_segments: int = None, is_training: bool = None,
+                 topology: nx.Graph = None, seed: int = None):
         """
         Initializes the AIMethods class.
 
@@ -104,19 +104,13 @@ class AIMethods:
         # An object for the chosen AI algorithm
         self.ai_obj = None
 
-    def q_save(self, path: str, max_segments: int):
+    def _q_save(self):
         """
         Saves the current state of the Q-table.
-
-        :param path: The path to save the table
-        :type path: str
-
-        :param max_segments: The maximum number of segments allowed.
-        :type max_segments: int
         """
-        self.ai_obj.save_table(path=path, max_segments=max_segments)
+        self.ai_obj.save_table(path=self.sim_info, max_segments=self.max_segments)
 
-    def q_update_env(self, routed: bool, path: list, free_slots: int, iteration: int):
+    def _q_update_env(self, routed: bool, path: list, free_slots: int, iteration: int):
         """
         Updates the Q-learning environment.
 
@@ -139,10 +133,10 @@ class AIMethods:
             decay_amount = (self.ai_obj.epsilon / (iteration // 2) - 1)
             self.ai_obj.decay_epsilon(amount=decay_amount)
 
-    def q_spectrum(self):
+    def _q_spectrum(self):
         raise NotImplementedError
 
-    def q_routing(self, source: int, destination: int, mod_formats: dict):
+    def _q_routing(self, source: int, destination: int, mod_formats: dict):
         """
         Given a request, determines the path from source to destination.
 
@@ -155,14 +149,14 @@ class AIMethods:
         :param mod_formats: Modulation format info related to the size of the request (in Gbps).
         :type mod_formats: dict
 
-        :return: A path from source to destination.
-        :rtype: list
+        :return: A path from source to destination and a modulation format.
+        :rtype: list, str
         """
-        path = self.ai_obj.route(source=source, destination=destination, mod_formats=mod_formats)
-        return path
+        path, path_mod = self.ai_obj.route(source=source, destination=destination, mod_formats=mod_formats)
+        return path, path_mod
 
-    def init_q_learning(self, epsilon: float = 0.2, episodes: int = 1000, learn_rate: float = 0.5,
-                        discount: float = 0.2, trained_table: str = None):
+    def _init_q_learning(self, epsilon: float = 0.2, episodes: int = 1000, learn_rate: float = 0.5,
+                         discount: float = 0.2, trained_table: str = None):
         """
         Initializes a QLearning class and sets up the initial environment and Q-table.
 
@@ -194,11 +188,34 @@ class AIMethods:
 
         self.ai_obj.set_seed(self.seed)
 
-    def setup(self):
+    def save(self):
+        """
+        Responsible for saving relevant information.
+        """
+        if self.algorithm == 'q_learning':
+            self._q_save()
+
+    def route(self, **kwargs):
+        """
+        Responsible for routing.
+        """
+        if self.algorithm == 'q_learning':
+            self._q_routing()
+
+    def update(self, **kwargs):
+        """
+        Responsible for updating environment information.
+        """
+        if self.algorithm == 'q_learning':
+            self._q_update_env(routed=kwargs['routed'], path=kwargs['path'], free_slots=kwargs['free_slots'],
+                               iteration=kwargs['iteration'])
+
+    def setup(self, **kwargs):
         """
         Responsible for setting up available AI algorithms and their methods.
         """
         if self.algorithm == 'q_learning':
-            self.init_q_learning()
+            # TODO: Update
+            self._init_q_learning()
         else:
             raise NotImplementedError(f'Algorithm: {self.algorithm} not recognized.')

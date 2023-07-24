@@ -107,17 +107,20 @@ class Engine(SDNController):
         self.request_snapshots = {}
         # Holds the request numbers of all the requests currently active in the network
         self.active_requests = set()
-        # A class that holds different functions related to routing, if None, a default is applied in SDNController
-        self.routing_obj = None
-        # A class that holds different functions related to spectrum assignment
-        self.spectrum_obj = None
+
+        # For the purposes of saving relevant simulation information to a certain pathway
+        self.sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
+        # Contains all methods related to artificial intelligence
+        self.ai_obj = AIMethods(algorithm=sim_data['ai_algorithm'], is_training=sim_data['is_training'],
+                                max_segments=sim_data['max_segments'], topology=sim_data['topology'],
+                                sim_info=self.sim_info)
 
         # Initialize the constructor of the SDNController class
         super().__init__(alloc_method=self.sim_data['alloc_method'],
                          mod_per_bw=self.sim_data['mod_per_bw'], max_segments=self.sim_data['max_segments'],
                          cores_per_link=self.sim_data['cores_per_link'], guard_slots=self.sim_data['guard_slots'],
-                         sim_type=self.sim_type, dynamic_lps=self.dynamic_lps, routing_obj=self.routing_obj,
-                         spectrum_obj=self.spectrum_obj)
+                         sim_type=self.sim_type, dynamic_lps=self.dynamic_lps, ai_obj=self.ai_obj,
+                         ai_algorithm=sim_data['ai_algorithm'])
 
     def get_total_occupied_slots(self):
         """
@@ -196,13 +199,12 @@ class Engine(SDNController):
         }
 
         base_fp = f"data/output/"
-        sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
 
-        save_ai_obj(path=sim_info, max_segments=self.max_segments, sim_data=self.sim_data)
+        self.ai_obj.save()
 
         # Save threads to child directories
         if self.thread_num is not None:
-            base_fp += f"/{sim_info}/t{self.thread_num}"
+            base_fp += f"/{self.sim_info}/t{self.thread_num}"
         create_dir(base_fp)
 
         with open(f"{base_fp}/{self.erlang}_erlang.json", 'w', encoding='utf-8') as file_path:
@@ -257,13 +259,16 @@ class Engine(SDNController):
 
         self.stats_dict['block_per_sim'][iteration] = block_percentage
 
-    def handle_arrival(self, curr_time):
+    def handle_arrival(self, curr_time, iteration):
         """
         Updates the SDN controller to handle an arrival request. Also retrieves and calculates relevant request
         statistics.
 
         :param curr_time: The arrival time of the request
         :type curr_time: float
+
+        :param iteration: The current iteration of the simulation.
+        :type iteration: int
 
         :return: The number of transponders used for the request
         """
@@ -277,7 +282,7 @@ class Engine(SDNController):
         resp = self.handle_event(request_type='arrival')
 
         free_slots = self.get_path_free_slots(path=resp[-1])
-        update_ai_obj(update_env=True, routed=resp[0], path=[resp[-1]], free_slots=free_slots)
+        self.ai_obj.update(routed=resp[0], path=[resp[-1]], free_slots=free_slots, iteration=iteration)
 
         # Request was blocked
         if not resp[0]:
@@ -499,17 +504,11 @@ class Engine(SDNController):
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
 
-            if self.sim_data['ai_algorithm'] is not None and iteration == 0:
-                sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
-                self.routing_obj, self.spectrum_obj = setup_ai_obj(sim_data=self.sim_data, topology=self.topology,
-                                                                   sim_info=sim_info,
-                                                                   max_segments=self.max_segments, seed=seed)
-
             request_number = 1
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
-                    num_transponders = self.handle_arrival(curr_time)
+                    num_transponders = self.handle_arrival(curr_time, iteration)
                     self.update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1
@@ -522,7 +521,8 @@ class Engine(SDNController):
             self.update_blocking_distribution()
             self.update_transponders()
 
-            update_ai_obj(sim_data=self.sim_data, iteration=iteration)
+            # TODO: What was this for?
+            self.ai_obj.update(sim_data=self.sim_data, iteration=iteration)
 
             # Some form of ML/RL is being used, ignore confidence intervals for training
             if self.sim_data['is_training'] is None or not self.sim_data['is_training']:
