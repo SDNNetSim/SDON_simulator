@@ -9,7 +9,7 @@ import numpy as np
 from sim_scripts.request_generator import generate
 from sim_scripts.sdn_controller import SDNController
 from useful_functions.handle_dirs_files import create_dir
-from useful_functions.sim_functions import *
+from useful_functions.ai_functions import *
 
 
 class Engine(SDNController):
@@ -176,8 +176,6 @@ class Engine(SDNController):
             for key, lst in obj.items():
                 obj[key] = np.mean(lst)
 
-        # TODO: Change (ML/RL)
-        #   - I'm thinking an ai dict
         self.stats_dict['misc_stats'] = {
             'blocking_mean': self.blocking_mean,
             'blocking_variance': self.blocking_variance,
@@ -520,9 +518,6 @@ class Engine(SDNController):
             self.calculate_block_percent(iteration)
             self.update_blocking_distribution()
             self.update_transponders()
-
-            # TODO: What was this for?
-            self.ai_obj.update(sim_data=self.sim_data, iteration=iteration)
 
             # Some form of ML/RL is being used, ignore confidence intervals for training
             if self.sim_data['is_training'] is None or not self.sim_data['is_training']:
