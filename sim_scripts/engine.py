@@ -502,7 +502,10 @@ class Engine(SDNController):
                 print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
 
                 # TODO: Allow us to tune hyperparameters
-                self.ai_obj.setup(erlang=self.erlang, trained_table=self.sim_info)
+                if self.sim_data['train_file'] is None:
+                    self.ai_obj.setup(erlang=self.erlang, trained_table=self.sim_info)
+                else:
+                    self.ai_obj.setup(erlang=self.erlang, trained_table=self.sim_data['train_file'])
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
@@ -525,7 +528,7 @@ class Engine(SDNController):
             self.update_transponders()
 
             # Some form of ML/RL is being used, ignore confidence intervals for training
-            if self.sim_data['is_training'] is None or not self.sim_data['is_training']:
+            if not self.sim_data['is_training']:
                 if self.check_confidence_interval(iteration):
                     return
 
