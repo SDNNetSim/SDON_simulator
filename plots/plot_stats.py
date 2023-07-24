@@ -10,6 +10,9 @@ import numpy as np
 from useful_functions.handle_dirs_files import create_dir
 
 
+# TODO: Plot differences between lines
+
+
 class PlotStats:
     """
     A class for computing and plotting statistical analysis for simulations.
@@ -101,10 +104,11 @@ class PlotStats:
                 erlang = int(erlang.split('.')[0])
                 self.plot_dict[thread]['erlang_vals'].append(erlang)
 
-                # TODO: Change back (Need a way to determine training vs. testing)
-                # self.plot_dict[thread]['blocking_vals'].append(np.min(list(erlang_dict['block_per_sim'].values())))
-                self.plot_dict[thread]['blocking_vals'].append(np.average(list(erlang_dict['block_per_sim'].values())))
-                # self.plot_dict[thread]['blocking_vals'].append(erlang_dict['misc_stats']['blocking_mean'])
+                if erlang_dict['misc_stats']['is_training']:
+                    self.plot_dict[thread]['blocking_vals'].append(
+                        np.average(list(erlang_dict['block_per_sim'].values())))
+                else:
+                    self.plot_dict[thread]['blocking_vals'].append(erlang_dict['misc_stats']['blocking_mean'])
                 self.plot_dict[thread]['average_transponders'].append(erlang_dict['misc_stats']['trans_mean'])
                 self.plot_dict[thread]['distance_block'].append(erlang_dict['misc_stats']['dist_percent'])
                 self.plot_dict[thread]['cong_block'].append(erlang_dict['misc_stats']['cong_percent'])
@@ -220,6 +224,16 @@ class PlotStats:
 
         if grid:
             plt.grid()
+
+    @staticmethod
+    def _setup_sub_plots():
+        """
+        Set up Matplotlib subplots.
+        """
+        _, axis = plt.subplots(2, 2, figsize=(7, 5), dpi=300)
+        plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
+
+        return axis
 
     def plot_blocking(self):
         """
@@ -429,6 +443,15 @@ class PlotStats:
         plt.show()
 
     def plot_dist_cong(self):
+        """
+        Plot the blocking percentages broken down into distance vs. congestion.
+        """
+        raise NotImplementedError
+
+    def plot_bandwidths(self):
+        """
+        Plot the blocking percentages broken down by bandwidth.
+        """
         raise NotImplementedError
 
 
@@ -436,9 +459,9 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0724', latest_time='13:38:54',
+    plot_obj = PlotStats(net_name='USNet', latest_date='0724', latest_time='14:56:21',
                          plot_threads=['t1'])
-    plot_obj.plot_blocking()
+    # plot_obj.plot_blocking()
     # plot_obj.plot_blocking_per_request()
     # plot_obj.plot_transponders()
     # plot_obj.plot_slots_taken()
@@ -446,6 +469,7 @@ def main():
     # plot_obj.plot_guard_bands()
     # plot_obj.plot_num_segments()
     # plot_obj.plot_dist_cong()
+    # plot_obj.plot_bandwidths()
 
 
 if __name__ == '__main__':
