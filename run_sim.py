@@ -13,6 +13,9 @@ from sim_scripts.engine import Engine
 from useful_functions.handle_dirs_files import create_dir
 
 
+# TODO: Update tests
+
+
 class NetworkSimulator:
     """
     Controls all simulations for this project.
