@@ -11,9 +11,7 @@ from useful_functions.sim_functions import get_path_mod, find_path_len
 from useful_functions.handle_dirs_files import create_dir
 
 
-# TODO: Write tests for these methods and check sim scripts for other tests as well
 # TODO: Better reward scheme (Adaptive?)
-# TODO: Tune hyper-params
 # TODO: Significant plots
 
 
