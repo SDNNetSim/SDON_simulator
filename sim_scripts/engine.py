@@ -111,9 +111,9 @@ class Engine(SDNController):
         # For the purposes of saving relevant simulation information to a certain pathway
         self.sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
         # Contains all methods related to artificial intelligence
-        self.ai_obj = AIMethods(algorithm=sim_data['ai_algorithm'], is_training=sim_data['is_training'],
-                                max_segments=sim_data['max_segments'], topology=sim_data['topology'],
-                                sim_info=self.sim_info)
+        self.ai_obj = AIMethods(algorithm=self.sim_data['ai_algorithm'],
+                                is_training=self.sim_data['is_training'],
+                                max_segments=self.sim_data['max_segments'], sim_info=self.sim_info)
 
         # Initialize the constructor of the SDNController class
         super().__init__(alloc_method=self.sim_data['alloc_method'],
@@ -493,11 +493,16 @@ class Engine(SDNController):
             self.load_input()
 
         for iteration in range(self.sim_data["max_iters"]):
+            self.init_iter_vars()
+            self.create_topology()
+            self.ai_obj.topology = self.topology
+            self.ai_obj.seed = iteration
+
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
 
-            self.init_iter_vars()
-            self.create_topology()
+                # TODO: Able to tune hyperparameters
+                self.ai_obj.setup(erlang=self.erlang, trained_table=self.sim_info)
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)

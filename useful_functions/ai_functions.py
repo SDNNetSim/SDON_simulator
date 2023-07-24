@@ -75,6 +75,7 @@ class AIMethods:
     def _q_spectrum(self):
         raise NotImplementedError
 
+    # TODO: Change source and dest to string types
     def _q_routing(self, source: int, destination: int, mod_formats: dict):
         """
         Given a request, determines the path from source to destination.
@@ -94,10 +95,13 @@ class AIMethods:
         path, path_mod = self.ai_obj.route(source=source, destination=destination, mod_formats=mod_formats)
         return path, path_mod
 
-    def _init_q_learning(self, epsilon: float = 0.2, episodes: int = 1000, learn_rate: float = 0.5,
+    def _init_q_learning(self, erlang: int = None, epsilon: float = 0.2, episodes: int = 1000, learn_rate: float = 0.5,
                          discount: float = 0.2, trained_table: str = None):
         """
         Initializes a QLearning class and sets up the initial environment and Q-table.
+
+        :param erlang: The current load of the network.
+        :type erlang: int
 
         :param epsilon: Parameter in the bellman equation to determine degree of randomness.
         :type epsilon: float
@@ -120,8 +124,8 @@ class AIMethods:
         self.ai_obj.setup_environment()
 
         # Load a pre-trained table or start a new one
-        if self.is_training:
-            self.ai_obj.load_table(path=self.sim_info, max_segments=self.max_segments)
+        if self.is_training and erlang == 10:
+            self.ai_obj.save_table(path=self.sim_info, max_segments=self.max_segments)
         else:
             self.ai_obj.load_table(path=trained_table, max_segments=self.max_segments)
 
@@ -138,8 +142,12 @@ class AIMethods:
         """
         Responsible for routing.
         """
+        resp = None
         if self.algorithm == 'q_learning':
-            self._q_routing()
+            resp = self._q_routing(source=kwargs['source'], destination=kwargs['destination'],
+                                   mod_formats=kwargs['mod_formats'])
+
+        return resp
 
     def update(self, **kwargs):
         """
@@ -154,7 +162,6 @@ class AIMethods:
         Responsible for setting up available AI algorithms and their methods.
         """
         if self.algorithm == 'q_learning':
-            # TODO: Update
-            self._init_q_learning()
+            self._init_q_learning(erlang=kwargs['erlang'], trained_table=kwargs['trained_table'])
         else:
             raise NotImplementedError(f'Algorithm: {self.algorithm} not recognized.')
