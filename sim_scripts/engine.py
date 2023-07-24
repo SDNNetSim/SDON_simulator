@@ -9,7 +9,7 @@ import numpy as np
 from sim_scripts.request_generator import generate
 from sim_scripts.sdn_controller import SDNController
 from useful_functions.handle_dirs_files import create_dir
-from useful_functions.ai_functions import *
+from useful_functions.ai_functions import *  # pylint: disable=unused-wildcard-import
 
 
 class Engine(SDNController):
@@ -172,7 +172,7 @@ class Engine(SDNController):
 
         :return: None
         """
-        for req_num, obj in self.request_snapshots.items():
+        for _, obj in self.request_snapshots.items():
             for key, lst in obj.items():
                 obj[key] = np.mean(lst)
 
@@ -196,7 +196,7 @@ class Engine(SDNController):
             'is_training': self.is_training
         }
 
-        base_fp = f"data/output/"
+        base_fp = "data/output/"
 
         self.ai_obj.save()
 
