@@ -13,9 +13,6 @@ from sim_scripts.engine import Engine
 from useful_functions.handle_dirs_files import create_dir
 
 
-# TODO: Update tests
-
-
 class NetworkSimulator:
     """
     Controls all simulations for this project.
@@ -320,7 +317,7 @@ def run(threads):
 
 if __name__ == '__main__':
     threads_obj = []
-    for is_training in [True]:
+    for is_training in [False]:
         for max_iters in [10]:
             for dynamic_flag in [False]:
                 for max_segments in [1]:
@@ -333,7 +330,7 @@ if __name__ == '__main__':
                             'dynamic_lps': dynamic_flag,
                             'ai_algorithm': 'q_learning',
                             'is_training': is_training,
-                            'train_file': None,
+                            'train_file': 'USNet/0724/13:38:54',
                             'max_iters': max_iters
                         }
                         threads_obj.append(thread)

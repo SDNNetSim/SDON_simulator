@@ -13,7 +13,6 @@ from useful_functions.handle_dirs_files import create_dir
 
 # TODO: Better reward scheme (Adaptive?)
 # TODO: Significant plots
-# TODO: Move class to a separate file
 
 
 class QLearning:
@@ -45,7 +44,6 @@ class QLearning:
         # Contains all state and action value pairs
         self.q_table = None
         self.epsilon = epsilon
-        # TODO: How should we be using episodes?
         self.episodes = episodes
         self.learn_rate = learn_rate
         self.discount = discount
