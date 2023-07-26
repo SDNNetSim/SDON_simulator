@@ -225,15 +225,34 @@ class PlotStats:
         if grid:
             plt.grid()
 
-    @staticmethod
-    def _setup_sub_plots():
+    def _plot_sub_plots(self, plot_info, x_ticks, x_lim, y_ticks, y_lim):
         """
-        Set up Matplotlib subplots.
+        Plot four by four Matplotlib subplots.
         """
-        _, axis = plt.subplots(2, 2, figsize=(7, 5), dpi=300)
+        _, axes = plt.subplots(2, 2, figsize=(7, 5), dpi=300)
         plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
 
-        return axis
+        index_list = [[0, 0], [0, 1], [1, 0], [1, 1]]
+
+        for idx, (_, obj) in enumerate(self.plot_dict.items()):
+            for sub_idx, (x_key, y_key, colors) in enumerate(plot_info):
+                ax = axes[index_list[idx][0], index_list[idx][1]]
+                ax.grid()
+                ax.set_yticks(y_ticks)
+                ax.plot(obj[x_key], obj[y_key], color=colors[0])
+                ax.set_xlim(x_lim[0], x_lim[1])
+                ax.set_ylim(y_lim[0], y_lim[1])
+                ax.set_xticks(x_ticks)
+
+                if idx == 0:
+                    ax.set_title(f"{self.net_name} LS = {obj['max_segments']}")
+                    ax.legend(['Cong.', 'Dist.'])
+                    ax.set_ylabel('Percent')
+                    ax.set_xlabel('Erlang')
+                else:
+                    ax.set_title(f"LS = {obj['max_segments']}")
+
+        self._save_plot(file_name='percents')
 
     def plot_blocking(self):
         """
@@ -446,7 +465,16 @@ class PlotStats:
         """
         Plot the blocking percentages broken down into distance vs. congestion.
         """
-        raise NotImplementedError
+        cong_colors = {0: '#800000'}
+        dist_colors = {0: '#009900'}
+        plot_info = [
+            ('erlang_vals', 'cong_block', cong_colors),
+            ('erlang_vals', 'distance_block', dist_colors)
+        ]
+
+        self._plot_sub_plots(plot_info=plot_info, x_ticks=self.x_ticks, x_lim=[self.x_ticks[0], self.x_ticks[-1]],
+                             y_ticks=[20, 40, 60, 80, 100], y_lim=[-1, 101])
+        plt.show()
 
     def plot_bandwidths(self):
         """
@@ -459,8 +487,8 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0724', latest_time='14:56:21',
-                         plot_threads=['t1'])
+    plot_obj = PlotStats(net_name='USNet', latest_date='0720', latest_time='12:00:48',
+                         plot_threads=['t1', 't2', 't3', 't4'])
     # plot_obj.plot_blocking()
     # plot_obj.plot_blocking_per_request()
     # plot_obj.plot_transponders()
@@ -468,7 +496,7 @@ def main():
     # plot_obj.plot_active_requests()
     # plot_obj.plot_guard_bands()
     # plot_obj.plot_num_segments()
-    # plot_obj.plot_dist_cong()
+    plot_obj.plot_dist_cong()
     # plot_obj.plot_bandwidths()
 
 
