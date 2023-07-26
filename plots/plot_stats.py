@@ -246,27 +246,27 @@ class PlotStats:
         index_list = [[0, 0], [0, 1], [1, 0], [1, 1]]
 
         for idx, (_, obj) in enumerate(self.plot_dict.items()):
-            for sub_idx, (x_key, y_key, sub_key, colors) in enumerate(plot_info):
-                ax = axes[index_list[idx][0], index_list[idx][1]]
-                ax.grid()
-                ax.set_yticks(y_ticks)
+            for (x_key, y_key, sub_key, colors) in plot_info:
+                curr_ax = axes[index_list[idx][0], index_list[idx][1]]
+                curr_ax.grid()
+                curr_ax.set_yticks(y_ticks)
 
                 if sub_key is None:
-                    ax.plot(obj[x_key], obj[y_key], color=colors[0])
+                    curr_ax.plot(obj[x_key], obj[y_key], color=colors[0])
                 else:
-                    ax.plot(obj[x_key], obj[y_key][sub_key], color=colors[0])
+                    curr_ax.plot(obj[x_key], obj[y_key][sub_key], color=colors[0])
 
-                ax.set_xlim(x_lim[0], x_lim[1])
-                ax.set_ylim(y_lim[0], y_lim[1])
-                ax.set_xticks(x_ticks)
+                curr_ax.set_xlim(x_lim[0], x_lim[1])
+                curr_ax.set_ylim(y_lim[0], y_lim[1])
+                curr_ax.set_xticks(x_ticks)
 
                 if idx == 0:
-                    ax.set_title(f"{self.net_name} LS = {obj['max_segments']}")
-                    ax.legend(legend)
-                    ax.set_ylabel(y_label)
-                    ax.set_xlabel(x_label)
+                    curr_ax.set_title(f"{self.net_name} LS = {obj['max_segments']}")
+                    curr_ax.legend(legend)
+                    curr_ax.set_ylabel(y_label)
+                    curr_ax.set_xlabel(x_label)
                 else:
-                    ax.set_title(f"LS = {obj['max_segments']}")
+                    curr_ax.set_title(f"LS = {obj['max_segments']}")
 
         self._save_plot(file_name=filename)
 
@@ -518,7 +518,7 @@ def main():
     """
     plot_obj = PlotStats(net_name='USNet', latest_date='0720', latest_time='12:00:48',
                          plot_threads=['t1', 't2', 't3', 't4'])
-    # plot_obj.plot_blocking()
+    plot_obj.plot_blocking()
     # plot_obj.plot_blocking_per_request()
     # plot_obj.plot_transponders()
     # plot_obj.plot_slots_taken()
@@ -526,7 +526,7 @@ def main():
     # plot_obj.plot_guard_bands()
     # plot_obj.plot_num_segments()
     # plot_obj.plot_dist_cong()
-    plot_obj.plot_bandwidths()
+    # plot_obj.plot_bandwidths()
 
 
 if __name__ == '__main__':
