@@ -13,6 +13,7 @@ from useful_functions.handle_dirs_files import create_dir
 
 # TODO: Better reward scheme (Adaptive?)
 # TODO: Significant plots
+# TODO: Need to save cores used for saved q-tables
 
 
 class QLearning:
