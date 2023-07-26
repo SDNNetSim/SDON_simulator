@@ -1,5 +1,5 @@
-Plots Module Documentation
-==========================
+Plots
+=====
 
 .. toctree::
 

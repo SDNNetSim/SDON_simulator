@@ -1,4 +1,4 @@
-SDN Simulator documentation
+SDN Simulator Documentation
 ===========================
 A Software Defined Networking (SDN) simulator created for the purposes of aiding in the research of elastic-optical
 networking.
