@@ -11,6 +11,7 @@ networking.
 
    sim_scripts/sim_scripts_modules.rst
    useful_functions/useful_functions_modules.rst
+   ai/ai_modules.rst
    tests/tests_modules.rst
    handle_data/handle_data_modules.rst
    plots/plot_modules.rst
