@@ -20,7 +20,7 @@ class NetworkSimulator:
 
     def __init__(self, sim_data: dict = None, seeds: List[int] = None, mod_per_bw: dict = None,
                  req_dist: List[dict] = None, sim_fp: str = None, sim_start: str = None, net_name: str = 'USNet',
-                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 10000, max_iters: int = 1,
+                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 500, max_iters: int = 10,
                  spectral_slots: int = 256, cores_per_link: int = 1, bw_per_slot: float = 12.5, max_segments: int = 1,
                  sim_type: str = 'arash', const_weight: bool = True, guard_slots: int = 1,
                  alloc_method: str = 'first-fit', dynamic_lps: bool = False, thread_num: int = 1):
@@ -113,11 +113,15 @@ class NetworkSimulator:
 
         self.max_iters = max_iters
         self.sim_fp = sim_fp
-
         self.thread_num = thread_num
 
         # The date and current time derived from the simulation start
         self.date, self.curr_time = self.sim_start.split('_')[0], self.sim_start.split('_')[1]
+
+        # Used for machine and reinforcement learning
+        self.ai_algorithm = None
+        self.is_training = None
+        self.train_file = None
 
     def save_input(self, file_name: str = None, data: Dict = None):
         """
@@ -178,9 +182,13 @@ class NetworkSimulator:
             'cores_per_link': self.cores_per_link,
             'alloc_method': self.alloc_method,
             'req_dist': self.req_dist,
+            'ai_algorithm': self.ai_algorithm,
+            'is_training': self.is_training,
+            'train_file': self.train_file,
         }
 
-    def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps):
+    def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps, ai_algorithm,
+                is_training, train_file, max_iters):
         """
         Runs a Yue-based simulation with the specified parameters. Reference: Wang, Yue. Dynamic Traffic Scheduling
         Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
@@ -203,6 +211,18 @@ class NetworkSimulator:
         :param dynamic_lps: Flag to determine dynamic light path slicing ability for any given run.
         :type dynamic_lps: bool
 
+        :param ai_algorithm: The type of artificial intelligence algorithm to be run.
+        :type ai_algorithm: str
+
+        :param: is_training: Determines if we are training or testing ML/RL methods.
+        :type is_training: bool
+
+        :param train_file: If not training, for testing we must have a trained algorithm to load.
+        :type train_file: str
+
+        :param max_iters: Determines the maximum number of iterations.
+        :type max_iters: int
+
         :return: None
         """
         self.hold_time_mean = 0.2
@@ -217,7 +237,11 @@ class NetworkSimulator:
         self.dynamic_lps = dynamic_lps
         self.req_dist = req_dist
 
+        self.max_iters = max_iters
         self.max_segments = max_segments
+        self.ai_algorithm = ai_algorithm
+        self.is_training = is_training
+        self.train_file = train_file
         self.thread_num = thread_num
 
         for arr_rate_mean in range(2, 143, 2):
@@ -235,7 +259,7 @@ class NetworkSimulator:
             engine = Engine(sim_data=self.sim_data, erlang=erlang, net_name=self.net_name,
                             sim_start=self.sim_start, sim_type=self.sim_type,
                             input_fp=f'./data/input/{self.net_name}/{self.date}/{self.curr_time}/{file_name}',
-                            thread_num=thread_num, dynamic_lps=dynamic_lps)
+                            thread_num=thread_num, dynamic_lps=dynamic_lps, is_training=is_training)
             engine.run()
 
     # TODO: This method does not have support at this point in time
@@ -281,7 +305,9 @@ def run(threads):
 
             future = executor.submit(class_inst.run_yue, thread_params['max_segments'], thread_num,
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
-                                     thread_params['req_dist'], thread_params['dynamic_lps'])
+                                     thread_params['req_dist'], thread_params['dynamic_lps'],
+                                     thread_params['ai_algorithm'], thread_params['is_training'],
+                                     thread_params['train_file'], thread_params['max_iters'], )
 
             futures.append(future)
 
@@ -289,19 +315,24 @@ def run(threads):
             future.result()
 
 
-# TODO: Only support for one iteration (for now, change back eventually based on prior commits)
 if __name__ == '__main__':
     threads_obj = []
-    for dynamic_flag in [True, False]:
-        for max_segments in [1, 2, 4, 8]:
-            for cores_per_link in [1, 4, 7]:
-                thread = {
-                    'max_segments': max_segments,
-                    'cores_per_link': cores_per_link,
-                    'alloc_method': 'first-fit',
-                    'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
-                    'dynamic_lps': dynamic_flag,
-                }
-                threads_obj.append(thread)
+    for is_training in [False]:
+        for max_iters in [10]:
+            for dynamic_flag in [False]:
+                for max_segments in [1]:
+                    for cores_per_link in [1]:
+                        thread = {
+                            'max_segments': max_segments,
+                            'cores_per_link': cores_per_link,
+                            'alloc_method': 'first-fit',
+                            'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
+                            'dynamic_lps': dynamic_flag,
+                            'ai_algorithm': 'q_learning',
+                            'is_training': is_training,
+                            'train_file': 'USNet/0724/13:38:54',
+                            'max_iters': max_iters
+                        }
+                        threads_obj.append(thread)
 
     run(threads_obj)

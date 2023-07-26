@@ -4,9 +4,13 @@ import json
 
 # Third-party imports
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
+
+
+# TODO: Plot differences between lines
 
 
 class PlotStats:
@@ -82,6 +86,7 @@ class PlotStats:
                 'average_transponders': [],
                 'distance_block': [],
                 'cong_block': [],
+                'block_per_bw': {},
                 'hold_time_mean': None,
                 'cores_per_link': None,
                 'spectral_slots': None,
@@ -100,15 +105,24 @@ class PlotStats:
                 erlang = int(erlang.split('.')[0])
                 self.plot_dict[thread]['erlang_vals'].append(erlang)
 
-                # Only one iteration occurred, a mean was not calculated
-                if erlang_dict['misc_stats']['blocking_mean'] is None:
-                    self.plot_dict[thread]['blocking_vals'].append(erlang_dict['misc_stats']['block_per_sim'][0])
+                if erlang_dict['misc_stats']['is_training']:
+                    self.plot_dict[thread]['blocking_vals'].append(
+                        np.average(list(erlang_dict['block_per_sim'].values())))
                 else:
                     self.plot_dict[thread]['blocking_vals'].append(erlang_dict['misc_stats']['blocking_mean'])
-
                 self.plot_dict[thread]['average_transponders'].append(erlang_dict['misc_stats']['trans_mean'])
                 self.plot_dict[thread]['distance_block'].append(erlang_dict['misc_stats']['dist_percent'])
                 self.plot_dict[thread]['cong_block'].append(erlang_dict['misc_stats']['cong_percent'])
+
+                # Convert how many times a bandwidth was blocked to a percentage
+                tmp_sum = sum(erlang_dict['misc_stats']['block_per_bw'].values())
+                for key in erlang_dict['misc_stats']['block_per_bw']:
+                    tmp_value = erlang_dict['misc_stats']['block_per_bw'][key] / tmp_sum * 100
+
+                    if key not in self.plot_dict[thread]['block_per_bw'].keys():
+                        self.plot_dict[thread]['block_per_bw'][key] = list()
+
+                    self.plot_dict[thread]['block_per_bw'][key].append(round(tmp_value, 2))
 
                 self.plot_dict[thread]['hold_time_mean'] = erlang_dict['misc_stats']['hold_time_mean']
                 self.plot_dict[thread]['cores_per_link'] = erlang_dict['misc_stats']['cores_per_link']
@@ -126,7 +140,7 @@ class PlotStats:
 
                     for request_number, request_info in erlang_dict['misc_stats']['request_snapshots'].items():
                         request_number = int(request_number)
-                        # TODO: Change back?
+                        # Plot every 'x' amount of request snapshots
                         if request_number % 1 == 0 or request_number == 1:
                             self.plot_dict[thread]['taken_slots'][erlang][request_number] = request_info['occ_slots'] / \
                                                                                             erlang_dict['misc_stats'][
@@ -222,6 +236,40 @@ class PlotStats:
         if grid:
             plt.grid()
 
+    def _plot_sub_plots(self, plot_info, x_ticks, x_lim, x_label, y_ticks, y_lim, y_label, legend, filename):
+        """
+        Plot four by four Matplotlib subplots.
+        """
+        _, axes = plt.subplots(2, 2, figsize=(7, 5), dpi=300)
+        plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
+
+        index_list = [[0, 0], [0, 1], [1, 0], [1, 1]]
+
+        for idx, (_, obj) in enumerate(self.plot_dict.items()):
+            for (x_key, y_key, sub_key, colors) in plot_info:
+                curr_ax = axes[index_list[idx][0], index_list[idx][1]]
+                curr_ax.grid()
+                curr_ax.set_yticks(y_ticks)
+
+                if sub_key is None:
+                    curr_ax.plot(obj[x_key], obj[y_key], color=colors[0])
+                else:
+                    curr_ax.plot(obj[x_key], obj[y_key][sub_key], color=colors[0])
+
+                curr_ax.set_xlim(x_lim[0], x_lim[1])
+                curr_ax.set_ylim(y_lim[0], y_lim[1])
+                curr_ax.set_xticks(x_ticks)
+
+                if idx == 0:
+                    curr_ax.set_title(f"{self.net_name} LS = {obj['max_segments']}")
+                    curr_ax.legend(legend)
+                    curr_ax.set_ylabel(y_label)
+                    curr_ax.set_xlabel(x_label)
+                else:
+                    curr_ax.set_title(f"LS = {obj['max_segments']}")
+
+        self._save_plot(file_name=filename)
+
     def plot_blocking(self):
         """
         Plots the blocking probability for each Erlang value.
@@ -237,8 +285,7 @@ class PlotStats:
 
             plt.plot(thread_obj['erlang_vals'], thread_obj['blocking_vals'], color=color, linestyle=line_style,
                      marker=marker, markersize=2.3)
-            # TODO: Change
-            legend_list.append(f"C ={thread_obj['cores_per_link']} ALS ={thread_obj['max_segments']}")
+            legend_list.append(f"C ={thread_obj['cores_per_link']} LS ={thread_obj['max_segments']}")
 
             style_count += 1
 
@@ -268,8 +315,7 @@ class PlotStats:
 
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
-                # TODO: Change
-                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
+                legend_list.append(f"E={erlang} LS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -294,8 +340,7 @@ class PlotStats:
             color = self.colors[style_count]
 
             plt.plot(thread_obj['erlang_vals'], thread_obj['average_transponders'], color=color)
-            # TODO: Change
-            legend_list.append(f"C={thread_obj['cores_per_link']} ALS={thread_obj['max_segments']}")
+            legend_list.append(f"C={thread_obj['cores_per_link']} LS={thread_obj['max_segments']}")
 
             style_count += 1
 
@@ -323,8 +368,7 @@ class PlotStats:
 
                 plt.plot(request_numbers, slots_occupied, color=color, marker=marker, markersize=2.3)
 
-                # TODO: Change
-                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
+                legend_list.append(f"E={erlang} LS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -336,6 +380,7 @@ class PlotStats:
         self._save_plot(file_name='slots_occupied')
         plt.show()
 
+    # TODO: Bugfix needed? Some LS are not equal to 1, 2, 4, or 8
     def plot_num_segments(self):
         """
         Plots the number of segments each request has been sliced into.
@@ -355,8 +400,7 @@ class PlotStats:
                 continue
             for erlang, slices_lst in thread_obj['num_segments'].items():
                 hist_list.append(slices_lst)
-                # TODO: Change
-                legend_list.append(f"E={int(erlang)} ALS={thread_obj['max_segments']}")
+                legend_list.append(f"E={int(erlang)} LS={thread_obj['max_segments']}")
 
         bins = [1, 2, 3, 4, 5, 6, 7, 8]
         plt.hist(hist_list, stacked=False, histtype='bar', edgecolor='black', rwidth=1, color=erlang_colors, bins=bins)
@@ -389,8 +433,7 @@ class PlotStats:
                 marker = self.markers[marker_count]
                 plt.plot(request_numbers, active_requests, color=color, marker=marker, markersize=2.3)
 
-                # TODO: Change
-                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
+                legend_list.append(f"E={erlang} LS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -422,8 +465,7 @@ class PlotStats:
                 marker = self.markers[marker_count]
                 plt.plot(request_numbers, guard_bands, color=color, marker=marker, markersize=2.3)
 
-                # TODO: Change
-                legend_list.append(f"E={erlang} ALS={thread_obj['max_segments']}")
+                legend_list.append(f"E={erlang} LS={thread_obj['max_segments']}")
                 marker_count += 1
 
             marker_count = 1
@@ -435,20 +477,56 @@ class PlotStats:
         self._save_plot(file_name='guard_bands')
         plt.show()
 
+    def plot_dist_cong(self):
+        """
+        Plot the blocking percentages broken down into distance vs. congestion.
+        """
+        cong_colors = {0: '#800000'}
+        dist_colors = {0: '#009900'}
+        plot_info = [
+            ('erlang_vals', 'cong_block', None, cong_colors),
+            ('erlang_vals', 'distance_block', None, dist_colors)
+        ]
+
+        self._plot_sub_plots(plot_info=plot_info, x_ticks=self.x_ticks, x_lim=[self.x_ticks[0], self.x_ticks[-1]],
+                             x_label='Erlang', y_ticks=[20, 40, 60, 80, 100], y_lim=[-1, 101], y_label='Percent',
+                             legend=['Cong.', 'Dist.'], filename='percents')
+        plt.show()
+
+    def plot_bandwidths(self):
+        """
+        Plot the blocking percentages broken down by bandwidth.
+        """
+        band_colors_one = {0: '#0077FF'}
+        band_colors_two = {0: '#00FF00'}
+        band_colors_three = {0: '#FF0000'}
+        plot_info = [
+            ('erlang_vals', 'block_per_bw', '50', band_colors_one),
+            ('erlang_vals', 'block_per_bw', '100', band_colors_two),
+            ('erlang_vals', 'block_per_bw', '400', band_colors_three),
+        ]
+
+        self._plot_sub_plots(plot_info=plot_info, x_ticks=self.x_ticks, x_lim=[self.x_ticks[0], self.x_ticks[-1]],
+                             x_label='Erlang', y_ticks=[20, 40, 60, 80, 100], y_lim=[-1, 101], y_label='Percent',
+                             legend=['50', '100', '400'], filename='bandwidths')
+        plt.show()
+
 
 def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0516', latest_time='10:58:53',
-                         plot_threads=['t3', 't6', 't9', 't12'])
+    plot_obj = PlotStats(net_name='USNet', latest_date='0720', latest_time='12:00:48',
+                         plot_threads=['t1', 't2', 't3', 't4'])
     plot_obj.plot_blocking()
-    plot_obj.plot_blocking_per_request()
-    plot_obj.plot_transponders()
-    plot_obj.plot_slots_taken()
-    plot_obj.plot_active_requests()
-    plot_obj.plot_guard_bands()
-    plot_obj.plot_num_segments()
+    # plot_obj.plot_blocking_per_request()
+    # plot_obj.plot_transponders()
+    # plot_obj.plot_slots_taken()
+    # plot_obj.plot_active_requests()
+    # plot_obj.plot_guard_bands()
+    # plot_obj.plot_num_segments()
+    # plot_obj.plot_dist_cong()
+    # plot_obj.plot_bandwidths()
 
 
 if __name__ == '__main__':

@@ -18,7 +18,8 @@ class SDNController:
     def __init__(self, req_id: int = None, net_spec_db: dict = None, topology: nx.Graph = None,
                  cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
                  source: int = None, destination: int = None, mod_per_bw: dict = None, chosen_bw: str = None,
-                 max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None):
+                 max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None,
+                 ai_obj: object = None, ai_algorithm: str = None):
         """
         Initializes the SDNController class.
 
@@ -64,6 +65,12 @@ class SDNController:
         :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
                             request to multiple different bandwidths if set to true.
         :type dynamic_lps: bool
+
+        :param ai_obj: A class to handle everything related to routing and spectrum assingment for AI.
+        :type ai_obj: object
+
+        :param ai_algorithm: The current AI algorithm being used.
+        :type ai_algorithm: str
         """
         self.req_id = req_id
         self.net_spec_db = net_spec_db
@@ -73,6 +80,8 @@ class SDNController:
         self.sim_type = sim_type
         self.alloc_method = alloc_method
         self.dynamic_lps = dynamic_lps
+        self.ai_obj = ai_obj
+        self.ai_algorithm = ai_algorithm
 
         self.source = source
         self.destination = destination
@@ -253,7 +262,6 @@ class SDNController:
 
                     if num_segments > self.max_segments:
                         self.release()
-                        # TODO: This is technically misleading, wasn't due to congestion or distance
                         self.dist_block = False
                         return False
                 else:
@@ -286,9 +294,10 @@ class SDNController:
             resp = self.allocate_dynamic_lps()
 
         if resp is not False:
-            return {'path': self.path, 'mod_format': resp, 'is_sliced': True}, self.net_spec_db, self.num_transponders
+            return {'path': self.path, 'mod_format': resp,
+                    'is_sliced': True}, self.net_spec_db, self.num_transponders, self.path
 
-        return False, self.dist_block
+        return False, self.dist_block, self.path
 
     def handle_event(self, request_type):
         """
@@ -308,17 +317,20 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        routing_obj = Routing(source=self.source, destination=self.destination,
-                              topology=self.topology, net_spec_db=self.net_spec_db,
-                              mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
-
-        if self.sim_type == 'yue':
-            selected_path, path_mod = routing_obj.shortest_path()
-        elif self.sim_type == 'arash':
-            selected_path = routing_obj.least_congested_path()
-            path_mod = 'QPSK'
+        # Default routing object
+        if self.ai_algorithm is None:
+            routing_obj = Routing(source=self.source, destination=self.destination,
+                                  topology=self.topology, net_spec_db=self.net_spec_db,
+                                  mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
+            if self.sim_type == 'yue':
+                selected_path, path_mod = routing_obj.shortest_path()
+            else:
+                selected_path = routing_obj.least_congested_path()
+                path_mod = 'QPSK'
         else:
-            raise NotImplementedError
+            # Used for routing related to artificial intelligence
+            selected_path, path_mod = self.ai_obj.route(source=self.source, destination=self.destination,
+                                                        mod_formats=self.mod_per_bw[self.chosen_bw])
 
         if selected_path is not False:
             self.path = selected_path
@@ -338,7 +350,7 @@ class SDNController:
                     }
 
                     self.allocate(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
-                    return resp, self.net_spec_db, self.num_transponders
+                    return resp, self.net_spec_db, self.num_transponders, self.path
 
                 # Attempt to slice the request due to a congestion constraint
                 return self.handle_lps()
@@ -346,4 +358,4 @@ class SDNController:
             # Attempt to slice the request due to a reach constraint
             return self.handle_lps()
 
-        raise NotImplementedError
+        return False, True

@@ -1,5 +1,5 @@
-Script Module Documentation
-===========================
+Simulator
+=========
 
 .. toctree::
 

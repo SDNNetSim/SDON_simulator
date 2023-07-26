@@ -9,6 +9,7 @@ import numpy as np
 from sim_scripts.request_generator import generate
 from sim_scripts.sdn_controller import SDNController
 from useful_functions.handle_dirs_files import create_dir
+from useful_functions.ai_functions import *  # pylint: disable=unused-wildcard-import
 
 
 class Engine(SDNController):
@@ -17,7 +18,8 @@ class Engine(SDNController):
     """
 
     def __init__(self, sim_data: dict = None, erlang: float = None, input_fp: str = None, net_name: str = None,
-                 sim_start: str = None, sim_type: str = 'arash', thread_num: int = 1, dynamic_lps: bool = None):
+                 sim_start: str = None, sim_type: str = 'arash', thread_num: int = 1, dynamic_lps: bool = None,
+                 is_training: bool = None):
         """
         Initializes the Engine class.
 
@@ -45,6 +47,9 @@ class Engine(SDNController):
         :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
                             request to multiple different bandwidths if set to true.
         :type dynamic_lps: bool
+
+        :param: is_training: Determines if we are training or testing ML/RL methods.
+        :type is_training: bool
         """
         self.sim_type = sim_type
         self.thread_num = thread_num
@@ -54,6 +59,7 @@ class Engine(SDNController):
         self.sim_start = sim_start
         self.net_name = net_name
         self.dynamic_lps = dynamic_lps
+        self.is_training = is_training
 
         # Holds statistical information for each iteration in a given simulation.
         self.stats_dict = {
@@ -61,7 +67,10 @@ class Engine(SDNController):
             'misc_stats': dict()
         }
         # The amount of times a type of bandwidth request was blocked
-        self.block_per_bw = dict()
+        tmp_obj = dict()
+        for bandwidth in self.sim_data['mod_per_bw']:
+            tmp_obj[bandwidth] = 0
+        self.block_per_bw = tmp_obj
         # The number of requests that have been blocked in a simulation.
         self.num_blocked_reqs = 0
         # The network spectrum database
@@ -95,15 +104,23 @@ class Engine(SDNController):
         self.cong_block_arr = np.array([])
         # A dictionary holding "snapshots" of each request. Info related to how many spectral slots are occupied,
         # active requests, and how many times this particular request was sliced
-        self.request_snapshots = dict()
+        self.request_snapshots = {}
         # Holds the request numbers of all the requests currently active in the network
         self.active_requests = set()
+
+        # For the purposes of saving relevant simulation information to a certain pathway
+        self.sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
+        # Contains all methods related to artificial intelligence
+        self.ai_obj = AIMethods(algorithm=self.sim_data['ai_algorithm'],
+                                is_training=self.sim_data['is_training'],
+                                max_segments=self.sim_data['max_segments'], sim_info=self.sim_info)
 
         # Initialize the constructor of the SDNController class
         super().__init__(alloc_method=self.sim_data['alloc_method'],
                          mod_per_bw=self.sim_data['mod_per_bw'], max_segments=self.sim_data['max_segments'],
                          cores_per_link=self.sim_data['cores_per_link'], guard_slots=self.sim_data['guard_slots'],
-                         sim_type=self.sim_type, dynamic_lps=self.dynamic_lps)
+                         sim_type=self.sim_type, dynamic_lps=self.dynamic_lps, ai_obj=self.ai_obj,
+                         ai_algorithm=sim_data['ai_algorithm'])
 
     def get_total_occupied_slots(self):
         """
@@ -129,13 +146,36 @@ class Engine(SDNController):
         total_guard_slots = int(guard_slots / 2)
         return total_occ_slots, total_guard_slots
 
+    def get_path_free_slots(self, path: list):
+        """
+        Returns the number of available spectral slots in the given path.
+
+        :param path: The path to find available spectral slots.
+        :type path: list
+
+        :return: The total number of free spectral slots in the path.
+        :rtype: int
+        """
+        self.active_requests = set()
+        free_slots = 0
+
+        for src, dest in zip(path, path[1:]):
+            src_dest = (src, dest)
+            for core in self.net_spec_db[src_dest]['cores_matrix']:
+                free_slots += len(np.where(core == 0)[0])
+
+        return free_slots
+
     def save_sim_results(self):
         """
         Saves the simulation results to a file like #_erlang.json.
 
         :return: None
         """
-        # TODO: Calculate average number of slicing, slots, and blocking for multiple iterations (no support as of now)
+        for _, obj in self.request_snapshots.items():
+            for key, lst in obj.items():
+                obj[key] = np.mean(lst)
+
         self.stats_dict['misc_stats'] = {
             'blocking_mean': self.blocking_mean,
             'blocking_variance': self.blocking_variance,
@@ -149,16 +189,20 @@ class Engine(SDNController):
             'trans_mean': np.mean(self.trans_arr),
             'dist_percent': np.mean(self.dist_block_arr) * 100.0,
             'cong_percent': np.mean(self.cong_block_arr) * 100.0,
-            'block_per_bw': self.block_per_bw,
+            'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
             'alloc_method': self.sim_data['alloc_method'],
             'dynamic_lps': self.dynamic_lps,
             'request_snapshots': self.request_snapshots,
+            'is_training': self.is_training
         }
 
-        base_fp = f"data/output/{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
+        base_fp = "data/output/"
+
+        self.ai_obj.save()
+
         # Save threads to child directories
         if self.thread_num is not None:
-            base_fp += f"/t{self.thread_num}"
+            base_fp += f"/{self.sim_info}/t{self.thread_num}"
         create_dir(base_fp)
 
         with open(f"{base_fp}/{self.erlang}_erlang.json", 'w', encoding='utf-8') as file_path:
@@ -213,13 +257,16 @@ class Engine(SDNController):
 
         self.stats_dict['block_per_sim'][iteration] = block_percentage
 
-    def handle_arrival(self, curr_time):
+    def handle_arrival(self, curr_time, iteration):
         """
         Updates the SDN controller to handle an arrival request. Also retrieves and calculates relevant request
         statistics.
 
         :param curr_time: The arrival time of the request
         :type curr_time: float
+
+        :param iteration: The current iteration of the simulation.
+        :type iteration: int
 
         :return: The number of transponders used for the request
         """
@@ -232,13 +279,13 @@ class Engine(SDNController):
 
         resp = self.handle_event(request_type='arrival')
 
+        free_slots = self.get_path_free_slots(path=resp[-1])
+        self.ai_obj.update(routed=resp[0], path=[resp[-1]], free_slots=free_slots, iteration=iteration)
+
         # Request was blocked
         if not resp[0]:
             self.num_blocked_reqs += 1
-            # Add original transponder used to the request
-            # TODO: Should we be calculating transponders on requests that were never allocated?
-            self.num_trans += 1
-
+            # No transponders used
             # Determine if blocking was due to distance or congestion
             if resp[1]:
                 self.num_dist_block += 1
@@ -379,7 +426,7 @@ class Engine(SDNController):
 
         :return: None
         """
-        self.trans_arr = np.append(self.trans_arr, self.num_trans / self.sim_data['num_reqs'])
+        self.trans_arr = np.append(self.trans_arr, self.num_trans / (self.sim_data['num_reqs'] - self.num_blocked_reqs))
 
     def update_blocking_distribution(self):
         """
@@ -404,19 +451,16 @@ class Engine(SDNController):
         :param num_transponders: The number of transponders the request used
         :type num_transponders: int
         """
-        self.request_snapshots[request_number] = {'occ_slots': 0, 'guard_bands': 0, 'blocking_prob': 0,
-                                                  'num_segments': 0, 'active_requests': 0}
-
         occupied_slots, guard_bands = self.get_total_occupied_slots()
 
-        self.request_snapshots[request_number]['occ_slots'] = occupied_slots
-        self.request_snapshots[request_number]['guard_bands'] = guard_bands
-        self.request_snapshots[request_number]['active_requests'] = len(self.active_requests)
+        self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
+        self.request_snapshots[request_number]['guard_bands'].append(guard_bands)
+        self.request_snapshots[request_number]['active_requests'].append(len(self.active_requests))
 
         blocking_prob = self.num_blocked_reqs / request_number
-        self.request_snapshots[request_number]["blocking_prob"] = blocking_prob
+        self.request_snapshots[request_number]["blocking_prob"].append(blocking_prob)
 
-        self.request_snapshots[request_number]['num_segments'] = num_transponders
+        self.request_snapshots[request_number]['num_segments'].append(num_transponders)
 
     def init_iter_vars(self):
         """
@@ -425,15 +469,19 @@ class Engine(SDNController):
         :return: None
         """
         # Initialize variables for this iteration of the simulation
-        tmp_obj = dict()
-        for bandwidth in self.sim_data['mod_per_bw']:
-            tmp_obj[bandwidth] = 0
-        self.block_per_bw = tmp_obj
         self.num_dist_block = 0
         self.num_cong_block = 0
         self.num_trans = 0
         self.num_blocked_reqs = 0
         self.reqs_status = dict()
+        for request_number in range(1, self.sim_data['num_reqs'] + 1):
+            self.request_snapshots[request_number] = {
+                'occ_slots': [],
+                'guard_bands': [],
+                'blocking_prob': [],
+                'num_segments': [],
+                'active_requests': []
+            }
 
     def run(self):
         """
@@ -445,11 +493,19 @@ class Engine(SDNController):
             self.load_input()
 
         for iteration in range(self.sim_data["max_iters"]):
+            self.init_iter_vars()
+            self.create_topology()
+            self.ai_obj.topology = self.topology
+            self.ai_obj.seed = iteration
+
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
 
-            self.init_iter_vars()
-            self.create_topology()
+                # TODO: Allow us to tune hyperparameters
+                if self.sim_data['train_file'] is None:
+                    self.ai_obj.setup(erlang=self.erlang, trained_table=self.sim_info)
+                else:
+                    self.ai_obj.setup(erlang=self.erlang, trained_table=self.sim_data['train_file'])
 
             seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
             self.generate_requests(seed)
@@ -458,7 +514,7 @@ class Engine(SDNController):
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
-                    num_transponders = self.handle_arrival(curr_time)
+                    num_transponders = self.handle_arrival(curr_time, iteration)
                     self.update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1
@@ -470,10 +526,13 @@ class Engine(SDNController):
             self.calculate_block_percent(iteration)
             self.update_blocking_distribution()
             self.update_transponders()
-            if self.check_confidence_interval(iteration):
-                return
 
-            if (iteration + 1) % 10 == 0 or iteration == 0:
+            # Some form of ML/RL is being used, ignore confidence intervals for training
+            if not self.sim_data['is_training']:
+                if self.check_confidence_interval(iteration):
+                    return
+
+            if (iteration + 1) % 20 == 0 or iteration == 0:
                 self.print_iter_stats(iteration)
 
             self.save_sim_results()

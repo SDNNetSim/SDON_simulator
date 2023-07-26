@@ -163,7 +163,8 @@ disable=raw-checker-failed,
         use-list-literal,
         too-many-locals,
         too-many-branches,
-        redefined-outer-name
+        redefined-outer-name,
+        wildcard-import
 
 
 # Enable the message, report, category or checker with the given id(s). You can

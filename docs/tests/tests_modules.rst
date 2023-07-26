@@ -1,5 +1,5 @@
-Test Module Documentation
-=========================
+Tests
+=====
 
 .. toctree::
 
