@@ -317,8 +317,8 @@ def run(threads):
 
 if __name__ == '__main__':
     threads_obj = []
-    for is_training in [False]:
-        for max_iters in [10]:
+    for is_training in [True]:
+        for max_iters in [5]:
             for dynamic_flag in [False]:
                 for max_segments in [1]:
                     for cores_per_link in [1]:
@@ -330,7 +330,7 @@ if __name__ == '__main__':
                             'dynamic_lps': dynamic_flag,
                             'ai_algorithm': 'q_learning',
                             'is_training': is_training,
-                            'train_file': 'USNet/0724/13:38:54',
+                            'train_file': None,
                             'max_iters': max_iters
                         }
                         threads_obj.append(thread)
