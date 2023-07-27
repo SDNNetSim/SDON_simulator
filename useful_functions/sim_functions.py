@@ -11,6 +11,7 @@ def get_path_mod(mod_formats: dict, path_len: int):
 
     :param mod_formats: The modulation object, holds needed information for maximum reach
     :type mod_formats: dict
+
     :param path_len: The length of the path to be taken
     :type path_len: int
 
@@ -45,12 +46,13 @@ def sort_dict_keys(dictionary: dict):
     return sorted_dict
 
 
-def find_path_len(path: List[int], topology: nx.Graph):
+def find_path_len(path: List[str], topology: nx.Graph):
     """
     Finds the length of a path in a physical topology.
 
     :param path: A list of integers representing the nodes in the path.
-    :type path: list of int
+    :type path: list of str
+
     :param topology: A networkx graph object representing the physical topology of the simulation.
     :type topology: networkx.Graph
 

@@ -329,8 +329,9 @@ class SDNController:
                 path_mod = 'QPSK'
         else:
             # Used for routing related to artificial intelligence
-            selected_path, path_mod = self.ai_obj.route(source=self.source, destination=self.destination,
-                                                        mod_formats=self.mod_per_bw[self.chosen_bw])
+            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination))
+            path_len = find_path_len(path=selected_path, topology=self.topology)
+            path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
 
         if selected_path is not False:
             self.path = selected_path
