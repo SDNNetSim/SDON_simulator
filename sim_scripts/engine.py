@@ -113,7 +113,8 @@ class Engine(SDNController):
         # Contains all methods related to artificial intelligence
         self.ai_obj = AIMethods(algorithm=self.sim_data['ai_algorithm'],
                                 is_training=self.sim_data['is_training'],
-                                max_segments=self.sim_data['max_segments'], sim_info=self.sim_info)
+                                max_segments=self.sim_data['max_segments'],
+                                cores_per_link=self.sim_data['cores_per_link'], sim_info=self.sim_info)
 
         # Initialize the constructor of the SDNController class
         super().__init__(alloc_method=self.sim_data['alloc_method'],
@@ -280,7 +281,8 @@ class Engine(SDNController):
         resp = self.handle_event(request_type='arrival')
 
         free_slots = self.get_path_free_slots(path=resp[-1])
-        self.ai_obj.update(routed=resp[0], path=[resp[-1]], free_slots=free_slots, iteration=iteration)
+        self.ai_obj.update(routed=resp[0], path=resp[-1], free_slots=free_slots, iteration=iteration,
+                           num_segments=resp[2])
 
         # Request was blocked
         if not resp[0]:
