@@ -39,7 +39,7 @@ class PlotStats:
         self.colors = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
         self.markers = ['o', '^', 's', 'x']
-        self.x_ticks = [10, 100, 200, 300, 400, 500, 600, 700]
+        self.x_ticks = [10, 100, 200, 300, 400]
 
         self.get_data()
 
@@ -236,7 +236,7 @@ class PlotStats:
         if grid:
             plt.grid()
 
-    def _plot_sub_plots(self, plot_info, x_ticks, x_lim, x_label, y_ticks, y_lim, y_label, legend, filename):
+    def _plot_sub_plots(self, plot_info, title, x_ticks, x_lim, x_label, y_ticks, y_lim, y_label, legend, filename):
         """
         Plot four by four Matplotlib subplots.
         """
@@ -248,7 +248,6 @@ class PlotStats:
         for idx, (_, obj) in enumerate(self.plot_dict.items()):
             for (x_key, y_key, sub_key, colors) in plot_info:
                 curr_ax = axes[index_list[idx][0], index_list[idx][1]]
-                curr_ax.grid()
                 curr_ax.set_yticks(y_ticks)
 
                 if sub_key is None:
@@ -261,13 +260,15 @@ class PlotStats:
                 curr_ax.set_xticks(x_ticks)
 
                 if idx == 0:
-                    curr_ax.set_title(f"{self.net_name} LS = {obj['max_segments']}")
+                    curr_ax.set_title(f"{title} LS = {obj['max_segments']}")
                     curr_ax.legend(legend)
                     curr_ax.set_ylabel(y_label)
                     curr_ax.set_xlabel(x_label)
                 else:
                     curr_ax.set_title(f"LS = {obj['max_segments']}")
 
+        for plot_coords in index_list:
+            axes[plot_coords[0], plot_coords[1]].grid()
         self._save_plot(file_name=filename)
 
     def plot_blocking(self):
@@ -332,7 +333,7 @@ class PlotStats:
         """
         self._setup_plot(f'{self.net_name} Transponders vs. Erlang (C={self.num_cores})', 'Transponders', 'Erlang',
                          y_ticks=False)
-        plt.ylim(0.9, 1.6)
+        plt.ylim(0.9, 2.5)
 
         legend_list = list()
         style_count = 0
@@ -405,7 +406,7 @@ class PlotStats:
         bins = [1, 2, 3, 4, 5, 6, 7, 8]
         plt.hist(hist_list, stacked=False, histtype='bar', edgecolor='black', rwidth=1, color=erlang_colors, bins=bins)
 
-        plt.ylim(0, 10000)
+        plt.ylim(0, 1000)
         plt.xlim(0, 8)
         plt.legend(legend_list, loc='upper right')
         self._save_plot(file_name='num_segments')
@@ -460,7 +461,7 @@ class PlotStats:
             color = self.colors[style_count]
             for erlang in thread_obj['guard_bands']:
                 lst = list(thread_obj['guard_bands'][erlang].values())
-                request_numbers, guard_bands = self.running_average(lst=lst, interval=500)
+                request_numbers, guard_bands = self.running_average(lst=lst, interval=50)
 
                 marker = self.markers[marker_count]
                 plt.plot(request_numbers, guard_bands, color=color, marker=marker, markersize=2.3)
@@ -472,8 +473,8 @@ class PlotStats:
             style_count += 1
 
         plt.legend(legend_list, loc='upper left')
-        plt.xlim(1000, 10000)
-        plt.ylim(0, 1200)
+        plt.xlim(50, 1000)
+        plt.ylim(0, 800)
         self._save_plot(file_name='guard_bands')
         plt.show()
 
@@ -490,16 +491,16 @@ class PlotStats:
 
         self._plot_sub_plots(plot_info=plot_info, x_ticks=self.x_ticks, x_lim=[self.x_ticks[0], self.x_ticks[-1]],
                              x_label='Erlang', y_ticks=[20, 40, 60, 80, 100], y_lim=[-1, 101], y_label='Percent',
-                             legend=['Cong.', 'Dist.'], filename='percents')
+                             legend=['Cong.', 'Dist.'], filename='percents', title=f"Block Percent {self.net_name}")
         plt.show()
 
     def plot_bandwidths(self):
         """
         Plot the blocking percentages broken down by bandwidth.
         """
-        band_colors_one = {0: '#0077FF'}
-        band_colors_two = {0: '#00FF00'}
-        band_colors_three = {0: '#FF0000'}
+        band_colors_one = {0: '#005DCC'}
+        band_colors_two = {0: '#00CC00'}
+        band_colors_three = {0: '#CC0000'}
         plot_info = [
             ('erlang_vals', 'block_per_bw', '50', band_colors_one),
             ('erlang_vals', 'block_per_bw', '100', band_colors_two),
@@ -508,7 +509,7 @@ class PlotStats:
 
         self._plot_sub_plots(plot_info=plot_info, x_ticks=self.x_ticks, x_lim=[self.x_ticks[0], self.x_ticks[-1]],
                              x_label='Erlang', y_ticks=[20, 40, 60, 80, 100], y_lim=[-1, 101], y_label='Percent',
-                             legend=['50', '100', '400'], filename='bandwidths')
+                             legend=['50', '100', '400'], filename='bandwidths', title=f'Band Block {self.net_name}')
         plt.show()
 
 
@@ -516,16 +517,16 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0720', latest_time='12:00:48',
+    plot_obj = PlotStats(net_name='USNet', latest_date='0726', latest_time='15:08:49',
                          plot_threads=['t1', 't2', 't3', 't4'])
-    plot_obj.plot_blocking()
+    # plot_obj.plot_blocking()
     # plot_obj.plot_blocking_per_request()
     # plot_obj.plot_transponders()
     # plot_obj.plot_slots_taken()
     # plot_obj.plot_active_requests()
     # plot_obj.plot_guard_bands()
     # plot_obj.plot_num_segments()
-    # plot_obj.plot_dist_cong()
+    plot_obj.plot_dist_cong()
     # plot_obj.plot_bandwidths()
 
 
