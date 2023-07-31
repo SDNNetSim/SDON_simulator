@@ -356,6 +356,7 @@ class SDNController:
                 # Attempt to slice the request due to a congestion constraint
                 return self.handle_lps()
 
+            self.dist_block = True
             # Attempt to slice the request due to a reach constraint
             return self.handle_lps()
 
