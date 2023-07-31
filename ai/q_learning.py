@@ -16,8 +16,8 @@ class QLearning:
     Controls methods related to the Q-learning reinforcement learning algorithm.
     """
 
-    def __init__(self, is_training: bool = False, epsilon: float = 0.2, episodes: int = None, learn_rate: float = 0.5,
-                 discount: float = 0.2, topology: nx.Graph = None, k_paths: int = 10):
+    def __init__(self, is_training: bool = None, epsilon: float = 0.2, episodes: int = None, learn_rate: float = 0.9,
+                 discount: float = 0.9, topology: nx.Graph = None, k_paths: int = 1):
         """
         Initializes the QLearning class.
 
@@ -177,13 +177,16 @@ class QLearning:
         # TODO: LS = 1 we want the shortest path possible...something to consider
         reward = 0
         if routed:
-            # TODO: Hard coded (number of slots per link is 128) for now
-            cong_percent = ((128.0 * float(len(path))) / float(free_slots)) * 100.0
+            if free_slots == 0:
+                cong_percent = 100.0
+            else:
+                # TODO: Hard coded (number of slots per link is 128) for now
+                cong_percent = ((128.0 * float(len(path))) / float(free_slots)) * 100.0
             cong_quality = 100.0 - cong_percent
             seg_quality = 100 / num_segments
             reward += ((cong_quality + seg_quality) / 200) * 100
         else:
-            reward -= 100.0
+            reward -= 1800.0
 
         max_future_q = max([lst[1] for lst in self.q_table[source][destination]])
         current_q = self.q_table[source][destination][self.last_chosen][1]
