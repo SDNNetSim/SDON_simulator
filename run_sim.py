@@ -20,7 +20,7 @@ class NetworkSimulator:
 
     def __init__(self, sim_data: dict = None, seeds: List[int] = None, mod_per_bw: dict = None,
                  req_dist: List[dict] = None, sim_fp: str = None, sim_start: str = None, net_name: str = 'USNet',
-                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 500, max_iters: int = 10,
+                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 1000, max_iters: int = 10,
                  spectral_slots: int = 256, cores_per_link: int = 1, bw_per_slot: float = 12.5, max_segments: int = 1,
                  sim_type: str = 'arash', const_weight: bool = True, guard_slots: int = 1,
                  alloc_method: str = 'first-fit', dynamic_lps: bool = False, thread_num: int = 1):
@@ -123,6 +123,10 @@ class NetworkSimulator:
         self.is_training = None
         self.train_file = None
 
+        # Used for NLI routing
+        self.alpha = None
+        self.beta = None
+
     def save_input(self, file_name: str = None, data: Dict = None):
         """
         Saves simulation input data. Does not save bandwidth data, as that is intended to be a constant and unchanged
@@ -185,10 +189,12 @@ class NetworkSimulator:
             'ai_algorithm': self.ai_algorithm,
             'is_training': self.is_training,
             'train_file': self.train_file,
+            'alpha': self.alpha,
+            'beta': self.beta
         }
 
     def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps, ai_algorithm,
-                is_training, train_file, max_iters):
+                is_training, train_file, max_iters, alpha, beta):
         """
         Runs a Yue-based simulation with the specified parameters. Reference: Wang, Yue. Dynamic Traffic Scheduling
         Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
@@ -223,6 +229,12 @@ class NetworkSimulator:
         :param max_iters: Determines the maximum number of iterations.
         :type max_iters: int
 
+        :param alpha: Used for NLI routing calculation to consider importance of length.
+        :type alpha: float
+
+        :param beta: Used for NLI routing calculation to consider importance of NLI impairment.
+        :type beta: float
+
         :return: None
         """
         self.hold_time_mean = 0.2
@@ -243,6 +255,9 @@ class NetworkSimulator:
         self.is_training = is_training
         self.train_file = train_file
         self.thread_num = thread_num
+
+        self.alpha = alpha
+        self.beta = beta
 
         for arr_rate_mean in range(2, 143, 2):
             erlang = float(arr_rate_mean) / self.hold_time_mean
@@ -307,7 +322,8 @@ def run(threads):
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
                                      thread_params['req_dist'], thread_params['dynamic_lps'],
                                      thread_params['ai_algorithm'], thread_params['is_training'],
-                                     thread_params['train_file'], thread_params['max_iters'], )
+                                     thread_params['train_file'], thread_params['max_iters'], thread_params['alpha'],
+                                     thread_params['beta'])
 
             futures.append(future)
 
@@ -317,22 +333,26 @@ def run(threads):
 
 if __name__ == '__main__':
     threads_obj = []
-    for is_training in [True]:
-        for max_iters in [5]:
-            for dynamic_flag in [False]:
-                for max_segments in [1]:
-                    for cores_per_link in [1]:
-                        thread = {
-                            'max_segments': max_segments,
-                            'cores_per_link': cores_per_link,
-                            'alloc_method': 'first-fit',
-                            'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
-                            'dynamic_lps': dynamic_flag,
-                            'ai_algorithm': 'q_learning',
-                            'is_training': is_training,
-                            'train_file': None,
-                            'max_iters': max_iters
-                        }
-                        threads_obj.append(thread)
+    # TODO: A better way to split alpha and beta, if we want to use or not use them
+    for alpha, beta in [(0.5, 0.5)]:
+        for is_training in [True]:
+            for max_iters in [5]:
+                for dynamic_flag in [False]:
+                    for max_segments in [1]:
+                        for cores_per_link in [1]:
+                            thread = {
+                                'max_segments': max_segments,
+                                'cores_per_link': cores_per_link,
+                                'alloc_method': 'first-fit',
+                                'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
+                                'dynamic_lps': dynamic_flag,
+                                'ai_algorithm': None,
+                                'is_training': is_training,
+                                'train_file': None,
+                                'max_iters': max_iters,
+                                'alpha': alpha,
+                                'beta': beta
+                            }
+                            threads_obj.append(thread)
 
     run(threads_obj)
