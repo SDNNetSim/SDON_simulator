@@ -363,7 +363,7 @@ class Engine(SDNController):
             self.net_spec_db[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
 
             # Add links to physical topology
-            self.topology.add_edge(source, dest, length=link_data['length'])
+            self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
 
     def create_cores_matrix(self, num_cores):
         """
@@ -503,8 +503,10 @@ class Engine(SDNController):
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
 
-                # TODO: Allow us to tune hyperparameters
-                if self.sim_data['train_file'] is None:
+                # We are running a normal simulation, no AI object needed
+                if self.sim_data['ai_algorithm'] is None:
+                    pass
+                elif self.sim_data['train_file'] is None:
                     self.ai_obj.setup(erlang=self.erlang, trained_table=self.sim_info)
                 else:
                     self.ai_obj.setup(erlang=self.erlang, trained_table=self.sim_data['train_file'])
