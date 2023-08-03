@@ -74,5 +74,10 @@ def create_bw_info(sim_type: str = None):
             '100': {'QPSK': {'slots_needed': 3}},
             '400': {'QPSK': {'slots_needed': 10}},
         })
+    elif sim_type == 'arash_new':
+        bw_info.update({
+            '100': {'QPSK': {'slots_needed': 3}, '8-QAM': {'slots_needed': 2}, '16-QAM': {'slots_needed': 2}, '64-QAM': {'slots_needed': 1} },
+            '400': {'QPSK': {'slots_needed': 10}, '8-QAM': {'slots_needed': 7}, '16-QAM': {'slots_needed': 5}, '64-QAM': {'slots_needed': 4}},
+        })
 
     return bw_info
