@@ -59,12 +59,8 @@ class Routing:
         self.span_len = 100
         self.mci = 0
         self.mci_w = 6.3349755556585961e-027
-        # Alpha and beta used to calculate the final link cost considering length vs. NLI
-        # TODO: Adding these to saved results is a good idea
-        self.alpha = None
-        self.beta = None
-        # TODO: Add this
-        self.max_link = None
+        # TODO: Update for efficiency
+        self.max_link = max(nx.get_edge_attributes(topology, 'length').values(), default=0.0)
 
     def find_least_cong_path(self):
         """
@@ -167,7 +163,7 @@ class Routing:
         for channel in taken_channels:
             # The current center frequency for the occupied channel
             curr_freq = (channel[0] * self.freq_spacing) + ((self.slots_needed * self.freq_spacing) / 2)
-            bandwidth = channel[0] * self.freq_spacing
+            bandwidth = self.slots_needed * self.freq_spacing
             # Power spectral density
             power_spec_dens = self.input_power / bandwidth
 
@@ -183,8 +179,7 @@ class Routing:
         # Update MCI for available channel
         for channel in free_channels:
             # Calculate the center frequency for the open channel
-            # TODO: Update to not be a constant of 3
-            center_freq = (channel[0] * self.freq_spacing) + ((3 * self.freq_spacing) / 2)
+            center_freq = (channel[0] * self.freq_spacing) + ((self.slots_needed * self.freq_spacing) / 2)
             nli_cost += self._find_channel_mci(num_spans=num_spans, taken_channels=taken_channels,
                                                center_freq=center_freq)
 
@@ -192,6 +187,7 @@ class Routing:
             return 1000
 
         link_cost = nli_cost / len(free_channels)
+
         return link_cost
 
     def _find_channels(self, link, check_free):
@@ -207,8 +203,7 @@ class Routing:
                 curr_channel.append(idx)
             elif idx == indexes[i - 1] + 1:
                 curr_channel.append(idx)
-                # TODO: Update to not be a constant value of 3
-                if len(curr_channel) == 3:
+                if len(curr_channel) == self.slots_needed:
                     channels.append(curr_channel)
                     curr_channel = []
             else:
@@ -222,7 +217,8 @@ class Routing:
 
     # TODO: Only support for single core
     # TODO: Maximum number of allowed nodes
-    def nli_aware(self):
+    def nli_aware(self, slots_needed=None, alpha=None, beta=None):
+        self.slots_needed = slots_needed
         span_len = 100.0
 
         for link in self.net_spec_db:
@@ -235,8 +231,8 @@ class Routing:
             nli_cost = self._find_link_cost(num_spans=num_spans, free_channels=free_channels,
                                             taken_channels=taken_channels)
             # Tradeoff between link length and the non-linear impairment cost
-            link_cost = (self.alpha * (self.topology[source][destination]['length'] / self.max_link)) + \
-                        (self.beta * nli_cost)
+            link_cost = (alpha * (self.topology[source][destination]['length'] / self.max_link)) + \
+                        (beta * nli_cost)
 
             self.topology[source][destination]['nli_cost'] = link_cost
 
