@@ -1,4 +1,5 @@
 # Standard library imports
+import math
 from typing import List
 
 # Third-party library imports
@@ -52,6 +53,18 @@ class Routing:
         self.path = []
         # A list of potential paths
         self.paths_list = []
+        # Constants related to non-linear impairment calculations
+        self.input_power = 1e-3
+        self.freq_spacing = 12.5e9
+        self.span_len = 100
+        self.mci = 0
+        self.mci_w = 6.3349755556585961e-027
+        # Alpha and beta used to calculate the final link cost considering length vs. NLI
+        # TODO: Adding these to saved results is a good idea
+        self.alpha = None
+        self.beta = None
+        # TODO: Add this
+        self.max_link = None
 
     def find_least_cong_path(self):
         """
@@ -129,19 +142,104 @@ class Routing:
         # If no valid path was found, return a tuple indicating failure
         return False, False, False
 
-    def shortest_path(self):
+    def shortest_path(self, weight='length'):
         """
         Given a graph with a desired source and destination, find the shortest path with respect to link lengths.
+
+        :param weight: What to consider as a weight for the shortest path, either NLI cost or link length.
+        :type weight: str
 
         :return: A tuple containing the shortest path and its modulation format
         :rtype: tuple
         """
         # This networkx function will always return the shortest paths in order
         paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
-                                             weight='length')
+                                             weight=weight)
 
         for path in paths_obj:
             path_len = find_path_len(path, self.topology)
             mod_format = get_path_mod(self.mod_formats, path_len)
 
             return path, mod_format
+
+    def _find_channel_mci(self, num_spans, center_freq, taken_channels):
+        mci = 0
+        for channel in taken_channels:
+            # The current center frequency for the occupied channel
+            curr_freq = (channel[0] * self.freq_spacing) + ((self.slots_needed * self.freq_spacing) / 2)
+            bandwidth = channel[0] * self.freq_spacing
+            # Power spectral density
+            power_spec_dens = self.input_power / bandwidth
+
+            mci += (power_spec_dens ** 2) * math.log(abs((abs(center_freq - curr_freq) + (bandwidth / 2)) / (
+                    abs(center_freq - curr_freq) - (bandwidth / 2))))
+
+        return (mci / self.mci_w) / num_spans
+
+    def _find_link_cost(self, num_spans, free_channels, taken_channels):
+        # Non-linear impairment cost calculation
+        nli_cost = 0
+
+        # Update MCI for available channel
+        for channel in free_channels:
+            # Calculate the center frequency for the open channel
+            # TODO: Update to not be a constant of 3
+            center_freq = (channel[0] * self.freq_spacing) + ((3 * self.freq_spacing) / 2)
+            nli_cost += self._find_channel_mci(num_spans=num_spans, taken_channels=taken_channels,
+                                               center_freq=center_freq)
+
+        if len(free_channels) == 0:
+            return 1000
+
+        link_cost = nli_cost / len(free_channels)
+        return link_cost
+
+    def _find_channels(self, link, check_free):
+        if check_free:
+            indexes = np.where(self.net_spec_db[link]['cores_matrix'][0] == 0)[0]
+        else:
+            indexes = np.where(self.net_spec_db[link]['cores_matrix'][0] != 0)[0]
+
+        channels = []
+        curr_channel = []
+        for i, idx in enumerate(indexes):
+            if i == 0:
+                curr_channel.append(idx)
+            elif idx == indexes[i - 1] + 1:
+                curr_channel.append(idx)
+                # TODO: Update to not be a constant value of 3
+                if len(curr_channel) == 3:
+                    channels.append(curr_channel)
+                    curr_channel = []
+            else:
+                curr_channel = []
+
+        # Check if the last group forms a subarray
+        if len(curr_channel) == 3:
+            channels.append(curr_channel)
+
+        return channels
+
+    # TODO: Only support for single core
+    # TODO: Maximum number of allowed nodes
+    def nli_aware(self):
+        span_len = 100.0
+
+        for link in self.net_spec_db:
+            source, destination = link[0], link[1]
+            num_spans = self.topology[source][destination]['length'] / span_len
+
+            free_channels = self._find_channels(link=link, check_free=True)
+            taken_channels = self._find_channels(link=link, check_free=False)
+
+            nli_cost = self._find_link_cost(num_spans=num_spans, free_channels=free_channels,
+                                            taken_channels=taken_channels)
+            # Tradeoff between link length and the non-linear impairment cost
+            link_cost = (self.alpha * (self.topology[source][destination]['length'] / self.max_link)) + \
+                        (self.beta * nli_cost)
+
+            self.topology[source][destination]['nli_cost'] = link_cost
+
+        # TODO: How do you assign a modulation format if lengths are non-linear impairments?
+        #   - Assuming a static modulation format, not sure about bit-rate generations
+        return self.shortest_path(weight='nli_cost')
