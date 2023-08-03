@@ -111,6 +111,7 @@ class Engine(SDNController):
         # For the purposes of saving relevant simulation information to a certain pathway
         self.sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
         # Contains all methods related to artificial intelligence
+        # TODO: Pass self.sim_data and setup in the constructors
         self.ai_obj = AIMethods(algorithm=self.sim_data['ai_algorithm'],
                                 is_training=self.sim_data['is_training'],
                                 max_segments=self.sim_data['max_segments'],
@@ -121,7 +122,7 @@ class Engine(SDNController):
                          mod_per_bw=self.sim_data['mod_per_bw'], max_segments=self.sim_data['max_segments'],
                          cores_per_link=self.sim_data['cores_per_link'], guard_slots=self.sim_data['guard_slots'],
                          sim_type=self.sim_type, dynamic_lps=self.dynamic_lps, ai_obj=self.ai_obj,
-                         ai_algorithm=sim_data['ai_algorithm'])
+                         ai_algorithm=sim_data['ai_algorithm'], alpha=sim_data['alpha'], beta=sim_data['beta'])
 
     def get_total_occupied_slots(self):
         """
@@ -193,8 +194,10 @@ class Engine(SDNController):
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
             'alloc_method': self.sim_data['alloc_method'],
             'dynamic_lps': self.dynamic_lps,
+            'is_training': self.is_training,
+            'alpha': self.sim_data['alpha'],
+            'beta': self.sim_data['beta'],
             'request_snapshots': self.request_snapshots,
-            'is_training': self.is_training
         }
 
         base_fp = "data/output/"
