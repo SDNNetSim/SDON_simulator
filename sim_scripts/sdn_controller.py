@@ -19,7 +19,7 @@ class SDNController:
                  cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
                  source: int = None, destination: int = None, mod_per_bw: dict = None, chosen_bw: str = None,
                  max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None,
-                 ai_obj: object = None, ai_algorithm: str = None):
+                 ai_obj: object = None, ai_algorithm: str = None, alpha: float = None, beta: float = None):
         """
         Initializes the SDNController class.
 
@@ -71,6 +71,12 @@ class SDNController:
 
         :param ai_algorithm: The current AI algorithm being used.
         :type ai_algorithm: str
+
+        :param alpha: Used for NLI routing calculation to consider importance of length.
+        :type alpha: float
+
+        :param beta: Used for NLI routing calculation to consider importance of NLI impairment.
+        :type beta: float
         """
         self.req_id = req_id
         self.net_spec_db = net_spec_db
@@ -82,6 +88,8 @@ class SDNController:
         self.dynamic_lps = dynamic_lps
         self.ai_obj = ai_obj
         self.ai_algorithm = ai_algorithm
+        self.alpha = alpha
+        self.beta = beta
 
         self.source = source
         self.destination = destination
@@ -299,6 +307,27 @@ class SDNController:
 
         return False, self.dist_block, self.path
 
+    def _route(self):
+        # TODO: Update and make more efficient (route selection by parameter)
+        # Default routing object
+        if self.ai_algorithm is None:
+            routing_obj = Routing(source=self.source, destination=self.destination,
+                                  topology=self.topology, net_spec_db=self.net_spec_db,
+                                  mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
+            if self.sim_type == 'yue':
+                # TODO: Slots needed?
+                selected_path, path_mod = routing_obj.nli_aware(slots_needed=3, alpha=self.alpha, beta=self.beta)
+            else:
+                selected_path = routing_obj.least_congested_path()
+                path_mod = 'QPSK'
+        else:
+            # Used for routing related to artificial intelligence
+            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination))
+            path_len = find_path_len(path=selected_path, topology=self.topology)
+            path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
+
+        return selected_path, path_mod
+
     def handle_event(self, request_type):
         """
         Handles any event that occurs in the simulation. This is the main method in this class. Returns False if a
@@ -317,21 +346,7 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        # Default routing object
-        if self.ai_algorithm is None:
-            routing_obj = Routing(source=self.source, destination=self.destination,
-                                  topology=self.topology, net_spec_db=self.net_spec_db,
-                                  mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
-            if self.sim_type == 'yue':
-                selected_path, path_mod = routing_obj.shortest_path()
-            else:
-                selected_path = routing_obj.least_congested_path()
-                path_mod = 'QPSK'
-        else:
-            # Used for routing related to artificial intelligence
-            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination))
-            path_len = find_path_len(path=selected_path, topology=self.topology)
-            path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
+        selected_path, path_mod = self._route()
 
         if selected_path is not False:
             self.path = selected_path
