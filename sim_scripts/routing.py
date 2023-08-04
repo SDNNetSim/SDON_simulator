@@ -162,6 +162,7 @@ class Routing:
         mci = 0
         for channel in taken_channels:
             # The current center frequency for the occupied channel
+            # TODO: DEBUG: in the following lines instead of self.slots_needed  we need number of slots of the taken channel!!!!!
             curr_freq = (channel[0] * self.freq_spacing) + ((self.slots_needed * self.freq_spacing) / 2)
             bandwidth = self.slots_needed * self.freq_spacing
             # Power spectral density
@@ -170,7 +171,7 @@ class Routing:
             mci += (power_spec_dens ** 2) * math.log(abs((abs(center_freq - curr_freq) + (bandwidth / 2)) / (
                     abs(center_freq - curr_freq) - (bandwidth / 2))))
 
-        return (mci / self.mci_w) / num_spans
+        return (mci / self.mci_w) * num_spans
 
     def _find_link_cost(self, num_spans, free_channels, taken_channels):
         # Non-linear impairment cost calculation
@@ -217,7 +218,7 @@ class Routing:
 
     # TODO: Only support for single core
     # TODO: Maximum number of allowed nodes
-    def nli_aware(self, slots_needed=None, alpha=None, beta=None):
+    def nli_aware(self, slots_needed=None, beta=None):
         self.slots_needed = slots_needed
         span_len = 100.0
 
@@ -231,10 +232,11 @@ class Routing:
             nli_cost = self._find_link_cost(num_spans=num_spans, free_channels=free_channels,
                                             taken_channels=taken_channels)
             # Tradeoff between link length and the non-linear impairment cost
-            link_cost = (alpha * (self.topology[source][destination]['length'] / self.max_link)) + \
-                        (beta * nli_cost)
+            link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
+                        ( (1 - beta) * nli_cost)
 
             self.topology[source][destination]['nli_cost'] = link_cost
+            self.topology[destination][source]['nli_cost'] = link_cost  # TODO: please check it and if it doesn't need this code remove it
 
         # TODO: How do you assign a modulation format if lengths are non-linear impairments?
         #   - Assuming a static modulation format, not sure about bit-rate generations
