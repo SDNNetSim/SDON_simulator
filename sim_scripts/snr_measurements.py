@@ -64,14 +64,14 @@ class SnrMeasurments:
             Mio = ( 3 * ( self.physical_topology['links'][link_id]['fiber']['non_linearity'] ** 2 ) ) / ( 2 * math.pi * self.physical_topology['links'][link_id]['fiber']['attenuation'] * np.abs( self.physical_topology['links'][link_id]['fiber']['dispersion'] ))
             SCI = (PSDi ** 2) * math.asinh( Rho * (BW ** 2 ) )
             for w in range(self.spectral_slots):
-                if self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w] not in [0,-1]: #!= 0 :
+                if self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w] > 0: #!= 0 :
                     if self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w] in visited_channel:
                         continue
                     else:
                         visited_channel.append(self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w])
-                        
-                    Fj = (( w * self.frequncy_spacing)+((self.requests_status[self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w]]['path'][2] * self.frequncy_spacing ) / 2 ) )* 10 ** 9
-                    BWj = (self.requests_status[self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w]]['path'][2] * self.frequncy_spacing ) * 10 **9
+                    BW_J = len(np.where(self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no][w] == self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.assigned_core_no])[0]) * self.frequncy_spacing    
+                    Fj = (( w * self.frequncy_spacing)+((BW_J ) / 2 ) )* 10 ** 9
+                    BWj = BW_J * 10 **9
                     PSDj = self.input_power / BWj
                     if Fi != Fj:
                         MCI = MCI + ((PSDj ** 2) * math.log( abs((abs(Fi-Fj)+(BWj/2))/(abs(Fi-Fj)-(BWj/2)))))
@@ -108,8 +108,14 @@ class SnrMeasurments:
                 P_XT2 = no_adjacent_core * XT_lambda * self.input_power * math.exp(-self.physical_topology['links'][link_id]['fiber']['attenuation'] * lng2) * lng2 * 10**3
                 P_XT2 = P_XT2 * self.no_assigned_slots
                 SNR = ( 1 / ( PSDi*BW / ( ( PSD_ASE*BW + PSD_NLI*BW ) * Num_span + P_XT2 ) ) )
-                SNR2 = 10*math.log10(1/SNR)
-                if SNR2 < self.SNR_requested:
+                SNR2 = 10*math.log10(1/SNR) 
+                if self.modulation_format == '64-QAM':
+                    snr_tr = 22#13.5
+                elif self.modulation_format == '16-QAM':
+                    snr_tr = 16 #9.5
+                elif self.modulation_format == 'QPSK':
+                    snr_tr = 7.5
+                if SNR2 < snr_tr:
                     print( "Maximum distance:  " , (i-1) * self.physical_topology['links'][link_id]['fiber']['span_length'] )
                     break
                 
