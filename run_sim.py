@@ -13,6 +13,9 @@ from sim_scripts.engine import Engine
 from useful_functions.handle_dirs_files import create_dir
 
 
+# TODO: Spectrum assignment and routing objects created each time is inefficient
+
+
 class NetworkSimulator:
     """
     Controls all simulations for this project.
@@ -331,9 +334,9 @@ def run(threads):
             future.result()
 
 
+# TODO: Move to a configuration file (after yue and arash methods work)
 if __name__ == '__main__':
     threads_obj = []
-    # TODO: A better way to split alpha and beta, if we want to use or not use them
     for alpha, beta in [(0.5, 0.5)]:
         for is_training in [True]:
             for max_iters in [5]:
@@ -344,7 +347,7 @@ if __name__ == '__main__':
                                 'max_segments': max_segments,
                                 'cores_per_link': cores_per_link,
                                 'alloc_method': 'first-fit',
-                                'req_dist': {'25': 0.0, '50': 0.3, '100': 0.5, '200': 0.0, '400': 0.2},
+                                'req_dist': {'25': 0.0, '50': 0.0, '100': 0.5, '200': 0.0, '400': 0.5},
                                 'dynamic_lps': dynamic_flag,
                                 'ai_algorithm': None,
                                 'is_training': is_training,
