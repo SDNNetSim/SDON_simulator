@@ -192,7 +192,7 @@ class Engine(SDNController):
             'cong_percent': np.mean(self.cong_block_arr) * 100.0,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
             'alloc_method': self.sim_data['alloc_method'],
-            'route_method': self.route_method['route_method'],
+            'route_method': self.sim_data['route_method'],
             'dynamic_lps': self.dynamic_lps,
             'is_training': self.is_training,
             'beta': self.sim_data['beta'],
