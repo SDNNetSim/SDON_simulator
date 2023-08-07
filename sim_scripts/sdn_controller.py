@@ -17,8 +17,8 @@ class SDNController:
 
     def __init__(self, req_id: int = None, net_spec_db: dict = None, topology: nx.Graph = None,
                  cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
-                 source: int = None, destination: int = None, mod_per_bw: dict = None, chosen_bw: str = None,
-                 max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None,
+                 route_method: str = None, source: int = None, destination: int = None, mod_per_bw: dict = None,
+                 chosen_bw: str = None, max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None,
                  ai_obj: object = None, ai_algorithm: str = None, alpha: float = None, beta: float = None):
         """
         Initializes the SDNController class.
@@ -43,6 +43,9 @@ class SDNController:
 
         :param alloc_method: The allocation policy for a request.
         :type alloc_method: str
+
+        :param route_method: The routing policy for a request.
+        :type route_method: str
 
         :param source: The source node of the request.
         :type source: int
@@ -85,6 +88,7 @@ class SDNController:
         self.path = path
         self.sim_type = sim_type
         self.alloc_method = alloc_method
+        self.route_method = route_method
         self.dynamic_lps = dynamic_lps
         self.ai_obj = ai_obj
         self.ai_algorithm = ai_algorithm
@@ -308,23 +312,34 @@ class SDNController:
         return False, self.dist_block, self.path
 
     def _route(self):
-        # TODO: Update and make more efficient (route selection by parameter)
-        # Default routing object
-        if self.ai_algorithm is None:
-            routing_obj = Routing(source=self.source, destination=self.destination,
-                                  topology=self.topology, net_spec_db=self.net_spec_db,
-                                  mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
-            if self.sim_type == 'yue':
-                # TODO: Slots needed?
-                selected_path, path_mod = routing_obj.nli_aware(slots_needed=3, alpha=self.alpha, beta=self.beta)
-            else:
-                selected_path = routing_obj.least_congested_path()
-                path_mod = 'QPSK'
-        else:
+        """
+        For a given request, attempt to route and assign a modulation format based on a routing method flag.
+
+        :return: A selected path and modulation format.
+        :rtype: tuple
+        """
+        routing_obj = Routing(source=self.source, destination=self.destination,
+                              topology=self.topology, net_spec_db=self.net_spec_db,
+                              mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
+
+        if self.route_method == 'nli_aware':
+            # TODO: Constant QPSK for now
+            slots_needed = self.mod_per_bw[self.chosen_bw]['QPSK']['slots_needed']
+            selected_path, path_mod = routing_obj.nli_aware(slots_needed=slots_needed, alpha=self.alpha,
+                                                            beta=self.beta)
+        elif self.route_method == 'least_congested':
+            selected_path = routing_obj.least_congested_path()
+            # TODO: Constant QPSK for now
+            path_mod = 'QPSK'
+        elif self.route_method == 'shortest_path':
+            selected_path, path_mod = routing_obj.shortest_path()
+        elif self.ai_algorithm is not None:
             # Used for routing related to artificial intelligence
             selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination))
             path_len = find_path_len(path=selected_path, topology=self.topology)
             path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
+        else:
+            raise NotImplementedError(f'Routing method not recognized, got: {self.route_method}.')
 
         return selected_path, path_mod
 
