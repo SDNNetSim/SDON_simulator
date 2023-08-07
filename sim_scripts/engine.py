@@ -111,7 +111,6 @@ class Engine(SDNController):
         # For the purposes of saving relevant simulation information to a certain pathway
         self.sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
         # Contains all methods related to artificial intelligence
-        # TODO: Pass self.sim_data and setup in the constructors
         self.ai_obj = AIMethods(algorithm=self.sim_data['ai_algorithm'],
                                 is_training=self.sim_data['is_training'],
                                 max_segments=self.sim_data['max_segments'],
