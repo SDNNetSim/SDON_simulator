@@ -19,7 +19,7 @@ class SDNController:
                  cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
                  route_method: str = None, source: int = None, destination: int = None, mod_per_bw: dict = None,
                  chosen_bw: str = None, max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None,
-                 ai_obj: object = None, ai_algorithm: str = None, alpha: float = None, beta: float = None):
+                 ai_obj: object = None, ai_algorithm: str = None, beta: float = None):
         """
         Initializes the SDNController class.
 
@@ -75,10 +75,7 @@ class SDNController:
         :param ai_algorithm: The current AI algorithm being used.
         :type ai_algorithm: str
 
-        :param alpha: Used for NLI routing calculation to consider importance of length.
-        :type alpha: float
-
-        :param beta: Used for NLI routing calculation to consider importance of NLI impairment.
+        :param beta: A tunable parameter used to consider how much the NLI cost vs. link length will be considered.
         :type beta: float
         """
         self.req_id = req_id
@@ -92,7 +89,6 @@ class SDNController:
         self.dynamic_lps = dynamic_lps
         self.ai_obj = ai_obj
         self.ai_algorithm = ai_algorithm
-        self.alpha = alpha
         self.beta = beta
 
         self.source = source
@@ -325,8 +321,7 @@ class SDNController:
         if self.route_method == 'nli_aware':
             # TODO: Constant QPSK for now
             slots_needed = self.mod_per_bw[self.chosen_bw]['QPSK']['slots_needed']
-            selected_path, path_mod = routing_obj.nli_aware(slots_needed=slots_needed, alpha=self.alpha,
-                                                            beta=self.beta)
+            selected_path, path_mod = routing_obj.nli_aware(slots_needed=slots_needed, beta=self.beta)
         elif self.route_method == 'least_congested':
             selected_path = routing_obj.least_congested_path()
             # TODO: Constant QPSK for now

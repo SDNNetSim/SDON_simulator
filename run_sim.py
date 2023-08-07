@@ -126,8 +126,7 @@ class NetworkSimulator:
         self.is_training = None
         self.train_file = None
 
-        # Used for NLI routing
-        self.alpha = None
+        # Used for NLI routing calculations
         self.beta = None
 
     def save_input(self, file_name: str = None, data: Dict = None):
@@ -192,12 +191,11 @@ class NetworkSimulator:
             'ai_algorithm': self.ai_algorithm,
             'is_training': self.is_training,
             'train_file': self.train_file,
-            'alpha': self.alpha,
             'beta': self.beta
         }
 
     def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps, ai_algorithm,
-                is_training, train_file, max_iters, alpha, beta):
+                is_training, train_file, max_iters, beta):
         """
         Runs a Yue-based simulation with the specified parameters. Reference: Wang, Yue. Dynamic Traffic Scheduling
         Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
@@ -232,9 +230,6 @@ class NetworkSimulator:
         :param max_iters: Determines the maximum number of iterations.
         :type max_iters: int
 
-        :param alpha: Used for NLI routing calculation to consider importance of length.
-        :type alpha: float
-
         :param beta: Used for NLI routing calculation to consider importance of NLI impairment.
         :type beta: float
 
@@ -259,7 +254,6 @@ class NetworkSimulator:
         self.train_file = train_file
         self.thread_num = thread_num
 
-        self.alpha = alpha
         self.beta = beta
 
         for arr_rate_mean in range(2, 143, 2):
@@ -325,8 +319,7 @@ def run(threads):
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
                                      thread_params['req_dist'], thread_params['dynamic_lps'],
                                      thread_params['ai_algorithm'], thread_params['is_training'],
-                                     thread_params['train_file'], thread_params['max_iters'], thread_params['alpha'],
-                                     thread_params['beta'])
+                                     thread_params['train_file'], thread_params['max_iters'], thread_params['beta'])
 
             futures.append(future)
 
@@ -353,7 +346,6 @@ if __name__ == '__main__':
                                 'is_training': is_training,
                                 'train_file': None,
                                 'max_iters': max_iters,
-                                'alpha': alpha,
                                 'beta': beta
                             }
                             threads_obj.append(thread)

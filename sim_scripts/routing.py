@@ -199,7 +199,7 @@ class Routing:
             mci += (power_spec_dens ** 2) * math.log(abs((abs(center_freq - curr_freq) + (bandwidth / 2)) / (
                     abs(center_freq - curr_freq) - (bandwidth / 2))))
 
-        mci = (mci / self.mci_w) / num_spans
+        mci = (mci / self.mci_w) * num_spans
         return mci
 
     def _find_link_cost(self, num_spans: float, free_channels: list, taken_channels: list):
@@ -273,7 +273,7 @@ class Routing:
 
         return channels
 
-    def nli_aware(self, slots_needed: int, alpha: float, beta: float):
+    def nli_aware(self, slots_needed: int, beta: float):
         """
         Assigns a non-linear impairment score to every link in the network and selects a path with the least amount of
         NLI cost.
@@ -281,12 +281,7 @@ class Routing:
         :param slots_needed: The number of slots needed for the request
         :type slots_needed: int
 
-        :param alpha: A tunable parameter used to consider how much weight the link length should have in the NLI cost
-                     equation.
-        :type alpha: float
-
-        :param beta: A tunable parameter used to consider how much weight the NLI cost should have in the NLI cost
-                     equation.
+        :param beta: A tunable parameter used to consider how much the NLI cost vs. link length will be considered.
         :type beta: float
 
         :return: The path from source to destination with the least amount of NLI cost.
@@ -305,7 +300,7 @@ class Routing:
             nli_cost = self._find_link_cost(num_spans=num_spans, free_channels=free_channels,
                                             taken_channels=taken_channels)
             # Tradeoff between link length and the non-linear impairment cost
-            link_cost = (alpha * (self.topology[source][destination]['length'] / self.max_link)) + \
+            link_cost = ((1 - beta) * (self.topology[source][destination]['length'] / self.max_link)) + \
                         (beta * nli_cost)
 
             self.topology[source][destination]['nli_cost'] = link_cost
