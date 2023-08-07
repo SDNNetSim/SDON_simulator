@@ -55,11 +55,11 @@ class Routing:
         self.paths_list = []
         # Constants related to non-linear impairment calculations
         self.input_power = 1e-3
+        # Channel frequency spacing
         self.freq_spacing = 12.5e9
-        self.span_len = 100
-        self.mci = 0
+        # Multi-channel interference worst case scenario
         self.mci_w = 6.3349755556585961e-027
-        # TODO: Update for efficiency
+        # Maximum link length for the network topology
         self.max_link = max(nx.get_edge_attributes(topology, 'length').values(), default=0.0)
 
     def find_least_cong_path(self):
@@ -138,19 +138,16 @@ class Routing:
         # If no valid path was found, return a tuple indicating failure
         return False, False, False
 
-    def shortest_path(self, weight='length'):
+    def shortest_path(self):
         """
         Given a graph with a desired source and destination, find the shortest path with respect to link lengths.
-
-        :param weight: What to consider as a weight for the shortest path, either NLI cost or link length.
-        :type weight: str
 
         :return: A tuple containing the shortest path and its modulation format
         :rtype: tuple
         """
         # This networkx function will always return the shortest paths in order
         paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
-                                             weight=weight)
+                                             weight='length')
 
         for path in paths_obj:
             path_len = find_path_len(path, self.topology)
@@ -158,7 +155,39 @@ class Routing:
 
             return path, mod_format
 
-    def _find_channel_mci(self, num_spans, center_freq, taken_channels):
+    def _least_nli_path(self):
+        """
+        Selects the path with the least amount of NLI cost.
+
+        :return: The path and modulation format chosen
+        :rtype: tuple
+        """
+        # This networkx function will always return the shortest paths in order
+        paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
+                                             weight='nli_cost')
+
+        for path in paths_obj:
+            # TODO: Change always a constant
+            mod_format = 'QPSK'
+
+            return path, mod_format
+
+    def _find_channel_mci(self, num_spans: float, center_freq: float, taken_channels: list):
+        """
+        For a given super-channel calculate the multi-channel interference.
+
+        :param num_spans: The number of spans for the link.
+        :type num_spans: float
+
+        :param center_freq: The calculated center frequency of the channel.
+        :type center_freq: float
+
+        :param taken_channels: A matrix of indexes of the occupied super-channels.
+        :type taken_channels: list
+
+        :return: The calculated MCI for the channel.
+        :rtype: float
+        """
         mci = 0
         for channel in taken_channels:
             # The current center frequency for the occupied channel
@@ -170,9 +199,25 @@ class Routing:
             mci += (power_spec_dens ** 2) * math.log(abs((abs(center_freq - curr_freq) + (bandwidth / 2)) / (
                     abs(center_freq - curr_freq) - (bandwidth / 2))))
 
-        return (mci / self.mci_w) / num_spans
+        mci = (mci / self.mci_w) / num_spans
+        return mci
 
-    def _find_link_cost(self, num_spans, free_channels, taken_channels):
+    def _find_link_cost(self, num_spans: float, free_channels: list, taken_channels: list):
+        """
+        Find the NLI cost for a link.
+
+        :param num_spans: The number of spans for the given link.
+        :type num_spans: float
+
+        :param free_channels: The indexes for all free super-channels on the link.
+        :type free_channels: list
+
+        :param taken_channels: The indexes for all occupied super-channels on the link.
+        :type taken_channels: list
+
+        :return: The final NLI score calculated.
+        :rtype float
+        """
         # Non-linear impairment cost calculation
         nli_cost = 0
 
@@ -183,14 +228,27 @@ class Routing:
             nli_cost += self._find_channel_mci(num_spans=num_spans, taken_channels=taken_channels,
                                                center_freq=center_freq)
 
+        # A constant score of 1000 if the link is fully congested
         if len(free_channels) == 0:
-            return 1000
+            return 1000.0
 
         link_cost = nli_cost / len(free_channels)
 
         return link_cost
 
-    def _find_channels(self, link, check_free):
+    def _find_channels(self, link: int, check_free: bool):
+        """
+        Finds the number of free or occupied channels on any given link.
+
+        :param link: The link number to search for channels on.
+        :type link: int
+
+        :param check_free: A flag to check for unoccupied or occupied channels.
+        :type check_free: bool
+
+        :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
+        :rtype: list
+        """
         if check_free:
             indexes = np.where(self.net_spec_db[link]['cores_matrix'][0] == 0)[0]
         else:
@@ -210,15 +268,31 @@ class Routing:
                 curr_channel = []
 
         # Check if the last group forms a subarray
-        if len(curr_channel) == 3:
+        if len(curr_channel) == self.slots_needed:
             channels.append(curr_channel)
 
         return channels
 
-    # TODO: Only support for single core
-    # TODO: Maximum number of allowed nodes
-    def nli_aware(self, slots_needed=None, alpha=None, beta=None):
+    def nli_aware(self, slots_needed: int, alpha: float, beta: float):
+        """
+        Assigns a non-linear impairment score to every link in the network and selects a path with the least amount of
+        NLI cost.
+
+        :param slots_needed: The number of slots needed for the request
+        :type slots_needed: int
+
+        :param alpha: A tunable parameter used to consider how much weight the link length should have in the NLI cost
+                     equation.
+        :type alpha: float
+
+        :param beta: A tunable parameter used to consider how much weight the NLI cost should have in the NLI cost
+                     equation.
+        :type beta: float
+
+        :return: The path from source to destination with the least amount of NLI cost.
+        """
         self.slots_needed = slots_needed
+        # Length for one span in km
         span_len = 100.0
 
         for link in self.net_spec_db:
@@ -236,6 +310,4 @@ class Routing:
 
             self.topology[source][destination]['nli_cost'] = link_cost
 
-        # TODO: How do you assign a modulation format if lengths are non-linear impairments?
-        #   - Assuming a static modulation format, not sure about bit-rate generations
-        return self.shortest_path(weight='nli_cost')
+        return self._least_nli_path()
