@@ -26,7 +26,8 @@ class NetworkSimulator:
                  hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 1000, max_iters: int = 10,
                  spectral_slots: int = 256, cores_per_link: int = 1, bw_per_slot: float = 12.5, max_segments: int = 1,
                  sim_type: str = 'arash', const_weight: bool = True, guard_slots: int = 1,
-                 alloc_method: str = 'first-fit', dynamic_lps: bool = False, thread_num: int = 1):
+                 alloc_method: str = 'first-fit', route_method: str = None, dynamic_lps: bool = False,
+                 thread_num: int = 1):
         """
         Initializes the NetworkSimulator class.
 
@@ -85,6 +86,9 @@ class NetworkSimulator:
 
         :param alloc_method: The allocation policy for a request.
         :type alloc_method: str
+
+        :param route_method: The routing policy for a request.
+        :type route_method: str
 
         :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
                             request to multiple different bandwidths if set to true.
@@ -187,6 +191,7 @@ class NetworkSimulator:
             'topology': topology,
             'cores_per_link': self.cores_per_link,
             'alloc_method': self.alloc_method,
+            'route_method': self.route_method,
             'req_dist': self.req_dist,
             'ai_algorithm': self.ai_algorithm,
             'is_training': self.is_training,
@@ -195,7 +200,7 @@ class NetworkSimulator:
         }
 
     def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps, ai_algorithm,
-                is_training, train_file, max_iters, beta):
+                is_training, train_file, max_iters, route_method, beta):
         """
         Runs a Yue-based simulation with the specified parameters. Reference: Wang, Yue. Dynamic Traffic Scheduling
         Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
@@ -230,6 +235,9 @@ class NetworkSimulator:
         :param max_iters: Determines the maximum number of iterations.
         :type max_iters: int
 
+        :param route_method: The type of routing to be used for the SDN controller.
+        :type route_method: str
+
         :param beta: Used for NLI routing calculation to consider importance of NLI impairment.
         :type beta: float
 
@@ -244,6 +252,7 @@ class NetworkSimulator:
         self.cores_per_link = cores_per_link
 
         self.alloc_method = alloc_method
+        self.route_method = route_method
         self.dynamic_lps = dynamic_lps
         self.req_dist = req_dist
 
@@ -319,7 +328,8 @@ def run(threads):
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
                                      thread_params['req_dist'], thread_params['dynamic_lps'],
                                      thread_params['ai_algorithm'], thread_params['is_training'],
-                                     thread_params['train_file'], thread_params['max_iters'], thread_params['beta'])
+                                     thread_params['train_file'], thread_params['max_iters'],
+                                     thread_params['route_method'], thread_params['beta'])
 
             futures.append(future)
 
@@ -330,7 +340,7 @@ def run(threads):
 # TODO: Move to a configuration file (after yue and arash methods work)
 if __name__ == '__main__':
     threads_obj = []
-    for alpha, beta in [(0.5, 0.5)]:
+    for beta in [0.5]:
         for is_training in [True]:
             for max_iters in [5]:
                 for dynamic_flag in [False]:
@@ -343,6 +353,7 @@ if __name__ == '__main__':
                                 'req_dist': {'25': 0.0, '50': 0.0, '100': 0.5, '200': 0.0, '400': 0.5},
                                 'dynamic_lps': dynamic_flag,
                                 'ai_algorithm': None,
+                                'route_method': 'nli_aware',
                                 'is_training': is_training,
                                 'train_file': None,
                                 'max_iters': max_iters,

@@ -117,11 +117,11 @@ class Engine(SDNController):
                                 cores_per_link=self.sim_data['cores_per_link'], sim_info=self.sim_info)
 
         # Initialize the constructor of the SDNController class
-        super().__init__(alloc_method=self.sim_data['alloc_method'],
-                         mod_per_bw=self.sim_data['mod_per_bw'], max_segments=self.sim_data['max_segments'],
-                         cores_per_link=self.sim_data['cores_per_link'], guard_slots=self.sim_data['guard_slots'],
-                         sim_type=self.sim_type, dynamic_lps=self.dynamic_lps, ai_obj=self.ai_obj,
-                         ai_algorithm=sim_data['ai_algorithm'], beta=sim_data['beta'])
+        super().__init__(alloc_method=sim_data['alloc_method'], mod_per_bw=sim_data['mod_per_bw'],
+                         max_segments=sim_data['max_segments'], cores_per_link=sim_data['cores_per_link'],
+                         guard_slots=sim_data['guard_slots'], sim_type=sim_type, dynamic_lps=dynamic_lps,
+                         ai_obj=self.ai_obj, ai_algorithm=sim_data['ai_algorithm'],
+                         route_method=sim_data['route_method'], beta=sim_data['beta'])
 
     def get_total_occupied_slots(self):
         """
@@ -192,6 +192,7 @@ class Engine(SDNController):
             'cong_percent': np.mean(self.cong_block_arr) * 100.0,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
             'alloc_method': self.sim_data['alloc_method'],
+            'route_method': self.route_method['route_method'],
             'dynamic_lps': self.dynamic_lps,
             'is_training': self.is_training,
             'beta': self.sim_data['beta'],
