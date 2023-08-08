@@ -14,6 +14,8 @@ from useful_functions.handle_dirs_files import create_dir
 
 
 # TODO: Spectrum assignment and routing objects created each time is inefficient
+# TODO: Update tests
+# TODO: Make all parameters consistent for input
 
 
 class NetworkSimulator:
@@ -23,7 +25,7 @@ class NetworkSimulator:
 
     def __init__(self, sim_data: dict = None, seeds: List[int] = None, mod_per_bw: dict = None,
                  req_dist: List[dict] = None, sim_fp: str = None, sim_start: str = None, net_name: str = 'USNet',
-                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 1000, max_iters: int = 10,
+                 hold_time_mean: float = 1.0, arr_rate_mean: float = 2.0, num_reqs: int = 10000, max_iters: int = 10,
                  spectral_slots: int = 256, cores_per_link: int = 1, bw_per_slot: float = 12.5, max_segments: int = 1,
                  sim_type: str = 'arash', const_weight: bool = True, guard_slots: int = 1,
                  alloc_method: str = 'first-fit', route_method: str = None, dynamic_lps: bool = False,
@@ -199,6 +201,9 @@ class NetworkSimulator:
             'beta': self.beta
         }
 
+    def _setup(self):
+        raise NotImplementedError
+
     def run_yue(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps, ai_algorithm,
                 is_training, train_file, max_iters, route_method, beta):
         """
@@ -243,6 +248,7 @@ class NetworkSimulator:
 
         :return: None
         """
+        # TODO: Move all of this to a setup method
         self.hold_time_mean = 0.2
         self.spectral_slots = 128
         self.sim_type = 'yue'
@@ -283,19 +289,23 @@ class NetworkSimulator:
                             thread_num=thread_num, dynamic_lps=dynamic_lps, is_training=is_training)
             engine.run()
 
-    # TODO: This method does not have support at this point in time
-    def run_arash(self):
+    def run_arash(self, max_segments, thread_num, cores_per_link, alloc_method, req_dist, dynamic_lps, ai_algorithm,
+                  is_training, train_file, max_iters, route_method, beta):
         """
         Runs a simulation using the Arash simulation flag. Reference: https://doi.org/10.1016/j.comnet.2020.107755.
 
         :return: None
         """
+        # TODO: Move to a setup method
         self.arr_rate_mean = 3600.0
         self.spectral_slots = 256
         self.sim_type = 'arash'
         self.net_name = 'Pan-European'
         self.const_weight = True
         self.guard_slots = 0
+        self.route_method = route_method
+        self.beta = beta
+        self.req_dist = req_dist
         erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
 
         for erlang in erlang_lst:
@@ -324,7 +334,12 @@ def run(threads):
         for thread_num, thread_params in enumerate(threads, start=1):
             class_inst = NetworkSimulator(sim_start=time.strftime("%m%d_%H:%M:%S"))
 
-            future = executor.submit(class_inst.run_yue, thread_params['max_segments'], thread_num,
+            if thread_params['sim_type'] == 'yue':
+                class_inst = class_inst.run_yue
+            elif thread_params['sim_type'] == 'arash':
+                class_inst = class_inst.run_arash
+
+            future = executor.submit(class_inst, thread_params['max_segments'], thread_num,
                                      thread_params['cores_per_link'], thread_params['alloc_method'],
                                      thread_params['req_dist'], thread_params['dynamic_lps'],
                                      thread_params['ai_algorithm'], thread_params['is_training'],
@@ -337,7 +352,6 @@ def run(threads):
             future.result()
 
 
-# TODO: Move to a configuration file (after yue and arash methods work)
 if __name__ == '__main__':
     threads_obj = []
     for beta in [0.5]:
@@ -347,13 +361,14 @@ if __name__ == '__main__':
                     for max_segments in [1]:
                         for cores_per_link in [1]:
                             thread = {
+                                'sim_type': 'arash',
                                 'max_segments': max_segments,
                                 'cores_per_link': cores_per_link,
                                 'alloc_method': 'first-fit',
                                 'req_dist': {'25': 0.0, '50': 0.0, '100': 0.5, '200': 0.0, '400': 0.5},
                                 'dynamic_lps': dynamic_flag,
                                 'ai_algorithm': None,
-                                'route_method': 'nli_aware',
+                                'route_method': 'least_congested',
                                 'is_training': is_training,
                                 'train_file': None,
                                 'max_iters': max_iters,
