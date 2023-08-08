@@ -122,7 +122,7 @@ class Routing:
         min_hops = None
 
         # Iterate over all simple paths found until the number of hops exceeds the minimum hops plus one
-        for i, path in all_paths:
+        for i, path in enumerate(all_paths):
             num_hops = len(path)
             if i == 0:
                 min_hops = num_hops
