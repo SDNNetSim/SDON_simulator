@@ -29,11 +29,6 @@ class NetworkSimulator:
         """
         # Contains all the desired network simulator parameters for every thread
         self.properties = None
-        # The date and current time derived from the simulation start
-        self.date = None
-        self.curr_time = None
-        # To keep track of each thread run and save results
-        self.thread_num = None
 
     def save_input(self, file_name: str = None, data: Dict = None):
         """
@@ -48,11 +43,12 @@ class NetworkSimulator:
 
         :return: None
         """
-        create_dir(f"data/input/{self.properties['network']}/{self.date}/{self.curr_time}")
+        fp = f"data/input/{self.properties['network']}/{self.properties['date']}/{self.properties['curr_time']}"
+
+        create_dir(fp)
         create_dir('data/output')
 
-        with open(f"data/input/{self.properties['network']}/{self.date}/{self.curr_time}/{file_name}", 'w',
-                  encoding='utf-8') as file:
+        with open(f"{fp}/{file_name}", 'w', encoding='utf-8') as file:
             json.dump(data, file, indent=4)
 
     def create_input(self):
@@ -66,12 +62,12 @@ class NetworkSimulator:
         """
         bw_info = create_bw_info(sim_type=self.properties['sim_type'])
 
-        bw_file = f"bw_info_{self.thread_num}.json"
+        bw_file = f"bw_info_{self.properties['thread_num']}.json"
 
         self.save_input(file_name=bw_file, data=bw_info)
 
-        with open(f"./data/input/{self.properties['network']}/{self.date}/{self.curr_time}/{bw_file}", 'r',
-                  encoding='utf-8') as file_object:
+        fp = f"./data/input/{self.properties['network']}/{self.properties['date']}/{self.properties['curr_time']}/{bw_file}"
+        with open(fp, 'r', encoding='utf-8') as file_object:
             self.properties['mod_per_bw'] = json.load(file_object)
 
         network_data = create_network(const_weight=self.properties['const_link_weight'],
@@ -97,10 +93,10 @@ class NetworkSimulator:
             self.properties['arrival_rate'] = arr_rate_mean
             self.create_input()
 
-            file_name = f"sim_input_{self.thread_num}.json"
+            file_name = f"sim_input_{self.properties['thread_num']}.json"
 
             self.save_input(file_name=file_name, data=self.properties)
-            engine = Engine(self.properties)
+            engine = Engine(properties=self.properties)
             engine.run()
 
     def run_arash(self):
@@ -120,7 +116,7 @@ class NetworkSimulator:
             self.create_input()
             self.save_input(file_name='sim_input.json', data=self.properties)
 
-            engine = Engine(self.properties)
+            engine = Engine(properties=self.properties)
             engine.run()
 
     def run_sim(self, **kwargs):
@@ -130,8 +126,12 @@ class NetworkSimulator:
         :return: None
         """
         self.properties = kwargs['thread_params']
-        self.date, self.curr_time = kwargs['sim_start'].split('_')[0], kwargs['sim_start'].split('_')[1]
-        self.thread_num = kwargs['thread_num']
+        # The date and current time derived from the simulation start
+        self.properties['date'] = kwargs['sim_start'].split('_')[0]
+        self.properties['curr_time'] = kwargs['sim_start'].split('_')[1]
+
+        # To keep track of each thread run and save results
+        self.properties['thread_num'] = kwargs['thread_num']
 
         if self.properties['sim_type'] == 'yue':
             self.run_yue()
