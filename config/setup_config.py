@@ -1,5 +1,6 @@
 import configparser
-import config_constants
+
+from config import config_constants
 
 
 def _copy_dict_vals(dest_key: str, dictionary: dict):
@@ -56,7 +57,7 @@ def read_config():
 
     try:
         # TODO: This path may change when the simulation is run
-        config.read('./run_ini/config.ini')
+        config.read('config/run_ini/config.ini')
 
         if not config.has_section('t1') or not config.has_option('t1', 'sim_type'):
             raise ValueError("Missing 't1' section in the configuration file or simulation type option.")
