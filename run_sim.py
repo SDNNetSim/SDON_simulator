@@ -43,12 +43,12 @@ class NetworkSimulator:
 
         :return: None
         """
-        fp = f"data/input/{self.properties['network']}/{self.properties['date']}/{self.properties['curr_time']}"
+        path = f"data/input/{self.properties['network']}/{self.properties['date']}/{self.properties['curr_time']}"
 
-        create_dir(fp)
+        create_dir(path)
         create_dir('data/output')
 
-        with open(f"{fp}/{file_name}", 'w', encoding='utf-8') as file:
+        with open(f"{path}/{file_name}", 'w', encoding='utf-8') as file:
             json.dump(data, file, indent=4)
 
     def create_input(self):
@@ -66,8 +66,8 @@ class NetworkSimulator:
 
         self.save_input(file_name=bw_file, data=bw_info)
 
-        fp = f"./data/input/{self.properties['network']}/{self.properties['date']}/{self.properties['curr_time']}/{bw_file}"
-        with open(fp, 'r', encoding='utf-8') as file_object:
+        path = f"./data/input/{self.properties['network']}/{self.properties['date']}/{self.properties['curr_time']}/{bw_file}"
+        with open(path, 'r', encoding='utf-8') as file_object:
             self.properties['mod_per_bw'] = json.load(file_object)
 
         network_data = create_network(const_weight=self.properties['const_link_weight'],
