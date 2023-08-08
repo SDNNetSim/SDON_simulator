@@ -1,7 +1,7 @@
 # Standard library imports
 import json
 import time
-from typing import List, Dict
+from typing import Dict
 
 # Third-party library imports
 import concurrent.futures
