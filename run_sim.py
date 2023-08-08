@@ -32,6 +32,8 @@ class NetworkSimulator:
         # The date and current time derived from the simulation start
         self.date = None
         self.curr_time = None
+        # To keep track of each thread run and save results
+        self.thread_num = None
 
     def save_input(self, file_name: str = None, data: Dict = None):
         """
@@ -64,7 +66,7 @@ class NetworkSimulator:
         """
         bw_info = create_bw_info(sim_type=self.properties['sim_type'])
 
-        bw_file = f"bw_info_{self.properties['thread_num']}.json"
+        bw_file = f"bw_info_{self.thread_num}.json"
 
         self.save_input(file_name=bw_file, data=bw_info)
 
@@ -89,7 +91,7 @@ class NetworkSimulator:
             self.properties['arrival_rate'] = arr_rate_mean
             self.create_input()
 
-            file_name = f"sim_input_{self.properties['thread_num']}.json"
+            file_name = f"sim_input_{self.thread_num}.json"
 
             self.save_input(file_name=file_name, data=self.properties)
             engine = Engine(self.properties)
@@ -117,6 +119,7 @@ class NetworkSimulator:
     def run_sim(self, **kwargs):
         self.properties = kwargs['thread_params']
         self.date, self.curr_time = kwargs['sim_start'].split('_')[0], kwargs['sim_start'].split('_')[1]
+        self.thread_num = kwargs['thread_num']
 
         if self.properties['sim_type'] == 'yue':
             self.run_yue()
