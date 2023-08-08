@@ -27,7 +27,7 @@ class NetworkSimulator:
         """
         Initializes the NetworkSimulator class.
         """
-        # Contains all the desired network simulator parameters
+        # Contains all the desired network simulator parameters for every thread
         self.properties = None
         # The date and current time derived from the simulation start
         self.date = None
@@ -80,6 +80,12 @@ class NetworkSimulator:
                                                 network_data=network_data)
 
     def run_yue(self):
+        """
+        Runs a simulation using the Yue's simulation assumptions. Reference: Wang, Yue. Dynamic Traffic Scheduling
+        Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
+
+        :return: None
+        """
         arr_rate_obj = self.properties['arrival_rate']
         start, stop, step = arr_rate_obj['start'], arr_rate_obj['stop'], arr_rate_obj['step']
 
@@ -99,7 +105,8 @@ class NetworkSimulator:
 
     def run_arash(self):
         """
-        Runs a simulation using the Arash simulation flag. Reference: https://doi.org/10.1016/j.comnet.2020.107755.
+        Runs a simulation using the Arash's simulation assumptions.
+        Reference: https://doi.org/10.1016/j.comnet.2020.107755.
 
         :return: None
         """
@@ -117,6 +124,11 @@ class NetworkSimulator:
             engine.run()
 
     def run_sim(self, **kwargs):
+        """
+        Controls the networking simulator class.
+
+        :return: None
+        """
         self.properties = kwargs['thread_params']
         self.date, self.curr_time = kwargs['sim_start'].split('_')[0], kwargs['sim_start'].split('_')[1]
         self.thread_num = kwargs['thread_num']
