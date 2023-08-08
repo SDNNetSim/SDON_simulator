@@ -183,7 +183,7 @@ class Engine(SDNController):
             'ci_rate_block': self.block_ci_rate,
             'ci_percent_block': self.block_ci_percent,
             'num_reqs': self.sim_data['num_reqs'],
-            'cores_per_link': self.sim_data['topology']['links']['1']['fiber']['num_cores'],
+            'cores_per_link': self.sim_data['cores_per_link'],
             'hold_time_mean': self.sim_data['hold_time_mean'],
             'spectral_slots': self.sim_data['spectral_slots'],
             'max_segments': self.sim_data['max_segments'],
