@@ -16,6 +16,7 @@ from config.setup_config import read_config
 
 # TODO: Spectrum assignment and routing objects created each time is inefficient
 # TODO: Update tests
+# TODO: Update docs
 
 
 class NetworkSimulator:
@@ -61,7 +62,6 @@ class NetworkSimulator:
         :return: None
         """
         bw_info = create_bw_info(sim_type=self.properties['sim_type'])
-
         bw_file = f"bw_info_{self.properties['thread_num']}.json"
 
         self.save_input(file_name=bw_file, data=bw_info)
