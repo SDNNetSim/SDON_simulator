@@ -254,7 +254,6 @@ class Routing:
             if value > 0:
                 curr_channel.append(value)
             elif value < 0 and curr_channel:
-                curr_channel.append(value)
                 channels.append(curr_channel)
                 curr_channel = []
 
