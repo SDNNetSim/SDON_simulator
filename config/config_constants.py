@@ -1,8 +1,17 @@
 import ast
 
 
-def str_to_bool(s):
-    return s.lower() in ['true', 'yes', '1']
+def str_to_bool(string):
+    """
+    Convert any giving string to a boolean.
+
+    :param string: The input string.
+    :type string: str
+
+    :return: True or False
+    :rtype: bool
+    """
+    return string.lower() in ['true', 'yes', '1']
 
 
 YUE_REQUIRED_OPTIONS = {
