@@ -189,8 +189,8 @@ class Engine(SDNController):
             return False
 
         if self.block_ci_percent <= 5:
-            print(f'Confidence interval of {round(self.block_ci_percent, 2)}% reached on simulation '
-                  f'{iteration + 1}, ending and saving results for Erlang: {self.erlang}')
+            print(f"Confidence interval of {round(self.block_ci_percent, 2)}% reached on simulation "
+                  f"{iteration + 1}, ending and saving results for Erlang: {self.properties['erlang']}")
             self.save_sim_results()
             return True
 
