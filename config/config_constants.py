@@ -1,5 +1,10 @@
 import ast
 
+
+def str_to_bool(s):
+    return s.lower() in ['true', 'yes', '1']
+
+
 YUE_REQUIRED_OPTIONS = {
     'sim_type': str,
     'network': str,
@@ -11,10 +16,10 @@ YUE_REQUIRED_OPTIONS = {
     'beta': float,
     'freq_per_slot': float,
     'cores_per_link': int,
-    'const_link_weight': bool,
+    'const_link_weight': str_to_bool,
     'guard_slots': int,
     'max_segments': int,
-    'dynamic_lps': bool,
+    'dynamic_lps': str_to_bool,
     'allocation_method': str,
     'route_method': str,
     'request_distribution': ast.literal_eval,
@@ -23,3 +28,9 @@ YUE_REQUIRED_OPTIONS = {
 ARASH_REQUIRED_OPTIONS = {
 
 }
+
+OTHER_OPTIONS = [
+    'ai_algorithm',
+    'is_training',
+    'seeds',
+]
