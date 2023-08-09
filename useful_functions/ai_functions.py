@@ -1,6 +1,3 @@
-# Third-party library imports
-import networkx as nx
-
 # Local application imports
 from ai.q_learning import *  # pylint: disable=unused-wildcard-import
 
