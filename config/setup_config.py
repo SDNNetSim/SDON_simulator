@@ -23,7 +23,7 @@ def _copy_dict_vals(dest_key: str, dictionary: dict):
     return dictionary
 
 
-def _setup_threads(config: configparser.ConfigParser, config_dict: dict, sections: list):
+def _setup_threads(config: configparser.ConfigParser, config_dict: dict, sections: list, option_types: dict):
     """
     Checks if multiple threads should be run. If so, structure each threads' sim params.
 
@@ -36,6 +36,9 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
     :param sections: A list of every section in the ini file.
     :type sections: list
 
+    :param option_types: A dictionary of all options along with their desired conversion type.
+    :type option_types: dict
+
     :return: An updated dictionary with parameters for every thread if they exist.
     :rtype: dict
     """
@@ -43,7 +46,8 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
         config_dict = _copy_dict_vals(dest_key=new_thread, dictionary=config_dict)
         # Make desired changes for this thread
         for key, value in config.items(new_thread):
-            config_dict[new_thread][key] = value
+            target_type = option_types[key]
+            config_dict[new_thread][key] = target_type(value)
 
     return config_dict
 
@@ -77,8 +81,14 @@ def read_config():
             target_type = required_options[key]
             config_dict['t1'][key] = target_type(value)
 
+        # Init other options to None if they haven't been specified
+        for other_option in config_constants.OTHER_OPTIONS:
+            if other_option not in config_dict['t1'].keys():
+                config_dict['t1'][other_option] = None
+
         # Ignoring index zero since we've already handled t1, the first section
-        resp = _setup_threads(config=config, config_dict=config_dict, sections=config.sections()[1:])
+        resp = _setup_threads(config=config, config_dict=config_dict, sections=config.sections()[1:],
+                              option_types=required_options)
         return resp
 
     except configparser.Error as error:
