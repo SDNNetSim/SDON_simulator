@@ -66,7 +66,8 @@ class NetworkSimulator:
 
         self.save_input(file_name=bw_file, data=bw_info)
 
-        path = f"./data/input/{self.properties['network']}/{self.properties['date']}/{self.properties['curr_time']}/{bw_file}"
+        path = f"./data/input/{self.properties['network']}/{self.properties['date']}/" \
+               f"{self.properties['curr_time']}/{bw_file}"
         with open(path, 'r', encoding='utf-8') as file_object:
             self.properties['mod_per_bw'] = json.load(file_object)
 
@@ -96,6 +97,8 @@ class NetworkSimulator:
             file_name = f"sim_input_{self.properties['thread_num']}.json"
 
             self.save_input(file_name=file_name, data=self.properties)
+            self.properties['input_fp'] = f"./data/input/{self.properties['network']}/{self.properties['date']}/" \
+                                          f"{self.properties['curr_time']}/{file_name}"
             engine = Engine(properties=self.properties)
             engine.run()
 
@@ -129,6 +132,7 @@ class NetworkSimulator:
         # The date and current time derived from the simulation start
         self.properties['date'] = kwargs['sim_start'].split('_')[0]
         self.properties['curr_time'] = kwargs['sim_start'].split('_')[1]
+        self.properties['sim_start'] = kwargs['sim_start']
 
         # To keep track of each thread run and save results
         self.properties['thread_num'] = kwargs['thread_num']
