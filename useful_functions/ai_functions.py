@@ -10,39 +10,18 @@ class AIMethods:
     Contains methods related to artificial intelligence for the simulator.
     """
 
-    def __init__(self, algorithm: str = None, sim_info: str = None, max_segments: int = None,
-                 cores_per_link: int = None, is_training: bool = None, topology: nx.Graph = None, seed: int = None):
+    def __init__(self, **kwargs):
         """
         Initializes the AIMethods class.
-
-        :param algorithm: The type of AI algorithm to be used in the simulation.
-        :type algorithm: str
-
-        :param sim_info: Relevant information to the current running simulation.
-        :type sim_info: str
-
-        :param max_segments: The maximum allowed segments allowed for a single request.
-        :type max_segments: int
-
-        :param cores_per_link: The maximum allowed cores per link.
-        :type cores_per_link: int
-
-        :param is_training: Determines if the simulation is training or testing.
-        :type is_training: bool
-
-        :param topology: The network topology.
-        :type topology: nx.Graph
-
-        :param seed: The seed used for random generation.
-        :type seed: int
         """
-        self.algorithm = algorithm
-        self.sim_info = sim_info
-        self.max_segments = max_segments
-        self.cores_per_link = cores_per_link
-        self.is_training = is_training
-        self.topology = topology
-        self.seed = seed
+        self.algorithm = kwargs['properties']['ai_algorithm']
+        self.max_segments = kwargs['properties']['max_segments']
+        self.cores_per_link = kwargs['properties']['cores_per_link']
+        self.is_training = kwargs['properties']['is_training']
+        self.topology = kwargs['properties']['topology']
+        self.sim_info = kwargs['sim_info']
+        self.seed = None
+        self.topology = None
 
         # An object for the chosen AI algorithm
         self.ai_obj = None
