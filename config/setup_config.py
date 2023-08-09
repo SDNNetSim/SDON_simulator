@@ -72,7 +72,7 @@ def read_config():
 
         for option in required_options:
             if not config.has_option('t1', option):
-                raise ValueError(f"Missing '{option}' in the 'General' section.")
+                raise ValueError(f"Missing '{option}' in the 't1' section.")
 
         # Structure config value into a dictionary for the main thread
         for key, value in config.items('t1'):
