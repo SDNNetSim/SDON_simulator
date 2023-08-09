@@ -60,7 +60,6 @@ def read_config():
     config = configparser.ConfigParser()
 
     try:
-        # TODO: This path may change when the simulation is run
         config.read('config/run_ini/config.ini')
 
         if not config.has_section('t1') or not config.has_option('t1', 'sim_type'):
@@ -83,7 +82,7 @@ def read_config():
 
         # Init other options to None if they haven't been specified
         for other_option in config_constants.OTHER_OPTIONS:
-            if other_option not in config_dict['t1'].keys():
+            if other_option not in config_dict['t1']:
                 config_dict['t1'][other_option] = None
 
         # Ignoring index zero since we've already handled t1, the first section
