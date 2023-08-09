@@ -204,7 +204,7 @@ class SpectrumAssignment:
         elif self.alloc_method == 'first_fit':
             self.first_fit_allocation()
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f'Expected first_fit or best_fit, got: {self.alloc_method}')
 
         # If the start slot is none, a request couldn't be allocated
         if self.response['start_slot'] is None:

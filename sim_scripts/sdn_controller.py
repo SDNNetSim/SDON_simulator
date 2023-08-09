@@ -205,7 +205,7 @@ class SDNController:
                                                          slots_needed=modulation_dict[tmp_format]['slots_needed'],
                                                          net_spec_db=self.net_spec_db,
                                                          guard_slots=self.guard_slots, single_core=self.single_core,
-                                                         is_sliced=True, alloc_method='best-fit')
+                                                         is_sliced=True, alloc_method=self.alloc_method)
                 selected_spectrum = spectrum_assignment.find_free_spectrum()
 
                 if selected_spectrum is not False:
