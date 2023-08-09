@@ -191,6 +191,7 @@ class Routing:
         mci = 0
         for channel in taken_channels:
             # The current center frequency for the occupied channel
+            # TODO: Change self.slots_needed to be based on the number of slots the taken channel is
             curr_freq = (channel[0] * self.freq_spacing) + ((self.slots_needed * self.freq_spacing) / 2)
             bandwidth = self.slots_needed * self.freq_spacing
             # Power spectral density
