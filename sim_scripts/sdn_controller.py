@@ -1,9 +1,6 @@
 # Standard library imports
 import numpy as np
 
-# Third-party library imports
-import networkx as nx
-
 # Local application imports
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
@@ -15,89 +12,41 @@ class SDNController:
     Handles spectrum allocation for a request in the simulation.
     """
 
-    def __init__(self, req_id: int = None, net_spec_db: dict = None, topology: nx.Graph = None,
-                 cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
-                 route_method: str = None, source: int = None, destination: int = None, mod_per_bw: dict = None,
-                 chosen_bw: str = None, max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None,
-                 ai_obj: object = None, ai_algorithm: str = None, beta: float = None):
+    def __init__(self, properties: dict = None, ai_obj: object = None):
         """
         Initializes the SDNController class.
 
-        :param req_id: The ID of the request.
-        :type req_id: int
+        :param properties: Contains various simulation properties.
+        :type properties: dict
 
-        :param net_spec_db: The network's spectrum database.
-        :type net_spec_db: dict
-
-        :param topology: The network's topology.
-        :type topology: nx.Graph
-
-        :param cores_per_link: The amount of cores per link in the network.
-        :type cores_per_link: int
-
-        :param path: The path in the network to be allocated.
-        :type path: list
-
-        :param sim_type: The type of simulation, which handles various assumptions.
-        :type sim_type: str
-
-        :param alloc_method: The allocation policy for a request.
-        :type alloc_method: str
-
-        :param route_method: The routing policy for a request.
-        :type route_method: str
-
-        :param source: The source node of the request.
-        :type source: int
-
-        :param destination: The destination node of the request.
-        :type destination: int
-
-        :param mod_per_bw: Modulation formats for every bandwidth in the network.
-        :type mod_per_bw: dict
-
-        :param chosen_bw: The chosen bandwidth for this request.
-        :type chosen_bw: str
-
-        :param max_segments: The maximum number of light segments allowed for a single request.
-        :type max_segments: int
-
-        :param guard_slots: The amount of slots to be allocated for the guard band.
-        :type guard_slots: int
-
-        :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
-                            request to multiple different bandwidths if set to true.
-        :type dynamic_lps: bool
-
-        :param ai_obj: A class to handle everything related to routing and spectrum assingment for AI.
+        :param ai_obj: Class containing all methods related to AI
         :type ai_obj: object
-
-        :param ai_algorithm: The current AI algorithm being used.
-        :type ai_algorithm: str
-
-        :param beta: A tunable parameter used to consider how much the NLI cost vs. link length will be considered.
-        :type beta: float
         """
-        self.req_id = req_id
-        self.net_spec_db = net_spec_db
-        self.topology = topology
-        self.cores_per_link = cores_per_link
-        self.path = path
-        self.sim_type = sim_type
-        self.alloc_method = alloc_method
-        self.route_method = route_method
-        self.dynamic_lps = dynamic_lps
+        self.topology = properties['topology']
+        self.cores_per_link = properties['cores_per_link']
+        self.sim_type = properties['sim_type']
+        self.alloc_method = properties['allocation_method']
+        self.route_method = properties['route_method']
+        self.dynamic_lps = properties['dynamic_lps']
+        self.ai_algorithm = properties['ai_algorithm']
+        self.beta = properties['beta']
+        self.max_segments = properties['max_segments']
+        self.guard_slots = properties['guard_slots']
+        self.mod_per_bw = properties['mod_per_bw']
         self.ai_obj = ai_obj
-        self.ai_algorithm = ai_algorithm
-        self.beta = beta
 
-        self.source = source
-        self.destination = destination
-        self.mod_per_bw = mod_per_bw
-        self.chosen_bw = chosen_bw
-        self.max_segments = max_segments
-        self.guard_slots = guard_slots
-
+        # The current request id number
+        self.req_id = None
+        # The updated network spectrum database
+        self.net_spec_db = dict()
+        # Source node
+        self.source = None
+        # Destination node
+        self.destination = None
+        # The current path
+        self.path = None
+        # The chosen bandwidth for the current request
+        self.chosen_bw = None
         # Determines if light slicing is limited to a single core or not
         self.single_core = False
         # The number of transponders used to allocate the request
