@@ -10,6 +10,7 @@ networking.
    :caption: Contents:
 
    tutorials/tutorial_modules.rst
+   config/config_modules.rst
    sim_scripts/sim_scripts_modules.rst
    useful_functions/useful_functions_modules.rst
    ai/ai_modules.rst
