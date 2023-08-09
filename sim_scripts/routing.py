@@ -301,7 +301,7 @@ class Routing:
             nli_cost = self._find_link_cost(num_spans=num_spans, free_channels=free_channels,
                                             taken_channels=taken_channels)
             # Tradeoff between link length and the non-linear impairment cost
-            link_cost = ( beta * (self.topology[source][destination]['length'] / self.max_link)) + \
+            link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
                         ((1 - beta) * nli_cost)
 
             self.topology[source][destination]['nli_cost'] = link_cost
