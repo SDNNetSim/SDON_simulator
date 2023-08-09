@@ -16,7 +16,6 @@ from config.setup_config import read_config
 
 # TODO: Spectrum assignment and routing objects created each time is inefficient
 # TODO: Update tests
-# TODO: Update docs
 
 
 class NetworkSimulator:

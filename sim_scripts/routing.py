@@ -191,9 +191,8 @@ class Routing:
         mci = 0
         for channel in taken_channels:
             # The current center frequency for the occupied channel
-            # TODO: Change self.slots_needed to be based on the number of slots the taken channel is
-            curr_freq = (channel[0] * self.freq_spacing) + ((self.slots_needed * self.freq_spacing) / 2)
-            bandwidth = self.slots_needed * self.freq_spacing
+            curr_freq = (channel[0] * self.freq_spacing) + ((len(channel) * self.freq_spacing) / 2)
+            bandwidth = len(channel) * self.freq_spacing
             # Power spectral density
             power_spec_dens = self.input_power / bandwidth
 
@@ -237,23 +236,45 @@ class Routing:
 
         return link_cost
 
-    def _find_channels(self, link: int, check_free: bool):
+    def _find_taken_channels(self, link_num: int):
         """
-        Finds the number of free or occupied channels on any given link.
+        Finds the number of taken channels on any given link.
 
-        :param link: The link number to search for channels on.
-        :type link: int
-
-        :param check_free: A flag to check for unoccupied or occupied channels.
-        :type check_free: bool
+        :param link_num: The link number to search for channels on.
+        :type link_num: int
 
         :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
         :rtype: list
         """
-        if check_free:
-            indexes = np.where(self.net_spec_db[link]['cores_matrix'][0] == 0)[0]
-        else:
-            indexes = np.where(self.net_spec_db[link]['cores_matrix'][0] != 0)[0]
+        channels = []
+        curr_channel = []
+        link = self.net_spec_db[link_num]['cores_matrix'][0]
+
+        for value in link:
+            if value > 0:
+                curr_channel.append(value)
+            elif value < 0 and curr_channel:
+                curr_channel.append(value)
+                channels.append(curr_channel)
+                curr_channel = []
+
+        if curr_channel:
+            channels.append(curr_channel)
+
+        return channels
+
+    def _find_free_channels(self, link_num: int):
+        """
+        Finds the number of free channels on any given link.
+
+        :param link_num: The link number to search for channels on.
+        :type link_num: int
+
+        :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
+        :rtype: list
+        """
+        link = self.net_spec_db[link_num]['cores_matrix'][0]
+        indexes = np.where(link == 0)[0]
 
         channels = []
         curr_channel = []
@@ -274,6 +295,7 @@ class Routing:
 
         return channels
 
+    # TODO: Only support for single core
     def nli_aware(self, slots_needed: int, beta: float):
         """
         Assigns a non-linear impairment score to every link in the network and selects a path with the least amount of
@@ -295,8 +317,8 @@ class Routing:
             source, destination = link[0], link[1]
             num_spans = self.topology[source][destination]['length'] / span_len
 
-            free_channels = self._find_channels(link=link, check_free=True)
-            taken_channels = self._find_channels(link=link, check_free=False)
+            free_channels = self._find_free_channels(link_num=link)
+            taken_channels = self._find_taken_channels(link_num=link)
 
             nli_cost = self._find_link_cost(num_spans=num_spans, free_channels=free_channels,
                                             taken_channels=taken_channels)
