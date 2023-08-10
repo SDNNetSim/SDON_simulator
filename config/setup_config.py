@@ -56,7 +56,7 @@ def read_config():
     """
     Reads and structures necessary data from the configuration file in the run_ini directory.
     """
-    config_dict = {'t1': {}}
+    config_dict = {'t1': dict()}
     config = configparser.ConfigParser()
 
     try:
@@ -69,6 +69,7 @@ def read_config():
             required_options = config_constants.ARASH_REQUIRED_OPTIONS
         else:
             required_options = config_constants.YUE_REQUIRED_OPTIONS
+        other_options = config_constants.OTHER_OPTIONS
 
         for option in required_options:
             if not config.has_option('t1', option):
@@ -77,13 +78,17 @@ def read_config():
         # Structure config value into a dictionary for the main thread
         for key, value in config.items('t1'):
             # Convert the values in ini value to desired types since they default as strings
-            target_type = required_options[key]
-            config_dict['t1'][key] = target_type(value)
+            try:
+                target_type = required_options[key]
+                config_dict['t1'][key] = target_type(value)
+            except KeyError:
+                target_type = other_options[key]
+                config_dict['t1'][key] = target_type(value)
 
         # Init other options to None if they haven't been specified
-        for other_option in config_constants.OTHER_OPTIONS:
-            if other_option not in config_dict['t1']:
-                config_dict['t1'][other_option] = None
+        for option in other_options.keys():
+            if option not in config_dict['t1']:
+                config_dict['t1'][option] = None
 
         # Ignoring index zero since we've already handled t1, the first section
         resp = _setup_threads(config=config, config_dict=config_dict, sections=config.sections()[1:],
