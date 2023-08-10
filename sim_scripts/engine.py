@@ -157,7 +157,8 @@ class Engine(SDNController):
 
         base_fp = "data/output/"
 
-        self.ai_obj.save()
+        if self.properties['ai_algorithm'] != 'None':
+            self.ai_obj.save()
 
         # Save threads to child directories
         base_fp += f"/{self.sim_info}/{self.properties['thread_num']}"
@@ -238,8 +239,10 @@ class Engine(SDNController):
         resp = self.handle_event(request_type='arrival')
 
         free_slots = self.get_path_free_slots(path=resp[-1])
-        self.ai_obj.update(routed=resp[0], path=resp[-1], free_slots=free_slots, iteration=iteration,
-                           num_segments=resp[2])
+
+        if self.properties['ai_algorithm'] != 'None':
+            self.ai_obj.update(routed=resp[0], path=resp[-1], free_slots=free_slots, iteration=iteration,
+                               num_segments=resp[2])
 
         # Request was blocked
         if not resp[0]:
@@ -445,7 +448,7 @@ class Engine(SDNController):
                       f"thread number: {self.properties['thread_num']}.")
 
                 # We are running a normal simulation, no AI object needed
-                if self.properties['ai_algorithm'] is not None:
+                if self.properties['ai_algorithm'] != 'None':
                     self.ai_obj.topology = self.properties['topology']
                     self.ai_obj.seed = iteration
 
