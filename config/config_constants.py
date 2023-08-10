@@ -22,7 +22,6 @@ YUE_REQUIRED_OPTIONS = {
     'num_requests': int,
     'max_iters': int,
     'spectral_slots': int,
-    'beta': float,
     'freq_per_slot': float,
     'cores_per_link': int,
     'const_link_weight': str_to_bool,
@@ -35,11 +34,27 @@ YUE_REQUIRED_OPTIONS = {
 }
 
 ARASH_REQUIRED_OPTIONS = {
-
+    'sim_type': str,
+    'network': str,
+    'holding_time': float,
+    'num_requests': int,
+    'max_iters': int,
+    'spectral_slots': int,
+    'freq_per_slot': float,
+    'cores_per_link': int,
+    'const_link_weight': str_to_bool,
+    'guard_slots': int,
+    'max_segments': int,
+    'dynamic_lps': str_to_bool,
+    'allocation_method': str,
+    'route_method': str,
+    'request_distribution': ast.literal_eval,
 }
 
-OTHER_OPTIONS = [
-    'ai_algorithm',
-    'is_training',
-    'seeds',
-]
+OTHER_OPTIONS = {
+    'ai_algorithm': str,
+    'is_training': str_to_bool,
+    'seeds': list,
+    'beta': float,
+    'train_file': str,
+}
