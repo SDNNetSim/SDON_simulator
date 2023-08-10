@@ -114,7 +114,7 @@ def create_network(const_weight: bool = False, net_name: str = None):
     elif net_name == 'NSFNet':
         network_fp = 'data/raw/nsf_network.txt'
     elif net_name == 'Pan-European':
-        network_fp = 'data/raw/pan_european_network.txt'
+        network_fp = 'data/raw/europe_network.txt'
     else:
         raise NotImplementedError(f"Unknown network name. Expected USNet, NSFNet, or Pan-European. Got: {net_name}")
 

@@ -199,12 +199,12 @@ class SpectrumAssignment:
         self.slots_per_core = len(self.cores_matrix[0])
         self.cores_per_link = len(self.cores_matrix)
 
-        if self.alloc_method == 'best-fit':
+        if self.alloc_method == 'best_fit':
             self.best_fit_allocation()
-        elif self.alloc_method == 'first-fit':
+        elif self.alloc_method == 'first_fit':
             self.first_fit_allocation()
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f'Expected first_fit or best_fit, got: {self.alloc_method}')
 
         # If the start slot is none, a request couldn't be allocated
         if self.response['start_slot'] is None:

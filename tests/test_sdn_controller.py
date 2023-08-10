@@ -39,7 +39,7 @@ class TestSDNController(unittest.TestCase):
         self.cores_per_link = 10
         self.path = [1, 2]
         self.sim_type = "yue"
-        self.alloc_method = "first-fit"
+        self.alloc_method = "first_fit"
         self.source = 1
         self.destination = 2
         self.mod_per_bw = {str(bw): {mod: {"max_length": 10, "slots_needed": 1} for mod in ["QPSK", "16-QAM", "64-QAM"]}
@@ -48,21 +48,27 @@ class TestSDNController(unittest.TestCase):
         self.max_segments = 1
         self.guard_slots = 0
 
-        self.sdn_controller = SDNController(
-            req_id=self.req_id,
-            net_spec_db=self.net_spec_db,
-            topology=self.topology,
-            cores_per_link=self.cores_per_link,
-            path=self.path,
-            sim_type=self.sim_type,
-            alloc_method=self.alloc_method,
-            source=self.source,
-            destination=self.destination,
-            mod_per_bw=self.mod_per_bw,
-            chosen_bw=self.chosen_bw,
-            max_segments=self.max_segments,
-            guard_slots=self.guard_slots
-        )
+        # TODO: Make more efficient
+        properties = {
+            'topology': self.topology,
+            'cores_per_link': self.cores_per_link,
+            'sim_type': self.sim_type,
+            'allocation_method': self.alloc_method,
+            'route_method': 'shortest_path',
+            'dynamic_lps': False,
+            'ai_algorithm': None,
+            'beta': 0.5,
+            'max_segments': self.max_segments,
+            'guard_slots': self.guard_slots,
+            'mod_per_bw': self.mod_per_bw
+        }
+        self.sdn_controller = SDNController(properties=properties)
+        self.sdn_controller.req_id = self.req_id
+        self.sdn_controller.net_spec_db = self.net_spec_db
+        self.sdn_controller.path = self.path
+        self.sdn_controller.chosen_bw = self.chosen_bw
+        self.sdn_controller.source = self.source
+        self.sdn_controller.destination = self.destination
 
     def test_release(self):
         """

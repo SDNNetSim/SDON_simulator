@@ -1,9 +1,6 @@
 # Standard library imports
 import numpy as np
 
-# Third-party library imports
-import networkx as nx
-
 # Local application imports
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
@@ -15,81 +12,41 @@ class SDNController:
     Handles spectrum allocation for a request in the simulation.
     """
 
-    def __init__(self, req_id: int = None, net_spec_db: dict = None, topology: nx.Graph = None,
-                 cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
-                 source: int = None, destination: int = None, mod_per_bw: dict = None, chosen_bw: str = None,
-                 max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None,
-                 ai_obj: object = None, ai_algorithm: str = None):
+    def __init__(self, properties: dict = None, ai_obj: object = None):
         """
         Initializes the SDNController class.
 
-        :param req_id: The ID of the request.
-        :type req_id: int
+        :param properties: Contains various simulation properties.
+        :type properties: dict
 
-        :param net_spec_db: The network's spectrum database.
-        :type net_spec_db: dict
-
-        :param topology: The network's topology.
-        :type topology: nx.Graph
-
-        :param cores_per_link: The amount of cores per link in the network.
-        :type cores_per_link: int
-
-        :param path: The path in the network to be allocated.
-        :type path: list
-
-        :param sim_type: The type of simulation, which handles various assumptions.
-        :type sim_type: str
-
-        :param alloc_method: The allocation policy for a request.
-        :type alloc_method: str
-
-        :param source: The source node of the request.
-        :type source: int
-
-        :param destination: The destination node of the request.
-        :type destination: int
-
-        :param mod_per_bw: Modulation formats for every bandwidth in the network.
-        :type mod_per_bw: dict
-
-        :param chosen_bw: The chosen bandwidth for this request.
-        :type chosen_bw: str
-
-        :param max_segments: The maximum number of light segments allowed for a single request.
-        :type max_segments: int
-
-        :param guard_slots: The amount of slots to be allocated for the guard band.
-        :type guard_slots: int
-
-        :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
-                            request to multiple different bandwidths if set to true.
-        :type dynamic_lps: bool
-
-        :param ai_obj: A class to handle everything related to routing and spectrum assingment for AI.
+        :param ai_obj: Class containing all methods related to AI
         :type ai_obj: object
-
-        :param ai_algorithm: The current AI algorithm being used.
-        :type ai_algorithm: str
         """
-        self.req_id = req_id
-        self.net_spec_db = net_spec_db
-        self.topology = topology
-        self.cores_per_link = cores_per_link
-        self.path = path
-        self.sim_type = sim_type
-        self.alloc_method = alloc_method
-        self.dynamic_lps = dynamic_lps
+        self.topology = properties['topology']
+        self.cores_per_link = properties['cores_per_link']
+        self.sim_type = properties['sim_type']
+        self.alloc_method = properties['allocation_method']
+        self.route_method = properties['route_method']
+        self.dynamic_lps = properties['dynamic_lps']
+        self.ai_algorithm = properties['ai_algorithm']
+        self.beta = properties['beta']
+        self.max_segments = properties['max_segments']
+        self.guard_slots = properties['guard_slots']
+        self.mod_per_bw = properties['mod_per_bw']
         self.ai_obj = ai_obj
-        self.ai_algorithm = ai_algorithm
 
-        self.source = source
-        self.destination = destination
-        self.mod_per_bw = mod_per_bw
-        self.chosen_bw = chosen_bw
-        self.max_segments = max_segments
-        self.guard_slots = guard_slots
-
+        # The current request id number
+        self.req_id = None
+        # The updated network spectrum database
+        self.net_spec_db = dict()
+        # Source node
+        self.source = None
+        # Destination node
+        self.destination = None
+        # The current path
+        self.path = None
+        # The chosen bandwidth for the current request
+        self.chosen_bw = None
         # Determines if light slicing is limited to a single core or not
         self.single_core = False
         # The number of transponders used to allocate the request
@@ -248,7 +205,7 @@ class SDNController:
                                                          slots_needed=modulation_dict[tmp_format]['slots_needed'],
                                                          net_spec_db=self.net_spec_db,
                                                          guard_slots=self.guard_slots, single_core=self.single_core,
-                                                         is_sliced=True, alloc_method='best-fit')
+                                                         is_sliced=True, alloc_method=self.alloc_method)
                 selected_spectrum = spectrum_assignment.find_free_spectrum()
 
                 if selected_spectrum is not False:
@@ -299,6 +256,37 @@ class SDNController:
 
         return False, self.dist_block, self.path
 
+    def _route(self):
+        """
+        For a given request, attempt to route and assign a modulation format based on a routing method flag.
+
+        :return: A selected path and modulation format.
+        :rtype: tuple
+        """
+        routing_obj = Routing(source=self.source, destination=self.destination,
+                              topology=self.topology, net_spec_db=self.net_spec_db,
+                              mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
+
+        if self.route_method == 'nli_aware':
+            # TODO: Constant QPSK for now
+            slots_needed = self.mod_per_bw[self.chosen_bw]['QPSK']['slots_needed']
+            selected_path, path_mod = routing_obj.nli_aware(slots_needed=slots_needed, beta=self.beta)
+        elif self.route_method == 'least_congested':
+            selected_path = routing_obj.least_congested_path()
+            # TODO: Constant QPSK for now
+            path_mod = 'QPSK'
+        elif self.route_method == 'shortest_path':
+            selected_path, path_mod = routing_obj.shortest_path()
+        elif self.ai_algorithm is not None:
+            # Used for routing related to artificial intelligence
+            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination))
+            path_len = find_path_len(path=selected_path, topology=self.topology)
+            path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
+        else:
+            raise NotImplementedError(f'Routing method not recognized, got: {self.route_method}.')
+
+        return selected_path, path_mod
+
     def handle_event(self, request_type):
         """
         Handles any event that occurs in the simulation. This is the main method in this class. Returns False if a
@@ -317,21 +305,7 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        # Default routing object
-        if self.ai_algorithm is None:
-            routing_obj = Routing(source=self.source, destination=self.destination,
-                                  topology=self.topology, net_spec_db=self.net_spec_db,
-                                  mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
-            if self.sim_type == 'yue':
-                selected_path, path_mod = routing_obj.shortest_path()
-            else:
-                selected_path = routing_obj.least_congested_path()
-                path_mod = 'QPSK'
-        else:
-            # Used for routing related to artificial intelligence
-            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination))
-            path_len = find_path_len(path=selected_path, topology=self.topology)
-            path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
+        selected_path, path_mod = self._route()
 
         if selected_path is not False:
             self.path = selected_path
