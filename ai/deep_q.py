@@ -1,22 +1,12 @@
-# Standard library imports
-import os
-import json
-
-# Third party imports
 import numpy as np
-import networkx as nx
-
-# Local application imports
-from useful_functions.handle_dirs_files import create_dir
+import gymnasium as gym
+from stable_baselines3 import A2C
 
 
-class QLearning:
-    """
-    Controls methods related to the Q-learning reinforcement learning algorithm.
-    """
+class DeepQ:
 
     def __init__(self):
-        raise NotImplementedError
+        pass
 
     @staticmethod
     def set_seed(seed: int):
@@ -28,21 +18,27 @@ class QLearning:
         """
         np.random.seed(seed)
 
-    def decay_epsilon(self):
-        raise NotImplementedError
-
     def _update_rewards_dict(self):
         raise NotImplementedError
 
-    def update_environment(self):
-        raise NotImplementedError
+    @staticmethod
+    def update_environment(model, obs, vec_env):
+        for i in range(1000):
+            action, _state = model.predict(obs, deterministic=True)
+            obs, reward, done, info = vec_env.step(action)
+            vec_env.render('human')
 
     def setup_environment(self):
-        raise NotImplementedError
+        env = gym.make('CartPole-v1')
+        model = A2C('MlpPolicy', env, verbose=1)
+        model.learn(total_timesteps=10_000)
 
-    def route(self):
-        raise NotImplementedError
+        vec_env = model.get_env()
+        obs = vec_env.reset()
+
+        self.update_environment(model, obs, vec_env)
 
 
 if __name__ == '__main__':
-    pass
+    test_obj = DeepQ()
+    test_obj.setup_environment()
