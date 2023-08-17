@@ -3,6 +3,9 @@ import gymnasium as gym
 from stable_baselines3 import A2C
 
 
+# TODO: Check env
+
+
 class DeepQ:
 
     def __init__(self):
