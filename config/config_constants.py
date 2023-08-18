@@ -49,6 +49,7 @@ ARASH_REQUIRED_OPTIONS = {
     'allocation_method': str,
     'route_method': str,
     'request_distribution': ast.literal_eval,
+    'beta': float,
 }
 
 OTHER_OPTIONS = {
