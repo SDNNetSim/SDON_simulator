@@ -27,28 +27,19 @@ class AIMethods:
         """
         Saves the current state of the Q-table.
         """
-        self.ai_obj.save_table(path=self.sim_info, max_segments=self.max_segments, cores_per_link=self.cores_per_link)
+        self.ai_obj.save_table(path=self.sim_info, cores_per_link=self.cores_per_link)
 
-    def _q_update_env(self, routed: bool, path: list, free_slots: int, iteration: int, num_segments: int):
+    def _q_update_env(self, routed: bool, iteration: int):
         """
         Updates the Q-learning environment.
 
         :param routed: A flag to determine if a request was routed or not.
         :type routed: bool
 
-        :param path: The path for the request.
-        :type path: list
-
-        :param free_slots: The number of total free slots in the path.
-        :type free_slots: int
-
         :param iteration: The current iteration of the simulation.
         :type iteration: int
-
-        :param num_segments: The number of segments used for this request.
-        :type num_segments: int
         """
-        self.ai_obj.update_environment(routed=routed, path=path, free_slots=free_slots, num_segments=num_segments)
+        self.ai_obj.update_environment(routed=routed)
 
         # Decay epsilon for half of the iterations evenly each time
         if 1 <= iteration <= iteration // 2 and self.is_training:
@@ -71,7 +62,9 @@ class AIMethods:
         :return: A path from source to destination and a modulation format.
         :rtype: list, str
         """
-        path = self.ai_obj.route(source=source, destination=destination)
+        self.ai_obj.source = source
+        self.ai_obj.destination = destination
+        path = self.ai_obj.route()
         return path
 
     def _init_q_learning(self, erlang: int = None, epsilon: float = 0.2, episodes: int = 1000, learn_rate: float = 0.5,
@@ -103,12 +96,11 @@ class AIMethods:
         self.ai_obj.setup_environment()
 
         # Load a pre-trained table or start a new one
-        if self.is_training and erlang == 10:
-            self.ai_obj.save_table(path=self.sim_info, max_segments=self.max_segments,
-                                   cores_per_link=self.cores_per_link)
+        # TODO: Erlang a hard-coded value :(
+        if self.is_training and erlang == 10 or erlang == 50:
+            self.ai_obj.save_table(path=self.sim_info, cores_per_link=self.cores_per_link)
         else:
-            self.ai_obj.load_table(path=trained_table, max_segments=self.max_segments,
-                                   cores_per_link=self.cores_per_link)
+            self.ai_obj.load_table(path=trained_table, cores_per_link=self.cores_per_link)
 
         self.ai_obj.set_seed(self.seed)
 
@@ -134,8 +126,7 @@ class AIMethods:
         Responsible for updating environment information.
         """
         if self.algorithm == 'q_learning':
-            self._q_update_env(routed=kwargs['routed'], path=kwargs['path'], free_slots=kwargs['free_slots'],
-                               iteration=kwargs['iteration'], num_segments=kwargs['num_segments'])
+            self._q_update_env(routed=kwargs['routed'], iteration=kwargs['iteration'])
 
     def setup(self, **kwargs):
         """

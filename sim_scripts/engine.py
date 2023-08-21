@@ -238,12 +238,14 @@ class Engine(SDNController):
 
         resp = self.handle_event(request_type='arrival')
 
-        free_slots = self.get_path_free_slots(path=resp[-1])
-
         if self.properties['ai_algorithm'] != 'None':
-            self.ai_obj.update(routed=resp[0], path=resp[-1], free_slots=free_slots, iteration=iteration,
-                               num_segments=resp[2])
+            if not resp[0]:
+                routed = False
+            else:
+                routed = True
+            self.ai_obj.update(routed=routed, iteration=iteration)
 
+        # TODO: Should probably make this better
         # Request was blocked
         if not resp[0]:
             self.num_blocked_reqs += 1
@@ -449,11 +451,11 @@ class Engine(SDNController):
 
                 # We are running a normal simulation, no AI object needed
                 if self.properties['ai_algorithm'] != 'None':
-                    self.ai_obj.topology = self.properties['topology']
+                    self.ai_obj.topology = self.topology
                     self.ai_obj.seed = iteration
 
                     if self.properties['train_file'] is None:
-                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.properties['sim_info'])
+                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.sim_info)
                     else:
                         self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.properties['train_file'])
 
