@@ -9,6 +9,7 @@ import networkx as nx
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
+from sim_scripts.routing import Routing
 
 
 class QLearning:
@@ -55,7 +56,6 @@ class QLearning:
         # Statistics used for plotting
         self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': []}
 
-        # TODO: Make sure these values are updated everytime in sim_scripts
         self.source = None
         self.destination = None
         self.chosen_path = None
@@ -82,6 +82,7 @@ class QLearning:
             raise ValueError(f'Epsilon should be greater than 0 but it is {self.epsilon}')
 
     def _update_rewards_dict(self, reward: float):
+        # TODO: This method isn't getting called
         self.rewards_dict['rewards'].append(reward)
         self.rewards_dict['min'] = min(self.rewards_dict['rewards'])
         self.rewards_dict['max'] = max(self.rewards_dict['rewards'])
@@ -119,8 +120,13 @@ class QLearning:
             self.learn_rate = params_obj['learn_rate']
             self.discount = params_obj['discount_factor']
 
+    # TODO: Need to create a method that just calculates the NLI cost of a path
+    def _get_nli_cost(self):
+        pass
+
     def update_environment(self, routed):
         # TODO: Update
+        nli_cost = self._get_nli_cost()
         if not routed:
             reward = -10000
         else:
@@ -179,36 +185,20 @@ class QLearning:
 
     def route(self):
         self.chosen_path = [str(self.source)]
-        if self.source == 8:
-            print('Begin debug')
-        # TODO: Nodes equal to the values from the q-table for the source entry
-        #   - Sort them from greatest to least, pick each of them and if you make the end of the list, block
-        # TODO: These need to be indexes
         nodes = self.q_table[self.source]
 
         curr_node = self.source
         while True:
-            if self.chosen_path == ['8', '11', '14', '20', '15', '19', '16']:
-                print('Begin debug')
-            if curr_node == 2:
-                print('Another debug')
-            # TODO: This random probably has to be fixed, (e.g., not actually 10 percent randomness)
-            #   - Need a limit on randomness
             random_float = np.round(np.random.uniform(0, 1), decimals=1)
             if random_float < self.epsilon:
-                # TODO: Check on this length, either length of nodes minus one or not?
-                # TODO: This may get stuck here
-                # TODO: Also need to check if there's and actual connection (is not nan)
                 next_node = np.random.randint(len(nodes))
                 if str(next_node) in self.chosen_path or np.isnan(self.q_table[(curr_node, next_node)]):
                     continue
                 self.chosen_path.append(str(next_node))
                 found_next = True
             else:
-                # TODO: This is dependent on the structure of the Q-table, most likely needs to be updated
                 found_next, next_node = self._find_next_node(curr_node)
 
-            # TODO: Also need to check for np.nan values
             if found_next is not False:
                 if next_node == self.destination:
                     return self.chosen_path
