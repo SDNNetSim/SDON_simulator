@@ -17,7 +17,7 @@ class QLearning:
     """
 
     def __init__(self, is_training: bool = None, epsilon: float = 0.2, episodes: int = None, learn_rate: float = 0.9,
-                 discount: float = 0.9, topology: nx.Graph = None, k_paths: int = 1):
+                 discount: float = 0.9, topology: nx.Graph = None):
         """
         Initializes the QLearning class.
 
@@ -39,9 +39,6 @@ class QLearning:
 
         :param topology: The network topology.
         :type: topology: nx.Graph
-
-        :param k_paths: The number of K shortest paths to consider in the Q-table.
-        :type k_paths: int
         """
         if is_training:
             self.sim_type = 'train'
@@ -54,12 +51,14 @@ class QLearning:
         self.learn_rate = learn_rate
         self.discount = discount
         self.topology = topology
-        self.k_paths = k_paths
 
         # Statistics used for plotting
         self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': []}
-        # The last chosen path, used for ease of indexing/searching the q-table
-        self.last_chosen = None
+
+        # TODO: Make sure these values are updated everytime in sim_scripts
+        self.source = None
+        self.destination = None
+        self.chosen_path = None
 
     @staticmethod
     def set_seed(seed: int):
@@ -83,33 +82,15 @@ class QLearning:
             raise ValueError(f'Epsilon should be greater than 0 but it is {self.epsilon}')
 
     def _update_rewards_dict(self, reward: float):
-        """
-        Updates the reward dictionary with desired information related to the Q-learning algorithm.
-
-        :param reward: The reword achieved for a single episode.
-        :type reward: float
-        """
         self.rewards_dict['rewards'].append(reward)
         self.rewards_dict['min'] = min(self.rewards_dict['rewards'])
         self.rewards_dict['max'] = max(self.rewards_dict['rewards'])
         self.rewards_dict['average'] = sum(self.rewards_dict['rewards']) / float(len(self.rewards_dict['rewards']))
 
-    def save_table(self, path: str, max_segments: int, cores_per_link: int):
-        """
-        Saves the current Q-table and hyperparameters used to create it.
-
-        :param path: The path for the table to be saved.
-        :type path: str
-
-        :param max_segments: The number of light segments allowed for a single request.
-        :type max_segments: int
-
-        :param cores_per_link: The number of optical fiber cores on a single link.
-        :type cores_per_link: int
-        """
+    def save_table(self, path, cores_per_link):
         create_dir(f'ai/q_tables/{path}')
 
-        with open(f'{os.getcwd()}/ai/q_tables/{path}/{self.sim_type}_table_ls{max_segments}_c{cores_per_link}.json',
+        with open(f'{os.getcwd()}/ai/q_tables/{path}/{self.sim_type}_table_c{cores_per_link}.json',
                   'w', encoding='utf-8') as file:
             json.dump(self.q_table, file)
 
@@ -120,123 +101,94 @@ class QLearning:
             'discount_factor': self.discount,
             'reward_info': self.rewards_dict
         }
-        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_ls{max_segments}_c{cores_per_link}.json', 'w',
+        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_c{cores_per_link}.json', 'w',
                   encoding='utf-8') as file:
             json.dump(params_dict, file)
 
-    def load_table(self, path: str, max_segments: int, cores_per_link: int):
-        """
-        Loads a saved Q-table and previous hyperparameters.
-
-        :param path: The path for the table to be loaded.
-        :type path: str
-
-        :param max_segments: The number of light segments allowed for a single request.
-        :type max_segments: int
-
-        :param cores_per_link: The number of optical fiber cores on a single link.
-        :type cores_per_link: int
-        """
+    def load_table(self, path, cores_per_link):
         try:
             with open(
-                    f'{os.getcwd()}/ai/q_tables/{path}/{self.sim_type}_table_ls{max_segments}_c{cores_per_link}.json',
+                    f'{os.getcwd()}/ai/q_tables/{path}/{self.sim_type}_table_c{cores_per_link}.json',
                     encoding='utf-8') as file:
                 self.q_table = json.load(file)
         except FileNotFoundError:
             print('File not found, please ensure if you are testing, an already trained file exists and has been '
                   'specified correctly.')
 
-        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_ls{max_segments}_c{cores_per_link}.json',
+        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_c{cores_per_link}.json',
                   encoding='utf-8') as file:
             params_obj = json.load(file)
             self.epsilon = params_obj['epsilon']
             self.learn_rate = params_obj['learn_rate']
             self.discount = params_obj['discount_factor']
 
-    def update_environment(self, routed: bool, path: list, num_segments: int, free_slots: int):
-        """
-        The custom environment that updates the Q-table with respect to a reward policy.
+    def update_environment(self):
+        # TODO: Update
+        reward = -10000000
+        # TODO: Penalty for no path found due to Q-learning?
+        for i in range(len(self.chosen_path) - 1):
+            # Source node, current state
+            state = int(self.chosen_path[i])
+            # Destination node, new state
+            new_state = int(self.chosen_path[i + 1])
 
-        :param routed: If a request was successfully routed or not.
-        :type routed: bool
-
-        :param path: The list of nodes from source to destination.
-        :type path: list
-
-        :param num_segments: The number of segments that this request was "sliced" into.
-        :type num_segments: int
-
-        :param free_slots: The total number of free slots on the selected path.
-        :type free_slots: int
-
-        :return: The reward value.
-        :rtype: int
-        """
-        source = int(path[0])
-        destination = int(path[-1])
-        # TODO: LS = 1 we want the shortest path possible...something to consider
-        reward = 0
-        if routed:
-            if free_slots == 0:
-                cong_percent = 100.0
+            # The terminating node, there is no future state
+            # TODO: Update
+            if i + 1 == len(self.chosen_path):
+                max_future_q = None
             else:
-                # TODO: Hard coded (number of slots per link is 128) for now
-                cong_percent = ((128.0 * float(len(path))) / float(free_slots)) * 100.0
-            cong_quality = 100.0 - cong_percent
-            seg_quality = 100 / num_segments
-            reward += ((cong_quality + seg_quality) / 200) * 100
-        else:
-            reward -= 1800.0
+                max_future_q = np.nanargmax(self.q_table[new_state])
 
-        max_future_q = max(  # pylint: disable=consider-using-generator
-            [lst[1] for lst in self.q_table[source][destination]])
-        current_q = self.q_table[source][destination][self.last_chosen][1]
-        new_q = ((1.0 - self.learn_rate) * current_q) + (
-                self.learn_rate * (reward + self.discount * max_future_q))
+            current_q = self.q_table[(state, new_state)]
+            new_q = ((1.0 - self.learn_rate) * current_q) + (
+                    self.learn_rate * (reward + self.discount * max_future_q))
 
-        self.q_table[source][destination][self.last_chosen][1] = new_q
-
-        self._update_rewards_dict(reward=reward)
+            self.q_table[(state, new_state)] = new_q
 
     def setup_environment(self):
-        """
-        Initializes the environment.
-        """
+        num_nodes = len(list(self.topology.nodes()))
+        self.q_table = np.zeros((num_nodes, num_nodes))
+
+        for source in range(0, num_nodes):
+            for destination in range(0, num_nodes):
+                # A node cannot be attached to itself
+                if source == destination:
+                    self.q_table[(source, destination)] = np.nan
+                    continue
+
+                # A link exists between these two nodes
+                if str(source) in self.topology.neighbors((str(destination))):
+                    self.q_table[(source, destination)] = 0
+                else:
+                    self.q_table[(source, destination)] = np.nan
+
+    def _find_path(self, random: bool):
+        self.chosen_path = [self.source]
         nodes = list(self.topology.nodes())
-        # Get all combinations of source and destination nodes
-        combinations_list = list(permutations(nodes, 2))
 
-        self.q_table = [[[0 for _ in range(self.k_paths)] for _ in range(len(nodes))] for _ in range(len(nodes))]
+        while True:
+            if random:
+                # TODO: Check on this length, either length of nodes minus one or not?
+                node = np.random.randint(len(nodes))
+            else:
+                # TODO: This is dependent on the structure of the Q-table, most likely needs to be updated
+                node = max(index for index, value in enumerate(self.q_table[self.source]))
 
-        for source, destination in combinations_list:
-            shortest_paths = nx.shortest_simple_paths(self.topology, source=source, target=destination, weight='length')
-            for i, path in enumerate(shortest_paths):
-                if i == self.k_paths:
-                    break
-                # Assign a q-value for every kth path
-                self.q_table[int(source)][int(destination)][i] = [path, 0]
+            # TODO: also need to check for np.nan values
+            if node not in self.chosen_path:
+                self.chosen_path.append(node)
+            # TODO: Here is where you need to check for no more paths found
+            else:
+                continue
 
-    def route(self, source: int, destination: int):
-        """
-        Determines a route from source to destination using Q-Learning.
-
-        :param source: The source node.
-        :type source: int
-
-        :param destination: The destination node.
-        :type destination: int
-
-        :return: The path from source to destination.
-        :rtype: list
-        """
+    def route(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         if random_float < self.epsilon:
-            chosen_path = np.random.randint(self.k_paths)
+            self._find_path(random=True)
         else:
-            chosen_path = max(index for index, value in enumerate(self.q_table[source][destination]))
+            self._find_path(random=False)
 
-        self.last_chosen = chosen_path
-        return self.q_table[source][destination][chosen_path][0]
+        return self.chosen_path
 
 
 if __name__ == '__main__':
