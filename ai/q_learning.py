@@ -90,9 +90,8 @@ class QLearning:
     def save_table(self, path, cores_per_link):
         create_dir(f'ai/q_tables/{path}')
 
-        with open(f'{os.getcwd()}/ai/q_tables/{path}/{self.sim_type}_table_c{cores_per_link}.json',
-                  'w', encoding='utf-8') as file:
-            json.dump(self.q_table, file)
+        file_path = f'{os.getcwd()}/ai/q_tables/{path}/{self.sim_type}_table_c{cores_per_link}.npy'
+        np.save(file_path, self.q_table)
 
         params_dict = {
             'epsilon': self.epsilon,
@@ -107,10 +106,8 @@ class QLearning:
 
     def load_table(self, path, cores_per_link):
         try:
-            with open(
-                    f'{os.getcwd()}/ai/q_tables/{path}/{self.sim_type}_table_c{cores_per_link}.json',
-                    encoding='utf-8') as file:
-                self.q_table = json.load(file)
+            file_path = f'{os.getcwd()}/ai/q_tables/{path}/{self.sim_type}_table_c{cores_per_link}.npy'
+            self.q_table = np.load(file_path)
         except FileNotFoundError:
             print('File not found, please ensure if you are testing, an already trained file exists and has been '
                   'specified correctly.')
@@ -122,20 +119,21 @@ class QLearning:
             self.learn_rate = params_obj['learn_rate']
             self.discount = params_obj['discount_factor']
 
-    def update_environment(self):
+    def update_environment(self, routed):
         # TODO: Update
-        reward = -10000000
-        # TODO: Penalty for no path found due to Q-learning?
+        if not routed:
+            reward = -10000
+        else:
+            reward = 100
         for i in range(len(self.chosen_path) - 1):
             # Source node, current state
             state = int(self.chosen_path[i])
             # Destination node, new state
             new_state = int(self.chosen_path[i + 1])
 
-            # The terminating node, there is no future state
-            # TODO: Update
+            # The terminating node, there is no future state (equal to reward for now)
             if i + 1 == len(self.chosen_path):
-                max_future_q = None
+                max_future_q = reward
             else:
                 max_future_q = np.nanargmax(self.q_table[new_state])
 
@@ -162,34 +160,38 @@ class QLearning:
                 else:
                     self.q_table[(source, destination)] = np.nan
 
-    def _find_next_node(self):
-        # TODO: Update
-        some_node = None
-        array_to_sort = self.q_table[some_node]
+    def _find_next_node(self, curr_node):
+        array_to_sort = self.q_table[curr_node]
         # Create a mask to ignore nan values
         mask = ~np.isnan(array_to_sort)
         # Sort ignoring non-nan values but keeping original indexes
         sorted_indexes = np.argsort(-array_to_sort[mask])
         sorted_original_indexes = np.where(mask)[0][sorted_indexes]
-        next_node = None
 
-        for i in range(len(sorted_original_indexes)):
-            if next_node not in self.chosen_path:
-                self.chosen_path.append(next_node)
-                return True
+        for next_node in sorted_original_indexes:
+            if str(next_node) not in self.chosen_path:
+                self.chosen_path.append(str(next_node))
+                return True, next_node
             else:
                 continue
 
-        return False
+        return False, None
 
     def route(self):
-        self.chosen_path = [self.source]
+        self.chosen_path = [str(self.source)]
+        if self.source == 8:
+            print('Begin debug')
         # TODO: Nodes equal to the values from the q-table for the source entry
         #   - Sort them from greatest to least, pick each of them and if you make the end of the list, block
         # TODO: These need to be indexes
         nodes = self.q_table[self.source]
 
+        curr_node = self.source
         while True:
+            if self.chosen_path == ['8', '11', '14', '20', '15', '19', '16']:
+                print('Begin debug')
+            if curr_node == 2:
+                print('Another debug')
             # TODO: This random probably has to be fixed, (e.g., not actually 10 percent randomness)
             #   - Need a limit on randomness
             random_float = np.round(np.random.uniform(0, 1), decimals=1)
@@ -198,21 +200,25 @@ class QLearning:
                 # TODO: This may get stuck here
                 # TODO: Also need to check if there's and actual connection (is not nan)
                 next_node = np.random.randint(len(nodes))
+                if str(next_node) in self.chosen_path or np.isnan(self.q_table[(curr_node, next_node)]):
+                    continue
+                self.chosen_path.append(str(next_node))
+                found_next = True
             else:
                 # TODO: This is dependent on the structure of the Q-table, most likely needs to be updated
-                next_node = self._find_next_node(nodes[0])
+                found_next, next_node = self._find_next_node(curr_node)
 
             # TODO: Also need to check for np.nan values
-            if next_node is not False:
+            if found_next is not False:
                 if next_node == self.destination:
-                    return
+                    return self.chosen_path
 
+                curr_node = next_node
                 nodes = self.q_table[next_node]
-            # TODO: Here is where you need to check for no more paths found
-            else:
                 continue
 
-        return self.chosen_path
+            # Q-routing chose too many nodes, no path found due to Q-routing constraint
+            return False
 
 
 if __name__ == '__main__':

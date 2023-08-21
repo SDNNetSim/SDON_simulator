@@ -309,11 +309,16 @@ class SDNController:
             path_mod = 'QPSK'
         elif self.route_method == 'shortest_path':
             selected_path, path_mod = routing_obj.shortest_path()
-        elif self.ai_algorithm is not None:
+        elif self.route_method == 'ai':
             # Used for routing related to artificial intelligence
             selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination))
-            path_len = find_path_len(path=selected_path, topology=self.topology)
-            path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
+
+            # TODO: Make this better
+            if not selected_path:
+                path_mod = None
+            else:
+                path_len = find_path_len(path=selected_path, topology=self.topology)
+                path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
         else:
             raise NotImplementedError(f'Routing method not recognized, got: {self.route_method}.')
 
