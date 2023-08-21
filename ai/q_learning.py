@@ -162,31 +162,55 @@ class QLearning:
                 else:
                     self.q_table[(source, destination)] = np.nan
 
-    def _find_path(self, random: bool):
-        self.chosen_path = [self.source]
-        nodes = list(self.topology.nodes())
+    def _find_next_node(self):
+        # TODO: Update
+        some_node = None
+        array_to_sort = self.q_table[some_node]
+        # Create a mask to ignore nan values
+        mask = ~np.isnan(array_to_sort)
+        # Sort ignoring non-nan values but keeping original indexes
+        sorted_indexes = np.argsort(-array_to_sort[mask])
+        sorted_original_indexes = np.where(mask)[0][sorted_indexes]
+        next_node = None
 
-        while True:
-            if random:
-                # TODO: Check on this length, either length of nodes minus one or not?
-                node = np.random.randint(len(nodes))
-            else:
-                # TODO: This is dependent on the structure of the Q-table, most likely needs to be updated
-                node = max(index for index, value in enumerate(self.q_table[self.source]))
-
-            # TODO: also need to check for np.nan values
-            if node not in self.chosen_path:
-                self.chosen_path.append(node)
-            # TODO: Here is where you need to check for no more paths found
+        for i in range(len(sorted_original_indexes)):
+            if next_node not in self.chosen_path:
+                self.chosen_path.append(next_node)
+                return True
             else:
                 continue
 
+        return False
+
     def route(self):
-        random_float = np.round(np.random.uniform(0, 1), decimals=1)
-        if random_float < self.epsilon:
-            self._find_path(random=True)
-        else:
-            self._find_path(random=False)
+        self.chosen_path = [self.source]
+        # TODO: Nodes equal to the values from the q-table for the source entry
+        #   - Sort them from greatest to least, pick each of them and if you make the end of the list, block
+        # TODO: These need to be indexes
+        nodes = self.q_table[self.source]
+
+        while True:
+            # TODO: This random probably has to be fixed, (e.g., not actually 10 percent randomness)
+            #   - Need a limit on randomness
+            random_float = np.round(np.random.uniform(0, 1), decimals=1)
+            if random_float < self.epsilon:
+                # TODO: Check on this length, either length of nodes minus one or not?
+                # TODO: This may get stuck here
+                # TODO: Also need to check if there's and actual connection (is not nan)
+                next_node = np.random.randint(len(nodes))
+            else:
+                # TODO: This is dependent on the structure of the Q-table, most likely needs to be updated
+                next_node = self._find_next_node(nodes[0])
+
+            # TODO: Also need to check for np.nan values
+            if next_node is not False:
+                if next_node == self.destination:
+                    return
+
+                nodes = self.q_table[next_node]
+            # TODO: Here is where you need to check for no more paths found
+            else:
+                continue
 
         return self.chosen_path
 
