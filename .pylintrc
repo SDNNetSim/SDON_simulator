@@ -162,7 +162,9 @@ disable=raw-checker-failed,
         use-dict-literal,
         use-list-literal,
         too-many-locals,
-        too-many-branches
+        too-many-branches,
+        redefined-outer-name,
+        wildcard-import
 
 
 # Enable the message, report, category or checker with the given id(s). You can
@@ -185,10 +187,6 @@ never-returning-functions=sys.exit,argparse.parse_error
 
 
 [METHOD_ARGS]
-
-# List of qualified names (i.e., library.method) which require a timeout
-# parameter e.g. 'requests.api.get,requests.api.post'
-timeout-methods=requests.api.delete,requests.api.get,requests.api.head,requests.api.options,requests.api.patch,requests.api.post,requests.api.put,requests.api.request
 
 
 [MISCELLANEOUS]

@@ -1,5 +1,10 @@
+# Standard library imports
 import numpy as np
 
+# Third-party library imports
+import networkx as nx
+
+# Local application imports
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
 from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
@@ -7,168 +12,292 @@ from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_pa
 
 class SDNController:
     """
-    The software defined networking class. Handles events in the simulation.
+    Handles spectrum allocation for a request in the simulation.
     """
 
-    def __init__(self, req_id=None, network_db=None, topology=None, num_cores=None, path=None, sim_assume=None,
-                 src=None, dest=None, mod_formats=None, chosen_bw=None, max_lps=None):
+    def __init__(self, req_id: int = None, net_spec_db: dict = None, topology: nx.Graph = None,
+                 cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
+                 source: int = None, destination: int = None, mod_per_bw: dict = None, chosen_bw: str = None,
+                 max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None,
+                 ai_obj: object = None, ai_algorithm: str = None):
+        """
+        Initializes the SDNController class.
+
+        :param req_id: The ID of the request.
+        :type req_id: int
+
+        :param net_spec_db: The network's spectrum database.
+        :type net_spec_db: dict
+
+        :param topology: The network's topology.
+        :type topology: nx.Graph
+
+        :param cores_per_link: The amount of cores per link in the network.
+        :type cores_per_link: int
+
+        :param path: The path in the network to be allocated.
+        :type path: list
+
+        :param sim_type: The type of simulation, which handles various assumptions.
+        :type sim_type: str
+
+        :param alloc_method: The allocation policy for a request.
+        :type alloc_method: str
+
+        :param source: The source node of the request.
+        :type source: int
+
+        :param destination: The destination node of the request.
+        :type destination: int
+
+        :param mod_per_bw: Modulation formats for every bandwidth in the network.
+        :type mod_per_bw: dict
+
+        :param chosen_bw: The chosen bandwidth for this request.
+        :type chosen_bw: str
+
+        :param max_segments: The maximum number of light segments allowed for a single request.
+        :type max_segments: int
+
+        :param guard_slots: The amount of slots to be allocated for the guard band.
+        :type guard_slots: int
+
+        :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
+                            request to multiple different bandwidths if set to true.
+        :type dynamic_lps: bool
+
+        :param ai_obj: A class to handle everything related to routing and spectrum assingment for AI.
+        :type ai_obj: object
+
+        :param ai_algorithm: The current AI algorithm being used.
+        :type ai_algorithm: str
+        """
         self.req_id = req_id
-        self.network_db = network_db
+        self.net_spec_db = net_spec_db
         self.topology = topology
-        self.num_cores = num_cores
+        self.cores_per_link = cores_per_link
         self.path = path
-        self.sim_assume = sim_assume
+        self.sim_type = sim_type
+        self.alloc_method = alloc_method
+        self.dynamic_lps = dynamic_lps
+        self.ai_obj = ai_obj
+        self.ai_algorithm = ai_algorithm
 
-        self.src = src
-        self.dest = dest
-
-        # Modulation formats for the chosen bandwidth
-        self.mod_formats = mod_formats
+        self.source = source
+        self.destination = destination
+        self.mod_per_bw = mod_per_bw
         self.chosen_bw = chosen_bw
-        self.max_lps = max_lps
-        # Limit to single core light segment slicing
+        self.max_segments = max_segments
+        self.guard_slots = guard_slots
+
+        # Determines if light slicing is limited to a single core or not
         self.single_core = False
-        self.transponders = 1
+        # The number of transponders used to allocate the request
+        self.num_transponders = 1
+        # Determines whether the block was due to distance or congestion
         self.dist_block = False
 
-        if self.sim_assume == 'arash':
-            self.guard_band = 0
-        elif self.sim_assume == 'yue':
-            self.guard_band = 1
-        else:
-            raise NotImplementedError
-
-    def handle_release(self):
+    def release(self):
         """
         Handles a departure event. Finds where a request was previously allocated and releases it by setting the indexes
         to all zeros.
 
         :return: None
         """
-        for i in range(len(self.path) - 1):
-            src_dest = (self.path[i], self.path[i + 1])
-            dest_src = (self.path[i + 1], self.path[i])
+        for src, dest in zip(self.path, self.path[1:]):
+            src_dest = (src, dest)
+            dest_src = (dest, src)
 
-            for core_num in range(self.num_cores):
-                core_arr = self.network_db[src_dest]['cores_matrix'][core_num]
+            for core_num in range(self.cores_per_link):
+                core_arr = self.net_spec_db[src_dest]['cores_matrix'][core_num]
                 req_indexes = np.where(core_arr == self.req_id)
                 guard_bands = np.where(core_arr == (self.req_id * -1))
 
                 for index in req_indexes:
-                    self.network_db[src_dest]['cores_matrix'][core_num][index] = 0
-                    self.network_db[dest_src]['cores_matrix'][core_num][index] = 0
+                    self.net_spec_db[src_dest]['cores_matrix'][core_num][index] = 0
+                    self.net_spec_db[dest_src]['cores_matrix'][core_num][index] = 0
                 for gb_index in guard_bands:
-                    self.network_db[src_dest]['cores_matrix'][core_num][gb_index] = 0
-                    self.network_db[dest_src]['cores_matrix'][core_num][gb_index] = 0
+                    self.net_spec_db[src_dest]['cores_matrix'][core_num][gb_index] = 0
+                    self.net_spec_db[dest_src]['cores_matrix'][core_num][gb_index] = 0
 
-    def handle_arrival(self, start_slot, end_slot, core_num):
+    def allocate(self, start_slot: int, end_slot: int, core_num: int):
         """
         Handles an arrival event. Sets the allocated spectral slots equal to the request ID, the request ID is negative
         for the guard band to differentiate which slots are guard bands for future SNR calculations.
 
         :param start_slot: The starting spectral slot to allocate the request
         :type start_slot: int
+
         :param end_slot: The ending spectral slot to allocate the request
         :type end_slot: int
+
         :param core_num: The desired core to allocate the request
         :type core_num: int
+
         :return: None
         """
-        for i in range(len(self.path) - 1):
-            src_dest = (self.path[i], self.path[i + 1])
-            dest_src = (self.path[i + 1], self.path[i])
+        if self.guard_slots:
+            end_slot = end_slot - 1
+
+        for src, dest in zip(self.path, self.path[1:]):
+            src_dest = (src, dest)
+            dest_src = (dest, src)
 
             # Remember, Python list indexing is up to and NOT including!
-            tmp_set = set(self.network_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1])
-            rev_tmp_set = set(self.network_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1])
+            tmp_set = set(self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot])
+            rev_tmp_set = set(self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot])
 
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
 
-            self.network_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
-            self.network_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot - 1] = self.req_id
+            self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
+            self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
 
-            # A guard band for us is a -1, as it's important to differentiate the rest of the request from it
-            if self.guard_band:
-                if self.network_db[src_dest]['cores_matrix'][core_num][end_slot - 1] != 0.0 or \
-                        self.network_db[dest_src]['cores_matrix'][core_num][end_slot - 1] != 0.0:
+            if self.guard_slots:
+                if self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot] != 0.0 or \
+                        self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot] != 0.0:
                     raise BufferError("Attempted to allocate a taken spectrum.")
 
-                self.network_db[src_dest]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
-                self.network_db[dest_src]['cores_matrix'][core_num][end_slot - 1] = (self.req_id * -1)
+                self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
+                self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
 
     def allocate_lps(self):
         """
-        Attempts to perform light path slicing (lps) to allocate a request.
+        Attempts to perform light path slicing (LPS) to allocate a request.
 
-        :return: If we were able to successfully carry out lps or not
+        :return: True if LPS is successfully carried out, False otherwise
         """
-        # TODO: Is multiple core slicing always enabled? We should differentiate between them
-        # Indicated whether we blocked due to congestion or a length constraint
-        # No slicing is possible
-        if self.chosen_bw == '25' or self.max_lps == 1:
+        if self.chosen_bw == '25' or self.max_segments == 1:
             return False
 
         path_len = find_path_len(self.path, self.topology)
         # Sort the dictionary in descending order by bandwidth
-        mod_formats = sort_dict_keys(self.mod_formats)
+        modulation_formats = sort_dict_keys(self.mod_per_bw)
 
-        for curr_bw, obj in mod_formats.items():
+        for bandwidth, modulation_dict in modulation_formats.items():
             # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
-            if int(curr_bw) >= int(self.chosen_bw):
+            if int(bandwidth) >= int(self.chosen_bw):
                 continue
 
-            tmp_format = get_path_mod(obj, path_len)
+            tmp_format = get_path_mod(modulation_dict, path_len)
             if tmp_format is False:
                 self.dist_block = True
                 continue
 
-            num_slices = int(int(self.chosen_bw) / int(curr_bw))
-            if num_slices > self.max_lps:
+            num_segments = int(int(self.chosen_bw) / int(bandwidth))
+            if num_segments > self.max_segments:
                 break
-            # Number of slices minus one to account for the original transponder
-            self.transponders += (num_slices - 1)
+            self.num_transponders = num_segments
 
             is_allocated = True
             # Check if all slices can be allocated
-            for i in range(num_slices):  # pylint: disable=unused-variable
-                spectrum_assignment = SpectrumAssignment(self.path, obj[tmp_format]['slots_needed'], self.network_db,
-                                                         guard_band=self.guard_band, single_core=self.single_core,
-                                                         is_sliced=True)
-                selected_sp = spectrum_assignment.find_free_spectrum()
+            for _ in range(num_segments):
+                spectrum_assignment = SpectrumAssignment(path=self.path,
+                                                         slots_needed=modulation_dict[tmp_format]['slots_needed'],
+                                                         net_spec_db=self.net_spec_db,
+                                                         guard_slots=self.guard_slots, single_core=self.single_core,
+                                                         is_sliced=True, alloc_method=self.alloc_method)
+                selected_spectrum = spectrum_assignment.find_free_spectrum()
 
-                if selected_sp is not False:
-                    self.handle_arrival(start_slot=selected_sp['start_slot'], end_slot=selected_sp['end_slot'],
-                                        core_num=selected_sp['core_num'])
+                if selected_spectrum is not False:
+                    self.allocate(start_slot=selected_spectrum['start_slot'], end_slot=selected_spectrum['end_slot'],
+                                  core_num=selected_spectrum['core_num'])
                 # Clear all previously attempted allocations
                 else:
-                    self.handle_release()
+                    self.release()
                     is_allocated = False
                     self.dist_block = False
                     break
 
             if is_allocated:
-                return True
+                return {bandwidth: tmp_format}
 
+        return False
+
+    def allocate_dynamic_lps(self):
+        """
+        Attempts to perform an improved version of light path slicing (LPS) to allocate a request. An 'improved version'
+        refers to allocating multiple different types of bit-rates for slicing, rather than only one.
+
+        :return: True if advanced LPS is successfully carried out, False otherwise
+        """
+        resp = dict()
+
+        if self.max_segments == 1:
+            return False
+
+        path_len = find_path_len(self.path, self.topology)
+        # Sort the dictionary in descending order by bandwidth
+        modulation_formats = sort_dict_keys(self.mod_per_bw)
+
+        remaining_bw = int(self.chosen_bw)
+        num_segments = 0
+
+        for bandwidth, modulation_dict in modulation_formats.items():
+            # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
+            if int(bandwidth) >= int(self.chosen_bw):
+                continue
+
+            tmp_format = get_path_mod(modulation_dict, path_len)
+            if tmp_format is False:
+                self.dist_block = True
+                continue
+
+            while True:
+                spectrum_assignment = SpectrumAssignment(path=self.path,
+                                                         slots_needed=modulation_dict[tmp_format]['slots_needed'],
+                                                         net_spec_db=self.net_spec_db,
+                                                         guard_slots=self.guard_slots, single_core=self.single_core,
+                                                         is_sliced=True, alloc_method='best-fit')
+                selected_spectrum = spectrum_assignment.find_free_spectrum()
+
+                if selected_spectrum is not False:
+                    resp.update({bandwidth: tmp_format})
+
+                    self.allocate(start_slot=selected_spectrum['start_slot'], end_slot=selected_spectrum['end_slot'],
+                                  core_num=selected_spectrum['core_num'])
+
+                    remaining_bw -= int(bandwidth)
+                    num_segments += 1
+
+                    if num_segments > self.max_segments:
+                        self.release()
+                        self.dist_block = False
+                        return False
+                else:
+                    self.dist_block = False
+                    break
+
+                if remaining_bw == 0:
+                    self.num_transponders = num_segments
+                    return resp
+                if int(bandwidth) > remaining_bw:
+                    break
+
+        self.release()
         return False
 
     def handle_lps(self):
         """
-        The main light path slicing function. Created solely for the purpose to produce less lines of code in the
-        handle event method.
+        This method attempts to perform light path slicing (LPS) or dynamic LPS to allocate a request.
+        If successful, it returns a response containing the allocated path, modulation format,
+        and the number of transponders used. Otherwise, it returns a tuple of False and the
+        value of self.dist_block indicating whether the allocation failed due to congestion or
+        a length constraint.
 
-        :return: The updated response and network database
+        :return: A tuple containing the response and the updated network database or False and self.dist_block
         """
-        lps_resp = self.allocate_lps()
-        if lps_resp is not False:
-            resp = {
-                'path': self.path,
-                'mod_format': None,
-                'is_sliced': True,
-            }
-            return resp, self.network_db, self.transponders
 
-        return False, self.dist_block
+        if not self.dynamic_lps:
+            resp = self.allocate_lps()
+        else:
+            resp = self.allocate_dynamic_lps()
+
+        if resp is not False:
+            return {'path': self.path, 'mod_format': resp,
+                    'is_sliced': True}, self.net_spec_db, self.num_transponders, self.path
+
+        return False, self.dist_block, self.path
 
     def handle_event(self, request_type):
         """
@@ -177,35 +306,40 @@ class SDNController:
 
         :param request_type: Whether the request is an arrival or shall be released
         :type request_type: str
+
         :return: The response with relevant information, network database, and physical topology
         """
         # Even if the request is blocked, we still use one transponder
-        self.transponders = 1
-        # Whether the block is due to a distance constraint, else is a congestion constraint
+        self.num_transponders = 1
         self.dist_block = False
 
         if request_type == "release":
-            self.handle_release()
-            return self.network_db
+            self.release()
+            return self.net_spec_db
 
-        routing_obj = Routing(source=self.src, destination=self.dest,
-                              physical_topology=self.topology, network_spec_db=self.network_db,
-                              mod_formats=self.mod_formats[self.chosen_bw], bw=self.chosen_bw)
-
-        if self.sim_assume == 'yue':
-            selected_path, path_mod = routing_obj.shortest_path()
-        elif self.sim_assume == 'arash':
-            selected_path = routing_obj.least_congested_path()
-            path_mod = 'QPSK'
+        # Default routing object
+        if self.ai_algorithm is None:
+            routing_obj = Routing(source=self.source, destination=self.destination,
+                                  topology=self.topology, net_spec_db=self.net_spec_db,
+                                  mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
+            if self.sim_type == 'yue':
+                selected_path, path_mod = routing_obj.shortest_path()
+            else:
+                selected_path = routing_obj.least_congested_path()
+                path_mod = 'QPSK'
         else:
-            raise NotImplementedError
+            # Used for routing related to artificial intelligence
+            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination))
+            path_len = find_path_len(path=selected_path, topology=self.topology)
+            path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
 
         if selected_path is not False:
             self.path = selected_path
             if path_mod is not False:
-                slots_needed = self.mod_formats[self.chosen_bw][path_mod]['slots_needed']
-                spectrum_assignment = SpectrumAssignment(self.path, slots_needed, self.network_db,
-                                                         guard_band=self.guard_band, is_sliced=False)
+                slots_needed = self.mod_per_bw[self.chosen_bw][path_mod]['slots_needed']
+                spectrum_assignment = SpectrumAssignment(path=self.path, slots_needed=slots_needed,
+                                                         net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
+                                                         is_sliced=False, alloc_method=self.alloc_method)
 
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
@@ -216,13 +350,14 @@ class SDNController:
                         'is_sliced': False
                     }
 
-                    self.handle_arrival(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
-                    return resp, self.network_db, self.transponders
+                    self.allocate(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
+                    return resp, self.net_spec_db, self.num_transponders, self.path
 
-                self.dist_block = False
+                # Attempt to slice the request due to a congestion constraint
                 return self.handle_lps()
 
             self.dist_block = True
+            # Attempt to slice the request due to a reach constraint
             return self.handle_lps()
 
-        raise NotImplementedError
+        return False, True

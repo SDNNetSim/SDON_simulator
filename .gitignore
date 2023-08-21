@@ -10,5 +10,7 @@ misc/
 
 # Data files
 data/output/*
+data/input/*
 scripts/__pycache__
 plots/output/*
+ai/q_tables/*

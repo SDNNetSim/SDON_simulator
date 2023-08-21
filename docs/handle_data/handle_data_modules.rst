@@ -1,5 +1,5 @@
-Handle Data Module Documentation
-================================
+Handle Data
+===========
 
 .. toctree::
 

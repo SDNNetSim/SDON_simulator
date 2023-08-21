@@ -1,49 +1,43 @@
 import unittest
-import os
-import json
-
 from sim_scripts.request_generator import generate
 
 
-class TestRequestGenerator(unittest.TestCase):
+class TestGenerateFunction(unittest.TestCase):
     """
-    Tests the request generator function.
+    This class contains unit tests for the `generate` function in the sim_scripts.request_generator module.
     """
 
-    def setUp(self):
+    def test_generate_function(self):
         """
-        Sets up the class for testing.
+        Test that the `generate` function returns a dictionary with the correct keys, lengths, and
+        number of requests for each bandwidth.
         """
-        working_dir = os.getcwd().split('/')
-        if working_dir[-1] == 'tests':
-            file_path = '../tests/test_data/'
-        else:
-            file_path = './tests/test_data/'
+        # Define inputs for generate function
+        seed = 123
+        nodes = ['A', 'B', 'C', 'D']
+        hold_time_mean = 10.0
+        arr_rate_mean = 2.0
+        num_reqs = 100
+        mod_per_bw = {'10': ['QPSK'], '100': ['16QAM']}
+        req_dist = {'10': 0.2, '100': 0.8}
 
-        with open(file_path + 'bandwidth_info.json', 'r', encoding='utf-8') as file_obj:
-            self.mod_formats = json.load(file_obj)
+        # Call generate function with inputs
+        result = generate(seed, nodes, hold_time_mean, arr_rate_mean, num_reqs, mod_per_bw, req_dist)
 
-        with open(file_path + 'input3.json', 'r', encoding='utf-8') as file_obj:
-            self.sim_input = json.load(file_obj)
+        # Check that the output has the correct type
+        self.assertIsInstance(result, dict)
 
-    def test_request_ratios(self):
-        """
-        Test to ensure we have the correct ratio of bandwidths.
-        """
-        resp = generate(seed_no=1,
-                        nodes=list(self.sim_input['physical_topology']['nodes'].keys()),
-                        mu=self.sim_input['mu'],
-                        lam=self.sim_input['lambda'],
-                        num_requests=1000,
-                        bw_dict=self.mod_formats,
-                        assume='yue')
+        # Check that the output has the correct number of entries
+        self.assertEqual(len(result), num_reqs * 2)
 
-        bandwidth_ratios = {'50': 0, '100': 0, '400': 0}
-        for time, obj in resp.items():  # pylint: disable=unused-variable
-            bandwidth_ratios[obj['bandwidth']] += 1
+        # Check that each entry in the output has the correct keys
+        expected_keys = ['id', 'source', 'destination', 'arrive', 'depart', 'request_type', 'bandwidth', 'mod_formats']
+        for request in result.values():
+            self.assertCountEqual(request.keys(), expected_keys)
 
-        # Numbers are doubled due to arrival and departure requests being counted
-        check_obj = {'50': 600, '100': 1000, '400': 400}
-        self.assertEqual(check_obj, bandwidth_ratios,
-                         f'Incorrect request bandwidth ratio generated. Expected {check_obj} and got '
-                         f'{bandwidth_ratios}')
+        # Check that the number of requests for each bandwidth is correct
+        num_10g_reqs = sum(request['bandwidth'] == '10' for request in result.values())
+        self.assertEqual(num_10g_reqs / 2, int(num_reqs * req_dist['10']))
+
+        num_100g_reqs = sum(request['bandwidth'] == '100' for request in result.values())
+        self.assertEqual(num_100g_reqs / 2, int(num_reqs * req_dist['100']))

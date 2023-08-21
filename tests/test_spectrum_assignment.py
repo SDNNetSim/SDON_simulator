@@ -1,93 +1,62 @@
 import unittest
 import numpy as np
-
 from sim_scripts.spectrum_assignment import SpectrumAssignment
 
 
 class TestSpectrumAssignment(unittest.TestCase):
     """
-    Tests the spectrum assignment methods.
+    This class contains unit tests for methods found in the SpectrumAssignment class.
     """
 
     def setUp(self):
         """
-        Sets up the class for testing.
+        Sets up this class.
         """
-        path = ['Lowell', 'Boston', 'Miami', 'Chicago', 'San Francisco']
-        network_spec_db = dict()
+        self.net_spec_db = {(0, 1): {'cores_matrix': np.array([[0, 1, 0, 0, 0],
+                                                               [1, 0, 1, 0, 0],
+                                                               [0, 0, 0, 1, 0],
+                                                               [0, 0, 0, 0, 0]])},
+                            (1, 0): {'cores_matrix': np.array([[0, 1, 0, 0, 0],
+                                                               [1, 0, 1, 0, 0],
+                                                               [0, 0, 0, 1, 0],
+                                                               [0, 0, 0, 0, 0]])},
+                            (1, 2): {'cores_matrix': np.array([[1, 1, 1, 1, 1],
+                                                               [1, 1, 1, 1, 0],
+                                                               [0, 1, 1, 1, 0],
+                                                               [1, 0, 1, 0, 1]])},
+                            (2, 1): {'cores_matrix': np.array([[1, 1, 1, 1, 1],
+                                                               [1, 1, 1, 1, 0],
+                                                               [0, 1, 1, 1, 0],
+                                                               [1, 0, 1, 0, 1]])}
+                            }
 
-        for i in range(len(path) - 1):
-            curr_tuple = (path[i], path[i + 1])
-            rev_curr_tuple = (path[i + 1], path[i])
-            num_cores = 2
-
-            core_matrix = np.zeros((num_cores, 256))
-            network_spec_db[curr_tuple] = {}
-            network_spec_db[rev_curr_tuple] = {}
-            network_spec_db[curr_tuple]['cores_matrix'] = core_matrix
-            network_spec_db[rev_curr_tuple]['cores_matrix'] = core_matrix
-
-        self.spec_obj = SpectrumAssignment(path=path, slots_needed=100, network_spec_db=network_spec_db, guard_band=1)
-
-    def test_free_spectrum(self):
+    def test_best_fit_allocation(self):
         """
-        Test where all spectrum slots are available.
+        Tests the best_fit_allocation method.
         """
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 0, 'start_slot': 0, 'end_slot': 101}, response,
-                         'Incorrect assignment received')
+        spectrum_assignment = SpectrumAssignment([0, 1], 1, self.net_spec_db, 1)
+        spectrum_assignment.cores_per_link = 4
+        spectrum_assignment.best_fit_allocation()
 
-    def test_full_spectrum(self):
+        self.assertEqual(spectrum_assignment.response, {'core_num': 1, 'start_slot': 3, 'end_slot': 5})
+
+    def test_check_other_links(self):
         """
-        Test where all spectrum slots in one link are full.
+        Tests the check_other_links method.
         """
-        core_matrix = self.spec_obj.network_spec_db[('Chicago', 'San Francisco')]['cores_matrix']
-        rev_core_matrix = self.spec_obj.network_spec_db[('San Francisco', 'Chicago')]['cores_matrix']
+        spectrum_assignment = SpectrumAssignment([0, 1, 2], 1, self.net_spec_db, 1)
+        spectrum_assignment.cores_per_link = 4
+        spectrum_assignment.check_other_links(1, 3, 5)
 
-        num_cores = np.shape(core_matrix)[0]
+        self.assertFalse(spectrum_assignment.is_free)
 
-        for i in range(num_cores):
-            core_matrix[i][0:] = 1
-            rev_core_matrix[i][0:] = 1
-
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual(False, response)
-
-    def test_forced_spectrum_assignment(self):
+    def test_first_fit_allocation(self):
         """
-        Make only one core able to allocate a request. Ensure the simulator chooses the correct one.
+        Tests the first_fit_allocation method.
         """
-        core_matrix = self.spec_obj.network_spec_db[('Miami', 'Chicago')]['cores_matrix']
-        rev_core_matrix = self.spec_obj.network_spec_db[('Chicago', 'Miami')]['cores_matrix']
+        spectrum_assignment = SpectrumAssignment([0, 1], 1, self.net_spec_db, 1)
+        spectrum_assignment.cores_per_link = 4
+        spectrum_assignment.cores_matrix = self.net_spec_db[(0, 1)]['cores_matrix']
+        spectrum_assignment.first_fit_allocation()
 
-        num_cores = np.shape(core_matrix)[0]
-        for i in range(num_cores):
-            if i == 0:
-                core_matrix[i][0:50] = 1
-                core_matrix[i][151:] = 1
-                rev_core_matrix[i][0:50] = 1
-                rev_core_matrix[i][151:] = 1
-            else:
-                core_matrix[i][0:] = 1
-                rev_core_matrix[i][0:] = 1
-
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual({'core_num': 0, 'start_slot': 50, 'end_slot': 151}, response,
-                         'Incorrect assignment received')
-
-    def test_one_direction_free(self):
-        """
-        Test when all links from 'A' to 'B' full, but from 'B' to 'A' free.
-        """
-        core_matrix = self.spec_obj.network_spec_db[('Miami', 'Chicago')]['cores_matrix']
-
-        num_cores = np.shape(core_matrix)[0]
-        for i in range(num_cores):
-            core_matrix[i][0:] = 1
-
-        response = self.spec_obj.find_free_spectrum()
-        self.assertEqual(False, response)
-
-
-if __name__ == '__main__':
-    unittest.main()
+        self.assertEqual(spectrum_assignment.response, {'core_num': 0, 'start_slot': 2, 'end_slot': 4})
