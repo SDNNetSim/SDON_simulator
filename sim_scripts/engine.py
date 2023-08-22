@@ -150,7 +150,7 @@ class Engine(SDNController):
             'alloc_method': self.properties['allocation_method'],
             'route_method': self.properties['route_method'],
             'dynamic_lps': self.properties['dynamic_lps'],
-            'is_training': self.properties['is_training'],
+            'is_training': self.properties['ai_arguments']['is_training'],
             'beta': self.properties['beta'],
             'request_snapshots': self.request_snapshots,
         }
@@ -449,15 +449,17 @@ class Engine(SDNController):
                 print(f"Simulation started for Erlang: {self.properties['erlang']} "
                       f"thread number: {self.properties['thread_num']}.")
 
-                # We are running a normal simulation, no AI object needed
                 if self.properties['ai_algorithm'] != 'None':
-                    self.ai_obj.topology = self.topology
-                    self.ai_obj.seed = iteration
+                    self.properties['ai_arguments']['episodes'] = self.properties['max_iters']
+                    self.properties['ai_arguments']['cores_per_link'] = self.properties['cores_per_link']
+                    self.properties['ai_arguments']['erlang'] = self.properties['erlang']
+                    self.properties['ai_arguments']['topology'] = self.topology
 
-                    if self.properties['train_file'] is None:
-                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.sim_info)
-                    else:
-                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.properties['train_file'])
+                    if self.properties['ai_arguments']['is_training']:
+                        self.properties['ai_arguments']['table_path'] = self.sim_info
+
+                    self.ai_obj.setup(algorithm=self.properties['ai_algorithm'],
+                                      params=self.properties['ai_arguments'])
 
             seed = self.properties["seeds"][iteration] if self.properties["seeds"] else iteration + 1
             self.generate_requests(seed)
@@ -480,7 +482,7 @@ class Engine(SDNController):
             self.update_transponders()
 
             # Some form of ML/RL is being used, ignore confidence intervals for training
-            if not self.properties['is_training']:
+            if not self.properties['ai_arguments']['is_training']:
                 if self.check_confidence_interval(iteration):
                     return
 
