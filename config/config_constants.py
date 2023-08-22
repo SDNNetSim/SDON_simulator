@@ -54,6 +54,7 @@ ARASH_REQUIRED_OPTIONS = {
 
 OTHER_OPTIONS = {
     'ai_algorithm': str,
+    'ai_arguments': ast.literal_eval,
     'is_training': str_to_bool,
     'seeds': list,
     'beta': float,
