@@ -328,3 +328,7 @@ class Routing:
             self.topology[source][destination]['nli_cost'] = link_cost
 
         return self._least_nli_path()
+
+    # TODO: Find the NLI cost of a given path (Make sure to call before for Q-routing)
+    def nli_path(self):
+        raise NotImplementedError
