@@ -117,7 +117,9 @@ class NetworkSimulator:
             self.properties['erlang'] = erlang
 
             self.create_input()
-            self.save_input(file_name='sim_input.json', data=self.properties)
+
+            # TODO: Fixme
+            # self.save_input(file_name='sim_input.json', data=self.properties)
 
             engine = Engine(properties=self.properties)
             engine.run()
