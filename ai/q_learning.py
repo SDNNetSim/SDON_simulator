@@ -1,7 +1,6 @@
 # Standard library imports
 import os
 import json
-from itertools import permutations
 
 # Third party imports
 import numpy as np
@@ -17,48 +16,33 @@ class QLearning:
     Controls methods related to the Q-learning reinforcement learning algorithm.
     """
 
-    def __init__(self, is_training: bool = None, epsilon: float = 0.2, episodes: int = None, learn_rate: float = 0.9,
-                 discount: float = 0.9, topology: nx.Graph = None):
+    def __init__(self, params: dict):
         """
         Initializes the QLearning class.
-
-        :param is_training: A flag to tell us to save and load a trained table or one that was used for testing.
-        :type is_training: bool
-
-        :param epsilon: Parameter in the bellman equation to determine degree of randomness.
-        :type epsilon: float
-
-        :param episodes: The number of iterations or simulations.
-        :type episodes: int
-
-        :param learn_rate: The learning rate, alpha, in the bellman equation.
-        :type learn_rate: float
-
-        :param discount: The discount factor in the bellman equation to determine the balance between current and
-                         future rewards.
-        :type discount: float
-
-        :param topology: The network topology.
-        :type: topology: nx.Graph
         """
-        if is_training:
+        if params['is_training']:
             self.sim_type = 'train'
         else:
             self.sim_type = 'test'
         # Contains all state and action value pairs
         self.q_table = None
-        self.epsilon = epsilon
-        self.episodes = episodes
-        self.learn_rate = learn_rate
-        self.discount = discount
-        self.topology = topology
+        self.epsilon = params['epsilon']
+        self.episodes = params['episodes']
+        self.learn_rate = params['learn_rate']
+        self.discount = params['discount']
+        self.topology = params['topology']
+        self.table_path = params['table_path']
+        self.cores_per_link = params['cores_per_link']
 
         # Statistics used for plotting
-        self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': []}
+        self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': {}}
 
+        # Source node, destination node, and the resulting path
         self.source = None
         self.destination = None
         self.chosen_path = None
+        # The current episode in the simulation
+        self.curr_episode = None
 
     @staticmethod
     def set_seed(seed: int):
@@ -81,18 +65,38 @@ class QLearning:
         if self.epsilon < 0.0:
             raise ValueError(f'Epsilon should be greater than 0 but it is {self.epsilon}')
 
-    def _update_rewards_dict(self, reward: float):
-        # TODO: This method isn't getting called
-        self.rewards_dict['rewards'].append(reward)
-        self.rewards_dict['min'] = min(self.rewards_dict['rewards'])
-        self.rewards_dict['max'] = max(self.rewards_dict['rewards'])
-        self.rewards_dict['average'] = sum(self.rewards_dict['rewards']) / float(len(self.rewards_dict['rewards']))
+    def _update_rewards_dict(self, reward: float = None, last_episode: bool = None):
+        """
+        Updates the reward dictionary for plotting purposes later on.
 
-    def save_table(self, path, cores_per_link):
-        create_dir(f'ai/q_tables/{path}')
+        :param reward: The numerical reward in the last episode.
+        :type reward: float
 
-        file_path = f'{os.getcwd()}/ai/q_tables/{path}/{self.sim_type}_table_c{cores_per_link}.npy'
+        :param last_episode: Indicates whether it's the last episode or not.
+        :type last_episode: bool
+        """
+        if self.curr_episode not in self.rewards_dict.keys():
+            self.rewards_dict['rewards'][self.curr_episode] = [reward]
+        else:
+            self.rewards_dict['rewards'][self.curr_episode].append(reward)
+
+        if last_episode:
+            self.rewards_dict['min'] = min(self.rewards_dict['rewards'][self.curr_episode])
+            self.rewards_dict['max'] = max(self.rewards_dict['rewards'][self.curr_episode])
+            self.rewards_dict['average'] = sum(self.rewards_dict['rewards'][self.curr_episode]) / float(
+                len(self.rewards_dict['rewards'][self.curr_episode]))
+
+    def save_table(self):
+        """
+        Saves the current Q-table to a desired path.
+        """
+        create_dir(f'ai/q_tables/{self.table_path}')
+
+        file_path = f'{os.getcwd()}/ai/q_tables/{self.table_path}/{self.sim_type}_table_c{self.cores_per_link}.npy'
         np.save(file_path, self.q_table)
+
+        if len(self.rewards_dict['min']) == self.episodes:
+            self._update_rewards_dict(last_episode=True)
 
         params_dict = {
             'epsilon': self.epsilon,
@@ -101,19 +105,22 @@ class QLearning:
             'discount_factor': self.discount,
             'reward_info': self.rewards_dict
         }
-        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_c{cores_per_link}.json', 'w',
+        with open(f'{os.getcwd()}/ai/q_tables/{self.table_path}/hyper_params_c{self.cores_per_link}.json', 'w',
                   encoding='utf-8') as file:
             json.dump(params_dict, file)
 
-    def load_table(self, path, cores_per_link):
+    def load_table(self):
+        """
+        Loads a previously trained Q-table.
+        """
         try:
-            file_path = f'{os.getcwd()}/ai/q_tables/{path}/{self.sim_type}_table_c{cores_per_link}.npy'
+            file_path = f'{os.getcwd()}/ai/q_tables/{self.table_path}/{self.sim_type}_table_c{self.cores_per_link}.npy'
             self.q_table = np.load(file_path)
         except FileNotFoundError:
             print('File not found, please ensure if you are testing, an already trained file exists and has been '
                   'specified correctly.')
 
-        with open(f'{os.getcwd()}/ai/q_tables/{path}/hyper_params_c{cores_per_link}.json',
+        with open(f'{os.getcwd()}/ai/q_tables/{self.table_path}/hyper_params_c{self.cores_per_link}.json',
                   encoding='utf-8') as file:
             params_obj = json.load(file)
             self.epsilon = params_obj['epsilon']
@@ -125,12 +132,16 @@ class QLearning:
         pass
 
     def update_environment(self, routed):
-        # TODO: Update
         nli_cost = self._get_nli_cost()
+
+        # TODO: Update reward
         if not routed:
             reward = -10000
         else:
             reward = 100
+
+        self._update_rewards_dict(reward=reward)
+
         for i in range(len(self.chosen_path) - 1):
             # Source node, current state
             state = int(self.chosen_path[i])
@@ -150,6 +161,9 @@ class QLearning:
             self.q_table[(state, new_state)] = new_q
 
     def setup_environment(self):
+        """
+        Initializes the environment i.e., the Q-table.
+        """
         num_nodes = len(list(self.topology.nodes()))
         self.q_table = np.zeros((num_nodes, num_nodes))
 
@@ -166,7 +180,14 @@ class QLearning:
                 else:
                     self.q_table[(source, destination)] = np.nan
 
-    def _find_next_node(self, curr_node):
+    def _find_next_node(self, curr_node: int):
+        """
+        Sort through the Q-values in a given row (current node) and choose the best one. Note that we can't always
+        choose the maximum Q-value since we do not allow a node to be in the same path more than once.
+
+        :param curr_node: The current node number.
+        :type curr_node: int
+        """
         array_to_sort = self.q_table[curr_node]
         # Create a mask to ignore nan values
         mask = ~np.isnan(array_to_sort)
@@ -184,6 +205,9 @@ class QLearning:
         return False, None
 
     def route(self):
+        """
+        Based on the Q-learning algorithm, find a route for any given request.
+        """
         self.chosen_path = [str(self.source)]
         nodes = self.q_table[self.source]
 
@@ -209,7 +233,3 @@ class QLearning:
 
             # Q-routing chose too many nodes, no path found due to Q-routing constraint
             return False
-
-
-if __name__ == '__main__':
-    pass
