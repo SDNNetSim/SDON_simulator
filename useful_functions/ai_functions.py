@@ -12,14 +12,8 @@ class AIMethods:
         Initializes the AIMethods class.
         """
         self.algorithm = kwargs['properties']['ai_algorithm']
-        self.max_segments = kwargs['properties']['max_segments']
-        self.cores_per_link = kwargs['properties']['cores_per_link']
-        self.is_training = kwargs['properties']['is_training']
-        self.topology_info = kwargs['properties']['topology_info']
-        self.topology = kwargs['properties']['topology']
-        self.sim_info = kwargs['sim_info']
-        self.seed = None
 
+        self.seed = None
         # An object for the chosen AI algorithm
         self.ai_obj = None
 
@@ -27,7 +21,7 @@ class AIMethods:
         """
         Saves the current state of the Q-table.
         """
-        self.ai_obj.save_table(path=self.sim_info, cores_per_link=self.cores_per_link)
+        self.ai_obj.save_table()
 
     def _q_update_env(self, routed: bool, iteration: int):
         """
@@ -39,10 +33,11 @@ class AIMethods:
         :param iteration: The current iteration of the simulation.
         :type iteration: int
         """
+        self.ai_obj.curr_episode = iteration
         self.ai_obj.update_environment(routed=routed)
 
         # Decay epsilon for half of the iterations evenly each time
-        if 1 <= iteration <= iteration // 2 and self.is_training:
+        if 1 <= iteration <= iteration // 2 and self.ai_obj.sim_type == 'train':
             decay_amount = (self.ai_obj.epsilon / (iteration // 2) - 1)
             self.ai_obj.decay_epsilon(amount=decay_amount)
 
@@ -67,40 +62,20 @@ class AIMethods:
         path = self.ai_obj.route()
         return path
 
-    def _init_q_learning(self, erlang: int = None, epsilon: float = 0.2, episodes: int = 1000, learn_rate: float = 0.5,
-                         discount: float = 0.2, trained_table: str = None):
+    def _init_q_learning(self, params):
         """
         Initializes a QLearning class and sets up the initial environment and Q-table.
-
-        :param erlang: The current load of the network.
-        :type erlang: int
-
-        :param epsilon: Parameter in the bellman equation to determine degree of randomness.
-        :type epsilon: float
-
-        :param episodes: The number of iterations or simulations.
-        :type episodes: int
-
-        :param learn_rate: The learning rate, alpha, in the bellman equation.
-        :type learn_rate: float
-
-        :param discount: The discount factor in the bellman equation to determine the balance between current and
-                         future rewards.
-        :type discount: float
-
-        :param trained_table: A path to an already trained Q-table.
-        :type trained_table: str
         """
-        self.ai_obj = QLearning(epsilon=epsilon, episodes=episodes, learn_rate=learn_rate, discount=discount,
-                                topology=self.topology)
+        self.ai_obj = QLearning(params=params)
         self.ai_obj.setup_environment()
 
         # Load a pre-trained table or start a new one
         # TODO: Erlang a hard-coded value :(
-        if self.is_training and erlang == 10 or erlang == 50:
-            self.ai_obj.save_table(path=self.sim_info, cores_per_link=self.cores_per_link)
+        # TODO: This needs to be changed (Resetting the Q-table each time)
+        if self.ai_obj.sim_type == 'train' and params['erlang'] == 10 or params['erlang'] == 50:
+            self.ai_obj.save_table()
         else:
-            self.ai_obj.load_table(path=trained_table, cores_per_link=self.cores_per_link)
+            self.ai_obj.load_table()
 
         self.ai_obj.set_seed(self.seed)
 
@@ -133,6 +108,6 @@ class AIMethods:
         Responsible for setting up available AI algorithms and their methods.
         """
         if self.algorithm == 'q_learning':
-            self._init_q_learning(erlang=kwargs['erlang'], trained_table=kwargs['trained_table'])
+            self._init_q_learning(params=kwargs['params'])
         else:
             raise NotImplementedError(f'Algorithm: {self.algorithm} not recognized.')
