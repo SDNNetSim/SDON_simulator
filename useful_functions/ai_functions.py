@@ -58,6 +58,8 @@ class AIMethods:
         """
         self.ai_obj.source = source
         self.ai_obj.destination = destination
+        # TODO: Update
+        self.ai_obj.chosen_bw = None
         path = self.ai_obj.route()
         return path
 
