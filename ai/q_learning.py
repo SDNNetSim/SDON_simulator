@@ -48,8 +48,10 @@ class QLearning:
         self.chosen_bw = None
         # The NLI cost for a given path
         self.nli_cost = None
+        # The latest up-to-date network spectrum database
+        self.net_spec_db = None
         # Simulation methods related to routing
-        self.routing_obj = Routing(beta=params['beta'])
+        self.routing_obj = Routing(beta=params['beta'], topology=self.topology)
 
     @staticmethod
     def set_seed(seed: int):
@@ -135,6 +137,7 @@ class QLearning:
         path_len = find_path_len(self.chosen_path, self.topology)
         mod_format = get_path_mod(mod_formats, path_len)
 
+        self.routing_obj.net_spec_db = self.net_spec_db
         self.routing_obj.slots_needed = self.mod_per_bw[self.chosen_bw][mod_format]['slots_needed']
         self.nli_cost = self.routing_obj.nli_path(path=self.chosen_path)
 
