@@ -15,7 +15,7 @@ from useful_functions.handle_dirs_files import create_dir
 from config.setup_config import read_config
 
 
-# TODO: Spectrum assignment and routing objects created each time is inefficient
+# TODO: Structure this so objects are not re-created every time :D
 # TODO: Update tests
 
 
@@ -109,7 +109,7 @@ class NetworkSimulator:
 
         :return: None
         """
-        erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
+        erlang_lst = [float(erlang) for erlang in range(50, 150, 50)]
 
         for erlang in erlang_lst:
             self.properties['arrival_rate'] = self.properties['holding_time'] * float(
