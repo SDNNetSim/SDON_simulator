@@ -420,14 +420,14 @@ class Engine(SDNController):
         :param iteration: The current iteration of the simulation
         :type iteration: int
         """
+        # TODO: Why not just pass properties?
         self.properties['ai_arguments']['episodes'] = self.properties['max_iters']
         self.properties['ai_arguments']['cores_per_link'] = self.properties['cores_per_link']
         self.properties['ai_arguments']['erlang'] = self.properties['erlang']
         self.properties['ai_arguments']['topology'] = self.topology
         self.properties['ai_arguments']['curr_episode'] = iteration
-        # TODO: Update
-        self.properties['ai_arguments']['beta'] = None
-        self.properties['ai_arguments']['mod_per_bw'] = None
+        self.properties['ai_arguments']['beta'] = self.properties['beta']
+        self.properties['ai_arguments']['mod_per_bw'] = self.properties['mod_per_bw']
 
         if self.properties['ai_arguments']['is_training']:
             self.properties['ai_arguments']['table_path'] = self.sim_info
