@@ -331,4 +331,10 @@ class Routing:
 
     # TODO: Find the NLI cost of a given path (Make sure to call before for Q-routing)
     def nli_path(self):
+        """
+        Find the non-linear cost for a specific path.
+
+        :return: The final NLI cost
+        :rtype: float
+        """
         raise NotImplementedError
