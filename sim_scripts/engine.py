@@ -304,6 +304,7 @@ class Engine(SDNController):
 
         :return: None
         """
+        # TODO: topology_info should be added to the properties  
         self.topology = nx.Graph()
         self.net_spec_db = {}
 
@@ -448,12 +449,12 @@ class Engine(SDNController):
                       f"thread number: {self.properties['thread_num']}.")
 
                 # We are running a normal simulation, no AI object needed
-                if self.properties['ai_algorithm'] != 'None':
+                if False: #self.properties['ai_algorithm'] != 'None':
                     self.ai_obj.topology = self.properties['topology']
                     self.ai_obj.seed = iteration
 
                     if self.properties['train_file'] is None:
-                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.properties['sim_info'])
+                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.sim_info)
                     else:
                         self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.properties['train_file'])
 

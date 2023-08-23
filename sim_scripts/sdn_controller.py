@@ -4,6 +4,7 @@ import numpy as np
 # Local application imports
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
+from sim_scripts.snr_measurements import SnrMeasurments
 from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
 
 
@@ -34,6 +35,7 @@ class SDNController:
         self.guard_slots = properties['guard_slots']
         self.mod_per_bw = properties['mod_per_bw']
         self.ai_obj = ai_obj
+        self.spectral_slots = properties['spectral_slots']
 
         # The current request id number
         self.req_id = None
@@ -318,6 +320,15 @@ class SDNController:
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
+                    snr_values = SnrMeasurments(path = selected_path, modulation_format = path_mod, SP = selected_sp, 
+                                        no_assigned_slots = selected_sp['end_slot'] - selected_sp['start_slot'], 
+                                        physical_topology = self.topology,
+                                        requested_bit_rate = 12.5, frequncy_spacing = 12.5, input_power = 10 ** -3, 
+                                        spectral_slots = spectral_slots, requested_SNR = 8.5, 
+                                        network_spec_db = self.net_spec_db, requests_status = {}, 
+                                        phi = {'QPSK' : 1,'16-QAM': 0.68, '64-QAM': 0.6190476190476191}, 
+                                        guard_band=0, baud_rates = None, EGN = True, XT_noise = False)
+                    snr_values.SNR_check_NLI_ASE_XT()
                     resp = {
                         'path': selected_path,
                         'mod_format': path_mod,
