@@ -36,6 +36,7 @@ def generate(seed: int, nodes: list, hold_time_mean: float, arr_rate_mean: float
     current_time = 0
     counter_id = 1
     set_seed(seed=seed)
+    # TODO: Fixme if request distribution isn't an even number this gets stuck
     bandwidth_counts = {bandwidth: int(req_dist[bandwidth] * num_reqs) for bandwidth in
                         mod_per_bw}
     bandwidth_list = list(mod_per_bw.keys())
