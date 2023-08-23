@@ -415,7 +415,7 @@ class Routing:
         """
         final_cost = 0
         for source, destination in zip(path, path[1:]):
-            # TODO: Ensure this has been set in q_learning script
+            # TODO: Ensure this has been set in q_learning script!
             num_spans = self.topology[source][destination]['length'] / self.span_len
             link_num = self.net_spec_db[(source, destination)]['link_num']
 
