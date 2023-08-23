@@ -242,19 +242,19 @@ class Routing:
 
         return link_cost
 
-    def _find_taken_channels(self, link_num: int):
+    def _find_taken_channels(self, link: int):
         """
         Finds the number of taken channels on any given link.
 
-        :param link_num: The link number to search for channels on.
-        :type link_num: int
+        :param link: The link on which to search for channels on.
+        :type link: int
 
         :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
         :rtype: list
         """
         channels = []
         curr_channel = []
-        link = self.net_spec_db[link_num]['cores_matrix'][0]
+        link = self.net_spec_db[link]['cores_matrix'][0]
 
         for value in link:
             if value > 0:
@@ -268,17 +268,17 @@ class Routing:
 
         return channels
 
-    def _find_free_channels(self, link_num: int):
+    def _find_free_channels(self, link: tuple):
         """
         Finds the number of free channels on any given link.
 
-        :param link_num: The link number to search for channels on.
-        :type link_num: int
+        :param link: The link on which to search for channels on.
+        :type link: tuple
 
         :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
         :rtype: list
         """
-        link = self.net_spec_db[link_num]['cores_matrix'][0]
+        link = self.net_spec_db[link]['cores_matrix'][0]
         indexes = np.where(link == 0)[0]
 
         channels = []
@@ -300,9 +300,9 @@ class Routing:
 
         return channels
 
-    def _get_final_nli_cost(self, link_num, num_spans, source, destination):
-        free_channels = self._find_free_channels(link_num=link_num)
-        taken_channels = self._find_taken_channels(link_num=link_num)
+    def _get_final_nli_cost(self, link, num_spans, source, destination):
+        free_channels = self._find_free_channels(link=link)
+        taken_channels = self._find_taken_channels(link=link)
 
         nli_cost = self._find_link_cost(num_spans=num_spans, free_channels=free_channels,
                                         taken_channels=taken_channels)
@@ -325,7 +325,7 @@ class Routing:
             source, destination = link[0], link[1]
             num_spans = self.topology[source][destination]['length'] / self.span_len
 
-            link_cost = self._get_final_nli_cost(link_num=link, num_spans=num_spans, source=source,
+            link_cost = self._get_final_nli_cost(link=link, num_spans=num_spans, source=source,
                                                  destination=destination)
 
             self.topology[source][destination]['nli_cost'] = link_cost
@@ -345,11 +345,10 @@ class Routing:
         """
         final_cost = 0
         for source, destination in zip(path, path[1:]):
-            # TODO: Ensure this has been set in q_learning script!
             num_spans = self.topology[source][destination]['length'] / self.span_len
-            link_num = self.net_spec_db[(source, destination)]['link_num']
+            link = (source, destination)
 
-            final_cost += self._get_final_nli_cost(link_num=link_num, num_spans=num_spans, source=source,
+            final_cost += self._get_final_nli_cost(link=link, num_spans=num_spans, source=source,
                                                    destination=destination)
 
         return final_cost
