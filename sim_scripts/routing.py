@@ -16,7 +16,7 @@ class Routing:
     """
 
     def __init__(self, source: int = None, destination: int = None, topology: nx.Graph = None, net_spec_db: dict = None,
-                 mod_formats: dict = None, slots_needed: int = None, bandwidth: float = None):
+                 mod_formats: dict = None, slots_needed: int = None, beta: float = None, bandwidth: float = None):
         """
         Initializes the Routing class.
 
@@ -38,6 +38,9 @@ class Routing:
         :param slots_needed: The number of slots needed for the connection.
         :type slots_needed: int
 
+        :param beta: Used for NLI calculation costs.
+        :type beta: float
+
         :param bandwidth: The required bandwidth for the connection.
         :type bandwidth: float
         """
@@ -46,6 +49,7 @@ class Routing:
         self.topology = topology
         self.net_spec_db = net_spec_db
         self.slots_needed = slots_needed
+        self.beta = beta
         self.bandwidth = bandwidth
         self.mod_formats = mod_formats
 
@@ -61,6 +65,8 @@ class Routing:
         self.mci_w = 6.3349755556585961e-027
         # Maximum link length for the network topology
         self.max_link = max(nx.get_edge_attributes(topology, 'length').values(), default=0.0)
+        # Length for one span in km
+        self.span_len = 100.0
 
     def find_least_cong_path(self):
         """
@@ -294,47 +300,56 @@ class Routing:
 
         return channels
 
+    def _get_final_nli_cost(self, link_num, num_spans, source, destination):
+        free_channels = self._find_free_channels(link_num=link_num)
+        taken_channels = self._find_taken_channels(link_num=link_num)
+
+        nli_cost = self._find_link_cost(num_spans=num_spans, free_channels=free_channels,
+                                        taken_channels=taken_channels)
+        # Tradeoff between link length and the non-linear impairment cost
+        final_cost = (self.beta * (self.topology[source][destination]['length'] / self.max_link)) + \
+                     ((1 - self.beta) * nli_cost)
+
+        return final_cost
+
     # TODO: Only support for single core
-    def nli_aware(self, slots_needed: int, beta: float):
+    def nli_aware(self):
         """
         Assigns a non-linear impairment score to every link in the network and selects a path with the least amount of
         NLI cost.
 
-        :param slots_needed: The number of slots needed for the request
-        :type slots_needed: int
-
-        :param beta: A tunable parameter used to consider how much the NLI cost vs. link length will be considered.
-        :type beta: float
-
         :return: The path from source to destination with the least amount of NLI cost.
+        :rtype: list
         """
-        self.slots_needed = slots_needed
-        # Length for one span in km
-        span_len = 100.0
-
         for link in self.net_spec_db:
             source, destination = link[0], link[1]
-            num_spans = self.topology[source][destination]['length'] / span_len
+            num_spans = self.topology[source][destination]['length'] / self.span_len
 
-            free_channels = self._find_free_channels(link_num=link)
-            taken_channels = self._find_taken_channels(link_num=link)
-
-            nli_cost = self._find_link_cost(num_spans=num_spans, free_channels=free_channels,
-                                            taken_channels=taken_channels)
-            # Tradeoff between link length and the non-linear impairment cost
-            link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
-                        ((1 - beta) * nli_cost)
+            link_cost = self._get_final_nli_cost(link_num=link, num_spans=num_spans, source=source,
+                                                 destination=destination)
 
             self.topology[source][destination]['nli_cost'] = link_cost
 
         return self._least_nli_path()
 
-    # TODO: Find the NLI cost of a given path (Make sure to call before for Q-routing)
-    def nli_path(self):
+    # TODO: Support for single core only?
+    def nli_path(self, path: list):
         """
         Find the non-linear cost for a specific path.
+
+        :param path: The path to find the NLI cost for.
+        :type path: list
 
         :return: The final NLI cost
         :rtype: float
         """
-        raise NotImplementedError
+        final_cost = 0
+        for source, destination in zip(path, path[1:]):
+            # TODO: Ensure this has been set in q_learning script
+            num_spans = self.topology[source][destination]['length'] / self.span_len
+            link_num = self.net_spec_db[(source, destination)]['link_num']
+
+            final_cost += self._get_final_nli_cost(link_num=link_num, num_spans=num_spans, source=source,
+                                                   destination=destination)
+
+        return final_cost
