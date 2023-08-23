@@ -239,7 +239,7 @@ class Engine(SDNController):
 
         free_slots = self.get_path_free_slots(path=resp[-1])
 
-        if self.properties['ai_algorithm'] != 'None':
+        if False: #self.properties['ai_algorithm'] != 'None':
             self.ai_obj.update(routed=resp[0], path=resp[-1], free_slots=free_slots, iteration=iteration,
                                num_segments=resp[2])
 
