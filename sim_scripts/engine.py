@@ -78,7 +78,7 @@ class Engine(SDNController):
         # Initialize the constructor of the SDNController class
         super().__init__(properties=self.properties, ai_obj=self.ai_obj)
 
-    def get_total_occupied_slots(self):
+    def _get_total_occupied_slots(self):
         """
         Returns the total number of occupied spectral slots and spectral slots occupied by a guard band in the network.
 
@@ -102,7 +102,7 @@ class Engine(SDNController):
         total_guard_slots = int(guard_slots / 2)
         return total_occ_slots, total_guard_slots
 
-    def get_path_free_slots(self, path: list):
+    def _get_path_free_slots(self, path: list):
         """
         Returns the number of available spectral slots in the given path.
 
@@ -122,7 +122,7 @@ class Engine(SDNController):
 
         return free_slots
 
-    def save_sim_results(self):
+    def _save_sim_results(self):
         """
         Saves the simulation results to a file like #_erlang.json.
 
@@ -166,7 +166,7 @@ class Engine(SDNController):
         with open(f"{base_fp}/{self.properties['erlang']}_erlang.json", 'w', encoding='utf-8') as file_path:
             json.dump(self.stats_dict, file_path, indent=4)
 
-    def check_confidence_interval(self, iteration):
+    def _check_confidence_interval(self, iteration):
         """
         Checks if the confidence interval is high enough to stop the simulation.
 
@@ -191,12 +191,12 @@ class Engine(SDNController):
         if self.block_ci_percent <= 5:
             print(f"Confidence interval of {round(self.block_ci_percent, 2)}% reached on simulation "
                   f"{iteration + 1}, ending and saving results for Erlang: {self.properties['erlang']}")
-            self.save_sim_results()
+            self._save_sim_results()
             return True
 
         return False
 
-    def calculate_block_percent(self, iteration):
+    def _calculate_block_percent(self, iteration):
         """
         Calculates the percentage of blocked requests for the current iteration and updates the blocking in the
         statistics dictionary.
@@ -215,7 +215,7 @@ class Engine(SDNController):
 
         self.stats_dict['block_per_sim'][iteration] = block_percentage
 
-    def handle_arrival(self, curr_time, iteration):
+    def _handle_arrival(self, curr_time, iteration):
         """
         Updates the SDN controller to handle an arrival request. Also retrieves and calculates relevant request
         statistics.
@@ -244,7 +244,7 @@ class Engine(SDNController):
                 routed = True
             self.ai_obj.update(routed=routed, iteration=iteration)
 
-        # TODO: Should probably make this better
+        # TODO: Should probably make this more readable
         # Request was blocked
         if not resp[0]:
             self.num_blocked_reqs += 1
@@ -272,7 +272,7 @@ class Engine(SDNController):
 
         return num_transponders
 
-    def handle_release(self, curr_time):
+    def _handle_release(self, curr_time):
         """
         Updates the SDN controller to handle the release of a request.
 
@@ -294,7 +294,7 @@ class Engine(SDNController):
         else:
             pass
 
-    def create_topology(self):
+    def _create_topology(self):
         """
         Create the physical topology of the simulation.
 
@@ -317,7 +317,7 @@ class Engine(SDNController):
             dest = link_data['destination']
 
             # Create cores matrix
-            cores_matrix = self.create_cores_matrix(link_data['fiber']['num_cores'])
+            cores_matrix = self._create_cores_matrix(link_data['fiber']['num_cores'])
 
             # Add links to network spectrum database
             self.net_spec_db[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
@@ -326,7 +326,7 @@ class Engine(SDNController):
             # Add links to physical topology
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
 
-    def create_cores_matrix(self, num_cores):
+    def _create_cores_matrix(self, num_cores):
         """
         Creates a 2D NumPy array representing the cores matrix for a fiber link.
 
@@ -337,7 +337,7 @@ class Engine(SDNController):
         """
         return np.zeros((num_cores, self.properties['spectral_slots']))
 
-    def print_iter_stats(self, iteration):
+    def _print_iter_stats(self, iteration):
         """
         Print iteration statistics.
 
@@ -351,7 +351,7 @@ class Engine(SDNController):
         block_percent_arr = np.array(list(self.stats_dict['block_per_sim'].values()))
         print(f'Mean of blocking: {np.mean(block_percent_arr)}')
 
-    def generate_requests(self, seed):
+    def _generate_requests(self, seed):
         """
         Generates the requests for a single iteration of the simulation.
 
@@ -370,7 +370,7 @@ class Engine(SDNController):
 
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
 
-    def update_transponders(self):
+    def _update_transponders(self):
         """
         Updates the transponder usage array with the current transponder utilization.
 
@@ -379,7 +379,7 @@ class Engine(SDNController):
         self.trans_arr = np.append(self.trans_arr,
                                    self.num_trans / (self.properties['num_requests'] - self.num_blocked_reqs))
 
-    def update_blocking_distribution(self):
+    def _update_blocking_distribution(self):
         """
         Updates the blocking distribution arrays with the current blocking statistics. If no requests have been blocked,
         the arrays are not updated.
@@ -392,7 +392,7 @@ class Engine(SDNController):
             self.cong_block_arr = np.append(self.cong_block_arr,
                                             float(self.num_cong_block) / float(self.num_blocked_reqs))
 
-    def update_request_snapshots_dict(self, request_number, num_transponders):
+    def _update_request_snapshots_dict(self, request_number, num_transponders):
         """
         Updates the request snapshot dictionary with information about the current request.
 
@@ -402,7 +402,7 @@ class Engine(SDNController):
         :param num_transponders: The number of transponders the request used
         :type num_transponders: int
         """
-        occupied_slots, guard_bands = self.get_total_occupied_slots()
+        occupied_slots, guard_bands = self._get_total_occupied_slots()
 
         self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
         self.request_snapshots[request_number]['guard_bands'].append(guard_bands)
@@ -413,7 +413,26 @@ class Engine(SDNController):
 
         self.request_snapshots[request_number]['num_segments'].append(num_transponders)
 
-    def init_iter_vars(self):
+    def _init_ai_obj(self, iteration: int):
+        """
+        Initializes the variables for an AI object with respect to a single iteration of the simulation.
+
+        :param iteration: The current iteration of the simulation
+        :type iteration: int
+        """
+        self.properties['ai_arguments']['episodes'] = self.properties['max_iters']
+        self.properties['ai_arguments']['cores_per_link'] = self.properties['cores_per_link']
+        self.properties['ai_arguments']['erlang'] = self.properties['erlang']
+        self.properties['ai_arguments']['topology'] = self.topology
+        self.properties['ai_arguments']['curr_episode'] = iteration
+
+        if self.properties['ai_arguments']['is_training']:
+            self.properties['ai_arguments']['table_path'] = self.sim_info
+
+        self.ai_obj.setup(algorithm=self.properties['ai_algorithm'],
+                          params=self.properties['ai_arguments'])
+
+    def _init_iter_vars(self):
         """
         Initializes the variables for a single iteration of the simulation.
 
@@ -441,54 +460,45 @@ class Engine(SDNController):
         :return: None
         """
         for iteration in range(self.properties["max_iters"]):
-            self.init_iter_vars()
-            self.create_topology()
+            self._init_iter_vars()
+            self._create_topology()
 
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.properties['erlang']} "
                       f"thread number: {self.properties['thread_num']}.")
 
-                if self.properties['ai_algorithm'] != 'None':
-                    self.properties['ai_arguments']['episodes'] = self.properties['max_iters']
-                    self.properties['ai_arguments']['cores_per_link'] = self.properties['cores_per_link']
-                    self.properties['ai_arguments']['erlang'] = self.properties['erlang']
-                    self.properties['ai_arguments']['topology'] = self.topology
-
-                    if self.properties['ai_arguments']['is_training']:
-                        self.properties['ai_arguments']['table_path'] = self.sim_info
-
-                    self.ai_obj.setup(algorithm=self.properties['ai_algorithm'],
-                                      params=self.properties['ai_arguments'])
+            if self.properties['ai_algorithm'] != 'None':
+                self._init_ai_obj(iteration=iteration)
 
             seed = self.properties["seeds"][iteration] if self.properties["seeds"] else iteration + 1
-            self.generate_requests(seed)
+            self._generate_requests(seed)
 
             request_number = 1
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
-                    num_transponders = self.handle_arrival(curr_time, iteration)
-                    self.update_request_snapshots_dict(request_number, num_transponders)
+                    num_transponders = self._handle_arrival(curr_time, iteration)
+                    self._update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1
                 elif req_type == "release":
-                    self.handle_release(curr_time)
+                    self._handle_release(curr_time)
                 else:
                     raise NotImplementedError
 
-            self.calculate_block_percent(iteration)
-            self.update_blocking_distribution()
-            self.update_transponders()
+            self._calculate_block_percent(iteration)
+            self._update_blocking_distribution()
+            self._update_transponders()
 
-            # Some form of ML/RL is being used, ignore confidence intervals for training
-            if not self.properties['ai_arguments']['is_training']:
-                if self.check_confidence_interval(iteration):
+            # Some form of ML/RL is being used, ignore confidence intervals for training and testing
+            if not self.properties['ai_algorithm'] == 'None':
+                if self._check_confidence_interval(iteration):
                     return
 
             if (iteration + 1) % 20 == 0 or iteration == 0:
-                self.print_iter_stats(iteration)
+                self._print_iter_stats(iteration)
 
-            self.save_sim_results()
+            self._save_sim_results()
 
         print(f"Simulation for Erlang: {self.properties['erlang']} finished.")
-        self.save_sim_results()
+        self._save_sim_results()
