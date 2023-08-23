@@ -426,6 +426,9 @@ class Engine(SDNController):
         self.properties['ai_arguments']['erlang'] = self.properties['erlang']
         self.properties['ai_arguments']['topology'] = self.topology
         self.properties['ai_arguments']['curr_episode'] = iteration
+        # TODO: Update
+        self.properties['ai_arguments']['beta'] = None
+        self.properties['ai_arguments']['mod_per_bw'] = None
 
         if self.properties['ai_arguments']['is_training']:
             self.properties['ai_arguments']['table_path'] = self.sim_info
