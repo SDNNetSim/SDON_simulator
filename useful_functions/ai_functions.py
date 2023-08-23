@@ -43,7 +43,7 @@ class AIMethods:
     def _q_spectrum(self):
         raise NotImplementedError
 
-    def _q_routing(self, source: str, destination: str):
+    def _q_routing(self, source: str, destination: str, net_spec_db: dict, chosen_bw: str):
         """
         Given a request, determines the path from source to destination.
 
@@ -53,13 +53,19 @@ class AIMethods:
         :param destination: The destination node.
         :type destination: str
 
+        :param net_spec_db: The network spectrum database.
+        :type net_spec_db: dict
+
+        :param chosen_bw: The bandwidth of the current request to be routed.
+        :type chosen_bw: str
+
         :return: A path from source to destination and a modulation format.
         :rtype: list, str
         """
+        self.ai_obj.net_spec_db = net_spec_db
         self.ai_obj.source = source
         self.ai_obj.destination = destination
-        # TODO: Update
-        self.ai_obj.chosen_bw = None
+        self.ai_obj.chosen_bw = chosen_bw
         path = self.ai_obj.route()
         return path
 
@@ -96,7 +102,8 @@ class AIMethods:
         """
         resp = None
         if self.algorithm == 'q_learning':
-            resp = self._q_routing(source=kwargs['source'], destination=kwargs['destination'])
+            resp = self._q_routing(source=kwargs['source'], destination=kwargs['destination'],
+                                   net_spec_db=kwargs['net_spec_db'], chosen_bw=kwargs['chosen_bw'])
 
         return resp
 
