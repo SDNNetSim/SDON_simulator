@@ -33,16 +33,16 @@ class QLearning:
         self.topology = params['topology']
         self.table_path = params['table_path']
         self.cores_per_link = params['cores_per_link']
+        # The current episode in the simulation
+        self.curr_episode = params['curr_episode']
 
-        # Statistics used for plotting
+        # Statistics to evaluate our reward function
         self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': {}}
 
         # Source node, destination node, and the resulting path
         self.source = None
         self.destination = None
         self.chosen_path = None
-        # The current episode in the simulation
-        self.curr_episode = None
 
     @staticmethod
     def set_seed(seed: int):
@@ -65,26 +65,24 @@ class QLearning:
         if self.epsilon < 0.0:
             raise ValueError(f'Epsilon should be greater than 0 but it is {self.epsilon}')
 
-    def _update_rewards_dict(self, reward: float = None, last_episode: bool = None):
+    def _update_rewards_dict(self, reward: float = None):
         """
         Updates the reward dictionary for plotting purposes later on.
 
         :param reward: The numerical reward in the last episode.
         :type reward: float
-
-        :param last_episode: Indicates whether it's the last episode or not.
-        :type last_episode: bool
         """
-        if self.curr_episode not in self.rewards_dict.keys():
-            self.rewards_dict['rewards'][self.curr_episode] = [reward]
+        episode = str(self.curr_episode)
+        if episode not in self.rewards_dict['rewards'].keys():
+            self.rewards_dict['rewards'][episode] = [reward]
         else:
-            self.rewards_dict['rewards'][self.curr_episode].append(reward)
+            self.rewards_dict['rewards'][episode].append(reward)
 
-        if last_episode:
-            self.rewards_dict['min'] = min(self.rewards_dict['rewards'][self.curr_episode])
-            self.rewards_dict['max'] = max(self.rewards_dict['rewards'][self.curr_episode])
-            self.rewards_dict['average'] = sum(self.rewards_dict['rewards'][self.curr_episode]) / float(
-                len(self.rewards_dict['rewards'][self.curr_episode]))
+        if self.curr_episode == self.episodes - 1:
+            self.rewards_dict['min'] = min(self.rewards_dict['rewards'][episode])
+            self.rewards_dict['max'] = max(self.rewards_dict['rewards'][episode])
+            self.rewards_dict['average'] = sum(self.rewards_dict['rewards'][episode]) / float(
+                len(self.rewards_dict['rewards'][episode]))
 
     def save_table(self):
         """
@@ -94,9 +92,6 @@ class QLearning:
 
         file_path = f'{os.getcwd()}/ai/q_tables/{self.table_path}/{self.sim_type}_table_c{self.cores_per_link}.npy'
         np.save(file_path, self.q_table)
-
-        if len(self.rewards_dict['min']) == self.episodes:
-            self._update_rewards_dict(last_episode=True)
 
         params_dict = {
             'epsilon': self.epsilon,
@@ -126,6 +121,7 @@ class QLearning:
             self.epsilon = params_obj['epsilon']
             self.learn_rate = params_obj['learn_rate']
             self.discount = params_obj['discount_factor']
+            self.rewards_dict = params_obj['reward_info']
 
     # TODO: Need to create a method that just calculates the NLI cost of a path
     def _get_nli_cost(self):
