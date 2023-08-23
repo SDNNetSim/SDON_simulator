@@ -23,7 +23,7 @@ class SDNController:
         :param ai_obj: Class containing all methods related to AI
         :type ai_obj: object
         """
-        self.topology = properties['topology']
+        self.topology_info = properties['topology_info']
         self.cores_per_link = properties['cores_per_link']
         self.sim_type = properties['sim_type']
         self.alloc_method = properties['allocation_method']
@@ -55,6 +55,8 @@ class SDNController:
         self.num_transponders = 1
         # Determines whether the block was due to distance or congestion
         self.dist_block = False
+        # The physical network topology as a networkX graph
+        self.topology = None
 
     def release(self):
         """
@@ -320,14 +322,14 @@ class SDNController:
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
-                    snr_values = SnrMeasurments(path = selected_path, modulation_format = path_mod, SP = selected_sp, 
-                                        no_assigned_slots = selected_sp['end_slot'] - selected_sp['start_slot'], 
-                                        physical_topology = self.properties['topology'],
-                                        requested_bit_rate = 12.5, frequncy_spacing = 12.5, input_power = 10 ** -3, 
-                                        spectral_slots = self.spectral_slots, requested_SNR = 8.5, 
-                                        network_spec_db = self.net_spec_db, requests_status = {}, 
-                                        phi = {'QPSK' : 1,'16-QAM': 0.68, '64-QAM': 0.6190476190476191}, 
-                                        guard_band=0, baud_rates = None, EGN = True, XT_noise = False)
+                    snr_values = SnrMeasurments(path=selected_path, modulation_format=path_mod, SP=selected_sp,
+                                                no_assigned_slots=selected_sp['end_slot'] - selected_sp['start_slot'],
+                                                physical_topology=self.topology_info,
+                                                requested_bit_rate=12.5, frequncy_spacing=12.5, input_power=10 ** -3,
+                                                spectral_slots=self.spectral_slots, requested_SNR=8.5,
+                                                network_spec_db=self.net_spec_db, requests_status={},
+                                                phi={'QPSK': 1, '16-QAM': 0.68, '64-QAM': 0.6190476190476191},
+                                                guard_band=0, baud_rates=None, EGN=True, XT_noise=False)
                     snr_values.SNR_check_NLI_ASE_XT()
                     resp = {
                         'path': selected_path,

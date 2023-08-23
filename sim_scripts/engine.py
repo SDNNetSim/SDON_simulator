@@ -37,7 +37,6 @@ class Engine(SDNController):
         self.num_blocked_reqs = 0
         # The network spectrum database
         self.net_spec_db = dict()
-        self.topology = nx.Graph()
         # Used to track the total number of transponders in a simulation
         self.num_trans = 0
         # Used to take an average of the total amount of transponders for multiple simulation iterations
@@ -74,10 +73,10 @@ class Engine(SDNController):
         self.sim_info = f"{self.properties['network']}/{self.properties['sim_start'].split('_')[0]}/" \
                         f"{self.properties['sim_start'].split('_')[1]}"
         # Contains all methods related to artificial intelligence
-        self.ai_obj = AIMethods(properties=self.properties, sim_info=self.sim_info)
+        # self.ai_obj = AIMethods(properties=self.properties, sim_info=self.sim_info)
 
         # Initialize the constructor of the SDNController class
-        super().__init__(properties=self.properties, ai_obj=self.ai_obj)
+        super().__init__(properties=self.properties, ai_obj=None)
 
     def get_total_occupied_slots(self):
         """
@@ -309,10 +308,10 @@ class Engine(SDNController):
         self.net_spec_db = {}
 
         # Create nodes
-        self.topology.add_nodes_from(self.properties['topology']['nodes'])
+        self.topology.add_nodes_from(self.properties['topology_info']['nodes'])
 
         # Create links
-        for link_num, link_data in self.properties['topology']['links'].items():
+        for link_num, link_data in self.properties['topology_info']['links'].items():
             source = link_data['source']
             dest = link_data['destination']
 
@@ -361,7 +360,7 @@ class Engine(SDNController):
         :return: None
         """
         self.reqs_dict = generate(seed=seed,
-                                  nodes=list(self.properties['topology']['nodes'].keys()),
+                                  nodes=list(self.properties['topology_info']['nodes'].keys()),
                                   hold_time_mean=self.properties['holding_time'],
                                   arr_rate_mean=self.properties['arrival_rate'],
                                   num_reqs=self.properties['num_requests'],
@@ -449,7 +448,7 @@ class Engine(SDNController):
                       f"thread number: {self.properties['thread_num']}.")
 
                 # We are running a normal simulation, no AI object needed
-                if False: #self.properties['ai_algorithm'] != 'None':
+                if False:  # self.properties['ai_algorithm'] != 'None':
                     self.ai_obj.topology = self.properties['topology']
                     self.ai_obj.seed = iteration
 

@@ -15,10 +15,10 @@ class AIMethods:
         self.max_segments = kwargs['properties']['max_segments']
         self.cores_per_link = kwargs['properties']['cores_per_link']
         self.is_training = kwargs['properties']['is_training']
+        self.topology_info = kwargs['properties']['topology_info']
         self.topology = kwargs['properties']['topology']
         self.sim_info = kwargs['sim_info']
         self.seed = None
-        self.topology = None
 
         # An object for the chosen AI algorithm
         self.ai_obj = None
