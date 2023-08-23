@@ -314,7 +314,8 @@ class SDNController:
             selected_path, path_mod = routing_obj.shortest_path()
         elif self.route_method == 'ai':
             # Used for routing related to artificial intelligence
-            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination))
+            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination),
+                                              net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw)
 
             # TODO: Make this better
             if not selected_path:
