@@ -89,7 +89,7 @@ class SnrMeasurments:
         return G_SCI
     
     
-    def _XCI_calculator(self, Fi, link, PSDi, BW):
+    def _XCI_calculator(self, Fi, link, PSDi, BW, visited_channel):
         for w in range(self.spectral_slots):
             if self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.SP['core_num']][w] > 0: #!= 0 :
                 if self.network_spec_db[(self.path[link], self.path[link+1])]['cores_matrix'][self.SP['core_num']][w] in visited_channel:
