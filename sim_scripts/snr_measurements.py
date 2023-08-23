@@ -121,7 +121,7 @@ class SnrMeasurments:
             taken_channels = self._find_taken_channels((self.path[link], self.path[link+1]))
             Mio = ( 3 * ( self.physical_topology['links'][link_id]['fiber']['non_linearity'] ** 2 ) ) / ( 2 * math.pi * self.physical_topology['links'][link_id]['fiber']['attenuation'] * np.abs( self.physical_topology['links'][link_id]['fiber']['dispersion'] ))
             G_SCI = self._SCI_calculator(link_id, PSDi, BW)
-            G_XCI = 
+            G_XCI = self._XCI_calculator()
             length = 100 # TODO: chang based on input : length
             nsp = 1.8 # TODO self.physical_topology['links'][link_id]['fiber']['nsp']
             bending_radius = 0.05 #TODO: self.physical_topology['links'][link_id]['fiber']["bending_radius"] 
