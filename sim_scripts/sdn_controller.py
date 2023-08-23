@@ -299,7 +299,10 @@ class SDNController:
         if self.route_method == 'nli_aware':
             # TODO: Constant QPSK for now
             slots_needed = self.mod_per_bw[self.chosen_bw]['QPSK']['slots_needed']
-            selected_path, path_mod = routing_obj.nli_aware(slots_needed=slots_needed, beta=self.beta)
+
+            routing_obj.slots_needed = slots_needed
+            routing_obj.beta = self.beta
+            selected_path, path_mod = routing_obj.nli_aware()
         # TODO: Add to configuration file
         elif self.route_method == 'xt_aware':
             selected_path, path_mod = routing_obj.xt_aware(beta=self.beta, xt_type='with_length')
