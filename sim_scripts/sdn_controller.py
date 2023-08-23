@@ -322,9 +322,9 @@ class SDNController:
                 if selected_sp is not False:
                     snr_values = SnrMeasurments(path = selected_path, modulation_format = path_mod, SP = selected_sp, 
                                         no_assigned_slots = selected_sp['end_slot'] - selected_sp['start_slot'], 
-                                        physical_topology = self.topology,
+                                        physical_topology = self.properties['topology'],
                                         requested_bit_rate = 12.5, frequncy_spacing = 12.5, input_power = 10 ** -3, 
-                                        spectral_slots = spectral_slots, requested_SNR = 8.5, 
+                                        spectral_slots = self.spectral_slots, requested_SNR = 8.5, 
                                         network_spec_db = self.net_spec_db, requests_status = {}, 
                                         phi = {'QPSK' : 1,'16-QAM': 0.68, '64-QAM': 0.6190476190476191}, 
                                         guard_band=0, baud_rates = None, EGN = True, XT_noise = False)
