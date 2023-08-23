@@ -8,8 +8,8 @@ import networkx as nx
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
-from sim_scripts.routing import Routing
 from useful_functions.sim_functions import get_path_mod, find_path_len
+from sim_scripts.routing import Routing
 
 
 class QLearning:
@@ -141,7 +141,13 @@ class QLearning:
         self.routing_obj.slots_needed = self.mod_per_bw[self.chosen_bw][mod_format]['slots_needed']
         self.nli_cost = self.routing_obj.nli_path(path=self.chosen_path)
 
-    def update_environment(self, routed):
+    def update_environment(self, routed: bool):
+        """
+        Updates the Q-learning environment.
+
+        :param routed: Whether the path chosen was successfully routed or not.
+        :type routed: bool
+        """
         # TODO: Update reward
         #   - Need worst case NLI (Ask)
         nli_worst = 100
@@ -209,8 +215,6 @@ class QLearning:
             if str(next_node) not in self.chosen_path:
                 self.chosen_path.append(str(next_node))
                 return True, next_node
-            else:
-                continue
 
         return False, None
 
