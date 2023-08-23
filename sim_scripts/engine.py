@@ -17,49 +17,11 @@ class Engine(SDNController):
     Controls the simulation.
     """
 
-    def __init__(self, sim_data: dict = None, erlang: float = None, input_fp: str = None, net_name: str = None,
-                 sim_start: str = None, sim_type: str = 'arash', thread_num: int = 1, dynamic_lps: bool = None,
-                 is_training: bool = None):
+    def __init__(self, **kwargs):
         """
         Initializes the Engine class.
-
-        :param sim_data: A dictionary containing all input data relevant to the simulation.
-        :type sim_data: dict
-
-        :param erlang: The current traffic volume for a given simulation.
-        :type erlang: float
-
-        :param input_fp: The simulation input file path.
-        :type input_fp: str
-
-        :param net_name: The name of the network topology.
-        :type net_name: str
-
-        :param sim_start: The start time of the simulation
-        :type sim_start: str
-
-        :param sim_type: The simulation type, which controls various parameters.
-        :type sim_type: str
-
-        :param thread_num: A number to identify threads when saving data.
-        :type thread_num: int
-
-        :param dynamic_lps: A flag to determine the type of light path slicing to be implemented. Here, we may slice a
-                            request to multiple different bandwidths if set to true.
-        :type dynamic_lps: bool
-
-        :param: is_training: Determines if we are training or testing ML/RL methods.
-        :type is_training: bool
         """
-        self.sim_type = sim_type
-        self.thread_num = thread_num
-        self.input_fp = input_fp
-        self.sim_data = sim_data
-        self.erlang = erlang
-        self.sim_start = sim_start
-        self.net_name = net_name
-        self.dynamic_lps = dynamic_lps
-        self.is_training = is_training
+        self.properties = kwargs['properties']
 
         # Holds statistical information for each iteration in a given simulation.
         self.stats_dict = {
@@ -68,7 +30,7 @@ class Engine(SDNController):
         }
         # The amount of times a type of bandwidth request was blocked
         tmp_obj = dict()
-        for bandwidth in self.sim_data['mod_per_bw']:
+        for bandwidth in self.properties['mod_per_bw']:
             tmp_obj[bandwidth] = 0
         self.block_per_bw = tmp_obj
         # The number of requests that have been blocked in a simulation.
@@ -109,19 +71,13 @@ class Engine(SDNController):
         self.active_requests = set()
 
         # For the purposes of saving relevant simulation information to a certain pathway
-        self.sim_info = f"{self.net_name}/{self.sim_start.split('_')[0]}/{self.sim_start.split('_')[1]}"
+        self.sim_info = f"{self.properties['network']}/{self.properties['sim_start'].split('_')[0]}/" \
+                        f"{self.properties['sim_start'].split('_')[1]}"
         # Contains all methods related to artificial intelligence
-        self.ai_obj = AIMethods(algorithm=self.sim_data['ai_algorithm'],
-                                is_training=self.sim_data['is_training'],
-                                max_segments=self.sim_data['max_segments'],
-                                cores_per_link=self.sim_data['cores_per_link'], sim_info=self.sim_info)
+        self.ai_obj = AIMethods(properties=self.properties, sim_info=self.sim_info)
 
         # Initialize the constructor of the SDNController class
-        super().__init__(alloc_method=self.sim_data['alloc_method'],
-                         mod_per_bw=self.sim_data['mod_per_bw'], max_segments=self.sim_data['max_segments'],
-                         cores_per_link=self.sim_data['cores_per_link'], guard_slots=self.sim_data['guard_slots'],
-                         sim_type=self.sim_type, dynamic_lps=self.dynamic_lps, ai_obj=self.ai_obj,
-                         ai_algorithm=sim_data['ai_algorithm'], physical_topology_data = self.sim_data['topology'])
+        super().__init__(properties=self.properties, ai_obj=self.ai_obj)
 
     def get_total_occupied_slots(self):
         """
@@ -182,31 +138,33 @@ class Engine(SDNController):
             'blocking_variance': self.blocking_variance,
             'ci_rate_block': self.block_ci_rate,
             'ci_percent_block': self.block_ci_percent,
-            'num_reqs': self.sim_data['num_reqs'],
-            'cores_per_link': self.sim_data['topology']['links']['1']['fiber']['num_cores'],
-            'hold_time_mean': self.sim_data['hold_time_mean'],
-            'spectral_slots': self.sim_data['spectral_slots'],
-            'max_segments': self.sim_data['max_segments'],
+            'num_reqs': self.properties['num_requests'],
+            'cores_per_link': self.properties['cores_per_link'],
+            'hold_time_mean': self.properties['holding_time'],
+            'spectral_slots': self.properties['spectral_slots'],
+            'max_segments': self.properties['max_segments'],
             'trans_mean': np.mean(self.trans_arr),
             'dist_percent': np.mean(self.dist_block_arr) * 100.0,
             'cong_percent': np.mean(self.cong_block_arr) * 100.0,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
-            'alloc_method': self.sim_data['alloc_method'],
-            'dynamic_lps': self.dynamic_lps,
+            'alloc_method': self.properties['allocation_method'],
+            'route_method': self.properties['route_method'],
+            'dynamic_lps': self.properties['dynamic_lps'],
+            'is_training': self.properties['is_training'],
+            'beta': self.properties['beta'],
             'request_snapshots': self.request_snapshots,
-            'is_training': self.is_training
         }
 
         base_fp = "data/output/"
 
-        self.ai_obj.save()
+        if self.properties['ai_algorithm'] != 'None':
+            self.ai_obj.save()
 
         # Save threads to child directories
-        if self.thread_num is not None:
-            base_fp += f"/{self.sim_info}/t{self.thread_num}"
+        base_fp += f"/{self.sim_info}/{self.properties['thread_num']}"
         create_dir(base_fp)
 
-        with open(f"{base_fp}/{self.erlang}_erlang.json", 'w', encoding='utf-8') as file_path:
+        with open(f"{base_fp}/{self.properties['erlang']}_erlang.json", 'w', encoding='utf-8') as file_path:
             json.dump(self.stats_dict, file_path, indent=4)
 
     def check_confidence_interval(self, iteration):
@@ -232,8 +190,8 @@ class Engine(SDNController):
             return False
 
         if self.block_ci_percent <= 5:
-            print(f'Confidence interval of {round(self.block_ci_percent, 2)}% reached on simulation '
-                  f'{iteration + 1}, ending and saving results for Erlang: {self.erlang}')
+            print(f"Confidence interval of {round(self.block_ci_percent, 2)}% reached on simulation "
+                  f"{iteration + 1}, ending and saving results for Erlang: {self.properties['erlang']}")
             self.save_sim_results()
             return True
 
@@ -249,12 +207,12 @@ class Engine(SDNController):
 
         :return: None
         """
-        num_requests = self.sim_data['num_reqs']
+        num_requests = self.properties['num_requests']
 
         if num_requests == 0:
             block_percentage = 0
         else:
-            block_percentage = self.num_blocked_reqs / self.sim_data['num_reqs']
+            block_percentage = self.num_blocked_reqs / self.properties['num_requests']
 
         self.stats_dict['block_per_sim'][iteration] = block_percentage
 
@@ -281,8 +239,10 @@ class Engine(SDNController):
         resp = self.handle_event(request_type='arrival')
 
         free_slots = self.get_path_free_slots(path=resp[-1])
-        self.ai_obj.update(routed=resp[0], path=resp[-1], free_slots=free_slots, iteration=iteration,
-                           num_segments=resp[2])
+
+        if self.properties['ai_algorithm'] != 'None':
+            self.ai_obj.update(routed=resp[0], path=resp[-1], free_slots=free_slots, iteration=iteration,
+                               num_segments=resp[2])
 
         # Request was blocked
         if not resp[0]:
@@ -344,14 +304,15 @@ class Engine(SDNController):
 
         :return: None
         """
+        # TODO: topology_info should be added to the properties  
         self.topology = nx.Graph()
         self.net_spec_db = {}
 
         # Create nodes
-        self.topology.add_nodes_from(self.sim_data['topology']['nodes'])
+        self.topology.add_nodes_from(self.properties['topology']['nodes'])
 
         # Create links
-        for link_num, link_data in self.sim_data['topology']['links'].items():
+        for link_num, link_data in self.properties['topology']['links'].items():
             source = link_data['source']
             dest = link_data['destination']
 
@@ -363,7 +324,7 @@ class Engine(SDNController):
             self.net_spec_db[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
 
             # Add links to physical topology
-            self.topology.add_edge(source, dest, length=link_data['length'])
+            self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
 
     def create_cores_matrix(self, num_cores):
         """
@@ -374,21 +335,7 @@ class Engine(SDNController):
 
         :return: A 2D NumPy array representing the cores matrix.
         """
-        return np.zeros((num_cores, self.sim_data['spectral_slots']))
-
-    def load_input(self):
-        """
-        Load and return the simulation input JSON file.
-
-        :return: None
-        """
-        try:
-            with open(self.input_fp, encoding='utf-8') as json_file:
-                self.sim_data = json.load(json_file)
-        except FileNotFoundError as exc:
-            raise IOError(f"File not found: {self.input_fp}") from exc
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"Invalid JSON format in file: {self.input_fp}") from exc
+        return np.zeros((num_cores, self.properties['spectral_slots']))
 
     def print_iter_stats(self, iteration):
         """
@@ -399,7 +346,8 @@ class Engine(SDNController):
 
         :return: None
         """
-        print(f'Iteration {iteration + 1} out of {self.sim_data["max_iters"]} completed for Erlang: {self.erlang}')
+        print(f"Iteration {iteration + 1} out of {self.properties['max_iters']} "
+              f"completed for Erlang: {self.properties['erlang']}")
         block_percent_arr = np.array(list(self.stats_dict['block_per_sim'].values()))
         print(f'Mean of blocking: {np.mean(block_percent_arr)}')
 
@@ -413,12 +361,12 @@ class Engine(SDNController):
         :return: None
         """
         self.reqs_dict = generate(seed=seed,
-                                  nodes=list(self.sim_data['topology']['nodes'].keys()),
-                                  hold_time_mean=self.sim_data['hold_time_mean'],
-                                  arr_rate_mean=self.sim_data['arr_rate_mean'],
-                                  num_reqs=self.sim_data['num_reqs'],
-                                  mod_per_bw=self.sim_data['mod_per_bw'],
-                                  req_dist=self.sim_data['req_dist'])
+                                  nodes=list(self.properties['topology']['nodes'].keys()),
+                                  hold_time_mean=self.properties['holding_time'],
+                                  arr_rate_mean=self.properties['arrival_rate'],
+                                  num_reqs=self.properties['num_requests'],
+                                  mod_per_bw=self.properties['mod_per_bw'],
+                                  req_dist=self.properties['request_distribution'])
 
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
 
@@ -428,7 +376,8 @@ class Engine(SDNController):
 
         :return: None
         """
-        self.trans_arr = np.append(self.trans_arr, self.num_trans / (self.sim_data['num_reqs'] - self.num_blocked_reqs))
+        self.trans_arr = np.append(self.trans_arr,
+                                   self.num_trans / (self.properties['num_requests'] - self.num_blocked_reqs))
 
     def update_blocking_distribution(self):
         """
@@ -476,7 +425,7 @@ class Engine(SDNController):
         self.num_trans = 0
         self.num_blocked_reqs = 0
         self.reqs_status = dict()
-        for request_number in range(1, self.sim_data['num_reqs'] + 1):
+        for request_number in range(1, self.properties['num_requests'] + 1):
             self.request_snapshots[request_number] = {
                 'occ_slots': [],
                 'guard_bands': [],
@@ -491,25 +440,25 @@ class Engine(SDNController):
 
         :return: None
         """
-        if self.input_fp:
-            self.load_input()
-
-        for iteration in range(self.sim_data["max_iters"]):
+        for iteration in range(self.properties["max_iters"]):
             self.init_iter_vars()
             self.create_topology()
-            self.ai_obj.topology = self.topology
-            self.ai_obj.seed = iteration
 
             if iteration == 0:
-                print(f"Simulation started for Erlang: {self.erlang} thread number: {self.thread_num}.")
+                print(f"Simulation started for Erlang: {self.properties['erlang']} "
+                      f"thread number: {self.properties['thread_num']}.")
 
-                # TODO: Allow us to tune hyperparameters
-                if self.sim_data['train_file'] is None:
-                    self.ai_obj.setup(erlang=self.erlang, trained_table=self.sim_info)
-                else:
-                    self.ai_obj.setup(erlang=self.erlang, trained_table=self.sim_data['train_file'])
+                # We are running a normal simulation, no AI object needed
+                if False: #self.properties['ai_algorithm'] != 'None':
+                    self.ai_obj.topology = self.properties['topology']
+                    self.ai_obj.seed = iteration
 
-            seed = self.sim_data["seeds"][iteration] if self.sim_data["seeds"] else iteration + 1
+                    if self.properties['train_file'] is None:
+                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.sim_info)
+                    else:
+                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.properties['train_file'])
+
+            seed = self.properties["seeds"][iteration] if self.properties["seeds"] else iteration + 1
             self.generate_requests(seed)
 
             request_number = 1
@@ -530,7 +479,7 @@ class Engine(SDNController):
             self.update_transponders()
 
             # Some form of ML/RL is being used, ignore confidence intervals for training
-            if not self.sim_data['is_training']:
+            if not self.properties['is_training']:
                 if self.check_confidence_interval(iteration):
                     return
 
@@ -539,5 +488,5 @@ class Engine(SDNController):
 
             self.save_sim_results()
 
-        print(f"Simulation for Erlang: {self.erlang} finished.")
+        print(f"Simulation for Erlang: {self.properties['erlang']} finished.")
         self.save_sim_results()
