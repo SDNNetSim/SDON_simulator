@@ -9,6 +9,7 @@ import networkx as nx
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
 from sim_scripts.routing import Routing
+from useful_functions.sim_functions import get_path_mod, find_path_len
 
 
 class QLearning:
@@ -33,8 +34,8 @@ class QLearning:
         self.topology = params['topology']
         self.table_path = params['table_path']
         self.cores_per_link = params['cores_per_link']
-        # The current episode in the simulation
         self.curr_episode = params['curr_episode']
+        self.mod_per_bw = params['mod_per_bw']
 
         # Statistics to evaluate our reward function
         self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': {}}
@@ -43,6 +44,12 @@ class QLearning:
         self.source = None
         self.destination = None
         self.chosen_path = None
+        # The chosen bandwidth for the current request
+        self.chosen_bw = None
+        # The NLI cost for a given path
+        self.nli_cost = None
+        # Simulation methods related to routing
+        self.routing_obj = Routing(beta=params['beta'])
 
     @staticmethod
     def set_seed(seed: int):
@@ -123,18 +130,22 @@ class QLearning:
             self.discount = params_obj['discount_factor']
             self.rewards_dict = params_obj['reward_info']
 
-    # TODO: Need to create a method that just calculates the NLI cost of a path
     def _get_nli_cost(self):
-        pass
+        mod_formats = self.mod_per_bw[self.chosen_bw]
+        path_len = find_path_len(self.chosen_path, self.topology)
+        mod_format = get_path_mod(mod_formats, path_len)
+
+        self.routing_obj.slots_needed = self.mod_per_bw[self.chosen_bw][mod_format]['slots_needed']
+        self.nli_cost = self.routing_obj.nli_path(path=self.chosen_path)
 
     def update_environment(self, routed):
-        nli_cost = self._get_nli_cost()
-
         # TODO: Update reward
+        #   - Need worst case NLI (Ask)
+        nli_worst = 100
         if not routed:
-            reward = -10000
+            reward = -1.0
         else:
-            reward = 100
+            reward = 1.0 - (self.nli_cost / nli_worst)
 
         self._update_rewards_dict(reward=reward)
 
@@ -221,6 +232,8 @@ class QLearning:
 
             if found_next is not False:
                 if next_node == self.destination:
+                    self._get_nli_cost()
+
                     return self.chosen_path
 
                 curr_node = next_node
