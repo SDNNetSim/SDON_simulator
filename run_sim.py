@@ -16,6 +16,7 @@ from config.setup_config import read_config
 
 
 # TODO: Structure this so objects are not re-created every time :D
+#   - This would also add the support of threading different traffic volumes
 # TODO: Update tests
 
 
