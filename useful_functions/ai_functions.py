@@ -33,7 +33,6 @@ class AIMethods:
         :param iteration: The current iteration of the simulation.
         :type iteration: int
         """
-        self.ai_obj.curr_episode = iteration
         self.ai_obj.update_environment(routed=routed)
 
         # Decay epsilon for half of the iterations evenly each time
@@ -66,12 +65,15 @@ class AIMethods:
         """
         Initializes a QLearning class and sets up the initial environment and Q-table.
         """
-        self.ai_obj = QLearning(params=params)
+        if params['curr_episode'] == 0:
+            self.ai_obj = QLearning(params=params)
+        else:
+            self.ai_obj.curr_episode = params['curr_episode']
+
         self.ai_obj.setup_environment()
 
         # Load a pre-trained table or start a new one
         # TODO: Erlang a hard-coded value :(
-        # TODO: This needs to be changed (Resetting the Q-table each time)
         if self.ai_obj.sim_type == 'train' and params['erlang'] == 10 or params['erlang'] == 50:
             self.ai_obj.save_table()
         else:
