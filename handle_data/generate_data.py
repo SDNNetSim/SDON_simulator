@@ -34,6 +34,7 @@ def create_pt(cores_per_link: int, network_data: dict):
             'length': network_data[(source_node, destination_node)],
             'source': source_node,
             'destination': destination_node,
+            'span_length': 100,
         }
         physical_topology['links'][link_num] = link_properties
 
