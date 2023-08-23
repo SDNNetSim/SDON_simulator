@@ -121,7 +121,7 @@ class Engine(SDNController):
                          mod_per_bw=self.sim_data['mod_per_bw'], max_segments=self.sim_data['max_segments'],
                          cores_per_link=self.sim_data['cores_per_link'], guard_slots=self.sim_data['guard_slots'],
                          sim_type=self.sim_type, dynamic_lps=self.dynamic_lps, ai_obj=self.ai_obj,
-                         ai_algorithm=sim_data['ai_algorithm'])
+                         ai_algorithm=sim_data['ai_algorithm'], physical_topology_data = self.sim_data['topology'])
 
     def get_total_occupied_slots(self):
         """

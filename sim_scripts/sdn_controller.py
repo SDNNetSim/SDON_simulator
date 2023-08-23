@@ -7,6 +7,7 @@ import networkx as nx
 # Local application imports
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
+from sim_scripts.snr_measurements import SnrMeasurments
 from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
 
 
@@ -19,7 +20,7 @@ class SDNController:
                  cores_per_link: int = None, path: list = None, sim_type: str = None, alloc_method: str = None,
                  source: int = None, destination: int = None, mod_per_bw: dict = None, chosen_bw: str = None,
                  max_segments: int = None, guard_slots: int = None, dynamic_lps: bool = None,
-                 ai_obj: object = None, ai_algorithm: str = None):
+                 ai_obj: object = None, ai_algorithm: str = None, physical_topology_data: dict = None):
         """
         Initializes the SDNController class.
 
@@ -82,7 +83,8 @@ class SDNController:
         self.dynamic_lps = dynamic_lps
         self.ai_obj = ai_obj
         self.ai_algorithm = ai_algorithm
-
+        self.physical_topology_data = physical_topology_data
+        
         self.source = source
         self.destination = destination
         self.mod_per_bw = mod_per_bw
@@ -344,6 +346,14 @@ class SDNController:
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
+                    snr_values = SnrMeasurments(path = selected_path, modulation_format = path_mod, SP = selected_sp, 
+                                        no_assigned_slots = selected_sp['end_slot'] - selected_sp['start_slot'], 
+                                        physical_topology = self.physical_topology_data,
+                                        requested_bit_rate = 12.5, frequncy_spacing = 12.5, input_power = 10 ** -3, 
+                                        spectral_slots = self.sim_data['spectral_slots'], requested_SNR = 8.5, 
+                                        network_spec_db = self.net_spec_db, requests_status = {}, phi = {'QPSK' : 1,'16-QAM': 0.68, '64-QAM': 0.6190476190476191}, 
+                                        guard_band=0, baud_rates = None, EGN = True, XT_noise = False)
+                    snr_values.SNR_check_NLI_ASE_XT()
                     resp = {
                         'path': selected_path,
                         'mod_format': path_mod,
