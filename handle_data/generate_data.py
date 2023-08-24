@@ -16,9 +16,9 @@ def create_pt(cores_per_link: int, network_data: dict):
     """
     # Fiber properties that apply to all fibers in a link
     fiber_properties = {
-        'attenuation': 0.2 / 4.343 * math.e ** -3,
-        'non_linearity': 1.3 * math.e ** -3,
-        'dispersion': 16 * math.e ** -6 * (1550 * math.e ** -9) ** 2 / 2 / math.pi / 3 / math.e ** 8,
+        'attenuation': 0.2 / 4.343 * 1e-3,
+        'non_linearity': 1.3e-3,
+        'dispersion': (16e-6 * (1550e-9) ** 2 ) / (2 * math.pi * 3e8),
         'num_cores': cores_per_link,
         'fiber_type': 0,  # TODO: Is this always supposed to be 0? Add a comment explaining why if so.
     }
