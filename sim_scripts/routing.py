@@ -162,6 +162,52 @@ class Routing:
 
             return path, mod_format
 
+    # TODO: Support for single-core only
+    def find_worst_nli(self):
+        """
+        Finds the maximum possible NLI for a link in the network.
+
+        :return: The maximum NLI possible for a single link
+        :rtype: float
+        """
+        links = list(self.net_spec_db.keys())
+        slots_per_core = len(self.net_spec_db[links[0]]['cores_matrix'][0])
+        # Simulate a fully congested link
+        simulated_link = np.zeros(slots_per_core)
+        # TODO: Update to have the guard band as a variable
+        # Add one to the step to account for the guard band
+        for i in range(0, len(simulated_link), self.slots_needed + 1):
+            value_to_set = i // self.slots_needed + 1
+            simulated_link[i:i + self.slots_needed + 2] = value_to_set
+
+        # Add guard-bands
+        simulated_link[self.slots_needed::self.slots_needed + 1] *= -1
+
+        # TODO: Why is self.slots_needed ever equal to one?
+        # Free the middle-most channel with respect to the number of slots needed
+        center_index = len(simulated_link) // 2
+        if self.slots_needed % 2 == 0:
+            start_index = center_index - self.slots_needed // 2
+            end_idx = center_index + self.slots_needed // 2
+        else:
+            start_index = center_index - self.slots_needed // 2
+            end_idx = center_index + self.slots_needed // 2 + 1
+
+        # Temporarily modify net_spec_db to use helper functions (I believe Python lists are mutable types!)
+        original_link = self.net_spec_db[links[0]]['cores_matrix'][0]
+        simulated_link[start_index:end_idx] = 0
+        self.net_spec_db[links[0]]['cores_matrix'][0] = simulated_link
+
+        free_channels = self._find_free_channels(link=links[0])
+        taken_channels = self._find_taken_channels(link=links[0])
+        # TODO: Length is always one
+        max_spans = max(data['length'] for u, v, data in self.topology.edges(data=True)) / self.span_len
+        nli_worst = self._find_link_cost(free_channels=free_channels, taken_channels=taken_channels,
+                                         num_spans=max_spans)
+
+        self.net_spec_db[links[0]]['cores_matrix'][0] = original_link
+        return nli_worst
+
     def _least_nli_path(self):
         """
         Selects the path with the least amount of NLI cost.
@@ -261,6 +307,7 @@ class Routing:
 
         return link_cost
 
+    # TODO: This is not returning indexes
     def _find_taken_channels(self, link: tuple):
         """
         Finds the number of taken channels on any given link.
@@ -268,7 +315,7 @@ class Routing:
         :param link: The link on which to search for channels on.
         :type link: tuple
 
-        :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
+        :return: A matrix containing the indexes to occupied super channels on the link.
         :rtype: list
         """
         channels = []
