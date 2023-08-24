@@ -377,8 +377,11 @@ class Engine(SDNController):
 
         :return: None
         """
-        self.trans_arr = np.append(self.trans_arr,
-                                   self.num_trans / (self.properties['num_requests'] - self.num_blocked_reqs))
+        if self.properties['num_requests'] == self.num_blocked_reqs:
+            self.trans_arr = np.append(self.trans_arr, 0)
+        else:
+            self.trans_arr = np.append(self.trans_arr,
+                                       self.num_trans / (self.properties['num_requests'] - self.num_blocked_reqs))
 
     def _update_blocking_distribution(self):
         """
