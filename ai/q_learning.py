@@ -47,6 +47,8 @@ class QLearning:
         self.chosen_bw = None
         # The NLI cost for a given path
         self.nli_cost = None
+        # The worst possible NLI cost for a single link in the network
+        self.nli_worst = None
         # The latest up-to-date network spectrum database
         self.net_spec_db = None
         # Simulation methods related to routing
@@ -140,6 +142,14 @@ class QLearning:
         mod_format = get_path_mod(mod_formats, path_len)
 
         self.routing_obj.net_spec_db = self.net_spec_db
+
+        # TODO: What is the NLI cost based on? A free channel of what size?
+        if self.nli_worst is None:
+            self.nli_worst = self.routing_obj.find_worst_nli()
+
+        if not mod_format:
+            return False
+
         self.routing_obj.slots_needed = self.mod_per_bw[self.chosen_bw][mod_format]['slots_needed']
         self.nli_cost = self.routing_obj.nli_path(path=self.chosen_path)
 
@@ -150,13 +160,11 @@ class QLearning:
         :param routed: Whether the path chosen was successfully routed or not.
         :type routed: bool
         """
-        # TODO: Update reward
-        #   - Need worst case NLI (Ask)
-        nli_worst = 100
         if not routed:
             reward = -1.0
         else:
-            reward = 1.0 - (self.nli_cost / nli_worst)
+            # NLI worst relates to the worst NLI for a single link
+            reward = 1.0 - (self.nli_cost / (self.nli_worst * float(len(self.chosen_path))))
 
         self._update_rewards_dict(reward=reward)
 
