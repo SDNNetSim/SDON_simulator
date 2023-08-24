@@ -39,3 +39,19 @@ jobs:
           slack-channel: ${{ fromJson(steps.send-message.outputs.slack-result).response.channel }}
           slack-emoji-name: frog
           slack-message-timestamp: ${{ fromJson(steps.send-message.outputs.slack-result).response.message.ts }}
+      - name: Send Slack Reaction To Message
+        uses: archive/github-actions-slack@v2.0.0
+        with:
+          slack-function: send-reaction
+          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
+          slack-channel: ${{ fromJson(steps.send-message.outputs.slack-result).response.channel }}
+          slack-emoji-name: omnetpp
+          slack-message-timestamp: ${{ fromJson(steps.send-message.outputs.slack-result).response.message.ts }}
+      - name: Send Slack Reaction To Message
+        uses: archive/github-actions-slack@v2.0.0
+        with:
+          slack-function: send-reaction
+          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
+          slack-channel: ${{ fromJson(steps.send-message.outputs.slack-result).response.channel }}
+          slack-emoji-name: fire
+          slack-message-timestamp: ${{ fromJson(steps.send-message.outputs.slack-result).response.message.ts }}
