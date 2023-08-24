@@ -4,7 +4,6 @@ import json
 
 # Third party imports
 import numpy as np
-import networkx as nx
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
@@ -133,6 +132,9 @@ class QLearning:
             self.rewards_dict = params_obj['reward_info']
 
     def _get_nli_cost(self):
+        """
+        Uses the routing object to get the non-linear impairment cost from the selected path.
+        """
         mod_formats = self.mod_per_bw[self.chosen_bw]
         path_len = find_path_len(self.chosen_path, self.topology)
         mod_format = get_path_mod(mod_formats, path_len)
