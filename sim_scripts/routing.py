@@ -242,12 +242,12 @@ class Routing:
 
         return link_cost
 
-    def _find_taken_channels(self, link: int):
+    def _find_taken_channels(self, link: tuple):
         """
         Finds the number of taken channels on any given link.
 
         :param link: The link on which to search for channels on.
-        :type link: int
+        :type link: tuple
 
         :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
         :rtype: list
@@ -300,7 +300,25 @@ class Routing:
 
         return channels
 
-    def _get_final_nli_cost(self, link, num_spans, source, destination):
+    def _get_final_nli_cost(self, link: tuple, num_spans: float, source: str, destination: str):
+        """
+        Controls sub-methods and calculates the final non-linear impairment cost for a link.
+
+        :param link: The link used for calculations.
+        :type link: tuple
+
+        :param num_spans: The number of spans based on the link length.
+        :type num_spans: float
+
+        :param source: The source node.
+        :type source: str
+
+        :param destination: The destination node.
+        :type destination: str
+
+        :return: The calculated NLI cost for the link.
+        :rtype: float
+        """
         free_channels = self._find_free_channels(link=link)
         taken_channels = self._find_taken_channels(link=link)
 
