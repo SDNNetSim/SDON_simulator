@@ -60,9 +60,6 @@ def find_path_len(path: List[str], topology: nx.Graph):
     """
     path_len = 0
     for i in range(len(path) - 1):
-        try:
-            path_len += topology[path[i]][path[i + 1]]['length']
-        except:
-            print('Begin debug')
+        path_len += topology[path[i]][path[i + 1]]['length']
 
     return path_len
