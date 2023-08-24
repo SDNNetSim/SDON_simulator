@@ -120,7 +120,6 @@ class SnrMeasurments:
         Fi = ((self.SP['start_slot'] * self.frequncy_spacing ) + ( ( self.no_assigned_slots * self.frequncy_spacing ) / 2 )) * 10 ** 9
         BW = self.no_assigned_slots * self.frequncy_spacing * 10 ** 9
         PSDi = self.input_power / BW
-        
         PSD_NLI = 0
         PSD_corr = 0
         SNR = 0 
@@ -155,11 +154,9 @@ class SnrMeasurments:
                 PSD_NLI = ( ( ( G_SCI + G_XCI ) * Mio * PSDi) ) - PSD_corr
             else:
                 PSD_NLI = ( ( ( G_SCI + G_XCI ) * Mio * PSDi) )
-            PSD_ASE = ( self.plank * light_frequncy * nsp ) * ( math.e ** (self.physical_topology['links'][link_id]['fiber']['attenuation'] * length * 10 ** 3 ) - 1 )
+            PSD_ASE = ( self.plank * light_frequncy * nsp ) * ( math.exp(self.physical_topology['links'][link_id]['fiber']['attenuation']  * length * 10 ** 3 ) - 1 )
             SNR +=( 1 / ( PSDi / ( ( PSD_ASE + PSD_NLI ) * Num_span ) ) )
-            """
 
-            """
             #for i in range(1,100):
             #P_XT2 = self.input_power * math.exp(-)
         SNR = 10 * math.log10( 1 / SNR ) 
