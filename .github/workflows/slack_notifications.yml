@@ -22,10 +22,11 @@ jobs:
     name: Sends a message to Slack when a pull request, issue, or new tag is made
 
     steps:
-      - name: Send message to Slack API
+      - name: Send Slack Message
         uses: archive/github-actions-slack@v2.0.0
-        id: notify
+        id: send-message
         with:
+          slack-function: send-message
           slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
           slack-channel: C05LW0SGL6N
           slack-text: "*New Event* `${{ github.event_name }}` *In* `${{ github.repository }}`"
