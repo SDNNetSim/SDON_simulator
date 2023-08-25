@@ -107,11 +107,11 @@ class SnrMeasurments:
         return MCI, visited_channel
     
     def _XT_calculator(self, link_id, length):
-        XT_lambda = (2 * self.physical_topology['links'][link_id]['fiber']["bending_radius"] * self.physical_topology['links'][link_id]['fiber']["mode_coupling_co"] ** 2) / (self.physical_topology['links'][link_id]['fiber']["propagation_const"] * self.physical_topology['links'][link_id]['fiber']["core_pitch"])
-        no_adjacent_core = 6
-        lng = length*10*10**3
-        XT_calc = (no_adjacent_core * ( 1 - math.exp(-(no_adjacent_core+1)*2*XT_lambda*lng))) / (1 + no_adjacent_core * math.exp(-(no_adjacent_core+1)*2*XT_lambda*lng))
-        P_XT = no_adjacent_core * XT_lambda * length * 10**3 * self.input_power  
+        XT_eta = (2 * self.physical_topology['links'][link_id]['fiber']["bending_radius"] * self.physical_topology['links'][link_id]['fiber']["mode_coupling_co"] ** 2) / (self.physical_topology['links'][link_id]['fiber']["propagation_const"] * self.physical_topology['links'][link_id]['fiber']["core_pitch"])
+        no_adjacent_core = 6 # TODO: should be changed based on core number
+        lng = length * 10 * 1e3
+        XT_calc = (no_adjacent_core * ( 1 - math.exp(-(no_adjacent_core+1)*2*XT_eta*lng))) / (1 + no_adjacent_core * math.exp(-(no_adjacent_core+1)*2*XT_eta*lng))
+        P_XT = no_adjacent_core * XT_eta * length * 1e3 * self.input_power  
         return  P_XT  
     def SNR_check_NLI_ASE_XT(self):
         
@@ -155,6 +155,7 @@ class SnrMeasurments:
             else:
                 PSD_NLI = ( ( ( G_SCI + G_XCI ) * Mio * PSDi) )
             PSD_ASE = ( self.plank * light_frequncy * nsp ) * ( math.exp(self.physical_topology['links'][link_id]['fiber']['attenuation']  * length * 10 ** 3 ) - 1 )
+            P_XT = self._XT_calculator(link_id, length)
             SNR +=( 1 / ( PSDi / ( ( PSD_ASE + PSD_NLI ) * Num_span ) ) )
 
             #for i in range(1,100):
