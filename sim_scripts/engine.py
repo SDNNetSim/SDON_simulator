@@ -177,7 +177,7 @@ class Engine(SDNController):
         """
         block_percent_arr = np.array(list(self.stats_dict['block_per_sim'].values()))
         self.blocking_mean = np.mean(block_percent_arr)
-        # Cannot calculate confidence interval when given zero or only one iteration
+        # Cannot calculate a confidence interval when given zero or only one iteration
         if self.blocking_mean == 0.0 or len(block_percent_arr) <= 1:
             return False
 
@@ -319,7 +319,7 @@ class Engine(SDNController):
             # Create cores matrix
             cores_matrix = self._create_cores_matrix(link_data['fiber']['num_cores'])
 
-            # Add links to network spectrum database
+            # Add links to a network spectrum database
             self.net_spec_db[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
             self.net_spec_db[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
 
