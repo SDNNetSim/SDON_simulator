@@ -21,6 +21,10 @@ def create_pt(cores_per_link: int, network_data: dict):
         'dispersion': (16e-6 * (1550e-9) ** 2 ) / (2 * math.pi * 3e8),
         'num_cores': cores_per_link,
         'fiber_type': 0,  # TODO: Is this always supposed to be 0? Add a comment explaining why if so.
+        'bending_radius': 0.05,
+        'mode_coupling_co': 1.27e-5,
+        'propagation_const': 4e6,
+        'core_pitch': 4e-5,
     }
 
     physical_topology = {
