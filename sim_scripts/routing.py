@@ -16,7 +16,8 @@ class Routing:
     """
 
     def __init__(self, source: int = None, destination: int = None, topology: nx.Graph = None, net_spec_db: dict = None,
-                 mod_formats: dict = None, slots_needed: int = None, beta: float = None, bandwidth: float = None):
+                 mod_formats: dict = None, slots_needed: int = None, guard_slots: int = None, beta: float = None,
+                 bandwidth: float = None):
         """
         Initializes the Routing class.
 
@@ -38,6 +39,9 @@ class Routing:
         :param slots_needed: The number of slots needed for the connection.
         :type slots_needed: int
 
+        :param guard_slots: The number of slots to be allocated for a guard band
+        :type guard_slots: int
+
         :param beta: Used for NLI calculation costs.
         :type beta: float
 
@@ -49,6 +53,7 @@ class Routing:
         self.topology = topology
         self.net_spec_db = net_spec_db
         self.slots_needed = slots_needed
+        self.guard_slots = guard_slots
         self.beta = beta
         self.bandwidth = bandwidth
         self.mod_formats = mod_formats
@@ -162,6 +167,41 @@ class Routing:
 
             return path, mod_format
 
+    # TODO: Move these functions to useful functions eventually, also check the entire simulator for things like this
+    def _setup_simulated_link(self, slots_per_core: int):
+        """
+        Create a simulated link from the network for calculation purposes.
+
+        :param slots_per_core: The number of slots for a single core on the link.
+        :type slots_per_core: int
+
+        :return: The modified simulated link.
+        :rtype: ndarray
+        """
+        # Simulate a fully congested link
+        simulated_link = np.zeros(slots_per_core)
+
+        # Add to the step to account for the guard band
+        for i in range(0, len(simulated_link), self.slots_needed + self.guard_slots):
+            value_to_set = i // self.slots_needed + 1
+            simulated_link[i:i + self.slots_needed + 2] = value_to_set
+
+        # Add guard-bands
+        simulated_link[self.slots_needed::self.slots_needed + self.guard_slots] *= -1
+
+        # Free the middle-most channel with respect to the number of slots needed
+        center_index = len(simulated_link) // 2
+        if self.slots_needed % 2 == 0:
+            start_index = center_index - self.slots_needed // 2
+            end_idx = center_index + self.slots_needed // 2
+        else:
+            start_index = center_index - self.slots_needed // 2
+            end_idx = center_index + self.slots_needed // 2 + 1
+
+        simulated_link[start_index:end_idx] = 0
+
+        return simulated_link
+
     # TODO: Support for single-core only
     def find_worst_nli(self):
         """
@@ -172,35 +212,15 @@ class Routing:
         """
         links = list(self.net_spec_db.keys())
         slots_per_core = len(self.net_spec_db[links[0]]['cores_matrix'][0])
-        # Simulate a fully congested link
-        simulated_link = np.zeros(slots_per_core)
-        # TODO: Update to have the guard band as a variable
-        # Add one to the step to account for the guard band
-        for i in range(0, len(simulated_link), self.slots_needed + 1):
-            value_to_set = i // self.slots_needed + 1
-            simulated_link[i:i + self.slots_needed + 2] = value_to_set
-
-        # Add guard-bands
-        simulated_link[self.slots_needed::self.slots_needed + 1] *= -1
-
-        # TODO: Why is self.slots_needed ever equal to one?
-        # Free the middle-most channel with respect to the number of slots needed
-        center_index = len(simulated_link) // 2
-        if self.slots_needed % 2 == 0:
-            start_index = center_index - self.slots_needed // 2
-            end_idx = center_index + self.slots_needed // 2
-        else:
-            start_index = center_index - self.slots_needed // 2
-            end_idx = center_index + self.slots_needed // 2 + 1
+        simulated_link = self._setup_simulated_link(slots_per_core=slots_per_core)
 
         # Temporarily modify net_spec_db to use helper functions (I believe Python lists are mutable types!)
         original_link = self.net_spec_db[links[0]]['cores_matrix'][0]
-        simulated_link[start_index:end_idx] = 0
         self.net_spec_db[links[0]]['cores_matrix'][0] = simulated_link
 
         free_channels = self._find_free_channels(link=links[0])
         taken_channels = self._find_taken_channels(link=links[0])
-        # TODO: Length is always one
+
         max_spans = max(data['length'] for u, v, data in self.topology.edges(data=True)) / self.span_len
         nli_worst = self._find_link_cost(free_channels=free_channels, taken_channels=taken_channels,
                                          num_spans=max_spans)
@@ -245,7 +265,7 @@ class Routing:
     # TODO: Potential repeat code
     def _find_channel_mci(self, num_spans: float, center_freq: float, taken_channels: list):
         """
-        For a given super-channel calculate the multi-channel interference.
+        For a given super-channel, calculate the multichannel interference.
 
         :param num_spans: The number of spans for the link.
         :type num_spans: float
@@ -307,7 +327,6 @@ class Routing:
 
         return link_cost
 
-    # TODO: This is not returning indexes
     def _find_taken_channels(self, link: tuple):
         """
         Finds the number of taken channels on any given link.
@@ -315,7 +334,7 @@ class Routing:
         :param link: The link on which to search for channels on.
         :type link: tuple
 
-        :return: A matrix containing the indexes to occupied super channels on the link.
+        :return: A matrix containing the request indexes to occupied super channels on the link.
         :rtype: list
         """
         channels = []

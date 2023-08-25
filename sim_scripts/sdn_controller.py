@@ -294,7 +294,8 @@ class SDNController:
         """
         routing_obj = Routing(source=self.source, destination=self.destination,
                               topology=self.topology, net_spec_db=self.net_spec_db,
-                              mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
+                              mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw,
+                              guard_slots=self.guard_slots)
 
         if self.route_method == 'nli_aware':
             # TODO: Constant QPSK for now
@@ -315,7 +316,8 @@ class SDNController:
         elif self.route_method == 'ai':
             # Used for routing related to artificial intelligence
             selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination),
-                                              net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw)
+                                              net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw,
+                                              guard_slots=self.guard_slots)
 
             # TODO: Make this better
             if not selected_path:

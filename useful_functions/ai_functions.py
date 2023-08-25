@@ -69,7 +69,7 @@ class AIMethods:
         path = self.ai_obj.route()
         return path
 
-    def _init_q_learning(self, params):
+    def _init_q_learning(self, params: dict):
         """
         Initializes a QLearning class and sets up the initial environment and Q-table.
         """
