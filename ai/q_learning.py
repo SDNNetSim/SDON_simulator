@@ -35,6 +35,7 @@ class QLearning:
         self.cores_per_link = params['cores_per_link']
         self.curr_episode = params['curr_episode']
         self.mod_per_bw = params['mod_per_bw']
+        self.guard_slots = params['guard_slots']
 
         # Statistics to evaluate our reward function
         self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': {}}
@@ -52,7 +53,7 @@ class QLearning:
         # The latest up-to-date network spectrum database
         self.net_spec_db = None
         # Simulation methods related to routing
-        self.routing_obj = Routing(beta=params['beta'], topology=self.topology)
+        self.routing_obj = Routing(beta=params['beta'], topology=self.topology, guard_slots=params['guard_slots'])
 
     @staticmethod
     def set_seed(seed: int):
@@ -143,14 +144,13 @@ class QLearning:
 
         self.routing_obj.net_spec_db = self.net_spec_db
 
-        # TODO: What is the NLI cost based on? A free channel of what size?
-        if self.nli_worst is None:
-            self.nli_worst = self.routing_obj.find_worst_nli()
-
         if not mod_format:
             return False
 
         self.routing_obj.slots_needed = self.mod_per_bw[self.chosen_bw][mod_format]['slots_needed']
+
+        if self.nli_worst is None:
+            self.nli_worst = self.routing_obj.find_worst_nli()
         self.nli_cost = self.routing_obj.nli_path(path=self.chosen_path)
 
     def update_environment(self, routed: bool):
