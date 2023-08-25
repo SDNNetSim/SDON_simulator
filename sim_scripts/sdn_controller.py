@@ -99,7 +99,8 @@ class SDNController:
         """
         if self.guard_slots:
             end_slot = end_slot - 1
-
+        else:
+            end_slot += 1
         for src, dest in zip(self.path, self.path[1:]):
             src_dest = (src, dest)
             dest_src = (dest, src)
@@ -323,7 +324,7 @@ class SDNController:
 
                 if selected_sp is not False:
                     snr_values = SnrMeasurments(path=selected_path, modulation_format=path_mod, SP=selected_sp,
-                                                no_assigned_slots=selected_sp['end_slot'] - selected_sp['start_slot'],
+                                                no_assigned_slots=selected_sp['end_slot'] - selected_sp['start_slot'] + 1,
                                                 physical_topology=self.topology_info,
                                                 requested_bit_rate=12.5, frequncy_spacing=12.5, input_power=10 ** -3,
                                                 spectral_slots=self.spectral_slots, requested_SNR=8.5,
