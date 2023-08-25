@@ -152,6 +152,7 @@ class QLearning:
         if self.nli_worst is None:
             self.nli_worst = self.routing_obj.find_worst_nli()
         self.nli_cost = self.routing_obj.nli_path(path=self.chosen_path)
+        return self.nli_cost
 
     def update_environment(self, routed: bool):
         """
