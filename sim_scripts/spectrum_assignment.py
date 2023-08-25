@@ -169,7 +169,10 @@ class SpectrumAssignment:
             for tmp_arr in open_slots_matrix:
                 if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
                     for start_index in tmp_arr:
+                        # if self.guard_slots:
                         end_index = (start_index + self.slots_needed + self.guard_slots) - 1
+                        # else:
+                        #     end_index = start_index + self.slots_needed 
                         if end_index not in tmp_arr:
                             break
 
