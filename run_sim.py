@@ -32,7 +32,7 @@ class NetworkSimulator:
         # Contains all the desired network simulator parameters for every thread
         self.properties = None
 
-    def save_input(self, file_name: str = None, data: Dict = None):
+    def save_input(self, file_name: str = None, data: dict = None):
         """
         Saves simulation input data. Does not save bandwidth data, as that is intended to be a constant and unchanged
         file.
@@ -97,7 +97,9 @@ class NetworkSimulator:
 
             file_name = f"sim_input_{self.properties['thread_num']}.json"
 
-            self.save_input(file_name=file_name, data=self.properties)
+            if arr_rate_mean == start:
+                self.save_input(file_name=file_name, data=self.properties)
+
             self.properties['input_fp'] = f"./data/input/{self.properties['network']}/{self.properties['date']}/" \
                                           f"{self.properties['curr_time']}/{file_name}"
             engine = Engine(properties=self.properties)
@@ -119,8 +121,8 @@ class NetworkSimulator:
 
             self.create_input()
 
-            # TODO: Fixme
-            # self.save_input(file_name='sim_input.json', data=self.properties)
+            if erlang == erlang_lst[0]:
+                self.save_input(file_name='sim_input.json', data=self.properties)
 
             engine = Engine(properties=self.properties)
             engine.run()
