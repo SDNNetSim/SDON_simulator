@@ -2,8 +2,6 @@
 import json
 import time
 
-from typing import Dict
-
 # Third-party library imports
 import concurrent.futures
 
