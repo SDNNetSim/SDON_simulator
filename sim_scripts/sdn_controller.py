@@ -60,12 +60,8 @@ class SDNController:
         # The physical network topology as a networkX graph
         self.topology = None
         # Class related to all things for calculating the signal-to-noise ratio
-        # TODO: Things that will change: path, modulation, spectrum, assigned slots number (this is a variable),
-        #  spectral slots, network spectrum database
-        #  Might be able to identify other variables from the configuration file, for example, guard band
-        # TODO: We should move away as much as possible from constant variables here, do it in snr_measurements.py
+        # TODO: Might be able to identify other variables from the configuration file, for example, guard band
         # TODO: Consistent naming conventions
-        # TODO: Spectral slots used twice
         self.snr_obj = SnrMeasurments(topology_info=self.topology_info)
 
     def release(self):
@@ -271,7 +267,13 @@ class SDNController:
 
         return False, self.dist_block, self.path
 
-    def _update_snr_obj(self, spectrum):
+    def _update_snr_obj(self, spectrum: dict):
+        """
+        Updates parameters related to the SNR measurements class.
+
+        :param spectrum: The spectrum chosen for the current request
+        :type spectrum: dict
+        """
         self.snr_obj.path = self.path
         self.snr_obj.path_mod = self.path_mod
         self.snr_obj.spectrum = spectrum
@@ -329,7 +331,6 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        # TODO: Add path modulation to the constructor
         self.path, self.path_mod = self._route()
 
         if self.path is not False:
@@ -339,14 +340,12 @@ class SDNController:
                                                          net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
                                                          is_sliced=False, alloc_method=self.alloc_method)
 
-                # TODO: Ensure changing this variable doesn't break anything
                 spectrum = spectrum_assignment.find_free_spectrum()
 
                 if spectrum is not False:
                     self._update_snr_obj(spectrum=spectrum)
                     # TODO: Update the name of this method
                     # TODO: Disable and enable snr (configuration file)
-                    # TODO: This check is always false for some reason
                     snr_check = self.snr_obj.SNR_check_NLI_ASE_XT()
                     if snr_check:
                         resp = {
@@ -357,6 +356,7 @@ class SDNController:
 
                         self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
                         return resp, self.net_spec_db, self.num_transponders, self.path
+                    # TODO: Statement not needed
                     else:
                         # Fixme: Has no effect
                         # TODO: Comment a reason if returned booleans
