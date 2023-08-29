@@ -56,6 +56,14 @@ class SnrMeasurements:
         self.plank = 6.62607004e-34
         self.requested_xt = requested_xt
 
+        # TODO: Update this every time
+        self.attenuation = None
+        self.dispersion = None
+        self.bend_radius = None
+        self.mode_coupling_co = None
+        self.prop_const = None
+        self.core_pitch = None
+
         # TODO: This may have to get updated in another method since we don't create a new object every time
         self.response = {'SNR': None}
 
@@ -86,110 +94,145 @@ class SnrMeasurements:
 
         return channels
 
-    def _SCI_calculator(self, link_id, PSDi, BW):
-        Rho = ((math.pi ** 2) * np.abs(self.topology_info['links'][link_id]['fiber']['dispersion'])) / (
-                2 * self.topology_info['links'][link_id]['fiber']['attenuation'])
+    # TODO: Some dictionary that has all the link information shared between methods, for now, variables
+    def _update_link_info(self, link_id):
+        link = self.topology_info['links'][link_id]['fiber']
+
+        self.attenuation = link['attenuation']
+        self.dispersion = link['dispersion']
+        self.bend_radius = link['bending_radius']
+        # TODO: Better naming
+        self.mode_coupling_co = link['mode_coupling_co']
+        self.prop_const = link['propagation_const']
+        self.core_pitch = link['core_pitch']
+
+    def _calculate_sci(self, PSDi, BW):
+        # TODO: Comment or name these better
+        Rho = ((math.pi ** 2) * np.abs(self.dispersion)) / (2 * self.attenuation)
         G_SCI = (PSDi ** 2) * math.asinh(Rho * (BW ** 2))
         return G_SCI
 
-    def _XCI_calculator(self, Fi, link):
-        visited_channel = []
+    def _calculate_link_mci(self, spectrum_contents, slot_index, Fi, MCI):
+        # TODO: Better naming or comments
+        # TODO: Better naming or comments (also to pylint standards)
+        # TODO: This line is hard to read, think we're looking for occupied channels?
+        BW_J = len(np.where(spectrum_contents == spectrum_contents)[0]) * self.freq_spacing
+        Fj = ((slot_index * self.freq_spacing) + ((BW_J) / 2)) * 10 ** 9
+        BWj = BW_J * 10 ** 9
+        PSDj = self.input_power / BWj
+        if Fi != Fj:
+            MCI += ((PSDj ** 2) * math.log(abs((abs(Fi - Fj) + (BWj / 2)) / (abs(Fi - Fj) - (BWj / 2)))))
+
+        return MCI
+
+    # TODO: I believe I've implemented something similar in routing (calculate MCI on my branch)
+    # TODO: That doesn't have multi-core support I believe, and, probably better to move here instead
+    def _calculate_xci(self, Fi, link):
+        # TODO: Visited channels or visited spectral slots?
+        visited_channels = []
+        # TODO: Better naming or constants
         MCI = 0
-        for w in range(self.spectral_slots):
-            if self.net_spec_db[(self.path[link], self.path[link + 1])]['cores_matrix'][self.spectrum['core_num']][
-                w] > 0:
-                if self.net_spec_db[(self.path[link], self.path[link + 1])]['cores_matrix'][self.spectrum['core_num']][
-                    w] in visited_channel:
+        # TODO: I believe 'w' is the slot index
+        for slot_index in range(self.spectral_slots):
+            curr_link = self.net_spec_db[(self.path[link], self.path[link + 1])]['cores_matrix']
+            spectrum_contents = curr_link[self.spectrum['core_num']][slot_index]
+
+            # Spectrum is occupied
+            if spectrum_contents > 0:
+                if spectrum_contents in visited_channels:
                     continue
                 else:
-                    visited_channel.append(self.net_spec_db[(self.path[link], self.path[link + 1])]['cores_matrix'][
-                                               self.spectrum['core_num']][w])
-                BW_J = len(np.where(
-                    self.net_spec_db[(self.path[link], self.path[link + 1])]['cores_matrix'][self.spectrum['core_num']][
-                        w] == self.net_spec_db[(self.path[link], self.path[link + 1])]['cores_matrix'][
-                        self.spectrum['core_num']])[0]) * self.freq_spacing
-                Fj = ((w * self.freq_spacing) + ((BW_J) / 2)) * 10 ** 9
-                BWj = BW_J * 10 ** 9
-                PSDj = self.input_power / BWj
-                if Fi != Fj:
-                    MCI = MCI + ((PSDj ** 2) * math.log(abs((abs(Fi - Fj) + (BWj / 2)) / (abs(Fi - Fj) - (BWj / 2)))))
-        return MCI, visited_channel
+                    visited_channels.append(spectrum_contents)
 
-    def _PXT_calculator(self, link_id, length, no_adjacent_core=6):
-        XT_eta = (2 * self.topology_info['links'][link_id]['fiber']["bending_radius"] *
-                  self.topology_info['links'][link_id]['fiber']["mode_coupling_co"] ** 2) / (
-                         self.topology_info['links'][link_id]['fiber']["propagation_const"] *
-                         self.topology_info['links'][link_id]['fiber']["core_pitch"])
-        P_XT = no_adjacent_core * XT_eta * length * 1e3 * self.input_power
-        return P_XT
+            MCI += self._calculate_link_mci(spectrum_contents=spectrum_contents, slot_index=slot_index, Fi=Fi, MCI=MCI)
 
-    def _XT_calculator(self, link_id, length, no_adjacent_core=6):
-        XT_eta = (2 * self.topology_info['links'][link_id]['fiber']["bending_radius"] * (
-                self.topology_info['links'][link_id]['fiber']["mode_coupling_co"] ** 2)) / (
-                         self.topology_info['links'][link_id]['fiber']["propagation_const"] *
-                         self.topology_info['links'][link_id]['fiber']["core_pitch"])
-        XT_calc = (1 - math.exp(-2 * XT_eta * length * 1e3)) / (1 + math.exp(-2 * XT_eta * length * 1e3))
-        return XT_calc * no_adjacent_core
+        return MCI, visited_channels
 
-    # TODO: Always returning False
+    # TODO: Better naming and constants
+    def _calculate_pxt(self, length, no_adjacent_core=6):
+        xt_eta = (2 * self.bend_radius * self.mode_coupling_co ** 2) / (self.prop_const * self.core_pitch)
+        p_xt = no_adjacent_core * xt_eta * length * 1e3 * self.input_power
+
+        return p_xt
+
+    def _calculate_xt(self, link_id, length, no_adjacent_core=6):
+        xt_eta = (2 * self.bend_radius * (self.mode_coupling_co ** 2)) / (self.prop_const * self.core_pitch)
+        xt_calc = (1 - math.exp(-2 * xt_eta * length * 1e3)) / (1 + math.exp(-2 * xt_eta * length * 1e3))
+
+        return xt_calc * no_adjacent_core
+
+    def _handle_egn(self, visited_channel, length, PSDi, BW, link_id):
+        hn = 0
+        for i in range(1, math.ceil((len(visited_channel) - 1) / 2) + 1):
+            hn = hn + 1 / i
+        effective_L = (1 - math.e ** (-2 * self.attenuation * length * 10 ** 3)) / (2 * self.attenuation)
+
+        baud_rate = int(self.req_bit_rate) * 10 ** 9 / 2  # self.baud_rates[self.modulation_format]
+        temp_coef = ((self.topology_info['links'][link_id]['fiber']['non_linearity'] ** 2) * (
+                effective_L ** 2) * (PSDi ** 3) * (BW ** 2)) / (
+                            (baud_rate ** 2) * math.pi * self.dispersion * (length * 10 ** 3))
+        PSD_corr = (80 / 81) * self.phi[self.path_mod] * temp_coef * hn
+
+        return PSD_corr
+
+    # TODO: Maybe a more descriptive name of what this does
+    #   - Break it up into smaller methods
+    #   - Convert this one into a "run" method or something
     def SNR_check_NLI_ASE_XT(self):
 
-        # TODO: Move to a constants file
+        # TODO: Move to a constants file or constructor
         light_frequncy = (1.9341 * 10 ** 14)
 
+        # TODO: Probably move to another method
         Fi = ((self.spectrum['start_slot'] * self.freq_spacing) + (
                 (self.assigned_slots * self.freq_spacing) / 2)) * 10 ** 9
         BW = self.assigned_slots * self.freq_spacing * 10 ** 9
         PSDi = self.input_power / BW
+        # TODO: Define things like this in the constructor
         PSD_NLI = 0
         PSD_corr = 0
         SNR = 0
         for link in range(0, len(self.path) - 1):
+            # TODO: Unused variables
             MCI = 0
-            Num_span = 0
+            num_span = 0
             # visited_channel = []
             link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
+
+            self._update_link_info(link_id=link_id)
+
+            # TODO: Probably move to another method
             Mio = (3 * (self.topology_info['links'][link_id]['fiber']['non_linearity'] ** 2)) / (
-                    2 * math.pi * self.topology_info['links'][link_id]['fiber']['attenuation'] * np.abs(
-                self.topology_info['links'][link_id]['fiber']['dispersion']))
-            G_SCI = self._SCI_calculator(link_id, PSDi, BW)
-            G_XCI, visited_channel = self._XCI_calculator(Fi, link)
+                    2 * math.pi * self.attenuation * np.abs(self.dispersion))
+            G_SCI = self._calculate_sci(PSDi, BW)
+            G_XCI, visited_channel = self._calculate_xci(Fi, link)
             length = self.topology_info['links'][link_id]['span_length']
             nsp = 1.8  # TODO self.topology_info['links'][link_id]['fiber']['nsp']
-            Num_span = self.topology_info['links'][link_id]['length'] / length
-            if self.egn:
-                hn = 0
-                for i in range(1, math.ceil((len(visited_channel) - 1) / 2) + 1):
-                    hn = hn + 1 / i
-                effective_L = (1 - math.e ** (-2 * self.topology_info['links'][link_id]['fiber'][
-                    'attenuation'] * length * 10 ** 3)) / (
-                                      2 * self.topology_info['links'][link_id]['fiber']['attenuation'])
-                baud_rate = int(self.req_bit_rate) * 10 ** 9 / 2  # self.baud_rates[self.modulation_format]
-                temp_coef = ((self.topology_info['links'][link_id]['fiber']['non_linearity'] ** 2) * (
-                        effective_L ** 2) * (PSDi ** 3) * (BW ** 2)) / (
-                                    (baud_rate ** 2) * math.pi * self.topology_info['links'][link_id]['fiber'][
-                                'dispersion'] * (length * 10 ** 3))
-                PSD_corr = (80 / 81) * self.phi[self.path_mod] * temp_coef * hn
+            num_span = self.topology_info['links'][link_id]['length'] / length
 
             PSD_ASE = 0
             if self.egn:
+                PSD_corr = self._handle_egn(visited_channel=visited_channel, length=length, PSDi=PSDi, BW=BW,
+                                            link_id=link_id)
                 PSD_NLI = (((G_SCI + G_XCI) * Mio * PSDi)) - PSD_corr
             else:
                 PSD_NLI = (((G_SCI + G_XCI) * Mio * PSDi))
-            PSD_ASE = (self.plank * light_frequncy * nsp) * (math.exp(
-                self.topology_info['links'][link_id]['fiber']['attenuation'] * length * 10 ** 3) - 1)
-            P_XT = self._PXT_calculator(link_id, length)
-            SNR += (1 / ((PSDi * BW) / (((PSD_ASE + PSD_NLI) * BW + P_XT) * Num_span)))
+
+            PSD_ASE = (self.plank * light_frequncy * nsp) * (math.exp(self.attenuation * length * 10 ** 3) - 1)
+            P_XT = self._calculate_pxt(link_id, length)
+            # TODO: SNR is equal to infinity
+            SNR += (1 / ((PSDi * BW) / (((PSD_ASE + PSD_NLI) * BW + P_XT) * num_span)))
 
         SNR = 10 * math.log10(1 / SNR)
         return True if SNR > self.req_snr else False
 
-    def XT_check(self):
-        XT = 0
+    def check_xt(self):
+        xt = 0
         for link in range(0, len(self.path) - 1):
             link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
             length = self.topology_info['links'][link_id]['span_length']
-            Num_span = self.topology_info['links'][link_id]['length'] / length
-            XT += self._XT_calculator(link_id, length) * Num_span
-        XT = 10 * math.log10(XT)
-        return True if XT < self.requested_xt else False
+            num_span = self.topology_info['links'][link_id]['length'] / length
+            xt += self._calculate_xt(link_id, length) * num_span
+
+        xt = 10 * math.log10(xt)
+        return True if xt < self.requested_xt else False
