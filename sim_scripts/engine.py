@@ -156,8 +156,8 @@ class Engine(SDNController):
 
         base_fp = "data/output/"
 
-        if self.properties['ai_algorithm'] != 'None':
-            self.ai_obj.save()
+        # if self.properties['ai_algorithm'] != 'None':
+        #     self.ai_obj.save()
 
         # Save threads to child directories
         base_fp += f"/{self.sim_info}/{self.properties['thread_num']}"
@@ -375,8 +375,8 @@ class Engine(SDNController):
 
         :return: None
         """
-        self.trans_arr = np.append(self.trans_arr,
-                                   self.num_trans / (self.properties['num_requests'] - self.num_blocked_reqs))
+        # self.trans_arr = np.append(self.trans_arr,
+        #                            self.num_trans / (self.properties['num_requests'] - self.num_blocked_reqs))
 
     def update_blocking_distribution(self):
         """
