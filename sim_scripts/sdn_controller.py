@@ -4,7 +4,7 @@ import numpy as np
 # Local application imports
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
-from sim_scripts.snr_measurements import SnrMeasurments
+from sim_scripts.snr_measurements import SnrMeasurements
 from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
 
 
@@ -62,7 +62,7 @@ class SDNController:
         # Class related to all things for calculating the signal-to-noise ratio
         # TODO: Might be able to identify other variables from the configuration file, for example, guard band
         # TODO: Consistent naming conventions
-        self.snr_obj = SnrMeasurments(topology_info=self.topology_info)
+        self.snr_obj = SnrMeasurements(topology_info=self.topology_info)
 
     def release(self):
         """
@@ -278,7 +278,7 @@ class SDNController:
         self.snr_obj.path_mod = self.path_mod
         self.snr_obj.spectrum = spectrum
         # TODO: Check up on number of assigned slots (is it different?)
-        self.snr_obj.no_assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
+        self.snr_obj.assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
         self.snr_obj.spectral_slots = self.spectral_slots
         self.snr_obj.net_spec_db = self.net_spec_db
 
