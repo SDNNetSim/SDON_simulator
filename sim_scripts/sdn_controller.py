@@ -311,7 +311,6 @@ class SDNController:
             return self.net_spec_db
 
         selected_path, path_mod = self._route()
-
         if selected_path is not False:
             self.path = selected_path
             if path_mod is not False:
@@ -323,23 +322,26 @@ class SDNController:
                 selected_sp = spectrum_assignment.find_free_spectrum()
 
                 if selected_sp is not False:
-                    snr_values = SnrMeasurments(path=selected_path, modulation_format=path_mod, SP=selected_sp,
+                    snr_values = SnrMeasurments(path=selected_path, modulation_format=path_mod, sp=selected_sp,
                                                 no_assigned_slots=selected_sp['end_slot'] - selected_sp['start_slot'] + 1,
                                                 physical_topology=self.topology_info,
                                                 requested_bit_rate=12.5, frequncy_spacing=12.5, input_power=10 ** -3,
                                                 spectral_slots=self.spectral_slots, requested_SNR=8.5,
                                                 network_spec_db=self.net_spec_db, requests_status={},
                                                 phi={'QPSK': 1, '16-QAM': 0.68, '64-QAM': 0.6190476190476191},
-                                                guard_band=0, baud_rates=None, EGN=True, XT_noise=False)
-                    snr_values.SNR_check_NLI_ASE_XT()
-                    resp = {
-                        'path': selected_path,
-                        'mod_format': path_mod,
-                        'is_sliced': False
-                    }
+                                                guard_band=0, baud_rates=None, egn=False, XT_noise=False)
+                    snr_check = snr_values.SNR_check_NLI_ASE_XT()
+                    if snr_check:
+                        resp = {
+                            'path': selected_path,
+                            'mod_format': path_mod,
+                            'is_sliced': False
+                        }
 
-                    self.allocate(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
-                    return resp, self.net_spec_db, self.num_transponders, self.path
+                        self.allocate(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
+                        return resp, self.net_spec_db, self.num_transponders, self.path
+                    else:
+                        False, True
 
                 # Attempt to slice the request due to a congestion constraint
                 return self.handle_lps()
