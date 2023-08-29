@@ -16,7 +16,7 @@ class SnrMeasurments:
                  no_assigned_slots=None,
                  requested_bit_rate=12.5,
                  frequncy_spacing=12.5,
-                 input_power=10,
+                 input_power=10 ** -3,
                  spectral_slots=None,
                  requested_SNR=8.5,
                  net_spec_db=None,
