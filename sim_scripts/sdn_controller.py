@@ -47,6 +47,8 @@ class SDNController:
         self.destination = None
         # The current path
         self.path = None
+        # The current path modulation format
+        self.path_mod = None
         # The chosen bandwidth for the current request
         self.chosen_bw = None
         # Determines if light slicing is limited to a single core or not
@@ -57,6 +59,14 @@ class SDNController:
         self.dist_block = False
         # The physical network topology as a networkX graph
         self.topology = None
+        # Class related to all things for calculating the signal-to-noise ratio
+        # TODO: Things that will change: path, modulation, spectrum, assigned slots number (this is a variable),
+        #  spectral slots, network spectrum database
+        #  Might be able to identify other variables from the configuration file, for example, guard band
+        # TODO: We should move away as much as possible from constant variables here, do it in snr_measurements.py
+        # TODO: Consistent naming conventions
+        # TODO: Spectral slots used twice
+        self.snr_obj = SnrMeasurments(topology_info=self.topology_info)
 
     def release(self):
         """
@@ -261,6 +271,15 @@ class SDNController:
 
         return False, self.dist_block, self.path
 
+    def _update_snr_obj(self, spectrum):
+        self.snr_obj.path = self.path
+        self.snr_obj.path_mod = self.path_mod
+        self.snr_obj.spectrum = spectrum
+        # TODO: Check up on number of assigned slots (is it different?)
+        self.snr_obj.no_assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
+        self.snr_obj.spectral_slots = self.spectral_slots
+        self.snr_obj.net_spec_db = self.net_spec_db
+
     def _route(self):
         """
         For a given request, attempt to route and assign a modulation format based on a routing method flag.
@@ -310,37 +329,37 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        selected_path, path_mod = self._route()
-        if selected_path is not False:
-            self.path = selected_path
-            if path_mod is not False:
-                slots_needed = self.mod_per_bw[self.chosen_bw][path_mod]['slots_needed']
+        # TODO: Add path modulation to the constructor
+        self.path, self.path_mod = self._route()
+
+        if self.path is not False:
+            if self.path_mod is not False:
+                slots_needed = self.mod_per_bw[self.chosen_bw][self.path_mod]['slots_needed']
                 spectrum_assignment = SpectrumAssignment(path=self.path, slots_needed=slots_needed,
                                                          net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
                                                          is_sliced=False, alloc_method=self.alloc_method)
 
-                selected_sp = spectrum_assignment.find_free_spectrum()
+                # TODO: Ensure changing this variable doesn't break anything
+                spectrum = spectrum_assignment.find_free_spectrum()
 
-                if selected_sp is not False:
-                    snr_values = SnrMeasurments(path=selected_path, modulation_format=path_mod, sp=selected_sp,
-                                                no_assigned_slots=selected_sp['end_slot'] - selected_sp['start_slot'] + 1,
-                                                physical_topology=self.topology_info,
-                                                requested_bit_rate=12.5, frequncy_spacing=12.5, input_power=10 ** -3,
-                                                spectral_slots=self.spectral_slots, requested_SNR=8.5,
-                                                network_spec_db=self.net_spec_db, requests_status={},
-                                                phi={'QPSK': 1, '16-QAM': 0.68, '64-QAM': 0.6190476190476191},
-                                                guard_band=0, baud_rates=None, egn=False, XT_noise=False)
-                    snr_check = snr_values.SNR_check_NLI_ASE_XT()
+                if spectrum is not False:
+                    self._update_snr_obj(spectrum=spectrum)
+                    # TODO: Update the name of this method
+                    # TODO: Disable and enable snr (configuration file)
+                    # TODO: This check is always false for some reason
+                    snr_check = self.snr_obj.SNR_check_NLI_ASE_XT()
                     if snr_check:
                         resp = {
-                            'path': selected_path,
-                            'mod_format': path_mod,
+                            'path': self.path,
+                            'mod_format': self.path_mod,
                             'is_sliced': False
                         }
 
-                        self.allocate(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
+                        self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
                         return resp, self.net_spec_db, self.num_transponders, self.path
                     else:
+                        # Fixme: Has no effect
+                        # TODO: Comment a reason if returned booleans
                         False, True
 
                 # Attempt to slice the request due to a congestion constraint
