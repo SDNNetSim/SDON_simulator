@@ -66,6 +66,7 @@ class SnrMeasurements:
         self.nsp = None
         self.num_span = None
         self.link_id = None
+        self.link = None
         self.light_frequency = 1.9341 * 10 ** 14
 
     # TODO: Some dictionary that has all the link information shared between methods, for now, variables
@@ -200,14 +201,14 @@ class SnrMeasurements:
 
     # TODO: I don't believe this is used
     def check_xt(self):
-        xt = 0
+        cross_talk = 0
 
         for link in range(0, len(self.path) - 1):
             self.link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
             self.length = self.topology_info['links'][self.link_id]['span_length']
             self.num_span = self.topology_info['links'][self.link_id]['length'] / self.length
-            xt += self._calculate_xt() * self.num_span
+            cross_talk += self._calculate_xt() * self.num_span
 
-        xt = 10 * math.log10(xt)
-        resp = xt < self.requested_xt
+        cross_talk = 10 * math.log10(cross_talk)
+        resp = cross_talk < self.requested_xt
         return resp
