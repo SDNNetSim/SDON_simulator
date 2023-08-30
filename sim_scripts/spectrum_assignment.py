@@ -214,3 +214,70 @@ class SpectrumAssignment:
             return False
 
         return self.response
+
+
+    def first_fit_spectrum_allocation(self, core_num, core_arr):
+        """
+        Loops through each core and finds the starting and ending indexes of where the request can be assigned using the
+        first-fit allocation policy.
+
+        :return: None
+        """
+
+
+        open_slots_arr = np.where(core_arr == 0)[0]
+        # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
+        open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
+                                itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+
+        # First fit allocation
+        for tmp_arr in open_slots_matrix:
+            if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
+                for start_index in tmp_arr:
+                    # if self.guard_slots:
+                    end_index = (start_index + self.slots_needed + self.guard_slots) - 1
+                    # else:
+                    #     end_index = start_index + self.slots_needed 
+                    if end_index not in tmp_arr:
+                        break
+
+                    if len(self.path) > 2:
+                        self.check_other_links(core_num, start_index, end_index + self.guard_slots)
+
+                    if self.is_free is not False or len(self.path) <= 2:
+                        self.response = {'core_num': core_num, 'start_slot': start_index,
+                                            'end_slot': end_index + self.guard_slots}
+                        return
+    
+    def last_fit_spectrum_allocation(self, core_num, core_arr):
+        """
+        Loops through each core and finds the starting and ending indexes of where the request can be assigned using the
+        first-fit allocation policy.
+
+        :return: None
+        """
+
+
+        open_slots_arr = np.where(core_arr == 0)[0]
+        # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
+        open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
+                                itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+
+        # First fit allocation
+        for tmp_arr in reversed(open_slots_matrix):
+            if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
+                for start_index in tmp_arr:
+                    # if self.guard_slots:
+                    end_index = (start_index + self.slots_needed + self.guard_slots) - 1
+                    # else:
+                    #     end_index = start_index + self.slots_needed 
+                    if end_index not in tmp_arr:
+                        break
+
+                    if len(self.path) > 2:
+                        self.check_other_links(core_num, start_index, end_index + self.guard_slots)
+
+                    if self.is_free is not False or len(self.path) <= 2:
+                        self.response = {'core_num': core_num, 'start_slot': start_index,
+                                            'end_slot': end_index + self.guard_slots}
+                        return
