@@ -51,33 +51,6 @@ class SnrMeasurements:
         # TODO: This may have to get updated in another method since we don't create a new object every time
         self.response = {'SNR': None}
 
-    # TODO: Repeat code (Move to useful functions)
-    def _find_taken_channels(self, link_num: tuple):
-        """
-        Finds the number of taken channels on any given link.
-
-        :param link_num: The link number to search for channels on.
-        :type link_num: int
-
-        :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
-        :rtype: list
-        """
-        channels = []
-        curr_channel = []
-        link = self.net_spec_db[link_num]['cores_matrix'][0]
-
-        for value in link:
-            if value > 0:
-                curr_channel.append(value)
-            elif value < 0 and curr_channel:
-                channels.append(curr_channel)
-                curr_channel = []
-
-        if curr_channel:
-            channels.append(curr_channel)
-
-        return channels
-
     # TODO: Some dictionary that has all the link information shared between methods, for now, variables
     def _update_link_info(self, link_id):
         link = self.topology_info['links'][link_id]['fiber']
@@ -124,7 +97,8 @@ class SnrMeasurements:
             # Spectrum is occupied
             if spectrum_contents > 0 and spectrum_contents not in visited_channels:
                 visited_channels.append(spectrum_contents)
-                MCI += self._calculate_link_mci(spectrum_contents=spectrum_contents, slot_index=slot_index, Fi=Fi, MCI=MCI)
+                MCI += self._calculate_link_mci(spectrum_contents=spectrum_contents, slot_index=slot_index, Fi=Fi,
+                                                MCI=MCI)
 
         # TODO: MCI is different on the fifth iteration
         return MCI, visited_channels
