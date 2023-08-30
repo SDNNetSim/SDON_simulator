@@ -70,11 +70,13 @@ class SnrMeasurements:
         return G_SCI
 
     # TODO: I believe repeat code, calculate mci function in routing.py
-    def _calculate_link_mci(self, spectrum_contents, slot_index, Fi, MCI):
+    # TODO: Move link to constructor if used in multiple methods
+    def _calculate_link_mci(self, spectrum_contents, curr_link, slot_index, Fi, MCI):
         # TODO: Better naming or comments (to pylint standards as well)
         # TODO: This line is hard to read, think we're looking for occupied channels?
-        # TODO: Rename this variable BW_J and BWj
-        BW_J = len(np.where(spectrum_contents == spectrum_contents)[0]) * self.freq_spacing
+        # TODO: Rename this variable BW_J and BWj (BW_J is different)
+        # TODO: Set equal to the core number instead of "itself", spectrum contents has to change
+        BW_J = len(np.where(spectrum_contents == curr_link[self.spectrum['core_num']])[0]) * self.freq_spacing
         Fj = ((slot_index * self.freq_spacing) + ((BW_J) / 2)) * 10 ** 9
         BWj = BW_J * 10 ** 9
         PSDj = self.input_power / BWj
@@ -97,8 +99,8 @@ class SnrMeasurements:
             # Spectrum is occupied
             if spectrum_contents > 0 and spectrum_contents not in visited_channels:
                 visited_channels.append(spectrum_contents)
-                MCI += self._calculate_link_mci(spectrum_contents=spectrum_contents, slot_index=slot_index, Fi=Fi,
-                                                MCI=MCI)
+                MCI += self._calculate_link_mci(spectrum_contents=spectrum_contents, curr_link=curr_link,
+                                                slot_index=slot_index, Fi=Fi, MCI=MCI)
 
         # TODO: MCI is different on the fifth iteration
         return MCI, visited_channels
