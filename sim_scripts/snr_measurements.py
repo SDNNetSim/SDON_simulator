@@ -100,6 +100,7 @@ class SnrMeasurements:
     def _calculate_link_mci(self, spectrum_contents, slot_index, Fi, MCI):
         # TODO: Better naming or comments (to pylint standards as well)
         # TODO: This line is hard to read, think we're looking for occupied channels?
+        # TODO: Rename this variable BW_J and BWj
         BW_J = len(np.where(spectrum_contents == spectrum_contents)[0]) * self.freq_spacing
         Fj = ((slot_index * self.freq_spacing) + ((BW_J) / 2)) * 10 ** 9
         BWj = BW_J * 10 ** 9
@@ -191,7 +192,7 @@ class SnrMeasurements:
             Mio = (3 * (self.topology_info['links'][link_id]['fiber']['non_linearity'] ** 2)) / (
                     2 * math.pi * self.attenuation * np.abs(self.dispersion))
             G_SCI = self._calculate_sci(PSDi, BW)
-            G_XCI, visited_channel = self._calculate_xci(Fi, link)
+            G_XCI, visited_channel = self._calculate_xci(Fi=Fi, link=link)
             length = self.topology_info['links'][link_id]['span_length']
             nsp = 1.8  # TODO self.topology_info['links'][link_id]['fiber']['nsp']
             num_span = self.topology_info['links'][link_id]['length'] / length
@@ -210,6 +211,7 @@ class SnrMeasurements:
             P_XT = self._calculate_pxt(link_id, length)
             # TODO: SNR is equal to infinity
             SNR += (1 / ((PSDi * BW) / (((PSD_ASE + PSD_NLI) * BW + P_XT) * num_span)))
+            print('For debugging')
 
         # TODO: Hard to read
         SNR = 10 * math.log10(1 / SNR)
