@@ -172,6 +172,23 @@ class Routing:
 
             return path, mod_format
 
+    def _least_xt_path(self):
+        """
+        Selects the path with the least amount of xt cost.
+
+        :return: The path and modulation format chosen
+        :rtype: tuple
+        """
+        # This networkx function will always return the shortest paths in order
+        paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
+                                             weight='xt_cost')
+
+        for path in paths_obj:
+            # TODO: Change always a constant
+            mod_format = 'QPSK'
+
+            return path, mod_format
+        
     def _find_channel_mci(self, num_spans: float, center_freq: float, taken_channels: list):
         """
         For a given super-channel calculate the multi-channel interference.
@@ -295,6 +312,29 @@ class Routing:
         return channels
 
     # TODO: Only support for single core
+    
+    
+    def _find_free_slots(self, link_num: int):
+        """
+        Finds the number of free channels on any given link.
+
+        :param link_num: The link number to search for channels on.
+        :type link_num: int
+
+        :return: A matrix containing the indexes to occupied or unoccupied slots on the link.
+        :rtype: list
+        """
+        link = self.net_spec_db[link_num]['cores_matrix']
+        final_slots = {}
+        for cno in range(len(link)):
+            indexes =  np.where(link[cno] == 0)[0]
+            final_slots.update({cno:indexes})
+
+        return final_slots
+        
+        
+        
+    # TODO: Only support for single core
     def nli_aware(self, slots_needed: int, beta: float):
         """
         Assigns a non-linear impairment score to every link in the network and selects a path with the least amount of
@@ -328,3 +368,83 @@ class Routing:
             self.topology[source][destination]['nli_cost'] = link_cost
 
         return self._least_nli_path()
+    def _find_xt_link_cost(self, free_slots: dict, link_num: int):
+        """
+        Find the XT cost for a link.
+
+        :param num_spans: The number of spans for the given link.
+        :type num_spans: float
+
+        :param free_channels: The indexes for all free super-channels on the link.
+        :type free_channels: list
+
+        :param taken_channels: The indexes for all occupied super-channels on the link.
+        :type taken_channels: list
+
+        :return: The final XT score calculated.
+        :rtype float
+        """
+        # Non-linear impairment cost calculation
+        xt_cost = 0
+
+        # Update MCI for available channel
+        
+        no_free_slot = 0    
+        for cno in free_slots:
+            no_free_slot += len(free_slots[cno])
+            for channel in free_slots[cno]:
+                no_overlapped = 0.0
+                if cno != 6:
+                    before = 5 if cno == 0 else cno - 1
+                    after = 0 if cno == 5 else cno + 1
+                    if self.net_spec_db[link_num]['cores_matrix'][before][channel] > 0:
+                        no_overlapped =+ 1
+                    if self.net_spec_db[link_num]['cores_matrix'][after][channel] > 0:
+                        no_overlapped =+ 1
+                    if self.net_spec_db[link_num]['cores_matrix'][6][channel] > 0:
+                        no_overlapped =+ 1
+                    no_overlapped /= 3
+                else:
+                    for i in range(6):
+                        if self.net_spec_db[link_num]['cores_matrix'][i][channel] > 0:
+                            no_overlapped =+ 1
+                    no_overlapped /= 6
+                xt_cost += no_overlapped
+        # A constant score of 1000 if the link is fully congested
+        if len(free_slots) == 0:
+            return 1000.0
+
+        link_cost = xt_cost/ no_free_slot
+
+        return link_cost
+    
+    def xt_aware(self, beta: float, xt_type: str):
+        """
+        Assigns a non-linear impairment score to every link in the network and selects a path with the least amount of
+        NLI cost.
+
+
+        :param beta: A tunable parameter used to consider how much the XT cost vs. link length will be considered.
+        :type beta: float
+
+        :return: The path from source to destination with the least amount of XT cost.
+        """
+        # Length for one span in km
+        span_len = 100.0
+
+        for link in self.net_spec_db:
+            source, destination = link[0], link[1]
+            num_spans = self.topology[source][destination]['length'] / span_len
+            free_slots = self._find_free_slots(link_num=link)
+            xt_cost = self._find_xt_link_cost(free_slots=free_slots,
+                                            link_num=link)
+            # Tradeoff between link length and the non-linear impairment cost
+            if xt_type == 'with length':
+                link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
+                            ((1 - beta) * xt_cost)
+            else:
+                link_cost = num_spans * xt_cost
+
+            self.topology[source][destination]['xt_cost'] = link_cost
+
+        return self._least_xt_path()

@@ -276,6 +276,8 @@ class SDNController:
             # TODO: Constant QPSK for now
             slots_needed = self.mod_per_bw[self.chosen_bw]['QPSK']['slots_needed']
             selected_path, path_mod = routing_obj.nli_aware(slots_needed=slots_needed, beta=self.beta)
+        elif self.route_method == 'xt_aware':
+            selected_path, path_mod = routing_obj.xt_aware( beta=self.beta, xt_type = 'with length')
         elif self.route_method == 'least_congested':
             selected_path = routing_obj.least_congested_path()
             # TODO: Constant QPSK for now
