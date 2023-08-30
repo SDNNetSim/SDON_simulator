@@ -10,31 +10,15 @@ class SnrMeasurements:
 
     # TODO: Might be a good idea to reference all constants to a paper or something
     # TODO: Move as much of this to the configuration file as possible
-    def __init__(self,
-                 path=None,
-                 path_mod=None,
-                 spectrum=None,
-                 assigned_slots=None,
-                 req_bit_rate=12.5,
-                 freq_spacing=12.5,
-                 input_power=10 ** -3,
-                 spectral_slots=None,
-                 req_snr=8.5,
-                 net_spec_db=None,
-                 topology_info=None,
-                 # TODO: Delete if always constant
-                 req_status=None,
-                 phi=None,
-                 guard_slots=0,
-                 baud_rates=None,
-                 # TODO: Either need a comment or better name
-                 egn=False,
-                 xt_noise=False,
-                 bi_directional=True,
-                 requested_xt=-30):
+    # TODO: Delete params from arguments if they're always constant
+    # TODO: Better naming conventions (overview of the script)
+    def __init__(self, path=None, path_mod=None, spectrum=None, assigned_slots=None, req_bit_rate=12.5,
+                 freq_spacing=12.5, input_power=10 ** -3, spectral_slots=None, req_snr=8.5, net_spec_db=None,
+                 topology_info=None, req_status=None, phi=None, guard_slots=0, baud_rates=None, egn=False,
+                 xt_noise=False, bi_directional=True, requested_xt=-30):
 
         # TODO: If these values will not change, it's best to take them out of the params of the constructor
-        # TODO: Comments for a lot of these
+        # TODO: Comments for all of these
         self.path = path
         self.spectrum = spectrum
         self.assigned_slots = assigned_slots
@@ -107,14 +91,14 @@ class SnrMeasurements:
         self.core_pitch = link['core_pitch']
 
     def _calculate_sci(self, PSDi, BW):
-        # TODO: Comment or name these better
+        # TODO: Comment and name better
         Rho = ((math.pi ** 2) * np.abs(self.dispersion)) / (2 * self.attenuation)
         G_SCI = (PSDi ** 2) * math.asinh(Rho * (BW ** 2))
         return G_SCI
 
+    # TODO: I believe repeat code, calculate mci function in routing.py
     def _calculate_link_mci(self, spectrum_contents, slot_index, Fi, MCI):
-        # TODO: Better naming or comments
-        # TODO: Better naming or comments (also to pylint standards)
+        # TODO: Better naming or comments (to pylint standards as well)
         # TODO: This line is hard to read, think we're looking for occupied channels?
         BW_J = len(np.where(spectrum_contents == spectrum_contents)[0]) * self.freq_spacing
         Fj = ((slot_index * self.freq_spacing) + ((BW_J) / 2)) * 10 ** 9
@@ -132,7 +116,6 @@ class SnrMeasurements:
         visited_channels = []
         # TODO: Better naming or constants
         MCI = 0
-        # TODO: I believe 'w' is the slot index
         for slot_index in range(self.spectral_slots):
             curr_link = self.net_spec_db[(self.path[link], self.path[link + 1])]['cores_matrix']
             spectrum_contents = curr_link[self.spectrum['core_num']][slot_index]
@@ -148,19 +131,21 @@ class SnrMeasurements:
 
         return MCI, visited_channels
 
-    # TODO: Better naming and constants
+    # TODO: Better naming and comments
     def _calculate_pxt(self, length, no_adjacent_core=6):
         xt_eta = (2 * self.bend_radius * self.mode_coupling_co ** 2) / (self.prop_const * self.core_pitch)
         p_xt = no_adjacent_core * xt_eta * length * 1e3 * self.input_power
 
         return p_xt
 
-    def _calculate_xt(self, link_id, length, no_adjacent_core=6):
+    # TODO: Better naming and comments
+    def _calculate_xt(self, length, no_adjacent_core=6):
         xt_eta = (2 * self.bend_radius * (self.mode_coupling_co ** 2)) / (self.prop_const * self.core_pitch)
         xt_calc = (1 - math.exp(-2 * xt_eta * length * 1e3)) / (1 + math.exp(-2 * xt_eta * length * 1e3))
 
         return xt_calc * no_adjacent_core
 
+    # TODO: Better naming and comments
     def _handle_egn(self, visited_channel, length, PSDi, BW, link_id):
         hn = 0
         for i in range(1, math.ceil((len(visited_channel) - 1) / 2) + 1):
@@ -178,8 +163,8 @@ class SnrMeasurements:
     # TODO: Maybe a more descriptive name of what this does
     #   - Break it up into smaller methods
     #   - Convert this one into a "run" method or something
+    # TODO: Better naming and comments
     def SNR_check_NLI_ASE_XT(self):
-
         # TODO: Move to a constants file or constructor
         light_frequncy = (1.9341 * 10 ** 14)
 
@@ -195,6 +180,7 @@ class SnrMeasurements:
         for link in range(0, len(self.path) - 1):
             # TODO: Unused variables
             MCI = 0
+            # TODO: Is num span used?
             num_span = 0
             # visited_channel = []
             link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
@@ -210,6 +196,8 @@ class SnrMeasurements:
             nsp = 1.8  # TODO self.topology_info['links'][link_id]['fiber']['nsp']
             num_span = self.topology_info['links'][link_id]['length'] / length
 
+            # TODO: Probably move to another method
+            # TODO: I don't think this variable is needed here
             PSD_ASE = 0
             if self.egn:
                 PSD_corr = self._handle_egn(visited_channel=visited_channel, length=length, PSDi=PSDi, BW=BW,
@@ -223,16 +211,17 @@ class SnrMeasurements:
             # TODO: SNR is equal to infinity
             SNR += (1 / ((PSDi * BW) / (((PSD_ASE + PSD_NLI) * BW + P_XT) * num_span)))
 
+        # TODO: Hard to read
         SNR = 10 * math.log10(1 / SNR)
         return True if SNR > self.req_snr else False
 
-    def check_xt(self):
+    def XT_check(self):
         xt = 0
         for link in range(0, len(self.path) - 1):
             link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
             length = self.topology_info['links'][link_id]['span_length']
-            num_span = self.topology_info['links'][link_id]['length'] / length
-            xt += self._calculate_xt(link_id, length) * num_span
-
+            Num_span = self.topology_info['links'][link_id]['length'] / length
+            xt += self._calculate_xt(link_id, length) * Num_span
         xt = 10 * math.log10(xt)
+        # TODO: Hard to read
         return True if xt < self.requested_xt else False
