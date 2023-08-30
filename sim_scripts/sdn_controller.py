@@ -343,6 +343,8 @@ class SDNController:
                 spectrum = spectrum_assignment.find_free_spectrum()
 
                 if spectrum is not False:
+                    if self.path == ['1', '5', '8', '11', '15', '21']:
+                        print('Begin debug')
                     self._update_snr_obj(spectrum=spectrum)
                     # TODO: Update the name of this method
                     # TODO: Disable and enable snr (configuration file)
@@ -358,9 +360,7 @@ class SDNController:
                         return resp, self.net_spec_db, self.num_transponders, self.path
                     # TODO: Statement not needed
                     else:
-                        # Fixme: Has no effect
-                        # TODO: Comment a reason if returned booleans
-                        False, True
+                        return False, self.dist_block, self.path
 
                 # Attempt to slice the request due to a congestion constraint
                 return self.handle_lps()

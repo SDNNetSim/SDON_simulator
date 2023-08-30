@@ -170,7 +170,6 @@ class SnrMeasurements:
             nsp = 1.8  # TODO self.topology_info['links'][link_id]['fiber']['nsp']
             num_span = self.topology_info['links'][link_id]['length'] / length
 
-            # TODO: Probably move to another method
             # TODO: I don't think this variable is needed here
             PSD_ASE = 0
             if self.egn:
@@ -180,6 +179,7 @@ class SnrMeasurements:
             else:
                 PSD_NLI = (((G_SCI + G_XCI) * Mio * PSDi))
 
+            # TODO: Probably move to another method
             PSD_ASE = (self.plank * light_frequncy * nsp) * (math.exp(self.attenuation * length * 10 ** 3) - 1)
             P_XT = self._calculate_pxt(length=length)
             SNR += (1 / ((PSDi * BW) / (((PSD_ASE + PSD_NLI) * BW + P_XT) * num_span)))
@@ -187,8 +187,6 @@ class SnrMeasurements:
         # TODO: Hard to read
         # TODO: On the fifth iteration, the SNR result is different
         SNR = 10 * math.log10(1 / SNR)
-        if SNR == 9.534121780875939:
-            print('Begin debug')
         return True if SNR > self.req_snr else False
 
     def XT_check(self):
