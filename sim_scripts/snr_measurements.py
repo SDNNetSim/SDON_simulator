@@ -77,6 +77,7 @@ class SnrMeasurements:
         # TODO: Rename this variable BW_J and BWj (BW_J is different)
         # TODO: Set equal to the core number instead of "itself", spectrum contents has to change
         BW_J = len(np.where(spectrum_contents == curr_link[self.spectrum['core_num']])[0]) * self.freq_spacing
+        # TODO: Here is the issue (slot index)
         Fj = ((slot_index * self.freq_spacing) + ((BW_J) / 2)) * 10 ** 9
         BWj = BW_J * 10 ** 9
         PSDj = self.input_power / BWj
@@ -99,6 +100,7 @@ class SnrMeasurements:
             # Spectrum is occupied
             if spectrum_contents > 0 and spectrum_contents not in visited_channels:
                 visited_channels.append(spectrum_contents)
+                # TODO: Slot indexes may be different
                 MCI += self._calculate_link_mci(spectrum_contents=spectrum_contents, curr_link=curr_link,
                                                 slot_index=slot_index, Fi=Fi, MCI=MCI)
 
