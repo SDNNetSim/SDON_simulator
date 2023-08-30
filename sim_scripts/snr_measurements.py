@@ -122,13 +122,9 @@ class SnrMeasurements:
             spectrum_contents = curr_link[self.spectrum['core_num']][slot_index]
 
             # Spectrum is occupied
-            if spectrum_contents > 0:
-                if spectrum_contents in visited_channels:
-                    continue
-                else:
-                    visited_channels.append(spectrum_contents)
-
-            MCI += self._calculate_link_mci(spectrum_contents=spectrum_contents, slot_index=slot_index, Fi=Fi, MCI=MCI)
+            if spectrum_contents > 0 and spectrum_contents not in visited_channels:
+                visited_channels.append(spectrum_contents)
+                MCI += self._calculate_link_mci(spectrum_contents=spectrum_contents, slot_index=slot_index, Fi=Fi, MCI=MCI)
 
         return MCI, visited_channels
 
@@ -211,7 +207,6 @@ class SnrMeasurements:
             P_XT = self._calculate_pxt(link_id, length)
             # TODO: SNR is equal to infinity
             SNR += (1 / ((PSDi * BW) / (((PSD_ASE + PSD_NLI) * BW + P_XT) * num_span)))
-            print('For debugging')
 
         # TODO: Hard to read
         SNR = 10 * math.log10(1 / SNR)
