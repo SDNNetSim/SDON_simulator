@@ -187,7 +187,7 @@ class SnrMeasurements:
             # TODO: Probably move to another method
             Mio = (3 * (self.topology_info['links'][link_id]['fiber']['non_linearity'] ** 2)) / (
                     2 * math.pi * self.attenuation * np.abs(self.dispersion))
-            G_SCI = self._calculate_sci(PSDi, BW)
+            G_SCI = self._calculate_sci(PSDi=PSDi, BW=BW)
             G_XCI, visited_channel = self._calculate_xci(Fi=Fi, link=link)
             length = self.topology_info['links'][link_id]['span_length']
             nsp = 1.8  # TODO self.topology_info['links'][link_id]['fiber']['nsp']
@@ -208,7 +208,10 @@ class SnrMeasurements:
             SNR += (1 / ((PSDi * BW) / (((PSD_ASE + PSD_NLI) * BW + P_XT) * num_span)))
 
         # TODO: Hard to read
+        # TODO: On the fifth iteration, the SNR result is different
         SNR = 10 * math.log10(1 / SNR)
+        if SNR == 9.534121780875939:
+            print('Begin debug')
         return True if SNR > self.req_snr else False
 
     def XT_check(self):
