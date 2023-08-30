@@ -277,7 +277,6 @@ class SDNController:
         self.snr_obj.path = self.path
         self.snr_obj.path_mod = self.path_mod
         self.snr_obj.spectrum = spectrum
-        # TODO: Check up on number of assigned slots (is it different?)
         self.snr_obj.assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
         self.snr_obj.spectral_slots = self.spectral_slots
         self.snr_obj.net_spec_db = self.net_spec_db
@@ -346,9 +345,8 @@ class SDNController:
 
                 if spectrum is not False:
                     self._update_snr_obj(spectrum=spectrum)
-                    # TODO: Update the name of this method
                     # TODO: Disable and enable snr (configuration file)
-                    snr_check = self.snr_obj.SNR_check_NLI_ASE_XT()
+                    snr_check = self.snr_obj.check_snr()
                     if snr_check:
                         resp = {
                             'path': self.path,
@@ -358,7 +356,6 @@ class SDNController:
 
                         self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
                         return resp, self.net_spec_db, self.num_transponders, self.path
-                    # TODO: Statement not needed
                     else:
                         return False, self.dist_block, self.path
 
