@@ -204,8 +204,7 @@ class SnrMeasurements:
                 PSD_NLI = (((G_SCI + G_XCI) * Mio * PSDi))
 
             PSD_ASE = (self.plank * light_frequncy * nsp) * (math.exp(self.attenuation * length * 10 ** 3) - 1)
-            P_XT = self._calculate_pxt(link_id, length)
-            # TODO: SNR is equal to infinity
+            P_XT = self._calculate_pxt(length=length)
             SNR += (1 / ((PSDi * BW) / (((PSD_ASE + PSD_NLI) * BW + P_XT) * num_span)))
 
         # TODO: Hard to read
