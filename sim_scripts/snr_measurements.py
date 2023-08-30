@@ -126,6 +126,7 @@ class SnrMeasurements:
                 visited_channels.append(spectrum_contents)
                 MCI += self._calculate_link_mci(spectrum_contents=spectrum_contents, slot_index=slot_index, Fi=Fi, MCI=MCI)
 
+        # TODO: MCI is different on the fifth iteration
         return MCI, visited_channels
 
     # TODO: Better naming and comments
