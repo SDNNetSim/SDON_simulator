@@ -101,7 +101,8 @@ class SnrMeasurements:
             if spectrum_contents > 0 and spectrum_contents not in visited_channels:
                 visited_channels.append(spectrum_contents)
                 # TODO: Slot indexes may be different
-                MCI += self._calculate_link_mci(spectrum_contents=spectrum_contents, curr_link=curr_link,
+                # TODO: MCI is different
+                MCI = self._calculate_link_mci(spectrum_contents=spectrum_contents, curr_link=curr_link,
                                                 slot_index=slot_index, Fi=Fi, MCI=MCI)
 
         # TODO: MCI is different on the fifth iteration
