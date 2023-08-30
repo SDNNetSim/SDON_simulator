@@ -48,8 +48,23 @@ class SnrMeasurements:
         self.prop_const = None
         self.core_pitch = None
 
+        self.Fi = None
+        self.BW = None
+        self.PSDi = None
+
+        self.Mio = None
+        self.G_SCI = None
+        self.G_XCI = None
+        self.visited_channel = None
+        self.length = None
+        self.nsp = None
+        self.num_span = None
+        self.link_id = None
+
         # TODO: This may have to get updated in another method since we don't create a new object every time
         self.response = {'SNR': None}
+        # TODO: Move to a constants file or constructor
+        self.light_frequency = (1.9341 * 10 ** 14)
 
     # TODO: Some dictionary that has all the link information shared between methods, for now, variables
     def _update_link_info(self, link_id):
@@ -62,6 +77,13 @@ class SnrMeasurements:
         self.mode_coupling_co = link['mode_coupling_co']
         self.prop_const = link['propagation_const']
         self.core_pitch = link['core_pitch']
+
+    def _init_vars(self):
+        # TODO: Better naming
+        self.Fi = ((self.spectrum['start_slot'] * self.freq_spacing) + (
+                (self.assigned_slots * self.freq_spacing) / 2)) * 10 ** 9
+        self.BW = self.assigned_slots * self.freq_spacing * 10 ** 9
+        self.PSDi = self.input_power / self.BW
 
     def _calculate_sci(self, PSDi, BW):
         # TODO: Comment and name better
@@ -103,7 +125,7 @@ class SnrMeasurements:
                 # TODO: Slot indexes may be different
                 # TODO: MCI is different
                 MCI = self._calculate_link_mci(spectrum_contents=spectrum_contents, curr_link=curr_link,
-                                                slot_index=slot_index, Fi=Fi, MCI=MCI)
+                                               slot_index=slot_index, Fi=Fi, MCI=MCI)
 
         # TODO: MCI is different on the fifth iteration
         return MCI, visited_channels
@@ -137,55 +159,48 @@ class SnrMeasurements:
 
         return PSD_corr
 
+    # TODO: Probably an incorrect name
+    def _calculate_mci(self, link_id, link):
+        # TODO: Probably move to another method
+        self.Mio = (3 * (self.topology_info['links'][link_id]['fiber']['non_linearity'] ** 2)) / (
+                2 * math.pi * self.attenuation * np.abs(self.dispersion))
+        self.G_SCI = self._calculate_sci(PSDi=self.PSDi, BW=self.BW)
+        self.G_XCI, self.visited_channel = self._calculate_xci(Fi=self.Fi, link=link)
+        self.length = self.topology_info['links'][link_id]['span_length']
+        self.nsp = 1.8  # TODO self.topology_info['links'][link_id]['fiber']['nsp']
+        self.num_span = self.topology_info['links'][link_id]['length'] / self.length
+
+    def _calculate_psd_nli(self):
+        if self.egn:
+            PSD_corr = self._handle_egn(visited_channel=self.visited_channel, length=self.length, PSDi=self.PSDi,
+                                        BW=self.BW, link_id=self.link_id)
+            PSD_NLI = (((self.G_SCI + self.G_XCI) * self.Mio * self.PSDi)) - PSD_corr
+        else:
+            PSD_NLI = (((self.G_SCI + self.G_XCI) * self.Mio * self.PSDi))
+
+        return PSD_NLI
+
     # TODO: Maybe a more descriptive name of what this does
     #   - Break it up into smaller methods
     #   - Convert this one into a "run" method or something
     # TODO: Better naming and comments
     def SNR_check_NLI_ASE_XT(self):
-        # TODO: Move to a constants file or constructor
-        light_frequncy = (1.9341 * 10 ** 14)
-
-        # TODO: Probably move to another method
-        Fi = ((self.spectrum['start_slot'] * self.freq_spacing) + (
-                (self.assigned_slots * self.freq_spacing) / 2)) * 10 ** 9
-        BW = self.assigned_slots * self.freq_spacing * 10 ** 9
-        PSDi = self.input_power / BW
+        self._init_vars()
         # TODO: Define things like this in the constructor
-        PSD_NLI = 0
-        PSD_corr = 0
         SNR = 0
         for link in range(0, len(self.path) - 1):
-            # TODO: Unused variables
-            MCI = 0
-            # TODO: Is num span used?
-            num_span = 0
-            # visited_channel = []
-            link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
+            self.link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
 
-            self._update_link_info(link_id=link_id)
+            # TODO: Define in constructor (used in multiple methods)
+            self._update_link_info(link_id=self.link_id)
+            self._calculate_mci(link_id=self.link_id, link=link)
 
-            # TODO: Probably move to another method
-            Mio = (3 * (self.topology_info['links'][link_id]['fiber']['non_linearity'] ** 2)) / (
-                    2 * math.pi * self.attenuation * np.abs(self.dispersion))
-            G_SCI = self._calculate_sci(PSDi=PSDi, BW=BW)
-            G_XCI, visited_channel = self._calculate_xci(Fi=Fi, link=link)
-            length = self.topology_info['links'][link_id]['span_length']
-            nsp = 1.8  # TODO self.topology_info['links'][link_id]['fiber']['nsp']
-            num_span = self.topology_info['links'][link_id]['length'] / length
+            PSD_NLI = self._calculate_psd_nli()
 
-            # TODO: I don't think this variable is needed here
-            PSD_ASE = 0
-            if self.egn:
-                PSD_corr = self._handle_egn(visited_channel=visited_channel, length=length, PSDi=PSDi, BW=BW,
-                                            link_id=link_id)
-                PSD_NLI = (((G_SCI + G_XCI) * Mio * PSDi)) - PSD_corr
-            else:
-                PSD_NLI = (((G_SCI + G_XCI) * Mio * PSDi))
-
-            # TODO: Probably move to another method
-            PSD_ASE = (self.plank * light_frequncy * nsp) * (math.exp(self.attenuation * length * 10 ** 3) - 1)
-            P_XT = self._calculate_pxt(length=length)
-            SNR += (1 / ((PSDi * BW) / (((PSD_ASE + PSD_NLI) * BW + P_XT) * num_span)))
+            PSD_ASE = (self.plank * self.light_frequency * self.nsp) * (
+                        math.exp(self.attenuation * self.length * 10 ** 3) - 1)
+            P_XT = self._calculate_pxt(length=self.length)
+            SNR += (1 / ((self.PSDi * self.BW) / (((PSD_ASE + PSD_NLI) * self.BW + P_XT) * self.num_span)))
 
         # TODO: Hard to read
         # TODO: On the fifth iteration, the SNR result is different

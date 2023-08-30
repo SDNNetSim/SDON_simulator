@@ -343,8 +343,6 @@ class SDNController:
                 spectrum = spectrum_assignment.find_free_spectrum()
 
                 if spectrum is not False:
-                    if self.path == ['1', '5', '8', '11', '15', '21']:
-                        print('Begin debug')
                     self._update_snr_obj(spectrum=spectrum)
                     # TODO: Update the name of this method
                     # TODO: Disable and enable snr (configuration file)
