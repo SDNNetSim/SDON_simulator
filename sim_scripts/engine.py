@@ -37,7 +37,6 @@ class Engine(SDNController):
         self.num_blocked_reqs = 0
         # The network spectrum database
         self.net_spec_db = dict()
-        self.topology = nx.Graph()
         # Used to track the total number of transponders in a simulation
         self.num_trans = 0
         # Used to take an average of the total amount of transponders for multiple simulation iterations
@@ -74,10 +73,10 @@ class Engine(SDNController):
         self.sim_info = f"{self.properties['network']}/{self.properties['sim_start'].split('_')[0]}/" \
                         f"{self.properties['sim_start'].split('_')[1]}"
         # Contains all methods related to artificial intelligence
-        self.ai_obj = AIMethods(properties=self.properties, sim_info=self.sim_info)
+        # self.ai_obj = AIMethods(properties=self.properties, sim_info=self.sim_info)
 
         # Initialize the constructor of the SDNController class
-        super().__init__(properties=self.properties, ai_obj=self.ai_obj)
+        super().__init__(properties=self.properties, ai_obj=None)
 
     def get_total_occupied_slots(self):
         """
@@ -157,8 +156,8 @@ class Engine(SDNController):
 
         base_fp = "data/output/"
 
-        if self.properties['ai_algorithm'] != 'None':
-            self.ai_obj.save()
+        # if self.properties['ai_algorithm'] != 'None':
+        #     self.ai_obj.save()
 
         # Save threads to child directories
         base_fp += f"/{self.sim_info}/{self.properties['thread_num']}"
@@ -216,7 +215,7 @@ class Engine(SDNController):
 
         self.stats_dict['block_per_sim'][iteration] = block_percentage
 
-    def handle_arrival(self, curr_time, iteration):
+    def handle_arrival(self, curr_time, iteration):  # pylint: disable=unused-argument
         """
         Updates the SDN controller to handle an arrival request. Also retrieves and calculates relevant request
         statistics.
@@ -238,11 +237,11 @@ class Engine(SDNController):
 
         resp = self.handle_event(request_type='arrival')
 
-        free_slots = self.get_path_free_slots(path=resp[-1])
+        free_slots = self.get_path_free_slots(path=resp[-1])  # pylint: disable=unused-variable
 
-        if self.properties['ai_algorithm'] != 'None':
-            self.ai_obj.update(routed=resp[0], path=resp[-1], free_slots=free_slots, iteration=iteration,
-                               num_segments=resp[2])
+        # if self.properties['ai_algorithm'] != 'None':
+        #     self.ai_obj.update(routed=resp[0], path=resp[-1], free_slots=free_slots, iteration=iteration,
+        #                        num_segments=resp[2])
 
         # Request was blocked
         if not resp[0]:
@@ -308,10 +307,10 @@ class Engine(SDNController):
         self.net_spec_db = {}
 
         # Create nodes
-        self.topology.add_nodes_from(self.properties['topology']['nodes'])
+        self.topology.add_nodes_from(self.properties['topology_info']['nodes'])
 
         # Create links
-        for link_num, link_data in self.properties['topology']['links'].items():
+        for link_num, link_data in self.properties['topology_info']['links'].items():
             source = link_data['source']
             dest = link_data['destination']
 
@@ -360,7 +359,7 @@ class Engine(SDNController):
         :return: None
         """
         self.reqs_dict = generate(seed=seed,
-                                  nodes=list(self.properties['topology']['nodes'].keys()),
+                                  nodes=list(self.properties['topology_info']['nodes'].keys()),
                                   hold_time_mean=self.properties['holding_time'],
                                   arr_rate_mean=self.properties['arrival_rate'],
                                   num_reqs=self.properties['num_requests'],
@@ -375,8 +374,8 @@ class Engine(SDNController):
 
         :return: None
         """
-        self.trans_arr = np.append(self.trans_arr,
-                                   self.num_trans / (self.properties['num_requests'] - self.num_blocked_reqs))
+        # self.trans_arr = np.append(self.trans_arr,
+        #                            self.num_trans / (self.properties['num_requests'] - self.num_blocked_reqs))
 
     def update_blocking_distribution(self):
         """
@@ -447,15 +446,15 @@ class Engine(SDNController):
                 print(f"Simulation started for Erlang: {self.properties['erlang']} "
                       f"thread number: {self.properties['thread_num']}.")
 
-                # We are running a normal simulation, no AI object needed
-                if self.properties['ai_algorithm'] != 'None':
-                    self.ai_obj.topology = self.properties['topology']
-                    self.ai_obj.seed = iteration
-
-                    if self.properties['train_file'] is None:
-                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.properties['sim_info'])
-                    else:
-                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.properties['train_file'])
+                # # We are running a normal simulation, no AI object needed
+                # if self.properties['ai_algorithm'] != 'None':
+                #     self.ai_obj.topology = self.properties['topology']
+                #     self.ai_obj.seed = iteration
+                #
+                #     if self.properties['train_file'] is None:
+                #         self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.sim_info)
+                #     else:
+                #         self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.properties['train_file'])
 
             seed = self.properties["seeds"][iteration] if self.properties["seeds"] else iteration + 1
             self.generate_requests(seed)

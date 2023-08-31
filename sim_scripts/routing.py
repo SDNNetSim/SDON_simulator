@@ -61,6 +61,7 @@ class Routing:
         self.mci_w = 6.3349755556585961e-027
         # Maximum link length for the network topology
         self.max_link = max(nx.get_edge_attributes(topology, 'length').values(), default=0.0)
+        self.span_len = 100.0
 
     def find_least_cong_path(self):
         """
@@ -138,6 +139,7 @@ class Routing:
         # If no valid path was found, return a tuple indicating failure
         return False, False, False
 
+    # TODO: Combine these three methods into one once modulation format gets figured out?
     def shortest_path(self):
         """
         Given a graph with a desired source and destination, find the shortest path with respect to link lengths.
@@ -159,7 +161,7 @@ class Routing:
         """
         Selects the path with the least amount of NLI cost.
 
-        :return: The path and modulation format chosen
+        :return: The path and modulation format chosen.
         :rtype: tuple
         """
         # This networkx function will always return the shortest paths in order
@@ -172,6 +174,24 @@ class Routing:
 
             return path, mod_format
 
+    def _least_xt_path(self):
+        """
+        Selects the path with the least amount of xt cost.
+
+        :return: The path and modulation format chosen.
+        :rtype: tuple
+        """
+        # This networkx function will always return the shortest paths in order
+        paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
+                                             weight='xt_cost')
+
+        for path in paths_obj:
+            # TODO: Change always a constant
+            mod_format = 'QPSK'
+
+            return path, mod_format
+
+    # TODO: Potential repeat code
     def _find_channel_mci(self, num_spans: float, center_freq: float, taken_channels: list):
         """
         For a given super-channel calculate the multi-channel interference.
@@ -294,6 +314,25 @@ class Routing:
 
         return channels
 
+    # TODO: Can probably move this to useful functions
+    def _find_free_slots(self, link_num: int):
+        """
+        Finds the number of free channels on any given link.
+
+        :param link_num: The link number to search for channels on.
+        :type link_num: int
+
+        :return: A matrix containing the indexes to occupied or unoccupied slots on the link.
+        :rtype: list
+        """
+        link = self.net_spec_db[link_num]['cores_matrix']
+        final_slots = {}
+        for core_num in enumerate(link):
+            indexes = np.where(link[core_num] == 0)[0]
+            final_slots.update({core_num: indexes})
+
+        return final_slots
+
     # TODO: Only support for single core
     def nli_aware(self, slots_needed: int, beta: float):
         """
@@ -328,3 +367,126 @@ class Routing:
             self.topology[source][destination]['nli_cost'] = link_cost
 
         return self._least_nli_path()
+
+    # TODO: Move core number to the constructor?
+    @staticmethod
+    def _find_adjacent_cores(core_num: int):
+        """
+        Given a core number, find its adjacent cores.
+
+        :param core_num: The selected core number.
+        :type core_num: int
+
+        :return: The indexes of the core directly before and after the selected core.
+        :rtype: tuple
+        """
+        # Identify the adjacent cores to the currently selected core
+        # The neighboring core directly before the currently selected core
+        before = 5 if core_num == 0 else core_num - 1
+        # The neighboring core directly after the currently selected core
+        after = 0 if core_num == 5 else core_num + 1
+
+        return before, after
+
+    # TODO: Only support for 7 core fiber
+    def _find_num_overlapped(self, channel: int, core_num: int, link_num: int):
+        """
+        Finds the number of overlapped channels for a single core on a link.
+
+        :param channel: The current channel index.
+        :type channel: int
+
+        :param core_num: The current core number in the link fiber.
+        :type core_num: int
+
+        :param link_num: The current link.
+        :type link_num: int
+
+        :return: The total number of overlapped channels normalized by the number of cores.
+        :rtype: float
+        """
+        # The number of overlapped channels
+        num_overlapped = 0.0
+        if core_num != 6:
+            adjacent_cores = self._find_adjacent_cores(core_num=core_num)
+
+            if self.net_spec_db[link_num]['cores_matrix'][adjacent_cores[0]][channel] > 0:
+                num_overlapped += 1
+            if self.net_spec_db[link_num]['cores_matrix'][adjacent_cores[1]][channel] > 0:
+                num_overlapped += 1
+            if self.net_spec_db[link_num]['cores_matrix'][6][channel] > 0:
+                num_overlapped += 1
+
+            num_overlapped /= 3
+        # The number of overlapped cores for core six will be different (it's the center core)
+        else:
+            for sub_core_num in range(6):
+                if self.net_spec_db[link_num]['cores_matrix'][sub_core_num][channel] > 0:
+                    num_overlapped += 1
+
+            num_overlapped /= 6
+
+        return num_overlapped
+
+    # TODO: Only support for 7 core fiber
+    def _find_xt_link_cost(self, free_slots_arr: list, link_num: int):
+        """
+        Finds the cross-talk cost for a single link.
+
+        :param free_slots_arr: A matrix identifying the indexes of spectral slots that are free.
+        :type free_slots_arr: list
+
+        :param link_num: The link number to check the cross-talk on.
+        :type link_num: int
+
+        :return: The total cross-talk value for the given link.
+        :rtype float
+        """
+        # Non-linear impairment cost calculation
+        xt_cost = 0
+        # Update MCI for available channel
+        num_free_slots = 0
+        for core_num in free_slots_arr:
+            num_free_slots += len(free_slots_arr[core_num])
+            for channel in free_slots_arr[core_num]:
+                # The number of overlapped channels
+                num_overlapped = self._find_num_overlapped(channel=channel, core_num=core_num, link_num=link_num)
+                xt_cost += num_overlapped
+
+        # A constant score of 1000 if the link is fully congested
+        if len(free_slots_arr) == 0:
+            return 1000.0
+
+        link_cost = xt_cost / num_free_slots
+        return link_cost
+
+    def xt_aware(self, beta: float, xt_type: str):
+        """
+        Calculates all path's costs with respect to intra-core cross-talk values and returns the path with the least
+        amount of cross-talk interference.
+
+        :param beta: A parameter used to determine the tradeoff between length and cross-talk value.
+        :type beta: float
+
+        :param xt_type: Whether we would like to consider length in the final calculation or not.
+        :type xt_type: str
+
+        :return: The path with the least amount of interference.
+        :rtype: list
+        """
+        for link in self.net_spec_db:
+            source, destination = link[0], link[1]
+            num_spans = self.topology[source][destination]['length'] / self.span_len
+
+            free_slots = self._find_free_slots(link_num=link)
+            xt_cost = self._find_xt_link_cost(free_slots_arr=free_slots, link_num=link)
+            # Tradeoff between link length and the non-linear impairment cost
+            if xt_type == 'with_length':
+                link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
+                            ((1 - beta) * xt_cost)
+            else:
+                link_cost = num_spans * xt_cost
+
+            self.topology[source][destination]['xt_cost'] = link_cost
+
+        return self._least_xt_path()

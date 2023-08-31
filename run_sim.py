@@ -72,8 +72,8 @@ class NetworkSimulator:
 
         network_data = create_network(const_weight=self.properties['const_link_weight'],
                                       net_name=self.properties['network'])
-        self.properties['topology'] = create_pt(cores_per_link=self.properties['cores_per_link'],
-                                                network_data=network_data)
+        self.properties['topology_info'] = create_pt(cores_per_link=self.properties['cores_per_link'],
+                                                     network_data=network_data)
 
     def run_yue(self):
         """

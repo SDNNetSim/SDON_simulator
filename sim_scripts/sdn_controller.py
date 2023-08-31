@@ -4,6 +4,7 @@ import numpy as np
 # Local application imports
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
+from sim_scripts.snr_measurements import SnrMeasurements
 from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
 
 
@@ -22,7 +23,7 @@ class SDNController:
         :param ai_obj: Class containing all methods related to AI
         :type ai_obj: object
         """
-        self.topology = properties['topology']
+        self.topology_info = properties['topology_info']
         self.cores_per_link = properties['cores_per_link']
         self.sim_type = properties['sim_type']
         self.alloc_method = properties['allocation_method']
@@ -34,6 +35,8 @@ class SDNController:
         self.guard_slots = properties['guard_slots']
         self.mod_per_bw = properties['mod_per_bw']
         self.ai_obj = ai_obj
+        self.spectral_slots = properties['spectral_slots']
+        self.check_snr = properties['check_snr']
 
         # The current request id number
         self.req_id = None
@@ -45,6 +48,8 @@ class SDNController:
         self.destination = None
         # The current path
         self.path = None
+        # The current path modulation format
+        self.path_mod = None
         # The chosen bandwidth for the current request
         self.chosen_bw = None
         # Determines if light slicing is limited to a single core or not
@@ -53,6 +58,14 @@ class SDNController:
         self.num_transponders = 1
         # Determines whether the block was due to distance or congestion
         self.dist_block = False
+        # The physical network topology as a networkX graph
+        self.topology = None
+        # Class related to all things for calculating the signal-to-noise ratio
+        # TODO: Might be able to identify other variables from the configuration file, for example, guard band
+        # TODO: Consistent naming conventions
+
+        # TODO: Ensure topology info updated correctly
+        self.snr_obj = SnrMeasurements(properties=properties)
 
     def release(self):
         """
@@ -95,7 +108,8 @@ class SDNController:
         """
         if self.guard_slots:
             end_slot = end_slot - 1
-
+        else:
+            end_slot += 1
         for src, dest in zip(self.path, self.path[1:]):
             src_dest = (src, dest)
             dest_src = (dest, src)
@@ -256,6 +270,21 @@ class SDNController:
 
         return False, self.dist_block, self.path
 
+    def _update_snr_obj(self, spectrum: dict):
+        """
+        Updates parameters related to the SNR measurements class.
+
+        :param spectrum: The spectrum chosen for the current request
+        :type spectrum: dict
+        """
+        self.snr_obj.path = self.path
+        self.snr_obj.path_mod = self.path_mod
+        self.snr_obj.spectrum = spectrum
+        self.snr_obj.assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
+        self.snr_obj.spectral_slots = self.spectral_slots
+        self.snr_obj.net_spec_db = self.net_spec_db
+
+    # TODO: Clean this up (potentially move to a different file)
     def _route(self):
         """
         For a given request, attempt to route and assign a modulation format based on a routing method flag.
@@ -271,6 +300,9 @@ class SDNController:
             # TODO: Constant QPSK for now
             slots_needed = self.mod_per_bw[self.chosen_bw]['QPSK']['slots_needed']
             selected_path, path_mod = routing_obj.nli_aware(slots_needed=slots_needed, beta=self.beta)
+        # TODO: Add to configuration file
+        elif self.route_method == 'xt_aware':
+            selected_path, path_mod = routing_obj.xt_aware(beta=self.beta, xt_type='with_length')
         elif self.route_method == 'least_congested':
             selected_path = routing_obj.least_congested_path()
             # TODO: Constant QPSK for now
@@ -305,27 +337,31 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        selected_path, path_mod = self._route()
+        self.path, self.path_mod = self._route()
 
-        if selected_path is not False:
-            self.path = selected_path
-            if path_mod is not False:
-                slots_needed = self.mod_per_bw[self.chosen_bw][path_mod]['slots_needed']
+        if self.path is not False:
+            if self.path_mod is not False:
+                slots_needed = self.mod_per_bw[self.chosen_bw][self.path_mod]['slots_needed']
                 spectrum_assignment = SpectrumAssignment(path=self.path, slots_needed=slots_needed,
                                                          net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
                                                          is_sliced=False, alloc_method=self.alloc_method)
 
-                selected_sp = spectrum_assignment.find_free_spectrum()
+                spectrum = spectrum_assignment.find_free_spectrum()
 
-                if selected_sp is not False:
-                    resp = {
-                        'path': selected_path,
-                        'mod_format': path_mod,
-                        'is_sliced': False
-                    }
+                if spectrum is not False:
+                    if self.check_snr:
+                        self._update_snr_obj(spectrum=spectrum)
+                        snr_check = self.snr_obj.check_snr()
+                        if not snr_check:
+                            return False, self.dist_block, self.path
 
-                    self.allocate(selected_sp['start_slot'], selected_sp['end_slot'], selected_sp['core_num'])
-                    return resp, self.net_spec_db, self.num_transponders, self.path
+                        resp = {
+                            'path': self.path,
+                            'mod_format': self.path_mod,
+                            'is_sliced': False
+                        }
+                        self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
+                        return resp, self.net_spec_db, self.num_transponders, self.path
 
                 # Attempt to slice the request due to a congestion constraint
                 return self.handle_lps()
