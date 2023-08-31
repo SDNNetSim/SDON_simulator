@@ -174,6 +174,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             if flag == 'first':
                 open_slots_arr = np.where(core_arr == 0)[0]
             elif flag == 'last':
+                # TODO: Ensure this works
                 open_slots_arr = reversed(np.where(core_arr == 0)[0])
             else:
                 raise ValueError(f'Allocation flag not recognized, expexted first or last, got: {flag}')
