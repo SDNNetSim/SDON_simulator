@@ -70,6 +70,7 @@ class TestSDNController(unittest.TestCase):
             'bi_directional': False,
             'xt_noise': False,
             'requested_xt': -30,
+            'check_snr': False
         }
         self.sdn_controller = SDNController(properties=properties)
         self.sdn_controller.req_id = self.req_id
