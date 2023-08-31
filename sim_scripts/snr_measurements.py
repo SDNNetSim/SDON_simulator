@@ -10,7 +10,6 @@ class SnrMeasurements:
 
     # TODO: Might be a good idea to reference all constants to a paper or something
     # TODO: Move variables as needed to the configuration file
-    # TODO: Change calculate methods to get
     def __init__(self, path=None, path_mod=None, spectrum=None, assigned_slots=None, req_bit_rate=12.5,
                  freq_spacing=12.5, input_power=10 ** -3, spectral_slots=None, req_snr=8.5, net_spec_db=None,
                  topology_info=None, guard_slots=0, baud_rates=None, egn_model=False, xt_noise=False,
@@ -23,23 +22,34 @@ class SnrMeasurements:
         self.assigned_slots = assigned_slots
         self.req_bit_rate = req_bit_rate
         self.path_mod = path_mod
+        # TODO: Already in config file
         self.guard_slots = guard_slots
+        # TODO: Frequency per slot in config file (change to bandwidth per slot)
         self.freq_spacing = freq_spacing
+        # TODO: Add to configuration file (may be constant or change)
         self.input_power = input_power
+        # TODO: Already in config
         self.spectral_slots = spectral_slots
         self.req_snr = req_snr
         self.net_spec_db = net_spec_db
         self.topology_info = topology_info
         # Flag to show a use of the EGN model or the GN model for SNR calculations
+        # TODO: Add to config file
         self.egn_model = egn_model
         # A parameter related to the EGN model
+        # TODO: Add config file
         self.phi = {'QPSK': 1, '16-QAM': 0.68, '64-QAM': 0.6190476190476191}
         self.requests_status = {}
         self.baud_rates = baud_rates
+        # TODO: Add to config
         self.bi_directional = bi_directional
+        # TODO: Add to config
         self.xt_noise = xt_noise
         self.plank = 6.62607004e-34
+        # TODO: Add to config
         self.requested_xt = requested_xt
+        # TODO: Add to config
+        self.light_frequency = 1.9341 * 10 ** 14
 
         self.attenuation = None
         self.dispersion = None
@@ -67,7 +77,6 @@ class SnrMeasurements:
         self.num_span = None
         self.link_id = None
         self.link = None
-        self.light_frequency = 1.9341 * 10 ** 14
 
     def _calculate_sci_psd(self):
         """
