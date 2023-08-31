@@ -215,7 +215,7 @@ class Engine(SDNController):
 
         self.stats_dict['block_per_sim'][iteration] = block_percentage
 
-    def handle_arrival(self, curr_time, iteration):
+    def handle_arrival(self, curr_time, iteration):  # pylint: disable=unused-argument
         """
         Updates the SDN controller to handle an arrival request. Also retrieves and calculates relevant request
         statistics.
@@ -237,11 +237,11 @@ class Engine(SDNController):
 
         resp = self.handle_event(request_type='arrival')
 
-        free_slots = self.get_path_free_slots(path=resp[-1])
+        free_slots = self.get_path_free_slots(path=resp[-1])  # pylint: disable=unused-variable
 
-        if False: #self.properties['ai_algorithm'] != 'None':
-            self.ai_obj.update(routed=resp[0], path=resp[-1], free_slots=free_slots, iteration=iteration,
-                               num_segments=resp[2])
+        # if self.properties['ai_algorithm'] != 'None':
+        #     self.ai_obj.update(routed=resp[0], path=resp[-1], free_slots=free_slots, iteration=iteration,
+        #                        num_segments=resp[2])
 
         # Request was blocked
         if not resp[0]:
@@ -303,7 +303,6 @@ class Engine(SDNController):
 
         :return: None
         """
-        # TODO: topology_info should be added to the properties  
         self.topology = nx.Graph()
         self.net_spec_db = {}
 
@@ -447,15 +446,15 @@ class Engine(SDNController):
                 print(f"Simulation started for Erlang: {self.properties['erlang']} "
                       f"thread number: {self.properties['thread_num']}.")
 
-                # We are running a normal simulation, no AI object needed
-                if False:  # self.properties['ai_algorithm'] != 'None':
-                    self.ai_obj.topology = self.properties['topology']
-                    self.ai_obj.seed = iteration
-
-                    if self.properties['train_file'] is None:
-                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.sim_info)
-                    else:
-                        self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.properties['train_file'])
+                # # We are running a normal simulation, no AI object needed
+                # if self.properties['ai_algorithm'] != 'None':
+                #     self.ai_obj.topology = self.properties['topology']
+                #     self.ai_obj.seed = iteration
+                #
+                #     if self.properties['train_file'] is None:
+                #         self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.sim_info)
+                #     else:
+                #         self.ai_obj.setup(erlang=self.properties['erlang'], trained_table=self.properties['train_file'])
 
             seed = self.properties["seeds"][iteration] if self.properties["seeds"] else iteration + 1
             self.generate_requests(seed)
