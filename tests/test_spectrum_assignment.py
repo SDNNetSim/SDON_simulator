@@ -36,7 +36,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         """
         spectrum_assignment = SpectrumAssignment([0, 1], 1, self.net_spec_db, 1)
         spectrum_assignment.cores_per_link = 4
-        spectrum_assignment._best_fit_allocation()
+        spectrum_assignment._best_fit_allocation()  # pylint: disable=protected-access
 
         self.assertEqual(spectrum_assignment.response, {'core_num': 1, 'start_slot': 3, 'end_slot': 5})
 
@@ -46,7 +46,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         """
         spectrum_assignment = SpectrumAssignment([0, 1, 2], 1, self.net_spec_db, 1)
         spectrum_assignment.cores_per_link = 4
-        spectrum_assignment._check_other_links(1, 3, 5)
+        spectrum_assignment._check_other_links(1, 3, 5)  # pylint: disable=protected-access
 
         self.assertFalse(spectrum_assignment.is_free)
 
@@ -57,6 +57,6 @@ class TestSpectrumAssignment(unittest.TestCase):
         spectrum_assignment = SpectrumAssignment([0, 1], 1, self.net_spec_db, 1)
         spectrum_assignment.cores_per_link = 4
         spectrum_assignment.cores_matrix = self.net_spec_db[(0, 1)]['cores_matrix']
-        spectrum_assignment._handle_first_last(flag='first_fit')
+        spectrum_assignment._handle_first_last(flag='first_fit')  # pylint: disable=protected-access
 
         self.assertEqual(spectrum_assignment.response, {'core_num': 0, 'start_slot': 2, 'end_slot': 4})
