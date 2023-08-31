@@ -454,8 +454,6 @@ class Routing:
 
         return self._least_nli_path()
 
-    # TODO: Support for single core only?
-    def nli_path(self, path: list):
     # TODO: Move core number to the constructor?
     @staticmethod
     def _find_adjacent_cores(core_num: int):
@@ -497,15 +495,6 @@ class Routing:
         :return: The total number of overlapped channels normalized by the number of cores.
         :rtype: float
         """
-        final_cost = 0
-        for source, destination in zip(path, path[1:]):
-            num_spans = self.topology[source][destination]['length'] / self.span_len
-            link = (source, destination)
-
-            final_cost += self._get_final_nli_cost(link=link, num_spans=num_spans, source=source,
-                                                   destination=destination)
-
-        return final_cost
         # The number of overlapped channels
         num_overlapped = 0.0
         if core_num != 6:
