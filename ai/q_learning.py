@@ -188,7 +188,8 @@ class QLearning:
         else:
             reward -= 1800.0
 
-        max_future_q = max([lst[1] for lst in self.q_table[source][destination]])
+        max_future_q = max(  # pylint: disable=consider-using-generator
+            [lst[1] for lst in self.q_table[source][destination]])
         current_q = self.q_table[source][destination][self.last_chosen][1]
         new_q = ((1.0 - self.learn_rate) * current_q) + (
                 self.learn_rate * (reward + self.discount * max_future_q))
