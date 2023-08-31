@@ -8,48 +8,29 @@ class SnrMeasurements:
     Calculates SNR for a given request.
     """
 
-    # TODO: Might be a good idea to reference all constants to a paper or something
-    # TODO: Move variables as needed to the configuration file
-    def __init__(self, path=None, path_mod=None, spectrum=None, assigned_slots=None, req_bit_rate=12.5,
-                 freq_spacing=12.5, input_power=10 ** -3, spectral_slots=None, req_snr=8.5, net_spec_db=None,
-                 topology_info=None, guard_slots=0, baud_rates=None, egn_model=False, xt_noise=False,
-                 bi_directional=True, requested_xt=-30):
-
-        # TODO: If these values will not change, it's best to take them out of the params of the constructor
+    def __init__(self, properties):
         # TODO: Comments for all of these or move to a params dict
-        self.path = path
-        self.spectrum = spectrum
-        self.assigned_slots = assigned_slots
-        self.req_bit_rate = req_bit_rate
-        self.path_mod = path_mod
-        # TODO: Already in config file
-        self.guard_slots = guard_slots
-        # TODO: Frequency per slot in config file (change to bandwidth per slot)
-        self.freq_spacing = freq_spacing
-        # TODO: Add to configuration file (may be constant or change)
-        self.input_power = input_power
-        # TODO: Already in config
-        self.spectral_slots = spectral_slots
-        self.req_snr = req_snr
-        self.net_spec_db = net_spec_db
-        self.topology_info = topology_info
+        self.guard_slots = properties['guard_slots']
+        self.bw_per_slot = properties['bw_per_slot']
+        self.input_power = properties['input_power']
+        self.spectral_slots = properties['spectral_slots']
+        self.topology_info = properties['topology_info']
         # Flag to show a use of the EGN model or the GN model for SNR calculations
-        # TODO: Add to config file
-        self.egn_model = egn_model
+        self.egn_model = properties['egn_model']
         # A parameter related to the EGN model
-        # TODO: Add config file
-        self.phi = {'QPSK': 1, '16-QAM': 0.68, '64-QAM': 0.6190476190476191}
-        self.requests_status = {}
-        self.baud_rates = baud_rates
-        # TODO: Add to config
-        self.bi_directional = bi_directional
-        # TODO: Add to config
-        self.xt_noise = xt_noise
-        self.plank = 6.62607004e-34
-        # TODO: Add to config
-        self.requested_xt = requested_xt
-        # TODO: Add to config
+        self.phi = properties['phi']
+        self.bi_directional = properties['bi_directional']
+        self.xt_noise = properties['xt_noise']
+        self.requested_xt = properties['requested_xt']
+
         self.light_frequency = 1.9341 * 10 ** 14
+        self.plank = 6.62607004e-34
+        self.req_bit_rate = 12.5
+        self.req_snr = 8.5
+        self.requests_status = {}
+        self.path = list()
+        self.spectrum = dict()
+        self.net_spec_db = dict()
 
         self.attenuation = None
         self.dispersion = None
@@ -75,8 +56,13 @@ class SnrMeasurements:
         self.length = None
         self.nsp = None
         self.num_span = None
+
         self.link_id = None
         self.link = None
+        self.path_mod = None
+        self.assigned_slots = None
+        self.baud_rates = None
+        self.baud_rates = None
 
     def _calculate_sci_psd(self):
         """
@@ -109,8 +95,8 @@ class SnrMeasurements:
         :return: The updated cross-phase modulation noise.
         :rtype: float
         """
-        num_slots = len(np.where(spectrum_contents == curr_link[self.spectrum['core_num']])[0]) * self.freq_spacing
-        channel_freq = ((slot_index * self.freq_spacing) + (num_slots / 2)) * 10 ** 9
+        num_slots = len(np.where(spectrum_contents == curr_link[self.spectrum['core_num']])[0]) * self.bw_per_slot
+        channel_freq = ((slot_index * self.bw_per_slot) + (num_slots / 2)) * 10 ** 9
 
         channel_bw = num_slots * 10 ** 9
         channel_psd = self.input_power / channel_bw
@@ -255,9 +241,9 @@ class SnrMeasurements:
         """
         Updates variables for the center frequency, bandwidth, and PSD for the current request.
         """
-        self.center_freq = ((self.spectrum['start_slot'] * self.freq_spacing) + (
-                (self.assigned_slots * self.freq_spacing) / 2)) * 10 ** 9
-        self.bandwidth = self.assigned_slots * self.freq_spacing * 10 ** 9
+        self.center_freq = ((self.spectrum['start_slot'] * self.bw_per_slot) + (
+                (self.assigned_slots * self.bw_per_slot) / 2)) * 10 ** 9
+        self.bandwidth = self.assigned_slots * self.bw_per_slot * 10 ** 9
         self.center_psd = self.input_power / self.bandwidth
 
     def check_snr(self):

@@ -62,7 +62,9 @@ class SDNController:
         # Class related to all things for calculating the signal-to-noise ratio
         # TODO: Might be able to identify other variables from the configuration file, for example, guard band
         # TODO: Consistent naming conventions
-        self.snr_obj = SnrMeasurements(topology_info=self.topology_info)
+
+        # TODO: Ensure topology info updated correctly
+        self.snr_obj = SnrMeasurements(properties=properties)
 
     def release(self):
         """
