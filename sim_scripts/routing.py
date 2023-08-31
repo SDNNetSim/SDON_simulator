@@ -591,3 +591,24 @@ class Routing:
             self.topology[source][destination]['xt_cost'] = link_cost
 
         return self._least_xt_path()
+
+    # TODO: Support for single core only?
+    def nli_path(self, path: list):
+        """
+        Find the non-linear cost for a specific path.
+
+        :param path: The path to find the NLI cost for.
+        :type path: list
+
+        :return: The final NLI cost
+        :rtype: float
+        """
+        final_cost = 0
+        for source, destination in zip(path, path[1:]):
+            num_spans = self.topology[source][destination]['length'] / self.span_len
+            link = (source, destination)
+
+            final_cost += self._get_final_nli_cost(link=link, num_spans=num_spans, source=source,
+                                                   destination=destination)
+
+        return final_cost
