@@ -498,7 +498,7 @@ class Engine(SDNController):
             self._update_transponders()
 
             # Some form of ML/RL is being used, ignore confidence intervals for training and testing
-            if not self.properties['ai_algorithm'] == 'None':
+            if not self.properties['ai_arguments']['is_training']:
                 if self._check_confidence_interval(iteration):
                     return
 
