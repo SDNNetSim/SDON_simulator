@@ -366,13 +366,13 @@ class SDNController:
                         if not snr_check:
                             return False, self.dist_block, self.path
 
-                        resp = {
-                            'path': self.path,
-                            'mod_format': self.path_mod,
-                            'is_sliced': False
-                        }
-                        self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
-                        return resp, self.net_spec_db, self.num_transponders, self.path
+                    resp = {
+                        'path': self.path,
+                        'mod_format': self.path_mod,
+                        'is_sliced': False
+                    }
+                    self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
+                    return resp, self.net_spec_db, self.num_transponders, self.path
 
                 # Attempt to slice the request due to a congestion constraint
                 return self.handle_lps()
