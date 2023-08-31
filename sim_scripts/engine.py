@@ -423,7 +423,7 @@ class Engine(SDNController):
         :param iteration: The current iteration of the simulation
         :type iteration: int
         """
-        # TODO: This should be created somewhere else...
+        # TODO: Just add to params and pass to other classes...:)
         self.properties['ai_arguments']['episodes'] = self.properties['max_iters']
         self.properties['ai_arguments']['cores_per_link'] = self.properties['cores_per_link']
         self.properties['ai_arguments']['erlang'] = self.properties['erlang']

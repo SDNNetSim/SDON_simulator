@@ -99,9 +99,9 @@ class QLearning:
         """
         Saves the current Q-table to a desired path.
         """
-        create_dir(f'ai/q_tables/{self.table_path}')
+        create_dir(f'ai/models/q_tables/{self.table_path}')
 
-        file_path = f'{os.getcwd()}/ai/q_tables/{self.table_path}/{self.sim_type}_table_c{self.cores_per_link}.npy'
+        file_path = f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/{self.sim_type}_table_c{self.cores_per_link}.npy'
         np.save(file_path, self.q_table)
 
         params_dict = {
@@ -111,7 +111,7 @@ class QLearning:
             'discount_factor': self.discount,
             'reward_info': self.rewards_dict
         }
-        with open(f'{os.getcwd()}/ai/q_tables/{self.table_path}/hyper_params_c{self.cores_per_link}.json', 'w',
+        with open(f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/hyper_params_c{self.cores_per_link}.json', 'w',
                   encoding='utf-8') as file:
             json.dump(params_dict, file)
 
@@ -120,13 +120,13 @@ class QLearning:
         Loads a previously trained Q-table.
         """
         try:
-            file_path = f'{os.getcwd()}/ai/q_tables/{self.table_path}/{self.sim_type}_table_c{self.cores_per_link}.npy'
+            file_path = f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/{self.sim_type}_table_c{self.cores_per_link}.npy'
             self.q_table = np.load(file_path)
         except FileNotFoundError:
             print('File not found, please ensure if you are testing, an already trained file exists and has been '
                   'specified correctly.')
 
-        with open(f'{os.getcwd()}/ai/q_tables/{self.table_path}/hyper_params_c{self.cores_per_link}.json',
+        with open(f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/hyper_params_c{self.cores_per_link}.json',
                   encoding='utf-8') as file:
             params_obj = json.load(file)
             self.epsilon = params_obj['epsilon']

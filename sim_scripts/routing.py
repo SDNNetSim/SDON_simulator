@@ -1,5 +1,6 @@
 # Standard library imports
 import math
+import copy
 from typing import List
 
 # Third-party library imports
@@ -214,8 +215,7 @@ class Routing:
         slots_per_core = len(self.net_spec_db[links[0]]['cores_matrix'][0])
         simulated_link = self._setup_simulated_link(slots_per_core=slots_per_core)
 
-        # Temporarily modify net_spec_db to use helper functions (I believe Python lists are mutable types!)
-        original_link = self.net_spec_db[links[0]]['cores_matrix'][0]
+        original_link = copy.copy(self.net_spec_db[links[0]]['cores_matrix'][0])
         self.net_spec_db[links[0]]['cores_matrix'][0] = simulated_link
 
         free_channels = self._find_free_channels(link=links[0])
