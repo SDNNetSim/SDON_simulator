@@ -9,7 +9,6 @@ class SnrMeasurements:
     """
 
     def __init__(self, properties):
-        # TODO: Comments for all of these or move to a params dict
         self.guard_slots = properties['guard_slots']
         self.bw_per_slot = properties['bw_per_slot']
         self.input_power = properties['input_power']
