@@ -8,3 +8,4 @@ Simulator
     routing
     sdn_controller
     spectrum_assignment
+    snr_measurements
