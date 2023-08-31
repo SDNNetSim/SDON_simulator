@@ -36,6 +36,7 @@ class SDNController:
         self.mod_per_bw = properties['mod_per_bw']
         self.ai_obj = ai_obj
         self.spectral_slots = properties['spectral_slots']
+        self.check_snr = properties['check_snr']
 
         # The current request id number
         self.req_id = None
@@ -348,20 +349,19 @@ class SDNController:
                 spectrum = spectrum_assignment.find_free_spectrum()
 
                 if spectrum is not False:
-                    self._update_snr_obj(spectrum=spectrum)
-                    # TODO: Disable and enable snr (configuration file)
-                    snr_check = self.snr_obj.check_snr()
-                    if snr_check:
+                    if self.check_snr:
+                        self._update_snr_obj(spectrum=spectrum)
+                        snr_check = self.snr_obj.check_snr()
+                        if not snr_check:
+                            return False, self.dist_block, self.path
+
                         resp = {
                             'path': self.path,
                             'mod_format': self.path_mod,
                             'is_sliced': False
                         }
-
                         self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
                         return resp, self.net_spec_db, self.num_transponders, self.path
-                    else:
-                        return False, self.dist_block, self.path
 
                 # Attempt to slice the request due to a congestion constraint
                 return self.handle_lps()
