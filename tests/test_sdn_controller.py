@@ -51,6 +51,7 @@ class TestSDNController(unittest.TestCase):
         # TODO: Make more efficient
         properties = {
             'topology': self.topology,
+            'topology_info': self.topology,
             'cores_per_link': self.cores_per_link,
             'sim_type': self.sim_type,
             'allocation_method': self.alloc_method,
@@ -60,7 +61,15 @@ class TestSDNController(unittest.TestCase):
             'beta': 0.5,
             'max_segments': self.max_segments,
             'guard_slots': self.guard_slots,
-            'mod_per_bw': self.mod_per_bw
+            'mod_per_bw': self.mod_per_bw,
+            'spectral_slots': 100,
+            'bw_per_slot': 12.5,
+            'input_power': None,
+            'egn_model': False,
+            'phi': None,
+            'bi_directional': False,
+            'xt_noise': False,
+            'requested_xt': -30,
         }
         self.sdn_controller = SDNController(properties=properties)
         self.sdn_controller.req_id = self.req_id
@@ -69,6 +78,7 @@ class TestSDNController(unittest.TestCase):
         self.sdn_controller.chosen_bw = self.chosen_bw
         self.sdn_controller.source = self.source
         self.sdn_controller.destination = self.destination
+        self.sdn_controller.topology = self.topology
 
     def test_release(self):
         """
@@ -120,8 +130,8 @@ class TestSDNController(unittest.TestCase):
         self.assertTrue(np.all(self.net_spec_db[(1, 2)]['cores_matrix'][0][:5] == self.req_id))
         self.assertTrue(np.all(self.net_spec_db[(2, 1)]['cores_matrix'][0][:5] == self.req_id))
 
-        self.assertEqual(self.sdn_controller.net_spec_db[(1, 2)]['cores_matrix'][0][5], 0.0)
-        self.assertEqual(self.sdn_controller.net_spec_db[(2, 1)]['cores_matrix'][0][5], 0.0)
+        self.assertEqual(self.sdn_controller.net_spec_db[(1, 2)]['cores_matrix'][0][6], 0.0)
+        self.assertEqual(self.sdn_controller.net_spec_db[(2, 1)]['cores_matrix'][0][6], 0.0)
 
     def test_allocate_conflict(self):
         """

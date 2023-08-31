@@ -171,13 +171,13 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             if core_num > 0 and self.single_core and self.is_sliced:
                 break
 
-            if flag == 'first':
+            if flag == 'first_fit':
                 open_slots_arr = np.where(core_arr == 0)[0]
-            elif flag == 'last':
+            elif flag == 'last_fit':
                 # TODO: Ensure this works
                 open_slots_arr = reversed(np.where(core_arr == 0)[0])
             else:
-                raise ValueError(f'Allocation flag not recognized, expexted first or last, got: {flag}')
+                raise ValueError(f'Allocation flag not recognized, expected first or last, got: {flag}')
 
             # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
             open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
@@ -219,10 +219,8 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         # TODO: Add core num here!
         if self.alloc_method == 'best_fit':
             self._best_fit_allocation()
-        elif self.alloc_method == 'first_fit':
-            self._handle_first_last(flag='first')
-        elif self.alloc_method == 'last_fit':
-            self._handle_first_last(flag='last')
+        elif self.alloc_method == 'first_fit' or self.alloc_method == 'last_fit':
+            self._handle_first_last(flag=self.alloc_method)
         else:
             raise NotImplementedError(f'Expected first_fit or best_fit, got: {self.alloc_method}')
 
