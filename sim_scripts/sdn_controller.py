@@ -281,6 +281,7 @@ class SDNController:
         self.snr_obj.spectral_slots = self.spectral_slots
         self.snr_obj.net_spec_db = self.net_spec_db
 
+    # TODO: Clean this up (potentially move to a different file)
     def _route(self):
         """
         For a given request, attempt to route and assign a modulation format based on a routing method flag.
@@ -296,8 +297,9 @@ class SDNController:
             # TODO: Constant QPSK for now
             slots_needed = self.mod_per_bw[self.chosen_bw]['QPSK']['slots_needed']
             selected_path, path_mod = routing_obj.nli_aware(slots_needed=slots_needed, beta=self.beta)
+        # TODO: Add to configuration file
         elif self.route_method == 'xt_aware':
-            selected_path, path_mod = routing_obj.xt_aware( beta=self.beta, xt_type = 'with length')
+            selected_path, path_mod = routing_obj.xt_aware(beta=self.beta, xt_type='with_length')
         elif self.route_method == 'least_congested':
             selected_path = routing_obj.least_congested_path()
             # TODO: Constant QPSK for now
