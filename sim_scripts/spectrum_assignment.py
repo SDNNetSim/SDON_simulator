@@ -219,7 +219,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         # TODO: Add core num here!
         if self.alloc_method == 'best_fit':
             self._best_fit_allocation()
-        elif self.alloc_method == 'first_fit' or self.alloc_method == 'last_fit':
+        elif self.alloc_method in ('first_fit', 'last_fit'):
             self._handle_first_last(flag=self.alloc_method)
         else:
             raise NotImplementedError(f'Expected first_fit or best_fit, got: {self.alloc_method}')
