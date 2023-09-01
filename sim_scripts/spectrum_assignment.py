@@ -281,3 +281,195 @@ class SpectrumAssignment:
                         self.response = {'core_num': core_num, 'start_slot': start_index,
                                             'end_slot': end_index + self.guard_slots}
                         return
+
+    def _find_free_slots(self, link_num: int):
+        """
+        Finds the number of free channels on any given link.
+
+        :param link_num: The link number to search for channels on.
+        :type link_num: int
+
+        :return: A matrix containing the indexes to occupied or unoccupied slots on the link.
+        :rtype: dict
+        """
+        link = self.net_spec_db[link_num]['cores_matrix']
+        final_slots = {}
+        for cno in range(len(link)):
+            indexes =  np.where(link[cno] == 0)[0]
+            final_slots.update({cno:indexes})
+
+        return final_slots
+    
+    
+    def _find_free_channels(self, link_num: int, free_slots: dict):
+        """
+        Finds the number of free channels on any given link.
+
+        :param link_num: The link number to search for channels on.
+        :type link_num: int
+
+        :param A matrix containing the indexes to occupied or unoccupied slots on the link.
+        :type: dict
+        
+        :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
+        :rtype: list
+        """
+        final_channels = {}
+        for cno in free_slots:
+            channels = []
+            curr_channel = []
+            # for i, idx in enumerate(free_slots[cno]):
+            #     if i == 0:
+            #         curr_channel.append(idx)
+            #     elif idx == free_slots[cno][i - 1] + 1:
+            #         curr_channel.append(idx)
+            #         if len(curr_channel) == self.slots_needed:
+            #             channels.append(curr_channel)
+            #             curr_channel = []
+            #     else:
+            #         curr_channel = []
+            
+            for i, idx in enumerate(free_slots[cno]):
+                for j in range(0, self.slots_needed):
+                    if idx+j in free_slots[cno]:
+                        curr_channel.append(idx+j)
+                    else:
+                        curr_channel = []
+                        break
+                if len(curr_channel) == self.slots_needed:
+                    channels.append(curr_channel)
+                    curr_channel = []
+                    
+                    
+                    
+            # Check if the last group forms a subarray
+            if len(curr_channel) == self.slots_needed:
+                channels.append(curr_channel)
+            final_channels.update({cno: channels})
+
+        return final_channels
+    
+    def dict_intersection(input_dict):
+        # Convert dictionary values to sets
+        sets = [set(values) for values in input_dict.values()]
+        
+        # Find the intersection of the sets
+        intersection_set = set.intersection(*sets)
+    
+        return intersection_set
+
+    def _cores_status(self):
+        free_slots = {}
+        free_channels = {}
+        slots_intersection = {}
+        channel_intersection = {}
+        for source, destination in zip(self.path, self.path[1:]):
+            free_slots.update({ (source, destination) : self._find_free_slots( link_num = (source, destination)) })
+            free_channels.update({ (source, destination) : self._find_free_channels( link_num = (source, destination), free_slots = free_slots[(source, destination) ]) })
+            for cno in free_slots[(source, destination)]:
+                if cno not in slots_intersection:
+                    slots_intersection.update({ cno : set(free_slots[(source, destination)][cno])})
+                    channel_intersection.update({cno : free_channels[(source, destination)][cno]})
+                else:
+                    slots_intersection[cno] = slots_intersection[cno].intersection(free_slots[(source, destination)][cno])  
+                    channel_intersection[cno] = [item for item in channel_intersection[cno] if item in free_channels[(source, destination)][cno]]
+        return free_slots, slots_intersection, channel_intersection
+            
+    def _find_taken_channels(self):
+        """
+        Finds the number of taken channels on any given link.
+
+        :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
+        :rtype: list
+        """
+        taken_channels = {}
+        for source, destination in zip(self.path, self.path[1:]): 
+            taken_channels.update({(source, destination):{}})
+            for cno, link in enumerate(self.net_spec_db[(source, destination)]['cores_matrix']):
+                channels = []
+                curr_channel = []
+                #link = self.net_spec_db[(source, destination)]['cores_matrix'][cno]
+
+                for value in link:
+                    if value > 0:
+                        curr_channel.append(value)
+                    elif value < 0 and curr_channel:
+                        channels.append(curr_channel)
+                        curr_channel = []
+
+                if curr_channel:
+                    channels.append(curr_channel)
+                taken_channels[(source, destination)].update({cno:channels})
+
+        return taken_channels     
+    
+    
+       
+    def _find_overlapped_channel(self, channel_intersection, free_slots):
+        """
+        Finds the number of taken channels on any given link.
+
+        :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
+        :rtype: list
+        """
+        # TODO: counting overlapping in each link and slots
+        overlapped_channels = {}
+        non_overlapped_channels = {}
+        for cno in channel_intersection:
+            overlapped_channels.update( { cno : []} )
+            non_overlapped_channels.update( { cno : []} )
+            for i, slot_list in enumerate(channel_intersection[cno]):
+                overlaped_cnt = 0
+                for linknum in free_slots:
+                    for sln in slot_list:
+                        for cno2 in free_slots[linknum]:
+                            if cno != cno2:
+                                if cno == 6 and sln not in free_slots[linknum][cno2]:
+                                    overlaped_cnt += 1
+                                if cno != 6:
+                                    before = 5 if cno == 0 else cno - 1
+                                    after = 0 if cno == 5 else cno + 1
+                                    if sln not in free_slots[linknum][before]:
+                                        overlaped_cnt += 1
+                                    if sln not in free_slots[linknum][after]:
+                                        overlaped_cnt += 1
+                                    if sln not in free_slots[linknum][6]:
+                                        overlaped_cnt += 1              
+                        if overlaped_cnt != 0:
+                            overlapped_channels[cno].append(slot_list)
+                            break
+                    if overlaped_cnt != 0:
+                        break
+                if overlaped_cnt == 0:
+                    non_overlapped_channels[cno].append(slot_list)
+        return non_overlapped_channels, overlapped_channels
+                    
+        
+        
+        
+                     
+    def xt_aware_core_allocation(self):
+        """
+        Loops through each core and finds the starting and ending indexes of where the request can be assigned using the
+        first-fit allocation policy.
+
+        :return: None
+        """
+        no_free_slot = {}
+        free_slots, slots_intersection, channel_intersection = self._cores_status()
+        non_overlapped_channels, overlapped_channels = self._find_overlapped_channel(channel_intersection, free_slots)
+        statistics = {}
+        sorted_cores = sorted(non_overlapped_channels, key=lambda k: len(non_overlapped_channels[k]))
+        if len(sorted_cores) > 1:
+            if 6 in sorted_cores:
+                sorted_cores.remove(6)
+        return sorted_cores[0]
+        # for cno in channel_intersection:
+        #     statistics.update({cno:{}})
+        #     if len(channel_intersection[cno]) != 0:
+        #         statistics[cno].update({"overlapped":len(overlapped_channels[cno])/ len(channel_intersection[cno])})
+        #         statistics[cno].update({"nonoverlapped":len(non_overlapped_channels[cno])/ len(channel_intersection[cno])})
+        # taken_channels = self._find_taken_channels()
+        # for core_num, core_arr in enumerate(channel_intersection):
+        #     print(core_num)
+                
