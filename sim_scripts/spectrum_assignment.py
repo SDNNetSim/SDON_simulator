@@ -59,7 +59,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         # The final response from this class
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
-
+        
     def _check_other_links(self, core_num, start_slot, end_slot):
         """
         Given that one link is available, check all other links in the path. Core and spectrum assignments
@@ -110,11 +110,10 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         """
         link = self.net_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot]
         return set(link) == {0.0}
-
     def _best_fit_allocation(self):
         """
         Searches for and allocates the best-fit super channel on each link along the path.
-
+        
         :return: None
         """
         res_list = []
@@ -170,7 +169,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             # To account for ONLY single core light segment slicing
             if core_num > 0 and self.single_core and self.is_sliced:
                 break
-
+                
             if flag == 'first_fit':
                 open_slots_arr = np.where(core_arr == 0)[0]
             elif flag == 'last_fit':
