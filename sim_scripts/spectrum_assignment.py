@@ -7,7 +7,7 @@ from operator import itemgetter
 import numpy as np
 
 
-class SpectrumAssignment:
+class SpectrumAssignment:  # pylint: disable=too-few-public-methods
     """
     Finds available spectrum slots for a given request.
     """
@@ -60,44 +60,7 @@ class SpectrumAssignment:
         # The final response from this class
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
 
-    def best_fit_allocation(self):
-        """
-        Searches for and allocates the best-fit super channel on each link along the path.
-
-        :return: None
-        """
-        res_list = []
-
-        # Get all potential super channels
-        for (src, dest) in zip(self.path[:-1], self.path[1:]):
-            for core_num in range(self.cores_per_link):
-                core_arr = self.net_spec_db[(src, dest)]['cores_matrix'][core_num]
-                open_slots_arr = np.where(core_arr == 0)[0]
-
-                tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
-                              itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-                for channel in tmp_matrix:
-                    if len(channel) >= self.slots_needed:
-                        res_list.append({'link': (src, dest), 'core': core_num, 'channel': channel})
-
-        # Sort the list of candidate super channels
-        sorted_list = sorted(res_list, key=lambda d: len(d['channel']))
-
-        for channel_dict in sorted_list:
-            for start_index in channel_dict['channel']:
-                end_index = (start_index + self.slots_needed + self.guard_slots) - 1
-                if end_index not in channel_dict['channel']:
-                    break
-
-                if len(self.path) > 2:
-                    self.check_other_links(channel_dict['core'], start_index, end_index + self.guard_slots)
-
-                if self.is_free is not False or len(self.path) <= 2:
-                    self.response = {'core_num': channel_dict['core'], 'start_slot': start_index,
-                                     'end_slot': end_index + self.guard_slots}
-                    return
-
-    def check_other_links(self, core_num, start_slot, end_slot):
+    def _check_other_links(self, core_num, start_slot, end_slot):
         """
         Given that one link is available, check all other links in the path. Core and spectrum assignments
         MUST be the same.
@@ -148,36 +111,87 @@ class SpectrumAssignment:
         link = self.net_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot]
         return set(link) == {0.0}
 
-    def first_fit_allocation(self):
+    def _best_fit_allocation(self):
         """
-        Loops through each core and finds the starting and ending indexes of where the request can be assigned using the
-        first-fit allocation policy.
+        Searches for and allocates the best-fit super channel on each link along the path.
 
         :return: None
         """
-        for core_num, core_arr in enumerate(self.cores_matrix):
+        res_list = []
+
+        # Get all potential super channels
+        for (src, dest) in zip(self.path[:-1], self.path[1:]):
+            for core_num in range(self.cores_per_link):
+                core_arr = self.net_spec_db[(src, dest)]['cores_matrix'][core_num]
+                open_slots_arr = np.where(core_arr == 0)[0]
+
+                tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
+                              itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                for channel in tmp_matrix:
+                    if len(channel) >= self.slots_needed:
+                        res_list.append({'link': (src, dest), 'core': core_num, 'channel': channel})
+
+        # Sort the list of candidate super channels
+        sorted_list = sorted(res_list, key=lambda d: len(d['channel']))
+
+        for channel_dict in sorted_list:
+            for start_index in channel_dict['channel']:
+                end_index = (start_index + self.slots_needed + self.guard_slots) - 1
+                if end_index not in channel_dict['channel']:
+                    break
+
+                if len(self.path) > 2:
+                    self._check_other_links(channel_dict['core'], start_index, end_index + self.guard_slots)
+
+                if self.is_free is not False or len(self.path) <= 2:
+                    self.response = {'core_num': channel_dict['core'], 'start_slot': start_index,
+                                     'end_slot': end_index + self.guard_slots}
+                    return
+
+    def _handle_first_last(self, flag: str = None, des_core: int = None):
+        """
+        Handles either first-fit or last-fit spectrum allocation.
+
+        :param flag: A flag to determine which allocation method we'd like to use.
+        :type flag: str
+
+        :param des_core: Determine if we'd like to force allocation onto a certain core.
+        :type des_core: int
+        """
+        # TODO: Check if this works properly
+        if des_core is not None:
+            matrix = self.cores_matrix[des_core]
+            start = des_core
+        else:
+            matrix = self.cores_matrix
+            start = 0
+
+        for core_num, core_arr in enumerate(matrix, start=start):
             # To account for ONLY single core light segment slicing
             if core_num > 0 and self.single_core and self.is_sliced:
                 break
 
-            open_slots_arr = np.where(core_arr == 0)[0]
+            if flag == 'first_fit':
+                open_slots_arr = np.where(core_arr == 0)[0]
+            elif flag == 'last_fit':
+                # TODO: Ensure this works
+                open_slots_arr = reversed(np.where(core_arr == 0)[0])
+            else:
+                raise ValueError(f'Allocation flag not recognized, expected first or last, got: {flag}')
+
             # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
             open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
                                  itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
 
-            # First fit allocation
             for tmp_arr in open_slots_matrix:
                 if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
                     for start_index in tmp_arr:
-                        # if self.guard_slots:
                         end_index = (start_index + self.slots_needed + self.guard_slots) - 1
-                        # else:
-                        #     end_index = start_index + self.slots_needed 
                         if end_index not in tmp_arr:
                             break
 
                         if len(self.path) > 2:
-                            self.check_other_links(core_num, start_index, end_index + self.guard_slots)
+                            self._check_other_links(core_num, start_index, end_index + self.guard_slots)
 
                         if self.is_free is not False or len(self.path) <= 2:
                             self.response = {'core_num': core_num, 'start_slot': start_index,
@@ -202,10 +216,11 @@ class SpectrumAssignment:
         self.slots_per_core = len(self.cores_matrix[0])
         self.cores_per_link = len(self.cores_matrix)
 
+        # TODO: Add core num here!
         if self.alloc_method == 'best_fit':
-            self.best_fit_allocation()
-        elif self.alloc_method == 'first_fit':
-            self.first_fit_allocation()
+            self._best_fit_allocation()
+        elif self.alloc_method in ('first_fit', 'last_fit'):
+            self._handle_first_last(flag=self.alloc_method)
         else:
             raise NotImplementedError(f'Expected first_fit or best_fit, got: {self.alloc_method}')
 

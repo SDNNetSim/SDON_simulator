@@ -86,7 +86,7 @@ def read_config():
                 config_dict['t1'][key] = target_type(value)
 
         # Init other options to None if they haven't been specified
-        for option in other_options.keys():
+        for option in other_options:
             if option not in config_dict['t1']:
                 config_dict['t1'][option] = None
 
