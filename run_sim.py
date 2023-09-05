@@ -1,7 +1,6 @@
 # Standard library imports
 import json
 import time
-from typing import Dict
 
 # Third-party library imports
 import concurrent.futures
@@ -14,8 +13,10 @@ from useful_functions.handle_dirs_files import create_dir
 from config.setup_config import read_config
 
 
-# TODO: Spectrum assignment and routing objects created each time is inefficient
+# TODO: Structure this so objects are not re-created every time :D
+#   - This would also add the support of threading different traffic volumes
 # TODO: Update tests
+# TODO: Update docs
 
 
 class NetworkSimulator:
@@ -30,7 +31,7 @@ class NetworkSimulator:
         # Contains all the desired network simulator parameters for every thread
         self.properties = None
 
-    def save_input(self, file_name: str = None, data: Dict = None):
+    def save_input(self, file_name: str = None, data: dict = None):
         """
         Saves simulation input data. Does not save bandwidth data, as that is intended to be a constant and unchanged
         file.
@@ -95,7 +96,9 @@ class NetworkSimulator:
 
             file_name = f"sim_input_{self.properties['thread_num']}.json"
 
-            self.save_input(file_name=file_name, data=self.properties)
+            if arr_rate_mean == start:
+                self.save_input(file_name=file_name, data=self.properties)
+
             self.properties['input_fp'] = f"./data/input/{self.properties['network']}/{self.properties['date']}/" \
                                           f"{self.properties['curr_time']}/{file_name}"
             engine = Engine(properties=self.properties)
@@ -108,7 +111,7 @@ class NetworkSimulator:
 
         :return: None
         """
-        erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
+        erlang_lst = [float(erlang) for erlang in range(50, 150, 50)]
 
         for erlang in erlang_lst:
             self.properties['arrival_rate'] = self.properties['holding_time'] * float(
@@ -116,7 +119,9 @@ class NetworkSimulator:
             self.properties['erlang'] = erlang
 
             self.create_input()
-            self.save_input(file_name='sim_input.json', data=self.properties)
+
+            if erlang == erlang_lst[0]:
+                self.save_input(file_name='sim_input.json', data=self.properties)
 
             engine = Engine(properties=self.properties)
             engine.run()

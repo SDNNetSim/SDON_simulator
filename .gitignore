@@ -12,7 +12,11 @@ misc/
 data/output/*
 data/input/*
 scripts/__pycache__
+
 plots/output/*
+
 ai/models/*
 ai/data/*
 ai/plots/*
+
+config/run_ini/*

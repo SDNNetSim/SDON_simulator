@@ -294,12 +294,16 @@ class SDNController:
         """
         routing_obj = Routing(source=self.source, destination=self.destination,
                               topology=self.topology, net_spec_db=self.net_spec_db,
-                              mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw)
+                              mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw,
+                              guard_slots=self.guard_slots)
 
         if self.route_method == 'nli_aware':
             # TODO: Constant QPSK for now
             slots_needed = self.mod_per_bw[self.chosen_bw]['QPSK']['slots_needed']
-            selected_path, path_mod = routing_obj.nli_aware(slots_needed=slots_needed, beta=self.beta)
+
+            routing_obj.slots_needed = slots_needed
+            routing_obj.beta = self.beta
+            selected_path, path_mod = routing_obj.nli_aware()
         # TODO: Add to configuration file
         elif self.route_method == 'xt_aware':
             selected_path, path_mod = routing_obj.xt_aware(beta=self.beta, xt_type='with_length')
@@ -309,11 +313,18 @@ class SDNController:
             path_mod = 'QPSK'
         elif self.route_method == 'shortest_path':
             selected_path, path_mod = routing_obj.shortest_path()
-        elif self.ai_algorithm is not None:
+        elif self.route_method == 'ai':
             # Used for routing related to artificial intelligence
-            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination))
-            path_len = find_path_len(path=selected_path, topology=self.topology)
-            path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
+            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination),
+                                              net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw,
+                                              guard_slots=self.guard_slots)
+
+            # TODO: Make this better
+            if not selected_path:
+                path_mod = None
+            else:
+                path_len = find_path_len(path=selected_path, topology=self.topology)
+                path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
         else:
             raise NotImplementedError(f'Routing method not recognized, got: {self.route_method}.')
 
@@ -355,13 +366,13 @@ class SDNController:
                         if not snr_check:
                             return False, self.dist_block, self.path
 
-                        resp = {
-                            'path': self.path,
-                            'mod_format': self.path_mod,
-                            'is_sliced': False
-                        }
-                        self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
-                        return resp, self.net_spec_db, self.num_transponders, self.path
+                    resp = {
+                        'path': self.path,
+                        'mod_format': self.path_mod,
+                        'is_sliced': False
+                    }
+                    self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
+                    return resp, self.net_spec_db, self.num_transponders, self.path
 
                 # Attempt to slice the request due to a congestion constraint
                 return self.handle_lps()
