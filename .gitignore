@@ -16,3 +16,9 @@ plots/output/*
 ai/models/*
 ai/data/*
 ai/plots/*
+useful_functions/__pycache__/*
+handle_data/__pycache__/*
+config/__pycache__/*
+ai/__pycache__/*
+sim_scripts/__pycache__/*
+ai/q_tables/*
