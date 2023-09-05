@@ -478,7 +478,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         if len(sorted_cores) > 1:
             if 6 in sorted_cores:
                 sorted_cores.remove(6)
-        return sorted_cores[0]
+        return sorted_cores[0], slots_intersection
         # for cno in channel_intersection:
         #     statistics.update({cno:{}})
         #     if len(channel_intersection[cno]) != 0:
@@ -487,4 +487,13 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         # taken_channels = self._find_taken_channels()
         # for core_num, core_arr in enumerate(channel_intersection):
         #     print(core_num)
-                
+    
+    
+    
+    def xt_aware_resource_allocation(self):          
+        core, core_arr = self.xt_aware_core_allocation()
+        if core in [0, 2, 4, 6]:
+            self.first_fit_spectrum_allocation(core, core_arr)
+        else:
+            self.last_fit_spectrum_allocation(core, core_arr)
+        return
