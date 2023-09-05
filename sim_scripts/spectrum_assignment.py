@@ -1,5 +1,6 @@
 # Standard library imports
 import itertools
+import copy
 from typing import List
 from operator import itemgetter
 
@@ -478,7 +479,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         if len(sorted_cores) > 1:
             if 6 in sorted_cores:
                 sorted_cores.remove(6)
-        return sorted_cores[0], slots_intersection
+        return sorted_cores[0]
         # for cno in channel_intersection:
         #     statistics.update({cno:{}})
         #     if len(channel_intersection[cno]) != 0:
@@ -491,9 +492,13 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
     
     
     def xt_aware_resource_allocation(self):          
-        core, core_arr = self.xt_aware_core_allocation()
+        core = self.xt_aware_core_allocation()
+        core_arr = copy.deepcopy(self.net_spec_db[(self.path[0], self.path[1] )]['cores_matrix'])
+        for source, destination in zip(self.path, self.path[1:]):
+            if (source, destination) != (self.path[0], self.path[1]):
+                core_arr = core_arr + self.net_spec_db[(source, destination)]['cores_matrix']
         if core in [0, 2, 4, 6]:
             self.first_fit_spectrum_allocation(core, core_arr)
         else:
             self.last_fit_spectrum_allocation(core, core_arr)
-        return
+        return self.response
