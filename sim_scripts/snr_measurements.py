@@ -264,10 +264,13 @@ class SnrMeasurements:
             psd_nli = self._calculate_psd_nli()
             psd_ase = (self.plank * self.light_frequency * self.nsp) * (
                     math.exp(self.attenuation * self.length * 10 ** 3) - 1)
-            mean_xt = self._calculate_pxt()
+            if self.xt_noise:
+                p_xt = self._calculate_pxt()
+            else:
+                p_xt = 0
 
             snr += (1 / ((self.center_psd * self.bandwidth) / (
-                    ((psd_ase + psd_nli) * self.bandwidth + mean_xt) * self.num_span)))
+                    ((psd_ase + psd_nli) * self.bandwidth + p_xt) * self.num_span)))
 
         snr = 10 * math.log10(1 / snr)
 
