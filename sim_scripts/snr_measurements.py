@@ -276,6 +276,36 @@ class SnrMeasurements:
         resp = snr > self.req_snr
         return resp
 
+    
+    def check_snr_xt(self):
+        """
+        Determines whether the SNR threshold can be met for a single request.
+
+        :return: Whether the SNR threshold can be met.
+        :rtype: bool
+        """
+        snr = 0
+        self._init_center_vars()
+        for link in range(0, len(self.path) - 1):
+            self.link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
+
+            self._update_link_constants()
+            self._update_link_params(link=link)
+            psd_ase = (self.plank * self.light_frequency * self.nsp) * (
+                    math.exp(self.attenuation * self.length * 10 ** 3) - 1)
+            if self.xt_noise:
+                p_xt = self._calculate_pxt()
+
+            snr += (1 / ((self.center_psd * self.bandwidth) / (
+                    ((psd_ase ) * self.bandwidth + p_xt) * self.num_span)))
+
+        snr = 10 * math.log10(1 / snr)
+
+        resp = snr > self.req_snr
+        return resp
+    
+    
+        
     def check_xt(self):
         """
         Checks the amount of cross-talk interference on a single request.
