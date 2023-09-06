@@ -351,28 +351,35 @@ class SDNController:
         self.path, self.path_mod = self._route()
 
         if self.path is not False:
-            if self.path_mod is not False:
-                slots_needed = self.mod_per_bw[self.chosen_bw][self.path_mod]['slots_needed']
-                spectrum_assignment = SpectrumAssignment(path=self.path, slots_needed=slots_needed,
-                                                         net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
-                                                         is_sliced=False, alloc_method=self.alloc_method)
+            if self.sim_type == 'yue':
+                options = [self.path_mod]
+            else:
+                options = list(self.mod_per_bw[self.chosen_bw].keys())
+            for mod in options:
+                self.path_mod = mod
+                if self.path_mod is not False:
+                    slots_needed = self.mod_per_bw[self.chosen_bw][self.path_mod]['slots_needed']
+                    spectrum_assignment = SpectrumAssignment(path=self.path, slots_needed=slots_needed,
+                                                            net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
+                                                            is_sliced=False, alloc_method=self.alloc_method)
 
-                if self.alloc_method == None:
-                    spectrum = spectrum_assignment.find_free_spectrum()
-                elif self.alloc_method == 'cross_talk_aware':
-                    spectrum_assignment.xt_aware_resource_allocation()
+                    if self.alloc_method == None:
+                        spectrum = spectrum_assignment.find_free_spectrum()
+                    elif self.alloc_method == 'cross_talk_aware':
+                        # if self.req_id == 500:
+                        spectrum_assignment.xt_aware_resource_allocation()
 
-                if spectrum is not False:
-                    if self.check_snr:
-                        self._update_snr_obj(spectrum=spectrum)
-                        if self.check_snr == "snr_calculation_nli":
-                            snr_check = self.snr_obj.check_snr()
-                        elif self.check_snr == "xt_calculation":
-                            snr_check = self.snr_obj.check_xt()
-                        elif self.check_snr == "snr_calculation_xt":
-                            snr_check = self.snr_obj.check_snr_xt()
-                        if not snr_check:
-                            return False, self.dist_block, self.path
+                    if spectrum is not False:
+                        if self.check_snr:
+                            self._update_snr_obj(spectrum=spectrum)
+                            if self.check_snr == "snr_calculation_nli":
+                                snr_check = self.snr_obj.check_snr()
+                            elif self.check_snr == "xt_calculation":
+                                snr_check = self.snr_obj.check_xt()
+                            elif self.check_snr == "snr_calculation_xt":
+                                snr_check = self.snr_obj.check_snr_xt()
+                            if not snr_check:
+                                return False, self.dist_block, self.path
 
                     resp = {
                         'path': self.path,
@@ -382,11 +389,11 @@ class SDNController:
                     self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
                     return resp, self.net_spec_db, self.num_transponders, self.path
 
-                # Attempt to slice the request due to a congestion constraint
+                    # Attempt to slice the request due to a congestion constraint
+                    return self.handle_lps()
+
+                self.dist_block = True
+                # Attempt to slice the request due to a reach constraint
                 return self.handle_lps()
 
-            self.dist_block = True
-            # Attempt to slice the request due to a reach constraint
-            return self.handle_lps()
-
-        return False, True
+            return False, True
