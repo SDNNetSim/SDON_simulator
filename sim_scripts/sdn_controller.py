@@ -346,12 +346,20 @@ class SDNController:
                                                          net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
                                                          is_sliced=False, alloc_method=self.alloc_method)
 
-                spectrum = spectrum_assignment.find_free_spectrum()
+                if self.alloc_method == None:
+                    spectrum = spectrum_assignment.find_free_spectrum()
+                elif self.alloc_method == 'cross_talk_aware':
+                    spectrum_assignment.xt_aware_resource_allocation()
 
                 if spectrum is not False:
                     if self.check_snr:
                         self._update_snr_obj(spectrum=spectrum)
-                        snr_check = self.snr_obj.check_snr()
+                        if self.check_snr == "snr_calculation_nli":
+                            snr_check = self.snr_obj.check_snr()
+                        elif self.check_snr == "xt_calculation":
+                            snr_check = self.snr_obj.check_xt()
+                        elif self.check_snr == "snr_calculation_xt":
+                            snr_check = self.snr_obj.check_snr_xt()
                         if not snr_check:
                             return False, self.dist_block, self.path
 
