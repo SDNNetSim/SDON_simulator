@@ -316,12 +316,15 @@ class SnrMeasurements:
         """
         cross_talk = 0
 
+        self._init_center_vars()
         for link in range(0, len(self.path) - 1):
             self.link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
-            self.length = self.topology_info['links'][self.link_id]['span_length']
-            self.num_span = self.topology_info['links'][self.link_id]['length'] / self.length
+            self._update_link_constants()
+            self._update_link_params(link=link)
+
             cross_talk += self._calculate_xt() * self.num_span
 
         cross_talk = 10 * math.log10(cross_talk)
-        resp = cross_talk < self.requested_xt
+        # TODO: Does not work due to dictionary now (use modulation format, probably need to pass it)
+        resp = cross_talk < self.requested_xt[self.path_mod]
         return resp
