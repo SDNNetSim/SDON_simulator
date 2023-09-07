@@ -297,6 +297,8 @@ class SnrMeasurements:
                     math.exp(self.attenuation * self.length * 10 ** 3) - 1)
             if self.xt_noise:
                 p_xt = self._calculate_pxt()
+            else:
+                p_xt = 0
 
             # TODO: p_xt may be undefined in some instances
             snr += (1 / ((self.center_psd * self.bandwidth) / (
