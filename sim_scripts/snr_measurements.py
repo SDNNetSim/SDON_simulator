@@ -327,6 +327,5 @@ class SnrMeasurements:
             cross_talk += self._calculate_xt() * self.num_span
 
         cross_talk = 10 * math.log10(cross_talk)
-        # TODO: Does not work due to dictionary now (use modulation format, probably need to pass it)
         resp = cross_talk < self.requested_xt[self.path_mod]
         return resp

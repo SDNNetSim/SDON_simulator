@@ -162,44 +162,56 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         :param des_core: Determine if we'd like to force allocation onto a certain core.
         :type des_core: int
         """
-        # TODO: Check if this works properly
         if des_core is not None:
-            matrix = self.cores_matrix[des_core]
-            start = des_core
+            matrix = [self.cores_matrix[des_core]]
         else:
             matrix = self.cores_matrix
-            start = 0
 
-        for core_num, core_arr in enumerate(matrix, start=start):
+        for core_num, core_arr in enumerate(matrix):
             # To account for ONLY single core light segment slicing
             if core_num > 0 and self.single_core and self.is_sliced:
                 break
 
-            if flag == 'first_fit':
-                open_slots_arr = np.where(core_arr == 0)[0]
-            elif flag == 'last_fit':
-                # TODO: Ensure this works
-                open_slots_arr = reversed(np.where(core_arr == 0)[0])
-            else:
-                raise ValueError(f'Allocation flag not recognized, expected first or last, got: {flag}')
+            open_slots_arr = np.where(core_arr == 0)[0]
 
             # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
-            open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                                 itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+            if flag == 'last_fit':
+                open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
+                                     itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+            else:
+                open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
+                                     itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
 
             for tmp_arr in open_slots_matrix:
                 if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
                     for start_index in tmp_arr:
-                        end_index = (start_index + self.slots_needed + self.guard_slots) - 1
+                        if flag == 'last_fit':
+                            end_index = (start_index - self.slots_needed - self.guard_slots) + 1
+                        else:
+                            end_index = (start_index + self.slots_needed + self.guard_slots) - 1
                         if end_index not in tmp_arr:
                             break
 
                         if len(self.path) > 2:
-                            self._check_other_links(core_num, start_index, end_index + self.guard_slots)
+                            if flag == 'last_fit':
+                                # Note that these are reversed since we search in decreasing order, but allocate in
+                                # increasing order
+                                self._check_other_links(core_num, end_index, start_index + self.guard_slots)
+                            else:
+                                self._check_other_links(core_num, start_index, end_index + self.guard_slots)
 
                         if self.is_free is not False or len(self.path) <= 2:
-                            self.response = {'core_num': core_num, 'start_slot': start_index,
-                                             'end_slot': end_index + self.guard_slots}
+                            # Since we use enumeration prior and set the matrix equal to one core, the "core_num" will
+                            # always be zero even if our desired core index is different, is this lazy coding? Idek
+                            if des_core is not None:
+                                core_num = des_core
+
+                            if flag == 'last_fit':
+                                self.response = {'core_num': core_num, 'start_slot': end_index,
+                                                 'end_slot': start_index + self.guard_slots}
+                            else:
+                                self.response = {'core_num': core_num, 'start_slot': start_index,
+                                                 'end_slot': end_index + self.guard_slots}
                             return
 
     def find_free_spectrum(self):
@@ -233,72 +245,6 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             return False
 
         return self.response
-
-    # TODO: Repeat method (remove or integrate)
-    def first_fit_spectrum_allocation(self, core_num, core_arr):
-        """
-        Loops through each core and finds the starting and ending indexes of where the request can be assigned using the
-        first-fit allocation policy.
-
-        :return: None
-        """
-
-        open_slots_arr = np.where(core_arr == 0)[0]
-        # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
-        open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                             itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-
-        # First fit allocation
-        for tmp_arr in open_slots_matrix:
-            if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
-                for start_index in tmp_arr:
-                    # if self.guard_slots:
-                    end_index = (start_index + self.slots_needed + self.guard_slots) - 1
-                    # else:
-                    #     end_index = start_index + self.slots_needed 
-                    if end_index not in tmp_arr:
-                        break
-
-                    if len(self.path) > 2:
-                        self.check_other_links(core_num, start_index, end_index + self.guard_slots)
-
-                    if self.is_free is not False or len(self.path) <= 2:
-                        self.response = {'core_num': core_num, 'start_slot': start_index,
-                                         'end_slot': end_index + self.guard_slots}
-                        return
-
-    # TODO: Repeat method (remove or integrate)
-    def last_fit_spectrum_allocation(self, core_num, core_arr):
-        """
-        Loops through each core and finds the starting and ending indexes of where the request can be assigned using the
-        first-fit allocation policy.
-
-        :return: None
-        """
-
-        open_slots_arr = np.where(core_arr == 0)[0]
-        # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
-        open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                             itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-
-        # First fit allocation
-        for tmp_arr in reversed(open_slots_matrix):
-            if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
-                for start_index in tmp_arr:
-                    # if self.guard_slots:
-                    end_index = (start_index + self.slots_needed + self.guard_slots) - 1
-                    # else:
-                    #     end_index = start_index + self.slots_needed 
-                    if end_index not in tmp_arr:
-                        break
-
-                    if len(self.path) > 2:
-                        self.check_other_links(core_num, start_index, end_index + self.guard_slots)
-
-                    if self.is_free is not False or len(self.path) <= 2:
-                        self.response = {'core_num': core_num, 'start_slot': start_index,
-                                         'end_slot': end_index + self.guard_slots}
-                        return
 
     # TODO: Update docstring
     # TODO: Repeat code, this exists in engine.py, move to useful functions
@@ -512,14 +458,17 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
     # TODO: This may benefit from inline comments
     def xt_aware_resource_allocation(self):
         core = self.xt_aware_core_allocation()
-        # TODO: copy.copy vs. copy.deepcopy?
         core_arr = copy.deepcopy(self.net_spec_db[(self.path[0], self.path[1])]['cores_matrix'])
         for source, destination in zip(self.path, self.path[1:]):
+            # TODO: Comment why
             if (source, destination) != (self.path[0], self.path[1]):
                 core_arr = core_arr + self.net_spec_db[(source, destination)]['cores_matrix']
-        # TODO: Using outdated methods
+
+        self.cores_matrix = core_arr
+        # Graph coloring for cores
         if core in [0, 2, 4, 6]:
-            self.first_fit_spectrum_allocation(core, core_arr)
+            self._handle_first_last(des_core=core, flag='first_fit')
         else:
-            self.last_fit_spectrum_allocation(core, core_arr)
+            self._handle_first_last(des_core=core, flag='last_fit')
+
         return self.response
