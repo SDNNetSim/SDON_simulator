@@ -19,7 +19,7 @@ ai/models/*
 ai/data/*
 ai/plots/*
 
-config/run_ini/*
+config/run_ini/config.ini
 
 useful_functions/__pycache__/*
 handle_data/__pycache__/*
