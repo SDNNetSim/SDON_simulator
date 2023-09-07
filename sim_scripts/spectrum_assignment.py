@@ -8,6 +8,8 @@ from operator import itemgetter
 import numpy as np
 
 
+# TODO: Better naming conventions for some newly added methods and their variables
+
 class SpectrumAssignment:  # pylint: disable=too-few-public-methods
     """
     Finds available spectrum slots for a given request.
@@ -111,6 +113,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         """
         link = self.net_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot]
         return set(link) == {0.0}
+
     def _best_fit_allocation(self):
         """
         Searches for and allocates the best-fit super channel on each link along the path.
@@ -148,6 +151,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                                      'end_slot': end_index + self.guard_slots}
                     return
 
+    # TODO: Write tests for this method
     def _handle_first_last(self, flag: str = None, des_core: int = None):
         """
         Handles either first-fit or last-fit spectrum allocation.
@@ -230,7 +234,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         return self.response
 
-
+    # TODO: Repeat method (remove or integrate)
     def first_fit_spectrum_allocation(self, core_num, core_arr):
         """
         Loops through each core and finds the starting and ending indexes of where the request can be assigned using the
@@ -239,11 +243,10 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         :return: None
         """
 
-
         open_slots_arr = np.where(core_arr == 0)[0]
         # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
         open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                                itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                             itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
 
         # First fit allocation
         for tmp_arr in open_slots_matrix:
@@ -261,9 +264,10 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
                     if self.is_free is not False or len(self.path) <= 2:
                         self.response = {'core_num': core_num, 'start_slot': start_index,
-                                            'end_slot': end_index + self.guard_slots}
+                                         'end_slot': end_index + self.guard_slots}
                         return
-    
+
+    # TODO: Repeat method (remove or integrate)
     def last_fit_spectrum_allocation(self, core_num, core_arr):
         """
         Loops through each core and finds the starting and ending indexes of where the request can be assigned using the
@@ -272,11 +276,10 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         :return: None
         """
 
-
         open_slots_arr = np.where(core_arr == 0)[0]
         # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
         open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                                itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                             itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
 
         # First fit allocation
         for tmp_arr in reversed(open_slots_matrix):
@@ -294,9 +297,11 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
                     if self.is_free is not False or len(self.path) <= 2:
                         self.response = {'core_num': core_num, 'start_slot': start_index,
-                                            'end_slot': end_index + self.guard_slots}
+                                         'end_slot': end_index + self.guard_slots}
                         return
 
+    # TODO: Update docstring
+    # TODO: Repeat code, this exists in engine.py, move to useful functions
     def _find_free_slots(self, link_num: int):
         """
         Finds the number of free channels on any given link.
@@ -310,12 +315,12 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         link = self.net_spec_db[link_num]['cores_matrix']
         final_slots = {}
         for cno in range(len(link)):
-            indexes =  np.where(link[cno] == 0)[0]
-            final_slots.update({cno:indexes})
+            indexes = np.where(link[cno] == 0)[0]
+            final_slots.update({cno: indexes})
 
         return final_slots
-    
-    
+
+    # TODO: I believe repeat method slightly modified (integrate or remove)
     def _find_free_channels(self, link_num: int, free_slots: dict):
         """
         Finds the number of free channels on any given link.
@@ -343,53 +348,63 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             #             curr_channel = []
             #     else:
             #         curr_channel = []
-            
+
             for i, idx in enumerate(free_slots[cno]):
                 for j in range(0, self.slots_needed):
-                    if idx+j in free_slots[cno]:
-                        curr_channel.append(idx+j)
+                    if idx + j in free_slots[cno]:
+                        curr_channel.append(idx + j)
                     else:
                         curr_channel = []
                         break
                 if len(curr_channel) == self.slots_needed:
                     channels.append(curr_channel)
                     curr_channel = []
-                    
-                    
-                    
+
             # Check if the last group forms a subarray
             if len(curr_channel) == self.slots_needed:
                 channels.append(curr_channel)
             final_channels.update({cno: channels})
 
         return final_channels
-    
+
+    # TODO: Move to useful functions
+    # TODO: Update docstring
+    @staticmethod
     def dict_intersection(input_dict):
         # Convert dictionary values to sets
         sets = [set(values) for values in input_dict.values()]
-        
+
         # Find the intersection of the sets
         intersection_set = set.intersection(*sets)
-    
+
         return intersection_set
 
+    # TODO: Update docstring
+    # TODO: Update name according to action
+    # TODO: Can probably break to two sub methods
     def _cores_status(self):
         free_slots = {}
         free_channels = {}
         slots_intersection = {}
         channel_intersection = {}
         for source, destination in zip(self.path, self.path[1:]):
-            free_slots.update({ (source, destination) : self._find_free_slots( link_num = (source, destination)) })
-            free_channels.update({ (source, destination) : self._find_free_channels( link_num = (source, destination), free_slots = free_slots[(source, destination) ]) })
+            # TODO: Uses outdated methods
+            free_slots.update({(source, destination): self._find_free_slots(link_num=(source, destination))})
+            free_channels.update({(source, destination): self._find_free_channels(link_num=(source, destination),
+                                                                                  free_slots=free_slots[
+                                                                                      (source, destination)])})
             for cno in free_slots[(source, destination)]:
                 if cno not in slots_intersection:
-                    slots_intersection.update({ cno : set(free_slots[(source, destination)][cno])})
-                    channel_intersection.update({cno : free_channels[(source, destination)][cno]})
+                    slots_intersection.update({cno: set(free_slots[(source, destination)][cno])})
+                    channel_intersection.update({cno: free_channels[(source, destination)][cno]})
                 else:
-                    slots_intersection[cno] = slots_intersection[cno].intersection(free_slots[(source, destination)][cno])  
-                    channel_intersection[cno] = [item for item in channel_intersection[cno] if item in free_channels[(source, destination)][cno]]
+                    slots_intersection[cno] = slots_intersection[cno].intersection(
+                        free_slots[(source, destination)][cno])
+                    channel_intersection[cno] = [item for item in channel_intersection[cno] if
+                                                 item in free_channels[(source, destination)][cno]]
         return free_slots, slots_intersection, channel_intersection
-            
+
+    # TODO: Repeat code (integrate or remove)
     def _find_taken_channels(self):
         """
         Finds the number of taken channels on any given link.
@@ -398,12 +413,12 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         :rtype: list
         """
         taken_channels = {}
-        for source, destination in zip(self.path, self.path[1:]): 
-            taken_channels.update({(source, destination):{}})
+        for source, destination in zip(self.path, self.path[1:]):
+            taken_channels.update({(source, destination): {}})
             for cno, link in enumerate(self.net_spec_db[(source, destination)]['cores_matrix']):
                 channels = []
                 curr_channel = []
-                #link = self.net_spec_db[(source, destination)]['cores_matrix'][cno]
+                # link = self.net_spec_db[(source, destination)]['cores_matrix'][cno]
 
                 for value in link:
                     if value > 0:
@@ -414,12 +429,15 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
                 if curr_channel:
                     channels.append(curr_channel)
-                taken_channels[(source, destination)].update({cno:channels})
+                taken_channels[(source, destination)].update({cno: channels})
 
-        return taken_channels     
-    
-    
-       
+        return taken_channels
+
+    # TODO: Static method
+    # TODO: Potentially move to useful functions
+    # TODO: Split into 1-3 sub methods
+    # TODO: May benefit from inline comments
+    # TODO: Variable naming
     def _find_overlapped_channel(self, channel_intersection, free_slots):
         """
         Finds the number of taken channels on any given link.
@@ -431,8 +449,8 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         overlapped_channels = {}
         non_overlapped_channels = {}
         for cno in channel_intersection:
-            overlapped_channels.update( { cno : []} )
-            non_overlapped_channels.update( { cno : []} )
+            overlapped_channels.update({cno: []})
+            non_overlapped_channels.update({cno: []})
             for i, slot_list in enumerate(channel_intersection[cno]):
                 overlaped_cnt = 0
                 for linknum in free_slots:
@@ -449,7 +467,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                                     if sln not in free_slots[linknum][after]:
                                         overlaped_cnt += 1
                                     if sln not in free_slots[linknum][6]:
-                                        overlaped_cnt += 1              
+                                        overlaped_cnt += 1
                         if overlaped_cnt != 0:
                             overlapped_channels[cno].append(slot_list)
                             break
@@ -458,11 +476,8 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                 if overlaped_cnt == 0:
                     non_overlapped_channels[cno].append(slot_list)
         return non_overlapped_channels, overlapped_channels
-                    
-        
-        
-        
-                     
+
+    # TODO: Update docstring
     def xt_aware_core_allocation(self):
         """
         Loops through each core and finds the starting and ending indexes of where the request can be assigned using the
@@ -470,15 +485,20 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         :return: None
         """
+        # TODO: Variable unused
         no_free_slot = {}
         free_slots, slots_intersection, channel_intersection = self._cores_status()
+        # TODO: Update method name to reflect both actions (overlapped and non-overlapped)
+        # TODO: Potentially two different methods
         non_overlapped_channels, overlapped_channels = self._find_overlapped_channel(channel_intersection, free_slots)
+        # TODO: Variable unused
         statistics = {}
         sorted_cores = sorted(non_overlapped_channels, key=lambda k: len(non_overlapped_channels[k]))
         if len(sorted_cores) > 1:
             if 6 in sorted_cores:
                 sorted_cores.remove(6)
         return sorted_cores[0]
+        # TODO: Unused code
         # for cno in channel_intersection:
         #     statistics.update({cno:{}})
         #     if len(channel_intersection[cno]) != 0:
@@ -488,14 +508,16 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         # for core_num, core_arr in enumerate(channel_intersection):
         #     print(core_num)
 
-
-
+    # TODO: Update docstring to be specific on the differences between this method and the one above it
+    # TODO: This may benefit from inline comments
     def xt_aware_resource_allocation(self):
         core = self.xt_aware_core_allocation()
-        core_arr = copy.deepcopy(self.net_spec_db[(self.path[0], self.path[1] )]['cores_matrix'])
+        # TODO: copy.copy vs. copy.deepcopy?
+        core_arr = copy.deepcopy(self.net_spec_db[(self.path[0], self.path[1])]['cores_matrix'])
         for source, destination in zip(self.path, self.path[1:]):
             if (source, destination) != (self.path[0], self.path[1]):
                 core_arr = core_arr + self.net_spec_db[(source, destination)]['cores_matrix']
+        # TODO: Using outdated methods
         if core in [0, 2, 4, 6]:
             self.first_fit_spectrum_allocation(core, core_arr)
         else:

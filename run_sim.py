@@ -17,6 +17,7 @@ from config.setup_config import read_config
 #   - This would also add the support of threading different traffic volumes
 # TODO: Update tests
 # TODO: Update docs
+# TODO: Multiple class inheritance instead of updating local constructors over and over?
 
 
 class NetworkSimulator:
