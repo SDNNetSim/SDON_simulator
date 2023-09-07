@@ -352,7 +352,7 @@ class SDNController:
 
         if self.path is not False:
             # TODO: Move this to another method, (for example, choose path modulation, useful functions)
-            # TODO: The prior TODO
+            # TODO: The prior TODO should have a flag instead of sim type, we may use this with multiple sim types
             if self.sim_type == 'yue':
                 options = [self.path_mod]
             # TODO: Add a flag for this, config file
@@ -363,24 +363,25 @@ class SDNController:
                 if self.path_mod is not False:
                     slots_needed = self.mod_per_bw[self.chosen_bw][self.path_mod]['slots_needed']
                     spectrum_assignment = SpectrumAssignment(path=self.path, slots_needed=slots_needed,
-                                                            net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
-                                                            is_sliced=False, alloc_method=self.alloc_method)
+                                                             net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
+                                                             is_sliced=False, alloc_method=self.alloc_method)
 
                     # TODO: Should never be none, let's have a flag (config file)
-                    if self.alloc_method == None:
+                    if self.alloc_method == 'first_fit' or self.alloc_method == 'last_fit':
                         spectrum = spectrum_assignment.find_free_spectrum()
                     elif self.alloc_method == 'cross_talk_aware':
                         # TODO: I believe a comment for debugging
                         # if self.req_id == 500:
                         # TODO: May be able to name this to something shorter
-                        # TODO: Does not modify the spectrum variable
-                        spectrum_assignment.xt_aware_resource_allocation()
-                    # TODO: Might be a good idea to have a raise error for no other condition
+                        spectrum = spectrum_assignment.xt_aware_resource_allocation()
+                    else:
+                        raise NotImplementedError(
+                            f'Expected allocation methods first_fit, last_fit, or cross_talk_aware, got: {self.alloc_method}')
 
                     # TODO: Spectrum will be undefined most times
                     # TODO: Move to useful functions, return snr check flag
                     if spectrum is not False:
-                        if self.check_snr:
+                        if self.check_snr != 'None':
                             self._update_snr_obj(spectrum=spectrum)
                             # TODO: Check SNR is a flag, not a string, create a separate variable (config)
                             if self.check_snr == "snr_calculation_nli":
@@ -389,6 +390,9 @@ class SDNController:
                                 snr_check = self.snr_obj.check_xt()
                             elif self.check_snr == "snr_calculation_xt":
                                 snr_check = self.snr_obj.check_snr_xt()
+                            else:
+                                raise NotImplementedError(
+                                    f'Expected check_snr flag to be snr_calculation_nli, xt_calculation, snr_calculation_xt but got: {self.check_snr}')
                             if not snr_check:
                                 return False, self.dist_block, self.path
 
@@ -405,8 +409,10 @@ class SDNController:
                     # Attempt to slice the request due to a congestion constraint
                     return self.handle_lps()
 
+                # TODO: Also need to handle this for the new flag as mentioned in the lps todo flag prior
                 self.dist_block = True
                 # Attempt to slice the request due to a reach constraint
                 return self.handle_lps()
 
+            # TODO: Comment this
             return False, True

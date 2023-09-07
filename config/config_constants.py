@@ -58,11 +58,11 @@ OTHER_OPTIONS = {
     'seeds': list,
     'beta': float,
     'train_file': str,
-    'check_snr': str_to_bool,
+    'check_snr': str,
     'input_power': float,
     'egn_model': str_to_bool,
     'phi': ast.literal_eval,
     'bi_directional': str_to_bool,
     'xt_noise': str_to_bool,
-    'requested_xt': int,
+    'requested_xt': ast.literal_eval,
 }
