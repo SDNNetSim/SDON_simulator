@@ -428,7 +428,7 @@ class Routing:
         """
         link = self.net_spec_db[link_num]['cores_matrix']
         final_slots = {}
-        for core_num in enumerate(link):
+        for core_num, _ in enumerate(link):
             indexes = np.where(link[core_num] == 0)[0]
             final_slots.update({core_num: indexes})
 
