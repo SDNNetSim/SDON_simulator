@@ -20,7 +20,7 @@ class SnrMeasurements:
         self.phi = properties['phi']
         self.bi_directional = properties['bi_directional']
         self.xt_noise = properties['xt_noise']
-        # TODO: Change this to a dictionary in the run_ini file
+        # TODO: Ensure this works since the structure was changed to a dictionary
         self.requested_xt = properties['requested_xt']
 
         self.light_frequency = 1.9341 * 10 ** 14
@@ -277,7 +277,8 @@ class SnrMeasurements:
         resp = snr > self.req_snr
         return resp
 
-    
+    # TODO: Update docstring
+    # TODO: Docstrings should go in-depth on the differences between this method, the one below, and the one above
     def check_snr_xt(self):
         """
         Determines whether the SNR threshold can be met for a single request.
@@ -297,16 +298,15 @@ class SnrMeasurements:
             if self.xt_noise:
                 p_xt = self._calculate_pxt()
 
+            # TODO: p_xt may be undefined in some instances
             snr += (1 / ((self.center_psd * self.bandwidth) / (
-                    ((psd_ase ) * self.bandwidth + p_xt) * self.num_span)))
+                    (psd_ase * self.bandwidth + p_xt) * self.num_span)))
 
         snr = 10 * math.log10(1 / snr)
 
         resp = snr > self.req_snr
         return resp
-    
-    
-        
+
     def check_xt(self):
         """
         Checks the amount of cross-talk interference on a single request.
