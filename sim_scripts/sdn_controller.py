@@ -351,8 +351,11 @@ class SDNController:
         self.path, self.path_mod = self._route()
 
         if self.path is not False:
+            # TODO: Move this to another method, (for example, choose path modulation, useful functions)
+            # TODO: The prior TODO
             if self.sim_type == 'yue':
                 options = [self.path_mod]
+            # TODO: Add a flag for this, config file
             else:
                 options = list(self.mod_per_bw[self.chosen_bw].keys())
             for mod in options:
@@ -363,15 +366,23 @@ class SDNController:
                                                             net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
                                                             is_sliced=False, alloc_method=self.alloc_method)
 
+                    # TODO: Should never be none, let's have a flag (config file)
                     if self.alloc_method == None:
                         spectrum = spectrum_assignment.find_free_spectrum()
                     elif self.alloc_method == 'cross_talk_aware':
+                        # TODO: I believe a comment for debugging
                         # if self.req_id == 500:
+                        # TODO: May be able to name this to something shorter
+                        # TODO: Does not modify the spectrum variable
                         spectrum_assignment.xt_aware_resource_allocation()
+                    # TODO: Might be a good idea to have a raise error for no other condition
 
+                    # TODO: Spectrum will be undefined most times
+                    # TODO: Move to useful functions, return snr check flag
                     if spectrum is not False:
                         if self.check_snr:
                             self._update_snr_obj(spectrum=spectrum)
+                            # TODO: Check SNR is a flag, not a string, create a separate variable (config)
                             if self.check_snr == "snr_calculation_nli":
                                 snr_check = self.snr_obj.check_snr()
                             elif self.check_snr == "xt_calculation":
@@ -387,8 +398,10 @@ class SDNController:
                         'is_sliced': False
                     }
                     self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
+                    # TODO: Ignores handle LPS
                     return resp, self.net_spec_db, self.num_transponders, self.path
 
+                    # TODO: Repeat return statement, flag for lps or not in config file (Probably just consider ls = 1)
                     # Attempt to slice the request due to a congestion constraint
                     return self.handle_lps()
 
