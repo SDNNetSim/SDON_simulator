@@ -112,7 +112,7 @@ class NetworkSimulator:
 
         :return: None
         """
-        erlang_lst = [float(erlang) for erlang in range(50, 150, 50)]
+        erlang_lst = [float(erlang) for erlang in range(50, 250, 50)]
 
         for erlang in erlang_lst:
             self.properties['arrival_rate'] = self.properties['holding_time'] * float(

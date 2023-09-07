@@ -8,7 +8,7 @@ import networkx as nx
 import numpy as np
 
 # Local application imports
-from useful_functions.sim_functions import get_path_mod, find_path_len
+from useful_functions.sim_functions import *
 
 
 class Routing:

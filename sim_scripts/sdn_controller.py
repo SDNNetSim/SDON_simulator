@@ -2,10 +2,9 @@
 import numpy as np
 
 # Local application imports
-from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
 from sim_scripts.snr_measurements import SnrMeasurements
-from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
+from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len, get_route
 
 
 class SDNController:
@@ -61,10 +60,6 @@ class SDNController:
         # The physical network topology as a networkX graph
         self.topology = None
         # Class related to all things for calculating the signal-to-noise ratio
-        # TODO: Might be able to identify other variables from the configuration file, for example, guard band
-        # TODO: Consistent naming conventions
-
-        # TODO: Ensure topology info updated correctly
         self.snr_obj = SnrMeasurements(properties=properties)
 
     def release(self):
@@ -284,51 +279,12 @@ class SDNController:
         self.snr_obj.spectral_slots = self.spectral_slots
         self.snr_obj.net_spec_db = self.net_spec_db
 
-    # TODO: Clean this up (potentially move to a different file)
-    def _route(self):
-        """
-        For a given request, attempt to route and assign a modulation format based on a routing method flag.
-
-        :return: A selected path and modulation format.
-        :rtype: tuple
-        """
-        routing_obj = Routing(source=self.source, destination=self.destination,
-                              topology=self.topology, net_spec_db=self.net_spec_db,
-                              mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw,
-                              guard_slots=self.guard_slots)
-
-        if self.route_method == 'nli_aware':
-            # TODO: Constant QPSK for now
-            slots_needed = self.mod_per_bw[self.chosen_bw]['QPSK']['slots_needed']
-
-            routing_obj.slots_needed = slots_needed
-            routing_obj.beta = self.beta
-            selected_path, path_mod = routing_obj.nli_aware()
-        # TODO: Add to configuration file
-        elif self.route_method == 'xt_aware':
-            selected_path, path_mod = routing_obj.xt_aware(beta=self.beta, xt_type='with_length')
-        elif self.route_method == 'least_congested':
-            selected_path = routing_obj.least_congested_path()
-            # TODO: Constant QPSK for now
-            path_mod = 'QPSK'
-        elif self.route_method == 'shortest_path':
-            selected_path, path_mod = routing_obj.shortest_path()
-        elif self.route_method == 'ai':
-            # Used for routing related to artificial intelligence
-            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination),
-                                              net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw,
-                                              guard_slots=self.guard_slots)
-
-            # TODO: Make this better
-            if not selected_path:
-                path_mod = None
-            else:
-                path_len = find_path_len(path=selected_path, topology=self.topology)
-                path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
-        else:
-            raise NotImplementedError(f'Routing method not recognized, got: {self.route_method}.')
-
-        return selected_path, path_mod
+    def _handle_routing(self):
+        resp = get_route(source=self.source, destination=self.destination, topology=self.topology,
+                         net_spec_db=self.net_spec_db, mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw,
+                         guard_slots=self.guard_slots, beta=self.beta, route_method=self.route_method,
+                         ai_obj=self.ai_obj)
+        return resp
 
     def handle_event(self, request_type):
         """
@@ -348,8 +304,9 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        self.path, self.path_mod = self._route()
+        self.path, self.path_mod = self._handle_routing()
 
+        # Could not find a path, block
         if self.path is not False:
             # TODO: Move this to another method, (for example, choose path modulation, useful functions)
             # TODO: The prior TODO should have a flag instead of sim type, we may use this with multiple sim types
@@ -358,6 +315,7 @@ class SDNController:
             # TODO: Add a flag for this, config file
             else:
                 options = list(self.mod_per_bw[self.chosen_bw].keys())
+            # TODO: Let's make this work for spectrum assignment, but eventually we want to use it for routing too?
             for mod in options:
                 self.path_mod = mod
                 if self.path_mod is not False:

@@ -4,6 +4,9 @@ from typing import List
 # Third-party library imports
 import networkx as nx
 
+# Local application imports
+from sim_scripts.routing import Routing
+
 
 def get_path_mod(mod_formats: dict, path_len: int):
     """
@@ -63,3 +66,43 @@ def find_path_len(path: List[str], topology: nx.Graph):
         path_len += topology[path[i]][path[i + 1]]['length']
 
     return path_len
+
+
+def get_route(source, destination, topology, net_spec_db, mod_per_bw, chosen_bw, guard_slots, beta, route_method, ai_obj):
+    routing_obj = Routing(source=source, destination=destination,
+                          topology=topology, net_spec_db=net_spec_db,
+                          mod_formats=mod_per_bw[chosen_bw], bandwidth=chosen_bw,
+                          guard_slots=guard_slots)
+
+    # TODO: Change constant QPSK modulation formats
+    if route_method == 'nli_aware':
+        slots_needed = mod_per_bw[chosen_bw]['QPSK']['slots_needed']
+
+        routing_obj.slots_needed = slots_needed
+        routing_obj.beta = beta
+        selected_path, path_mod = routing_obj.nli_aware()
+    elif route_method == 'xt_aware':
+        # TODO: Add xt_type to the configuration file
+        selected_path, path_mod = routing_obj.xt_aware(beta=beta, xt_type='with_length')
+    elif route_method == 'least_congested':
+        selected_path = routing_obj.least_congested_path()
+        # TODO: Constant QPSK for now
+        path_mod = 'QPSK'
+    elif route_method == 'shortest_path':
+        selected_path, path_mod = routing_obj.shortest_path()
+    elif route_method == 'ai':
+        # Used for routing related to artificial intelligence
+        selected_path = ai_obj.route(source=int(source), destination=int(destination),
+                                     net_spec_db=net_spec_db, chosen_bw=chosen_bw,
+                                     guard_slots=guard_slots)
+
+        # A path could not be found, assign None to path modulation
+        if not selected_path:
+            path_mod = None
+        else:
+            path_len = find_path_len(path=selected_path, topology=topology)
+            path_mod = get_path_mod(mod_formats=mod_per_bw[chosen_bw], path_len=path_len)
+    else:
+        raise NotImplementedError(f'Routing method not recognized, got: {route_method}.')
+
+    return selected_path, path_mod
