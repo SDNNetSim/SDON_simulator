@@ -4,7 +4,7 @@ import numpy as np
 # Local application imports
 from sim_scripts.spectrum_assignment import SpectrumAssignment
 from sim_scripts.snr_measurements import SnrMeasurements
-from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len, get_route
+from useful_functions.sim_functions import *
 
 
 class SDNController:
@@ -265,26 +265,20 @@ class SDNController:
 
         return False, self.dist_block, self.path
 
-    def _update_snr_obj(self, spectrum: dict):
-        """
-        Updates parameters related to the SNR measurements class.
+    def _handle_spectrum(self, modulation):
+        spectrum = get_spectrum(mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw, path=self.path,
+                                net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
+                                alloc_method=self.alloc_method, modulation=modulation, check_snr=self.check_snr,
+                                snr_obj=self.snr_obj, path_mod=self.path_mod, spectral_slots=self.spectral_slots)
 
-        :param spectrum: The spectrum chosen for the current request
-        :type spectrum: dict
-        """
-        self.snr_obj.path = self.path
-        self.snr_obj.path_mod = self.path_mod
-        self.snr_obj.spectrum = spectrum
-        self.snr_obj.assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
-        self.snr_obj.spectral_slots = self.spectral_slots
-        self.snr_obj.net_spec_db = self.net_spec_db
+        return spectrum
 
     def _handle_routing(self):
-        resp = get_route(source=self.source, destination=self.destination, topology=self.topology,
-                         net_spec_db=self.net_spec_db, mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw,
-                         guard_slots=self.guard_slots, beta=self.beta, route_method=self.route_method,
-                         ai_obj=self.ai_obj)
-        return resp
+        route = get_route(source=self.source, destination=self.destination, topology=self.topology,
+                          net_spec_db=self.net_spec_db, mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw,
+                          guard_slots=self.guard_slots, beta=self.beta, route_method=self.route_method,
+                          ai_obj=self.ai_obj)
+        return route
 
     def handle_event(self, request_type):
         """
@@ -296,6 +290,7 @@ class SDNController:
 
         :return: The response with relevant information, network database, and physical topology
         """
+        # TODO: Update reasons for blocking (for example, distance blocking)
         # Even if the request is blocked, we still use one transponder
         self.num_transponders = 1
         self.dist_block = False
@@ -308,69 +303,47 @@ class SDNController:
 
         # Could not find a path, block
         if self.path is not False:
-            # TODO: Move this to another method, (for example, choose path modulation, useful functions)
             # TODO: The prior TODO should have a flag instead of sim type, we may use this with multiple sim types
             if self.sim_type == 'yue':
-                options = [self.path_mod]
-            # TODO: Add a flag for this, config file
+                mod_options = [self.path_mod]
+            elif self.sim_type == 'arash':
+                mod_options = list(self.mod_per_bw[self.chosen_bw].keys())
             else:
-                options = list(self.mod_per_bw[self.chosen_bw].keys())
+                raise NotImplementedError(f'Simulation type not supported: {self.sim_type}')
+
             # TODO: Let's make this work for spectrum assignment, but eventually we want to use it for routing too?
-            for mod in options:
-                self.path_mod = mod
-                if self.path_mod is not False:
-                    slots_needed = self.mod_per_bw[self.chosen_bw][self.path_mod]['slots_needed']
-                    spectrum_assignment = SpectrumAssignment(path=self.path, slots_needed=slots_needed,
-                                                             net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
-                                                             is_sliced=False, alloc_method=self.alloc_method)
+            # TODO: Have another method handle this, if check all mods...
+            spectrum = None
+            for modulation in mod_options:
+                # TODO: Add support for lps here
+                if modulation is False:
+                    continue
 
-                    # TODO: Should never be none, let's have a flag (config file)
-                    if self.alloc_method == 'first_fit' or self.alloc_method == 'last_fit':
-                        spectrum = spectrum_assignment.find_free_spectrum()
-                    elif self.alloc_method == 'cross_talk_aware':
-                        # TODO: I believe a comment for debugging
-                        # if self.req_id == 500:
-                        # TODO: May be able to name this to something shorter
-                        spectrum = spectrum_assignment.xt_aware_resource_allocation()
-                    else:
-                        raise NotImplementedError(
-                            f'Expected allocation methods first_fit, last_fit, or cross_talk_aware, got: {self.alloc_method}')
+                self.path_mod = modulation
+                spectrum = self._handle_spectrum(modulation=modulation)
 
-                    # TODO: Spectrum will be undefined most times
-                    # TODO: Move to useful functions, return snr check flag
-                    if spectrum is not False:
-                        if self.check_snr != 'None':
-                            self._update_snr_obj(spectrum=spectrum)
-                            # TODO: Check SNR is a flag, not a string, create a separate variable (config)
-                            if self.check_snr == "snr_calculation_nli":
-                                snr_check = self.snr_obj.check_snr()
-                            elif self.check_snr == "xt_calculation":
-                                snr_check = self.snr_obj.check_xt()
-                            elif self.check_snr == "snr_calculation_xt":
-                                snr_check = self.snr_obj.check_snr_xt()
-                            else:
-                                raise NotImplementedError(
-                                    f'Expected check_snr flag to be snr_calculation_nli, xt_calculation, snr_calculation_xt but got: {self.check_snr}')
-                            if not snr_check:
-                                return False, self.dist_block, self.path
+                if spectrum is not False:
+                    break
 
-                    resp = {
-                        'path': self.path,
-                        'mod_format': self.path_mod,
-                        'is_sliced': False
-                    }
-                    self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
-                    # TODO: Ignores handle LPS
-                    return resp, self.net_spec_db, self.num_transponders, self.path
+            if spectrum is False or spectrum is None:
+                return False, self.dist_block, self.path
 
-                    # TODO: Repeat return statement, flag for lps or not in config file (Probably just consider ls = 1)
-                    # Attempt to slice the request due to a congestion constraint
-                    return self.handle_lps()
+            resp = {
+                'path': self.path,
+                'mod_format': self.path_mod,
+                'is_sliced': False
+            }
+            self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
+            # TODO: Ignores handle LPS
+            return resp, self.net_spec_db, self.num_transponders, self.path
 
-                # TODO: Also need to handle this for the new flag as mentioned in the lps todo flag prior
-                self.dist_block = True
-                # Attempt to slice the request due to a reach constraint
-                return self.handle_lps()
+            # TODO: Repeat return statement, flag for lps or not in config file (Probably just consider ls = 1)
+            # Attempt to slice the request due to a congestion constraint
+            # TODO: Update to use get spectrum
+            return self.handle_lps()
 
-            # TODO: Comment this
-            return False, True
+        # TODO: Also need to handle this for the new flag as mentioned in the lps todo flag prior
+        self.dist_block = True
+        # Attempt to slice the request due to a reach constraint
+        # TODO: Update to use get spectrum
+        return self.handle_lps()

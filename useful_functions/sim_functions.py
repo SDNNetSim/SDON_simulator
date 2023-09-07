@@ -6,6 +6,7 @@ import networkx as nx
 
 # Local application imports
 from sim_scripts.routing import Routing
+from sim_scripts.spectrum_assignment import SpectrumAssignment
 
 
 def get_path_mod(mod_formats: dict, path_len: int):
@@ -68,7 +69,8 @@ def find_path_len(path: List[str], topology: nx.Graph):
     return path_len
 
 
-def get_route(source, destination, topology, net_spec_db, mod_per_bw, chosen_bw, guard_slots, beta, route_method, ai_obj):
+def get_route(source, destination, topology, net_spec_db, mod_per_bw, chosen_bw, guard_slots, beta, route_method,
+              ai_obj):
     routing_obj = Routing(source=source, destination=destination,
                           topology=topology, net_spec_db=net_spec_db,
                           mod_formats=mod_per_bw[chosen_bw], bandwidth=chosen_bw,
@@ -77,7 +79,6 @@ def get_route(source, destination, topology, net_spec_db, mod_per_bw, chosen_bw,
     # TODO: Change constant QPSK modulation formats
     if route_method == 'nli_aware':
         slots_needed = mod_per_bw[chosen_bw]['QPSK']['slots_needed']
-
         routing_obj.slots_needed = slots_needed
         routing_obj.beta = beta
         selected_path, path_mod = routing_obj.nli_aware()
@@ -106,3 +107,55 @@ def get_route(source, destination, topology, net_spec_db, mod_per_bw, chosen_bw,
         raise NotImplementedError(f'Routing method not recognized, got: {route_method}.')
 
     return selected_path, path_mod
+
+
+def get_spectrum(mod_per_bw, chosen_bw, path, net_spec_db, guard_slots, alloc_method, modulation, check_snr, snr_obj,
+                 path_mod, spectral_slots):
+    slots_needed = mod_per_bw[chosen_bw][modulation]['slots_needed']
+    spectrum_assignment = SpectrumAssignment(path=path, slots_needed=slots_needed,
+                                             net_spec_db=net_spec_db, guard_slots=guard_slots,
+                                             is_sliced=False, alloc_method=alloc_method)
+
+    if alloc_method == 'first_fit' or alloc_method == 'last_fit':
+        spectrum = spectrum_assignment.find_free_spectrum()
+    elif alloc_method == 'cross_talk_aware':
+        # TODO: May be able to name this to something shorter
+        spectrum = spectrum_assignment.xt_aware_resource_allocation()
+    else:
+        raise NotImplementedError(f'Unexpected allocation method got: {alloc_method}')
+
+    if spectrum is not False:
+        if check_snr:
+            _update_snr_obj(snr_obj=snr_obj, spectrum=spectrum, path=path, path_mod=path_mod,
+                            spectral_slots=spectral_slots, net_spec_db=net_spec_db)
+            snr_check = handle_snr(check_snr=check_snr, snr_obj=snr_obj)
+
+            if not snr_check:
+                return False
+
+        return spectrum
+
+    return False
+
+
+def _update_snr_obj(snr_obj, spectrum, path, path_mod, spectral_slots, net_spec_db):
+    # TODO: Begin checking here for debugging, are we updating snr_obj properly?
+    snr_obj.path = path
+    snr_obj.path_mod = path_mod
+    snr_obj.spectrum = spectrum
+    snr_obj.assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
+    snr_obj.spectral_slots = spectral_slots
+    snr_obj.net_spec_db = net_spec_db
+
+
+def handle_snr(check_snr, snr_obj):
+    if check_snr == "snr_calculation_nli":
+        snr_check = snr_obj.check_snr()
+    elif check_snr == "xt_calculation":
+        snr_check = snr_obj.check_xt()
+    elif check_snr == "snr_calculation_xt":
+        snr_check = snr_obj.check_snr_xt()
+    else:
+        raise NotImplementedError(f'Unexpected check_snr flag got: {check_snr}')
+
+    return snr_check
