@@ -277,8 +277,6 @@ class SnrMeasurements:
         resp = snr > self.req_snr
         return resp
 
-    # TODO: Update docstring
-    # TODO: Docstrings should go in-depth on the differences between this method, the one below, and the one above
     def check_snr_xt(self):
         """
         Determines whether the SNR threshold can be met for a single request.
@@ -300,7 +298,6 @@ class SnrMeasurements:
             else:
                 p_xt = 0
 
-            # TODO: p_xt may be undefined in some instances
             snr += (1 / ((self.center_psd * self.bandwidth) / (
                     (psd_ase * self.bandwidth + p_xt) * self.num_span)))
 
