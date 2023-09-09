@@ -151,6 +151,41 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                                      'end_slot': end_index + self.guard_slots}
                     return
 
+    def _check_open_slots(self, open_slots_matrix, flag, core_num, des_core):
+        for tmp_arr in open_slots_matrix:
+            if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
+                for start_index in tmp_arr:
+                    if flag == 'last_fit':
+                        end_index = (start_index - self.slots_needed - self.guard_slots) + 1
+                    else:
+                        end_index = (start_index + self.slots_needed + self.guard_slots) - 1
+                    if end_index not in tmp_arr:
+                        break
+
+                    if len(self.path) > 2:
+                        if flag == 'last_fit':
+                            # Note that these are reversed since we search in decreasing order, but allocate in
+                            # increasing order
+                            self._check_other_links(core_num, end_index, start_index + self.guard_slots)
+                        else:
+                            self._check_other_links(core_num, start_index, end_index + self.guard_slots)
+
+                    if self.is_free is not False or len(self.path) <= 2:
+                        # Since we use enumeration prior and set the matrix equal to one core, the "core_num" will
+                        # always be zero even if our desired core index is different, is this lazy coding? Idek
+                        if des_core is not None:
+                            core_num = des_core
+
+                        if flag == 'last_fit':
+                            self.response = {'core_num': core_num, 'start_slot': end_index,
+                                             'end_slot': start_index + self.guard_slots}
+                        else:
+                            self.response = {'core_num': core_num, 'start_slot': start_index,
+                                             'end_slot': end_index + self.guard_slots}
+                        return True
+
+        return False
+
     # TODO: Write tests for this method
     def _handle_first_last(self, flag: str = None, des_core: int = None):
         """
@@ -182,37 +217,11 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                 open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
                                      itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
 
-            for tmp_arr in open_slots_matrix:
-                if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
-                    for start_index in tmp_arr:
-                        if flag == 'last_fit':
-                            end_index = (start_index - self.slots_needed - self.guard_slots) + 1
-                        else:
-                            end_index = (start_index + self.slots_needed + self.guard_slots) - 1
-                        if end_index not in tmp_arr:
-                            break
-
-                        if len(self.path) > 2:
-                            if flag == 'last_fit':
-                                # Note that these are reversed since we search in decreasing order, but allocate in
-                                # increasing order
-                                self._check_other_links(core_num, end_index, start_index + self.guard_slots)
-                            else:
-                                self._check_other_links(core_num, start_index, end_index + self.guard_slots)
-
-                        if self.is_free is not False or len(self.path) <= 2:
-                            # Since we use enumeration prior and set the matrix equal to one core, the "core_num" will
-                            # always be zero even if our desired core index is different, is this lazy coding? Idek
-                            if des_core is not None:
-                                core_num = des_core
-
-                            if flag == 'last_fit':
-                                self.response = {'core_num': core_num, 'start_slot': end_index,
-                                                 'end_slot': start_index + self.guard_slots}
-                            else:
-                                self.response = {'core_num': core_num, 'start_slot': start_index,
-                                                 'end_slot': end_index + self.guard_slots}
-                            return
+            resp = self._check_open_slots(open_slots_matrix=open_slots_matrix, flag=flag, core_num=core_num,
+                                          des_core=des_core)
+            # We successfully found allocation on this core, no need to check the others
+            if resp:
+                return
 
     def find_free_spectrum(self):
         """
