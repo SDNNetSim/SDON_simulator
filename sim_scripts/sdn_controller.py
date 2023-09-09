@@ -243,6 +243,8 @@ class SDNController:
         self.release()
         return False
 
+    # TODO: At this time, there is no support for light segment slicing.
+    #  Code will be removed potentially in further discussions
     def handle_lps(self):
         """
         This method attempts to perform light path slicing (LPS) or dynamic LPS to allocate a request.
@@ -253,23 +255,36 @@ class SDNController:
 
         :return: A tuple containing the response and the updated network database or False and self.dist_block
         """
+        raise NotImplementedError
+        # if not self.dynamic_lps:
+        #     resp = self.allocate_lps()
+        # else:
+        #     resp = self.allocate_dynamic_lps()
+        #
+        # if resp is not False:
+        #     return {'path': self.path, 'mod_format': resp,
+        #             'is_sliced': True}, self.net_spec_db, self.num_transponders, self.path
+        #
+        # return False, self.dist_block, self.path
 
-        if not self.dynamic_lps:
-            resp = self.allocate_lps()
-        else:
-            resp = self.allocate_dynamic_lps()
+    def _handle_spectrum(self, mod_options):
+        spectrum = None
+        for modulation in mod_options:
+            if modulation is False:
+                if self.max_segments > 1:
+                    return self.handle_lps()
 
-        if resp is not False:
-            return {'path': self.path, 'mod_format': resp,
-                    'is_sliced': True}, self.net_spec_db, self.num_transponders, self.path
+                continue
 
-        return False, self.dist_block, self.path
+            self.path_mod = modulation
+            spectrum = get_spectrum(mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw, path=self.path,
+                                    net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
+                                    alloc_method=self.alloc_method, modulation=modulation, check_snr=self.check_snr,
+                                    snr_obj=self.snr_obj, path_mod=self.path_mod, spectral_slots=self.spectral_slots)
 
-    def _handle_spectrum(self, modulation):
-        spectrum = get_spectrum(mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw, path=self.path,
-                                net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
-                                alloc_method=self.alloc_method, modulation=modulation, check_snr=self.check_snr,
-                                snr_obj=self.snr_obj, path_mod=self.path_mod, spectral_slots=self.spectral_slots)
+            # We found a spectrum, no need to check other modulation formats
+            if spectrum is not False:
+                break
 
         return spectrum
 
@@ -299,32 +314,17 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
+        # TODO: NLI aware may assign a path modulation, but spectrum assignment always changes that
         self.path, self.path_mod = self._handle_routing()
 
-        # Could not find a path, block
         if self.path is not False:
-            # TODO: The prior TODO should have a flag instead of sim type, we may use this with multiple sim types
-            if self.sim_type == 'yue':
-                mod_options = [self.path_mod]
-            elif self.sim_type == 'arash':
+            if self.check_snr != 'None':
                 mod_options = list(self.mod_per_bw[self.chosen_bw].keys())
             else:
-                raise NotImplementedError(f'Simulation type not supported: {self.sim_type}')
+                mod_options = [self.path_mod]
 
-            # TODO: Let's make this work for spectrum assignment, but eventually we want to use it for routing too?
-            # TODO: Have another method handle this, if check all mods...
-            spectrum = None
-            for modulation in mod_options:
-                # TODO: Add support for lps here
-                if modulation is False:
-                    continue
-
-                self.path_mod = modulation
-                spectrum = self._handle_spectrum(modulation=modulation)
-
-                if spectrum is not False:
-                    break
-
+            spectrum = self._handle_spectrum(mod_options=mod_options)
+            # Request was blocked
             if spectrum is False or spectrum is None:
                 return False, self.dist_block, self.path
 
@@ -334,16 +334,7 @@ class SDNController:
                 'is_sliced': False
             }
             self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
-            # TODO: Ignores handle LPS
             return resp, self.net_spec_db, self.num_transponders, self.path
 
-            # TODO: Repeat return statement, flag for lps or not in config file (Probably just consider ls = 1)
-            # Attempt to slice the request due to a congestion constraint
-            # TODO: Update to use get spectrum
-            return self.handle_lps()
-
-        # TODO: Also need to handle this for the new flag as mentioned in the lps todo flag prior
         self.dist_block = True
-        # Attempt to slice the request due to a reach constraint
-        # TODO: Update to use get spectrum
-        return self.handle_lps()
+        return False, self.dist_block, self.path

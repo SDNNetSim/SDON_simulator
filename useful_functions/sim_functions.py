@@ -139,7 +139,6 @@ def get_spectrum(mod_per_bw, chosen_bw, path, net_spec_db, guard_slots, alloc_me
 
 
 def _update_snr_obj(snr_obj, spectrum, path, path_mod, spectral_slots, net_spec_db):
-    # TODO: Begin checking here for debugging, are we updating snr_obj properly?
     snr_obj.path = path
     snr_obj.path_mod = path_mod
     snr_obj.spectrum = spectrum
