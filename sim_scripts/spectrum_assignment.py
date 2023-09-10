@@ -68,6 +68,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         # TODO: Make this change throughout the simulator (if this makes sense)
         self.find_free_slots = useful_functions.sim_functions.find_free_slots
         self.find_free_channels = useful_functions.sim_functions.find_free_channels
+        self.find_overlapped_channel = useful_functions.sim_functions.find_overlapped_channel
 
     def _check_other_links(self, core_num, start_slot, end_slot):
         """
@@ -229,6 +230,65 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             if resp:
                 return
 
+    # TODO: Update docstring
+    # TODO: Update name according to action
+    # TODO: Can probably break to two sub methods
+    def _cores_status(self):
+        free_slots = {}
+        free_channels = {}
+        slots_intersection = {}
+        channel_intersection = {}
+        for source, destination in zip(self.path, self.path[1:]):
+            # TODO: Break this into more lines of code
+            free_slots.update(
+                {(source, destination): self.find_free_slots(net_spec_db=self.net_spec_db,
+                                                             link_num=(source, destination))})
+            free_channels.update(
+                {(source, destination): self.find_free_channels(slots_needed=self.slots_needed,
+                                                                free_slots=free_slots[(source, destination)])})
+
+            for cno in free_slots[(source, destination)]:
+                if cno not in slots_intersection:
+                    slots_intersection.update({cno: set(free_slots[(source, destination)][cno])})
+                    channel_intersection.update({cno: free_channels[(source, destination)][cno]})
+                else:
+                    slots_intersection[cno] = slots_intersection[cno].intersection(
+                        free_slots[(source, destination)][cno])
+                    channel_intersection[cno] = [item for item in channel_intersection[cno] if
+                                                 item in free_channels[(source, destination)][cno]]
+        return free_slots, slots_intersection, channel_intersection
+
+    # TODO: Update docstring
+    def xt_aware_core_allocation(self):
+        free_slots, slots_intersection, channel_intersection = self._cores_status()
+        non_overlapped_channels, overlapped_channels = self.find_overlapped_channel(channel_intersection, free_slots)
+        sorted_cores = sorted(non_overlapped_channels, key=lambda k: len(non_overlapped_channels[k]))
+
+        if len(sorted_cores) > 1:
+            # TODO: Comment on why
+            if 6 in sorted_cores:
+                sorted_cores.remove(6)
+        return sorted_cores[0]
+
+    # TODO: Update docstring to be specific on the differences between this method and the one above it
+    # TODO: This may benefit from inline comments
+    def xt_aware_resource_allocation(self):
+        core = self.xt_aware_core_allocation()
+        core_arr = copy.deepcopy(self.net_spec_db[(self.path[0], self.path[1])]['cores_matrix'])
+        for source, destination in zip(self.path, self.path[1:]):
+            # TODO: Comment why
+            if (source, destination) != (self.path[0], self.path[1]):
+                core_arr = core_arr + self.net_spec_db[(source, destination)]['cores_matrix']
+
+        self.cores_matrix = core_arr
+        # Graph coloring for cores
+        if core in [0, 2, 4, 6]:
+            self._handle_first_last(des_core=core, flag='first_fit')
+        else:
+            self._handle_first_last(des_core=core, flag='last_fit')
+
+        return self.response
+
     def find_free_spectrum(self):
         """
         Finds available spectrum to allocate a request based on the chosen allocation policy.
@@ -258,153 +318,5 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         # If the start slot is none, a request couldn't be allocated
         if self.response['start_slot'] is None:
             return False
-
-        return self.response
-
-    # TODO: Move to useful functions
-    # TODO: Update docstring
-    @staticmethod
-    def dict_intersection(input_dict):
-        # Convert dictionary values to sets
-        sets = [set(values) for values in input_dict.values()]
-
-        # Find the intersection of the sets
-        intersection_set = set.intersection(*sets)
-
-        return intersection_set
-
-    # TODO: Update docstring
-    # TODO: Update name according to action
-    # TODO: Can probably break to two sub methods
-    def _cores_status(self):
-        free_slots = {}
-        free_channels = {}
-        slots_intersection = {}
-        channel_intersection = {}
-        for source, destination in zip(self.path, self.path[1:]):
-            # TODO: Break this into more lines of code
-            free_slots.update(
-                {(source, destination): self.find_free_slots(net_spec_db=self.net_spec_db,
-                                                             link_num=(source, destination))})
-            free_channels.update(
-                {(source, destination): self.find_free_channels(slots_needed=self.slots_needed,
-                                                                free_slots=free_slots[(source, destination)])})
-
-            for cno in free_slots[(source, destination)]:
-                if cno not in slots_intersection:
-                    slots_intersection.update({cno: set(free_slots[(source, destination)][cno])})
-                    channel_intersection.update({cno: free_channels[(source, destination)][cno]})
-                else:
-                    slots_intersection[cno] = slots_intersection[cno].intersection(
-                        free_slots[(source, destination)][cno])
-                    channel_intersection[cno] = [item for item in channel_intersection[cno] if
-                                                 item in free_channels[(source, destination)][cno]]
-        return free_slots, slots_intersection, channel_intersection
-
-    # TODO: Repeat code (integrate or remove)
-    def _find_taken_channels(self):
-        taken_channels = {}
-        for source, destination in zip(self.path, self.path[1:]):
-            taken_channels.update({(source, destination): {}})
-            for cno, link in enumerate(self.net_spec_db[(source, destination)]['cores_matrix']):
-                channels = []
-                curr_channel = []
-                # link = self.net_spec_db[(source, destination)]['cores_matrix'][cno]
-
-                for value in link:
-                    if value > 0:
-                        curr_channel.append(value)
-                    elif value < 0 and curr_channel:
-                        channels.append(curr_channel)
-                        curr_channel = []
-
-                if curr_channel:
-                    channels.append(curr_channel)
-                taken_channels[(source, destination)].update({cno: channels})
-
-        return taken_channels
-
-    # TODO: Static method
-    # TODO: Potentially move to useful functions
-    # TODO: Split into 1-3 sub methods
-    # TODO: May benefit from inline comments
-    # TODO: Variable naming
-    def _find_overlapped_channel(self, channel_intersection, free_slots):
-        """
-        Finds the number of taken channels on any given link.
-
-        :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
-        :rtype: list
-        """
-        # TODO: counting overlapping in each link and slots
-        overlapped_channels = {}
-        non_overlapped_channels = {}
-        for cno in channel_intersection:
-            overlapped_channels.update({cno: []})
-            non_overlapped_channels.update({cno: []})
-            for i, slot_list in enumerate(channel_intersection[cno]):
-                overlaped_cnt = 0
-                for linknum in free_slots:
-                    for sln in slot_list:
-                        for cno2 in free_slots[linknum]:
-                            if cno != cno2:
-                                if cno == 6 and sln not in free_slots[linknum][cno2]:
-                                    overlaped_cnt += 1
-                                if cno != 6:
-                                    before = 5 if cno == 0 else cno - 1
-                                    after = 0 if cno == 5 else cno + 1
-                                    if sln not in free_slots[linknum][before]:
-                                        overlaped_cnt += 1
-                                    if sln not in free_slots[linknum][after]:
-                                        overlaped_cnt += 1
-                                    if sln not in free_slots[linknum][6]:
-                                        overlaped_cnt += 1
-                        if overlaped_cnt != 0:
-                            overlapped_channels[cno].append(slot_list)
-                            break
-                    if overlaped_cnt != 0:
-                        break
-                if overlaped_cnt == 0:
-                    non_overlapped_channels[cno].append(slot_list)
-        return non_overlapped_channels, overlapped_channels
-
-    # TODO: Update docstring
-    def xt_aware_core_allocation(self):
-        """
-        Loops through each core and finds the starting and ending indexes of where the request can be assigned using the
-        first-fit allocation policy.
-
-        :return: None
-        """
-        # TODO: Variable unused
-        no_free_slot = {}
-        free_slots, slots_intersection, channel_intersection = self._cores_status()
-        # TODO: Update method name to reflect both actions (overlapped and non-overlapped)
-        # TODO: Potentially two different methods
-        non_overlapped_channels, overlapped_channels = self._find_overlapped_channel(channel_intersection, free_slots)
-        # TODO: Variable unused
-        statistics = {}
-        sorted_cores = sorted(non_overlapped_channels, key=lambda k: len(non_overlapped_channels[k]))
-        if len(sorted_cores) > 1:
-            if 6 in sorted_cores:
-                sorted_cores.remove(6)
-        return sorted_cores[0]
-
-    # TODO: Update docstring to be specific on the differences between this method and the one above it
-    # TODO: This may benefit from inline comments
-    def xt_aware_resource_allocation(self):
-        core = self.xt_aware_core_allocation()
-        core_arr = copy.deepcopy(self.net_spec_db[(self.path[0], self.path[1])]['cores_matrix'])
-        for source, destination in zip(self.path, self.path[1:]):
-            # TODO: Comment why
-            if (source, destination) != (self.path[0], self.path[1]):
-                core_arr = core_arr + self.net_spec_db[(source, destination)]['cores_matrix']
-
-        self.cores_matrix = core_arr
-        # Graph coloring for cores
-        if core in [0, 2, 4, 6]:
-            self._handle_first_last(des_core=core, flag='first_fit')
-        else:
-            self._handle_first_last(des_core=core, flag='last_fit')
 
         return self.response
