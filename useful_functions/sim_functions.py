@@ -3,10 +3,11 @@ from typing import List
 
 # Third-party library imports
 import networkx as nx
+import numpy as np
 
 # Local application imports
+import sim_scripts.spectrum_assignment
 from sim_scripts.routing import Routing
-from sim_scripts.spectrum_assignment import SpectrumAssignment
 
 
 def get_path_mod(mod_formats: dict, path_len: int):
@@ -69,6 +70,47 @@ def find_path_len(path: List[str], topology: nx.Graph):
     return path_len
 
 
+# TODO: Similar function in engine.py, combine methods here
+def find_free_slots(net_spec_db, link_num):
+    link = net_spec_db[link_num]['cores_matrix']
+    resp = {}
+    for core_num in range(len(link)):
+        indexes = np.where(link[core_num] == 0)[0]
+        resp.update({core_num: indexes})
+
+    return resp
+
+
+# TODO: Integrate with find_taken_channels method in routing eventually
+# TODO: Test this method (can combine to one method for efficiency)
+def find_free_channels(slots_needed, free_slots):
+    resp = {}
+    for core_num in free_slots:
+        channels = []
+        curr_channel = []
+
+        # TODO: Why enumerate if we don't use both variables?
+        for index in free_slots[core_num]:
+            for slot_num in range(0, slots_needed):
+                # TODO: Would probably be much faster to check the range
+                #  of indexes in one go instead of nested for loops
+                if index + slot_num in free_slots[core_num]:
+                    curr_channel.append(index + slot_num)
+                else:
+                    curr_channel = []
+                    break
+            if len(curr_channel) == slots_needed:
+                channels.append(curr_channel)
+                curr_channel = []
+
+        # Check if the last group forms a subarray
+        if len(curr_channel) == slots_needed:
+            channels.append(curr_channel)
+        resp.update({core_num: channels})
+
+    return resp
+
+
 def get_route(source, destination, topology, net_spec_db, mod_per_bw, chosen_bw, guard_slots, beta, route_method,
               ai_obj):
     routing_obj = Routing(source=source, destination=destination,
@@ -112,9 +154,10 @@ def get_route(source, destination, topology, net_spec_db, mod_per_bw, chosen_bw,
 def get_spectrum(mod_per_bw, chosen_bw, path, net_spec_db, guard_slots, alloc_method, modulation, check_snr, snr_obj,
                  path_mod, spectral_slots):
     slots_needed = mod_per_bw[chosen_bw][modulation]['slots_needed']
-    spectrum_assignment = SpectrumAssignment(path=path, slots_needed=slots_needed,
-                                             net_spec_db=net_spec_db, guard_slots=guard_slots,
-                                             is_sliced=False, alloc_method=alloc_method)
+    spectrum_assignment = sim_scripts.spectrum_assignment.SpectrumAssignment(path=path, slots_needed=slots_needed,
+                                                                             net_spec_db=net_spec_db,
+                                                                             guard_slots=guard_slots,
+                                                                             is_sliced=False, alloc_method=alloc_method)
 
     if alloc_method == 'first_fit' or alloc_method == 'last_fit':
         spectrum = spectrum_assignment.find_free_spectrum()

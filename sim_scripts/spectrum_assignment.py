@@ -7,6 +7,8 @@ from operator import itemgetter
 # Third-party library imports
 import numpy as np
 
+import useful_functions.sim_functions
+
 
 # TODO: Better naming conventions for some newly added methods and their variables
 
@@ -62,6 +64,10 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         # The final response from this class
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
+
+        # TODO: Make this change throughout the simulator (if this makes sense)
+        self.find_free_slots = useful_functions.sim_functions.find_free_slots
+        self.find_free_channels = useful_functions.sim_functions.find_free_channels
 
     def _check_other_links(self, core_num, start_slot, end_slot):
         """
@@ -255,73 +261,6 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         return self.response
 
-    # TODO: Update docstring
-    # TODO: Repeat code, this exists in engine.py, move to useful functions
-    def _find_free_slots(self, link_num: int):
-        """
-        Finds the number of free channels on any given link.
-
-        :param link_num: The link number to search for channels on.
-        :type link_num: int
-
-        :return: A matrix containing the indexes to occupied or unoccupied slots on the link.
-        :rtype: dict
-        """
-        link = self.net_spec_db[link_num]['cores_matrix']
-        final_slots = {}
-        for cno in range(len(link)):
-            indexes = np.where(link[cno] == 0)[0]
-            final_slots.update({cno: indexes})
-
-        return final_slots
-
-    # TODO: I believe repeat method slightly modified (integrate or remove)
-    def _find_free_channels(self, link_num: int, free_slots: dict):
-        """
-        Finds the number of free channels on any given link.
-
-        :param link_num: The link number to search for channels on.
-        :type link_num: int
-
-        :param A matrix containing the indexes to occupied or unoccupied slots on the link.
-        :type: dict
-        
-        :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
-        :rtype: list
-        """
-        final_channels = {}
-        for cno in free_slots:
-            channels = []
-            curr_channel = []
-            # for i, idx in enumerate(free_slots[cno]):
-            #     if i == 0:
-            #         curr_channel.append(idx)
-            #     elif idx == free_slots[cno][i - 1] + 1:
-            #         curr_channel.append(idx)
-            #         if len(curr_channel) == self.slots_needed:
-            #             channels.append(curr_channel)
-            #             curr_channel = []
-            #     else:
-            #         curr_channel = []
-
-            for i, idx in enumerate(free_slots[cno]):
-                for j in range(0, self.slots_needed):
-                    if idx + j in free_slots[cno]:
-                        curr_channel.append(idx + j)
-                    else:
-                        curr_channel = []
-                        break
-                if len(curr_channel) == self.slots_needed:
-                    channels.append(curr_channel)
-                    curr_channel = []
-
-            # Check if the last group forms a subarray
-            if len(curr_channel) == self.slots_needed:
-                channels.append(curr_channel)
-            final_channels.update({cno: channels})
-
-        return final_channels
-
     # TODO: Move to useful functions
     # TODO: Update docstring
     @staticmethod
@@ -343,11 +282,14 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         slots_intersection = {}
         channel_intersection = {}
         for source, destination in zip(self.path, self.path[1:]):
-            # TODO: Uses outdated methods
-            free_slots.update({(source, destination): self._find_free_slots(link_num=(source, destination))})
-            free_channels.update({(source, destination): self._find_free_channels(link_num=(source, destination),
-                                                                                  free_slots=free_slots[
-                                                                                      (source, destination)])})
+            # TODO: Break this into more lines of code
+            free_slots.update(
+                {(source, destination): self.find_free_slots(net_spec_db=self.net_spec_db,
+                                                             link_num=(source, destination))})
+            free_channels.update(
+                {(source, destination): self.find_free_channels(slots_needed=self.slots_needed,
+                                                                free_slots=free_slots[(source, destination)])})
+
             for cno in free_slots[(source, destination)]:
                 if cno not in slots_intersection:
                     slots_intersection.update({cno: set(free_slots[(source, destination)][cno])})
@@ -361,12 +303,6 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
     # TODO: Repeat code (integrate or remove)
     def _find_taken_channels(self):
-        """
-        Finds the number of taken channels on any given link.
-
-        :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
-        :rtype: list
-        """
         taken_channels = {}
         for source, destination in zip(self.path, self.path[1:]):
             taken_channels.update({(source, destination): {}})
@@ -453,15 +389,6 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             if 6 in sorted_cores:
                 sorted_cores.remove(6)
         return sorted_cores[0]
-        # TODO: Unused code
-        # for cno in channel_intersection:
-        #     statistics.update({cno:{}})
-        #     if len(channel_intersection[cno]) != 0:
-        #         statistics[cno].update({"overlapped":len(overlapped_channels[cno])/ len(channel_intersection[cno])})
-        #         statistics[cno].update({"nonoverlapped":len(non_overlapped_channels[cno])/ len(channel_intersection[cno])})
-        # taken_channels = self._find_taken_channels()
-        # for core_num, core_arr in enumerate(channel_intersection):
-        #     print(core_num)
 
     # TODO: Update docstring to be specific on the differences between this method and the one above it
     # TODO: This may benefit from inline comments
