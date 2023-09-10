@@ -259,7 +259,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         return free_slots, slots_intersection, channel_intersection
 
     # TODO: Update docstring
-    def xt_aware_core_allocation(self):
+    def _xt_core_allocation(self):
         free_slots, slots_intersection, channel_intersection = self._cores_status()
         non_overlapped_channels, overlapped_channels = self.find_overlapped_channel(channel_intersection, free_slots)
         sorted_cores = sorted(non_overlapped_channels, key=lambda k: len(non_overlapped_channels[k]))
@@ -272,8 +272,8 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
     # TODO: Update docstring to be specific on the differences between this method and the one above it
     # TODO: This may benefit from inline comments
-    def xt_aware_resource_allocation(self):
-        core = self.xt_aware_core_allocation()
+    def _xt_aware_allocation(self):
+        core = self._xt_core_allocation()
         core_arr = copy.deepcopy(self.net_spec_db[(self.path[0], self.path[1])]['cores_matrix'])
         for source, destination in zip(self.path, self.path[1:]):
             # TODO: Comment why
@@ -283,11 +283,9 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         self.cores_matrix = core_arr
         # Graph coloring for cores
         if core in [0, 2, 4, 6]:
-            self._handle_first_last(des_core=core, flag='first_fit')
-        else:
-            self._handle_first_last(des_core=core, flag='last_fit')
+            return self._handle_first_last(des_core=core, flag='first_fit')
 
-        return self.response
+        return self._handle_first_last(des_core=core, flag='last_fit')
 
     def find_free_spectrum(self):
         """
@@ -312,6 +310,8 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             self._best_fit_allocation()
         elif self.alloc_method in ('first_fit', 'last_fit'):
             self._handle_first_last(flag=self.alloc_method)
+        elif self.alloc_method == 'cross_talk_aware':
+            self._xt_aware_allocation()
         else:
             raise NotImplementedError(f'Expected first_fit or best_fit, got: {self.alloc_method}')
 

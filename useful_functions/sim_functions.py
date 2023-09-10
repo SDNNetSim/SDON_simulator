@@ -242,13 +242,7 @@ def get_spectrum(mod_per_bw, chosen_bw, path, net_spec_db, guard_slots, alloc_me
                                                                              guard_slots=guard_slots,
                                                                              is_sliced=False, alloc_method=alloc_method)
 
-    if alloc_method == 'first_fit' or alloc_method == 'last_fit':
-        spectrum = spectrum_assignment.find_free_spectrum()
-    elif alloc_method == 'cross_talk_aware':
-        # TODO: May be able to name this to something shorter
-        spectrum = spectrum_assignment.xt_aware_resource_allocation()
-    else:
-        raise NotImplementedError(f'Unexpected allocation method got: {alloc_method}')
+    spectrum = spectrum_assignment.find_free_spectrum()
 
     if spectrum is not False:
         if check_snr:
