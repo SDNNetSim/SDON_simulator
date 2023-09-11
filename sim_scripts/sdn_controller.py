@@ -328,7 +328,6 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        # TODO: NLI aware may assign a path modulation, but spectrum assignment always changes that
         self.path, self.path_mod = self._handle_routing()
 
         if self.path is not False:

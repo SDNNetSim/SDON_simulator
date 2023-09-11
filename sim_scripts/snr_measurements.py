@@ -20,7 +20,6 @@ class SnrMeasurements:
         self.phi = properties['phi']
         self.bi_directional = properties['bi_directional']
         self.xt_noise = properties['xt_noise']
-        # TODO: Ensure this works since the structure was changed to a dictionary
         self.requested_xt = properties['requested_xt']
 
         self.light_frequency = 1.9341 * 10 ** 14

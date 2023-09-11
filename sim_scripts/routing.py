@@ -326,7 +326,6 @@ class Routing:
                 num_channels += 1
                 # Calculate the center frequency for the open channel
                 center_freq = (channel[0] * self.freq_spacing) + ((self.slots_needed * self.freq_spacing) / 2)
-                # TODO: Ensure we should only check the current core for taken channels
                 nli_cost += self._find_channel_mci(num_spans=num_spans, taken_channels=taken_channels[core_num],
                                                    center_freq=center_freq)
 

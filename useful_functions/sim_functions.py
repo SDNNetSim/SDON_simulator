@@ -141,7 +141,7 @@ def find_free_slots(net_spec_db: dict, des_link: tuple):
     """
     link = net_spec_db[des_link]['cores_matrix']
     resp = {}
-    for core_num, _ in enumerate(link):
+    for core_num in range(len(link)):  # pylint: disable=consider-using-enumerate
         indexes = np.where(link[core_num] == 0)[0]
         resp.update({core_num: indexes})
 
