@@ -43,3 +43,5 @@ jobs:
           pylint ./handle_data
           pylint ./plots
           pylint ./useful_functions
+          pylint ./ai
+          pylint ./config
