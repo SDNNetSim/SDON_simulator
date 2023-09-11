@@ -71,51 +71,45 @@ def find_path_len(path: List[str], topology: nx.Graph):
     return path_len
 
 
-# TODO: Make a plan to make these functions more efficient and integrate
-# TODO: Static method
-# TODO: Potentially move to useful functions
-# TODO: Split into 1-3 sub methods
-# TODO: May benefit from inline comments
-# TODO: Variable naming
-# TODO: Method name misleading
-# TODO: Potentially two different methods
-def find_overlapped_channel(channel_intersection, free_slots):
-    # TODO: Counting overlapping in each link and slots
-    overlapped_channels = {}
-    non_overlapped_channels = {}
-    for core_num in channel_intersection:
-        overlapped_channels.update({core_num: []})
-        non_overlapped_channels.update({core_num: []})
-        # TODO: Enumerate and index isn't used?
-        # TODO: Nested for loops most likely not needed
-        # TODO: Goal is to find slot indexes (super channel) for non-overlapped channels
-        for _, slot_list in enumerate(channel_intersection[core_num]):
-            overlapped_cnt = 0
-            for link_num in free_slots:
-                for slot_num in slot_list:
-                    for sub_core_num in free_slots[link_num]:
-                        if core_num != sub_core_num:
-                            # TODO: Comments for core_num discretion
-                            if core_num == 6 and slot_num not in free_slots[link_num][sub_core_num]:
-                                overlapped_cnt += 1
-                            if core_num != 6:
-                                # TODO: Comment
-                                before = 5 if core_num == 0 else core_num - 1
-                                after = 0 if core_num == 5 else core_num + 1
-                                if slot_num not in free_slots[link_num][before]:
-                                    overlapped_cnt += 1
-                                if slot_num not in free_slots[link_num][after]:
-                                    overlapped_cnt += 1
-                                if slot_num not in free_slots[link_num][6]:
-                                    overlapped_cnt += 1
-                    if overlapped_cnt != 0:
-                        overlapped_channels[core_num].append(slot_list)
+def get_channel_overlaps(free_channels, free_slots):
+    resp = {'overlap_channels': {}, 'other_channels': {}}
+    num_cores = int(len(free_channels.keys()))
+
+    for core_num, channels in free_channels.items():
+        resp['overlap_channels'][core_num] = list()
+        resp['other_channels'][core_num] = list()
+
+        for curr_channel in channels:
+            overlap = False
+            for sub_core in range(0, num_cores):
+                if sub_core == core_num:
+                    continue
+
+                for _, slots_dict in free_slots.items():
+                    # The final core overlaps with all other cores
+                    if core_num == num_cores - 1:
+                        result = np.isin(curr_channel, slots_dict[sub_core])
+                    else:
+                        # Only certain cores neighbor each other on a fiber
+                        first_neighbor = 5 if core_num == 0 else core_num - 1
+                        second_neighbor = 0 if core_num == 5 else core_num + 1
+
+                        result = np.isin(curr_channel, slots_dict[first_neighbor])
+                        result = np.append(result, np.isin(curr_channel, slots_dict[second_neighbor]))
+                        result = np.append(result, np.isin(curr_channel, slots_dict[num_cores - 1]))
+
+                    if np.any(result):
+                        resp['overlap_channels'][core_num].append(curr_channel)
+                        overlap = True
                         break
-                if overlapped_cnt != 0:
+                    else:
+                        resp['other_channels'][core_num].append(curr_channel)
+
+                # No need to check other cores, we already determined this channel overlaps with other channels
+                if overlap:
                     break
-            if overlapped_cnt == 0:
-                non_overlapped_channels[core_num].append(slot_list)
-    return non_overlapped_channels, overlapped_channels
+
+    return resp
 
 
 def find_free_slots(net_spec_db, des_link):
