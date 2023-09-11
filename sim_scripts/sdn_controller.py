@@ -332,7 +332,7 @@ class SDNController:
 
         if self.path is not False:
             if self.check_snr != 'None':
-                mod_options = list(self.mod_per_bw[self.chosen_bw].keys())
+                mod_options = sort_nested_dict_vals(self.mod_per_bw[self.chosen_bw], nested_key='max_length')
             else:
                 mod_options = [self.path_mod]
 

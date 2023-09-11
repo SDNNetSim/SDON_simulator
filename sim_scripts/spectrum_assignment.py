@@ -297,9 +297,6 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                 sorted_cores.remove(6)
         return sorted_cores[0]
 
-    # TODO: Update docstring to be specific on the differences between this method and the one above it
-    # TODO: This may benefit from inline comments
-    # TODO: Overall goal is to find overlapped and non-overlapped channels for a given link
     def _xt_aware_allocation(self):
         """
         Cross-talk aware spectrum allocation. Attempts to allocate a request with the least amount of cross-talk

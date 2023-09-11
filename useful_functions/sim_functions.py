@@ -1,5 +1,6 @@
 # Standard library imports
 import copy
+from collections import OrderedDict
 from typing import List
 
 # Third-party library imports
@@ -33,6 +34,24 @@ def get_path_mod(mod_formats: dict, path_len: int):
         return False
 
     return resp
+
+
+def sort_nested_dict_vals(original_dict: dict, nested_key: str):
+    """
+    Sort a dictionary by a value which belongs to a nested key.
+
+    :param original_dict: The original dictionary.
+    :type original_dict: dict
+
+    :param nested_key: The nested key to sort by.
+    :type nested_key: str
+
+    :return: The sorted dictionary (ascending).
+    :rtype: dict
+    """
+    sorted_dict = OrderedDict(sorted(original_dict.items(), key=lambda x: x[1][nested_key]))
+
+    return dict(sorted_dict)
 
 
 def sort_dict_keys(dictionary: dict):
