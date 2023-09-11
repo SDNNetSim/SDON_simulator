@@ -223,7 +223,6 @@ class Routing:
         original_link = copy.copy(self.net_spec_db[links[0]]['cores_matrix'][0])
         self.net_spec_db[links[0]]['cores_matrix'][0] = simulated_link
 
-        # TODO: Check des_link
         free_channels = self.find_free_channels(net_spec_db=self.net_spec_db, slots_needed=self.slots_needed,
                                                 des_link=links[0])
         taken_channels = self.find_taken_channels(net_spec_db=self.net_spec_db, des_link=links[0])
@@ -516,7 +515,6 @@ class Routing:
 
         return self._least_xt_path()
 
-    # TODO: Support for single core only?
     def nli_path(self, path: list):
         """
         Find the non-linear cost for a specific path.
