@@ -1,4 +1,5 @@
 # Standard library imports
+import copy
 from typing import List
 
 # Third-party library imports
@@ -98,6 +99,7 @@ def find_overlapped_channel(channel_intersection, free_slots):
                             if core_num == 6 and slot_num not in free_slots[link_num][sub_core_num]:
                                 overlapped_cnt += 1
                             if core_num != 6:
+                                # TODO: Comment
                                 before = 5 if core_num == 0 else core_num - 1
                                 after = 0 if core_num == 5 else core_num + 1
                                 if slot_num not in free_slots[link_num][before]:
@@ -116,46 +118,8 @@ def find_overlapped_channel(channel_intersection, free_slots):
     return non_overlapped_channels, overlapped_channels
 
 
-# TODO: Function not used in spectrum assignment
-# TODO: Repeat code (integrate or remove)
-def _find_taken_channels(self):
-    taken_channels = {}
-    for source_dest in zip(self.path, self.path[1:]):
-        # TODO: Check to make sure source_dest is a tuple
-        taken_channels.update({source_dest: {}})
-        for core_num, link in enumerate(self.net_spec_db[source_dest]['cores_matrix']):
-            channels = []
-            curr_channel = []
-
-            for value in link:
-                if value > 0:
-                    curr_channel.append(value)
-                elif value < 0 and curr_channel:
-                    channels.append(curr_channel)
-                    curr_channel = []
-
-            if curr_channel:
-                channels.append(curr_channel)
-            taken_channels[source_dest].update({core_num: channels})
-
-    return taken_channels
-
-
-# TODO: Update docstring
-# TODO: Function not used
-def dict_intersection(input_dict):
-    # Convert dictionary values to sets
-    sets = [set(values) for values in input_dict.values()]
-
-    # Find the intersection of the sets
-    intersection_set = set.intersection(*sets)
-
-    return intersection_set
-
-
-# TODO: Similar function in engine.py, combine methods here
-def find_free_slots(net_spec_db, link_num):
-    link = net_spec_db[link_num]['cores_matrix']
+def find_free_slots(net_spec_db, des_link):
+    link = net_spec_db[des_link]['cores_matrix']
     resp = {}
     for core_num in range(len(link)):
         indexes = np.where(link[core_num] == 0)[0]
@@ -164,32 +128,48 @@ def find_free_slots(net_spec_db, link_num):
     return resp
 
 
-# TODO: Integrate with find_taken_channels method in routing eventually
-# TODO: Test this method (can combine to one method for efficiency)
-def find_free_channels(slots_needed, free_slots):
+def find_free_channels(net_spec_db: dict, slots_needed: int, des_link: tuple):
     resp = {}
-    for core_num in free_slots:
+    cores_matrix = copy.deepcopy(net_spec_db[des_link]['cores_matrix'])
+    for core_num, link in enumerate(cores_matrix):
+        indexes = np.where(link == 0)[0]
         channels = []
         curr_channel = []
 
-        # TODO: Why enumerate if we don't use both variables?
-        for index in free_slots[core_num]:
-            for slot_num in range(0, slots_needed):
-                # TODO: Would probably be much faster to check the range
-                #  of indexes in one go instead of nested for loops
-                if index + slot_num in free_slots[core_num]:
-                    curr_channel.append(index + slot_num)
-                else:
-                    curr_channel = []
-                    break
-            if len(curr_channel) == slots_needed:
+        for i, free_index in enumerate(indexes):
+            if i == 0:
+                curr_channel.append(free_index)
+            elif free_index == indexes[i - 1] + 1:
+                curr_channel.append(free_index)
+                if len(curr_channel) == slots_needed:
+                    channels.append(curr_channel.copy())
+                    curr_channel.pop(0)
+            else:
+                curr_channel = [free_index]
+
+        resp.update({core_num: channels})
+
+    return resp
+
+
+def find_taken_channels(net_spec_db: dict, des_link: tuple):
+    resp = {}
+    cores_matrix = copy.deepcopy(net_spec_db[des_link]['cores_matrix'])
+    for core_num, link in enumerate(cores_matrix):
+        channels = []
+        curr_channel = []
+
+        for value in link:
+            if value > 0:
+                curr_channel.append(value)
+            elif value < 0 and curr_channel:
                 channels.append(curr_channel)
                 curr_channel = []
 
-        # Check if the last group forms a subarray
-        if len(curr_channel) == slots_needed:
+        if curr_channel:
             channels.append(curr_channel)
-        resp.update({core_num: channels})
+
+        resp[core_num] = channels
 
     return resp
 
