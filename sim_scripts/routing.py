@@ -16,17 +16,17 @@ class Routing:
     This class contains methods for routing packets in a network topology.
     """
 
-    def __init__(self, source: int = None, destination: int = None, topology: nx.Graph = None, net_spec_db: dict = None,
+    def __init__(self, source: str = None, destination: str = None, topology: nx.Graph = None, net_spec_db: dict = None,
                  mod_formats: dict = None, slots_needed: int = None, guard_slots: int = None, beta: float = None,
-                 bandwidth: float = None):
+                 bandwidth: str = None):
         """
         Initializes the Routing class.
 
         :param source: The source node ID.
-        :type source: int
+        :type source: str
 
         :param destination: The destination node ID.
-        :type destination: int
+        :type destination: str
 
         :param topology: The network topology represented as a NetworkX Graph object.
         :type topology: nx.Graph
@@ -47,7 +47,7 @@ class Routing:
         :type beta: float
 
         :param bandwidth: The required bandwidth for the connection.
-        :type bandwidth: float
+        :type bandwidth: str
         """
         self.source = source
         self.destination = destination
@@ -301,6 +301,21 @@ class Routing:
         return mci
 
     def _find_link_cost(self, num_spans: float, channels_dict: dict, taken_channels: list):
+        """
+        Given a link, find the non-linear impairment cost for all cores on that link.
+
+        :param num_spans: The number of spans for the link.
+        :type num_spans: int
+
+        :param channels_dict: The core numbers and free channels associated with it.
+        :type channels_dict: dict
+
+        :param taken_channels: The taken channels on that same link and core.
+        :type taken_channels: list
+
+        :return: The final NLI link cost calculated for the link.
+        :rtype: float
+        """
         # Non-linear impairment cost calculation
         nli_cost = 0
 

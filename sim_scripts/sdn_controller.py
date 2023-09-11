@@ -4,7 +4,7 @@ import numpy as np
 # Local application imports
 from sim_scripts.spectrum_assignment import SpectrumAssignment
 from sim_scripts.snr_measurements import SnrMeasurements
-from useful_functions.sim_functions import *
+from useful_functions.sim_functions import *  # pylint: disable=unused-wildcard-import
 
 
 class SDNController:
@@ -255,19 +255,27 @@ class SDNController:
 
         :return: A tuple containing the response and the updated network database or False and self.dist_block
         """
-        raise NotImplementedError
-        # if not self.dynamic_lps:
-        #     resp = self.allocate_lps()
-        # else:
-        #     resp = self.allocate_dynamic_lps()
-        #
-        # if resp is not False:
-        #     return {'path': self.path, 'mod_format': resp,
-        #             'is_sliced': True}, self.net_spec_db, self.num_transponders, self.path
-        #
-        # return False, self.dist_block, self.path
+        if not self.dynamic_lps:
+            resp = self.allocate_lps()
+        else:
+            resp = self.allocate_dynamic_lps()
 
-    def _handle_spectrum(self, mod_options):
+        if resp is not False:
+            return {'path': self.path, 'mod_format': resp,
+                    'is_sliced': True}, self.net_spec_db, self.num_transponders, self.path
+
+        return False, self.dist_block, self.path
+
+    def _handle_spectrum(self, mod_options: list):
+        """
+        Given modulation options, iterate through them and attempt to allocate a request with one.
+
+        :param mod_options: The modulation formats to consider.
+        :type mod_options: list
+
+        :return: The spectrum found for allocation, false if none can be found.
+        :rtype: dict
+        """
         spectrum = None
         for modulation in mod_options:
             if modulation is False:
@@ -289,6 +297,12 @@ class SDNController:
         return spectrum
 
     def _handle_routing(self):
+        """
+        Given various request information, attempt to find a route for that request.
+
+        :return: The route found, false otherwise.
+        :rtype: list
+        """
         route = get_route(source=self.source, destination=self.destination, topology=self.topology,
                           net_spec_db=self.net_spec_db, mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw,
                           guard_slots=self.guard_slots, beta=self.beta, route_method=self.route_method,

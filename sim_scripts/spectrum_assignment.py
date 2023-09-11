@@ -158,7 +158,25 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                                      'end_slot': end_index + self.guard_slots}
                     return
 
-    def _check_open_slots(self, open_slots_matrix, flag, core_num, des_core):
+    def _check_open_slots(self, open_slots_matrix: list, flag: bool, core_num: int, des_core: int):
+        """
+        Given a matrix of unallocated spectral slots, attempt to find a channel for the request.
+
+        :param open_slots_matrix: A matrix containing each core and open spectral slots on them.
+        :type open_slots_matrix: list
+
+        :param flag: A flag to determine if we should allocate using first or last fit.
+        :type flag: bool
+
+        :param core_num: The core number in which to check other links for a potential allocation.
+        :type core_num: int
+
+        :param des_core: Tell us if we'd like to force allocation to a certain core.
+        :type des_core: int
+
+        :return: If we were able to successfully allocate or not.
+        :rtype: bool
+        """
         for tmp_arr in open_slots_matrix:
             if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
                 for start_index in tmp_arr:
@@ -231,6 +249,13 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                 return
 
     def _check_cores_channels(self):
+        """
+        For a given path, find the free channel intersections (between cores on that path) and the free slots for
+        each link.
+
+        :return: The free slots, free channel intersections, free slots intersections, and free channels.
+        :rtype: dict
+        """
         resp = {'free_slots': {}, 'free_channels': {}, 'slots_inters': {}, 'channel_inters': {}}
 
         for source_dest in zip(self.path, self.path[1:]):
@@ -254,15 +279,20 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         return resp
 
-    # TODO: Update docstring
     def _find_best_core(self):
+        """
+        Finds the core with the least amount of overlapping super channels for previously allocated requests.
+
+        :return: The core with the least amount of overlapping channels.
+        :rtype: int
+        """
         path_info = self._check_cores_channels()
         all_channels = self.get_channel_overlaps(path_info['channel_inters'],
                                                  path_info['free_slots'])
         sorted_cores = sorted(all_channels['other_channels'], key=lambda k: len(all_channels['other_channels'][k]))
 
+        # TODO: Comment why
         if len(sorted_cores) > 1:
-            # TODO: Comment on why
             if 6 in sorted_cores:
                 sorted_cores.remove(6)
         return sorted_cores[0]
@@ -271,6 +301,13 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
     # TODO: This may benefit from inline comments
     # TODO: Overall goal is to find overlapped and non-overlapped channels for a given link
     def _xt_aware_allocation(self):
+        """
+        Cross-talk aware spectrum allocation. Attempts to allocate a request with the least amount of cross-talk
+        interference on neighboring cores.
+
+        :return: The information of the request if allocated, false otherwise.
+        :rtype dict
+        """
         core = self._find_best_core()
         core_arr = copy.deepcopy(self.net_spec_db[(self.path[0], self.path[1])]['cores_matrix'])
 

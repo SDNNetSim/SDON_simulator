@@ -71,7 +71,20 @@ def find_path_len(path: List[str], topology: nx.Graph):
     return path_len
 
 
-def get_channel_overlaps(free_channels, free_slots):
+def get_channel_overlaps(free_channels: dict, free_slots: dict):
+    """
+    Given the free channels and free slots on a given path, find the number of overlapping and non-overlapping channels
+    between adjacent cores.
+
+    :param free_channels: The free channels found on the given path.
+    :type free_channels: dict
+
+    :param free_slots: All free slots on the path.
+    :type free_slots: dict
+
+    :return: The overlapping and non-overlapping channels for every core.
+    :rtype: dict
+    """
     resp = {'overlap_channels': {}, 'other_channels': {}}
     num_cores = int(len(free_channels.keys()))
 
@@ -102,8 +115,9 @@ def get_channel_overlaps(free_channels, free_slots):
                         resp['overlap_channels'][core_num].append(curr_channel)
                         overlap = True
                         break
-                    else:
-                        resp['other_channels'][core_num].append(curr_channel)
+
+                    # TODO: We may not want to break if we'd like to use this
+                    resp['other_channels'][core_num].append(curr_channel)
 
                 # No need to check other cores, we already determined this channel overlaps with other channels
                 if overlap:
@@ -112,10 +126,22 @@ def get_channel_overlaps(free_channels, free_slots):
     return resp
 
 
-def find_free_slots(net_spec_db, des_link):
+def find_free_slots(net_spec_db: dict, des_link: tuple):
+    """
+    Find every unallocated spectral slot for a given link.
+
+    :param net_spec_db: The most updated network spectrum database.
+    :type net_spec_db: dict
+
+    :param des_link: The link to find the free slots on.
+    :type des_link: tuple
+
+    :return: The indexes of the free spectral slots on the link for each core.
+    :rtype: dict
+    """
     link = net_spec_db[des_link]['cores_matrix']
     resp = {}
-    for core_num in range(len(link)):
+    for core_num, _ in enumerate(link):
         indexes = np.where(link[core_num] == 0)[0]
         resp.update({core_num: indexes})
 
@@ -123,6 +149,21 @@ def find_free_slots(net_spec_db, des_link):
 
 
 def find_free_channels(net_spec_db: dict, slots_needed: int, des_link: tuple):
+    """
+    Finds the free super-channels on a given link.
+
+    :param net_spec_db: The most updated network spectrum database.
+    :type net_spec_db: dict
+
+    :param slots_needed: The number of slots needed for the request.
+    :type slots_needed: int
+
+    :param des_link: The link to search on.
+    :type des_link: tuple
+
+    :return: A matrix containing the indexes for available super-channels for that request for every core.
+    :rtype: dict
+    """
     resp = {}
     cores_matrix = copy.deepcopy(net_spec_db[des_link]['cores_matrix'])
     for core_num, link in enumerate(cores_matrix):
@@ -147,6 +188,18 @@ def find_free_channels(net_spec_db: dict, slots_needed: int, des_link: tuple):
 
 
 def find_taken_channels(net_spec_db: dict, des_link: tuple):
+    """
+    Finds the taken super-channels on a given link.
+
+    :param net_spec_db: The most updated network spectrum database.
+    :type net_spec_db: dict
+
+    :param des_link: The link to search on.
+    :type des_link: tuple
+
+    :return: A matrix containing the indexes for unavailable super-channels for that request for every core.
+    :rtype: dict
+    """
     resp = {}
     cores_matrix = copy.deepcopy(net_spec_db[des_link]['cores_matrix'])
     for core_num, link in enumerate(cores_matrix):
@@ -168,8 +221,45 @@ def find_taken_channels(net_spec_db: dict, des_link: tuple):
     return resp
 
 
-def get_route(source, destination, topology, net_spec_db, mod_per_bw, chosen_bw, guard_slots, beta, route_method,
-              ai_obj):
+def get_route(source: str, destination: str, topology: nx.Graph, net_spec_db: dict, mod_per_bw: dict, chosen_bw: str,
+              guard_slots: int, beta: float, route_method: str, ai_obj: object):
+    """
+    Given request information, attempt to find a route for the request for various routing methods.
+
+    :param source: The source node.
+    :type source: str
+
+    :param destination: The destination node.
+    :type destination: str
+
+    :param topology: The network topology information.
+    :type topology: nx.Graph
+
+    :param net_spec_db: The network spectrum database.
+    :type net_spec_db: dict
+
+    :param mod_per_bw: The modulation formats for each bandwidth.
+    :type mod_per_bw: dict
+
+    :param chosen_bw: The chosen bandwidth.
+    :type chosen_bw: str
+
+    :param guard_slots: The number of slots to be allocated for the guard band.
+    :type guard_slots: int
+
+    :param beta: A metric used for calculations in different routing method types.
+    :type beta: float
+
+    :param route_method: The desired routing method.
+    :type route_method: str
+
+    :param ai_obj: The object for artificial intelligence, if it's being used.
+    :type ai_obj: object
+
+
+    :return: The selected path and path modulation.
+    :rtype: tuple
+    """
     routing_obj = Routing(source=source, destination=destination,
                           topology=topology, net_spec_db=net_spec_db,
                           mod_formats=mod_per_bw[chosen_bw], bandwidth=chosen_bw,
@@ -208,8 +298,47 @@ def get_route(source, destination, topology, net_spec_db, mod_per_bw, chosen_bw,
     return selected_path, path_mod
 
 
-def get_spectrum(mod_per_bw, chosen_bw, path, net_spec_db, guard_slots, alloc_method, modulation, check_snr, snr_obj,
-                 path_mod, spectral_slots):
+def get_spectrum(mod_per_bw: dict, chosen_bw: str, path: list, net_spec_db: dict, guard_slots: int, alloc_method: str,
+                 modulation: str, check_snr: bool, snr_obj: object, path_mod: str, spectral_slots: int):
+    """
+    Given relevant request information, find a given spectrum for various allocation methods.
+
+    :param mod_per_bw: The modulation formats for each bandwidth.
+    :type mod_per_bw: dict
+
+    :param chosen_bw: The chosen bandwidth for this request.
+    :type chosen_bw: str
+
+    :param path: The chosen path for this request.
+    :type path: list
+
+    :param net_spec_db: The network spectrum database.
+    :type net_spec_db: dict
+
+    :param guard_slots: The number of slots to be allocated to the guard band.
+    :type guard_slots: int
+
+    :param alloc_method: The desired allocation method.
+    :type alloc_method: str
+
+    :param modulation: The modulation format chosen for this request.
+    :type modulation: str
+
+    :param check_snr: A flag to check signal-to-noise ratio calculations or not.
+    :type check_snr: bool
+
+    :param snr_obj: If check_snr is true, the object containing all snr related methods.
+    :type snr_obj: object
+
+    :param path_mod: The modulation format for the given path.
+    :type path_mod: str
+
+    :param spectral_slots: The number of spectral slots needed for the request.
+    :type spectral_slots: int
+
+    :return: The information related to the spectrum found for allocation, false otherwise.
+    :rtype: dict
+    """
     slots_needed = mod_per_bw[chosen_bw][modulation]['slots_needed']
     spectrum_assignment = sim_scripts.spectrum_assignment.SpectrumAssignment(path=path, slots_needed=slots_needed,
                                                                              net_spec_db=net_spec_db,
@@ -232,7 +361,28 @@ def get_spectrum(mod_per_bw, chosen_bw, path, net_spec_db, guard_slots, alloc_me
     return False
 
 
-def _update_snr_obj(snr_obj, spectrum, path, path_mod, spectral_slots, net_spec_db):
+def _update_snr_obj(snr_obj: object, spectrum: dict, path: list, path_mod: str, spectral_slots: int, net_spec_db: dict):
+    """
+    Updates variables in the signal-to-noise ratio calculation object.
+
+    :param snr_obj: The object whose variables are updated.
+    :type snr_obj: object
+
+    :param spectrum: The spectrum chosen for the request.
+    :type spectrum: dict
+
+    :param path: The chosen path for the request.
+    :type path: list
+
+    :param path_mod: The modulation format chosen for the request.
+    :type path_mod: str
+
+    :param spectral_slots: The total number of spectral slots for each core in the network.
+    :type spectral_slots: int
+
+    :param net_spec_db: The network spectrum database.
+    :type net_spec_db: dict
+    """
     snr_obj.path = path
     snr_obj.path_mod = path_mod
     snr_obj.spectrum = spectrum
@@ -241,7 +391,19 @@ def _update_snr_obj(snr_obj, spectrum, path, path_mod, spectral_slots, net_spec_
     snr_obj.net_spec_db = net_spec_db
 
 
-def handle_snr(check_snr, snr_obj):
+def handle_snr(check_snr: str, snr_obj: object):
+    """
+    Determines which type of signal-to-noise ratio calculation is used and calculates it.
+
+    :param check_snr: The type of SNR calculation for every request.
+    :type check_snr: str
+
+    :param snr_obj: Object containing all methods for SNR calculation.
+    :type snr_obj: object
+
+    :return: If the SNR threshold can be met or not.
+    :rtype: bool
+    """
     if check_snr == "snr_calculation_nli":
         snr_check = snr_obj.check_snr()
     elif check_snr == "xt_calculation":
