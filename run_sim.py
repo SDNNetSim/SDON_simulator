@@ -115,8 +115,9 @@ class NetworkSimulator:
         erlang_lst = [float(erlang) for erlang in range(50, 250, 50)]
 
         for erlang in erlang_lst:
-            self.properties['arrival_rate'] = self.properties['holding_time'] * float(
-                self.properties['cores_per_link']) * erlang
+            self.properties['arrival_rate'] = (self.properties['cores_per_link'] * erlang) / self.properties[
+                'holding_time']
+
             self.properties['erlang'] = erlang
 
             self.create_input()
