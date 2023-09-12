@@ -13,6 +13,7 @@ class TestGenerateFunction(unittest.TestCase):
         number of requests for each bandwidth.
         """
         # Define inputs for generate function
+        sim_type = 'yue'
         seed = 123
         nodes = ['A', 'B', 'C', 'D']
         hold_time_mean = 10.0
@@ -22,7 +23,7 @@ class TestGenerateFunction(unittest.TestCase):
         req_dist = {'10': 0.2, '100': 0.8}
 
         # Call generate function with inputs
-        result = generate(seed, nodes, hold_time_mean, arr_rate_mean, num_reqs, mod_per_bw, req_dist)
+        result = generate(sim_type, seed, nodes, hold_time_mean, arr_rate_mean, num_reqs, mod_per_bw, req_dist)
 
         # Check that the output has the correct type
         self.assertIsInstance(result, dict)
