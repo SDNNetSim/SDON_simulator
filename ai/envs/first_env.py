@@ -4,12 +4,15 @@ from gymnasium import spaces
 
 
 class CustomEnv(gym.Env):
+    """
+    Update
+    """
     LEFT = 0
     RIGHT = 1
 
     def __init__(self):
         # TODO: What?
-        super(CustomEnv, self).__init__()
+        super().__init__()
 
         discrete_actions = 2
         self.agent_value = 0
@@ -27,7 +30,7 @@ class CustomEnv(gym.Env):
         else:
             raise ValueError('Received an invalid action.')
 
-        if self.agent_value == 100:
+        if self.agent_value == 100:  # pylint: disable=simplifiable-if-statement
             terminated = True
         else:
             terminated = False
@@ -39,7 +42,7 @@ class CustomEnv(gym.Env):
 
         return observation, reward, terminated, truncated, info
 
-    def reset(self, seed=None, options=None):
+    def reset(self, seed=None, options=None):  # pylint: disable=arguments-differ
         self.agent_value = 0
 
         observation = self.agent_value

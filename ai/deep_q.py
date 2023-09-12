@@ -7,6 +7,9 @@ from stable_baselines3 import A2C
 
 
 class DeepQ:
+    """
+    Update
+    """
 
     def __init__(self):
         pass
@@ -22,16 +25,27 @@ class DeepQ:
         np.random.seed(seed)
 
     def _update_rewards_dict(self):
+        """
+        Update
+        """
         raise NotImplementedError
 
     @staticmethod
     def update_environment(model, obs, vec_env):
-        for i in range(1000):
+        """
+        Update
+        """
+        for _ in range(1000):
             action, _state = model.predict(obs, deterministic=True)
             obs, reward, done, info = vec_env.step(action)
             vec_env.render('human')
 
+            print(reward, done, info)
+
     def setup_environment(self):
+        """
+        Update
+        """
         env = gym.make('CartPole-v1')
         model = A2C('MlpPolicy', env, verbose=1)
         model.learn(total_timesteps=10_000)

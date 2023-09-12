@@ -8,7 +8,7 @@ import networkx as nx
 import numpy as np
 
 # Local application imports
-from useful_functions.sim_functions import get_path_mod, find_path_len
+import useful_functions.sim_functions
 
 
 class Routing:
@@ -16,17 +16,17 @@ class Routing:
     This class contains methods for routing packets in a network topology.
     """
 
-    def __init__(self, source: int = None, destination: int = None, topology: nx.Graph = None, net_spec_db: dict = None,
+    def __init__(self, source: str = None, destination: str = None, topology: nx.Graph = None, net_spec_db: dict = None,
                  mod_formats: dict = None, slots_needed: int = None, guard_slots: int = None, beta: float = None,
-                 bandwidth: float = None):
+                 bandwidth: str = None):
         """
         Initializes the Routing class.
 
         :param source: The source node ID.
-        :type source: int
+        :type source: str
 
         :param destination: The destination node ID.
-        :type destination: int
+        :type destination: str
 
         :param topology: The network topology represented as a NetworkX Graph object.
         :type topology: nx.Graph
@@ -47,7 +47,7 @@ class Routing:
         :type beta: float
 
         :param bandwidth: The required bandwidth for the connection.
-        :type bandwidth: float
+        :type bandwidth: str
         """
         self.source = source
         self.destination = destination
@@ -73,6 +73,12 @@ class Routing:
         self.max_link = max(nx.get_edge_attributes(topology, 'length').values(), default=0.0)
         # Length for one span in km
         self.span_len = 100.0
+
+        self.find_free_slots = useful_functions.sim_functions.find_free_slots
+        self.find_free_channels = useful_functions.sim_functions.find_free_channels
+        self.find_taken_channels = useful_functions.sim_functions.find_taken_channels
+        self.find_path_len = useful_functions.sim_functions.find_path_len
+        self.get_path_mod = useful_functions.sim_functions.get_path_mod
 
     def find_least_cong_path(self):
         """
@@ -163,8 +169,8 @@ class Routing:
                                              weight='length')
 
         for path in paths_obj:
-            path_len = find_path_len(path, self.topology)
-            mod_format = get_path_mod(self.mod_formats, path_len)
+            path_len = self.find_path_len(path, self.topology)
+            mod_format = self.get_path_mod(self.mod_formats, path_len)
 
             return path, mod_format
 
@@ -203,7 +209,6 @@ class Routing:
 
         return simulated_link
 
-    # TODO: Support for single-core only
     def find_worst_nli(self):
         """
         Finds the maximum possible NLI for a link in the network.
@@ -218,11 +223,12 @@ class Routing:
         original_link = copy.copy(self.net_spec_db[links[0]]['cores_matrix'][0])
         self.net_spec_db[links[0]]['cores_matrix'][0] = simulated_link
 
-        free_channels = self._find_free_channels(link=links[0])
-        taken_channels = self._find_taken_channels(link=links[0])
+        free_channels = self.find_free_channels(net_spec_db=self.net_spec_db, slots_needed=self.slots_needed,
+                                                des_link=links[0])
+        taken_channels = self.find_taken_channels(net_spec_db=self.net_spec_db, des_link=links[0])
 
         max_spans = max(data['length'] for u, v, data in self.topology.edges(data=True)) / self.span_len
-        nli_worst = self._find_link_cost(free_channels=free_channels, taken_channels=taken_channels,
+        nli_worst = self._find_link_cost(channels_dict=free_channels, taken_channels=taken_channels,
                                          num_spans=max_spans)
 
         self.net_spec_db[links[0]]['cores_matrix'][0] = original_link
@@ -293,97 +299,43 @@ class Routing:
         mci = (mci / self.mci_w) * num_spans
         return mci
 
-    def _find_link_cost(self, num_spans: float, free_channels: list, taken_channels: list):
+    def _find_link_cost(self, num_spans: float, channels_dict: dict, taken_channels: list):
         """
-        Find the NLI cost for a link.
+        Given a link, find the non-linear impairment cost for all cores on that link.
 
-        :param num_spans: The number of spans for the given link.
-        :type num_spans: float
+        :param num_spans: The number of spans for the link.
+        :type num_spans: int
 
-        :param free_channels: The indexes for all free super-channels on the link.
-        :type free_channels: list
+        :param channels_dict: The core numbers and free channels associated with it.
+        :type channels_dict: dict
 
-        :param taken_channels: The indexes for all occupied super-channels on the link.
+        :param taken_channels: The taken channels on that same link and core.
         :type taken_channels: list
 
-        :return: The final NLI score calculated.
-        :rtype float
+        :return: The final NLI link cost calculated for the link.
+        :rtype: float
         """
         # Non-linear impairment cost calculation
         nli_cost = 0
 
-        # Update MCI for available channel
-        for channel in free_channels:
-            # Calculate the center frequency for the open channel
-            center_freq = (channel[0] * self.freq_spacing) + ((self.slots_needed * self.freq_spacing) / 2)
-            nli_cost += self._find_channel_mci(num_spans=num_spans, taken_channels=taken_channels,
-                                               center_freq=center_freq)
+        # The total free channels found on the link
+        num_channels = 0
+        for core_num, free_channels in channels_dict.items():
+            # Update MCI for available channel
+            for channel in free_channels:
+                num_channels += 1
+                # Calculate the center frequency for the open channel
+                center_freq = (channel[0] * self.freq_spacing) + ((self.slots_needed * self.freq_spacing) / 2)
+                nli_cost += self._find_channel_mci(num_spans=num_spans, taken_channels=taken_channels[core_num],
+                                                   center_freq=center_freq)
 
         # A constant score of 1000 if the link is fully congested
-        if len(free_channels) == 0:
+        if num_channels == 0:
             return 1000.0
 
-        link_cost = nli_cost / len(free_channels)
+        link_cost = nli_cost / num_channels
 
         return link_cost
-
-    def _find_taken_channels(self, link: tuple):
-        """
-        Finds the number of taken channels on any given link.
-
-        :param link: The link on which to search for channels on.
-        :type link: tuple
-
-        :return: A matrix containing the request indexes to occupied super channels on the link.
-        :rtype: list
-        """
-        channels = []
-        curr_channel = []
-        link = self.net_spec_db[link]['cores_matrix'][0]
-
-        for value in link:
-            if value > 0:
-                curr_channel.append(value)
-            elif value < 0 and curr_channel:
-                channels.append(curr_channel)
-                curr_channel = []
-
-        if curr_channel:
-            channels.append(curr_channel)
-
-        return channels
-
-    def _find_free_channels(self, link: tuple):
-        """
-        Finds the number of free channels on any given link.
-
-        :param link: The link on which to search for channels on.
-        :type link: tuple
-
-        :return: A matrix containing the indexes to occupied or unoccupied super channels on the link.
-        :rtype: list
-        """
-        link = self.net_spec_db[link]['cores_matrix'][0]
-        indexes = np.where(link == 0)[0]
-
-        channels = []
-        curr_channel = []
-        for i, idx in enumerate(indexes):
-            if i == 0:
-                curr_channel.append(idx)
-            elif idx == indexes[i - 1] + 1:
-                curr_channel.append(idx)
-                if len(curr_channel) == self.slots_needed:
-                    channels.append(curr_channel)
-                    curr_channel = []
-            else:
-                curr_channel = []
-
-        # Check if the last group forms a subarray
-        if len(curr_channel) == self.slots_needed:
-            channels.append(curr_channel)
-
-        return channels
 
     def _get_final_nli_cost(self, link: tuple, num_spans: float, source: str, destination: str):
         """
@@ -404,10 +356,11 @@ class Routing:
         :return: The calculated NLI cost for the link.
         :rtype: float
         """
-        free_channels = self._find_free_channels(link=link)
-        taken_channels = self._find_taken_channels(link=link)
+        free_channels = self.find_free_channels(net_spec_db=self.net_spec_db, slots_needed=self.slots_needed,
+                                                des_link=link)
+        taken_channels = self.find_taken_channels(net_spec_db=self.net_spec_db, des_link=link)
 
-        nli_cost = self._find_link_cost(num_spans=num_spans, free_channels=free_channels,
+        nli_cost = self._find_link_cost(num_spans=num_spans, channels_dict=free_channels,
                                         taken_channels=taken_channels)
         # Tradeoff between link length and the non-linear impairment cost
         final_cost = (self.beta * (self.topology[source][destination]['length'] / self.max_link)) + \
@@ -415,26 +368,6 @@ class Routing:
 
         return final_cost
 
-    # TODO: Can probably move this to useful functions
-    def _find_free_slots(self, link_num: int):
-        """
-        Finds the number of free channels on any given link.
-
-        :param link_num: The link number to search for channels on.
-        :type link_num: int
-
-        :return: A matrix containing the indexes to occupied or unoccupied slots on the link.
-        :rtype: list
-        """
-        link = self.net_spec_db[link_num]['cores_matrix']
-        final_slots = {}
-        for core_num in enumerate(link):
-            indexes = np.where(link[core_num] == 0)[0]
-            final_slots.update({core_num: indexes})
-
-        return final_slots
-
-    # TODO: Only support for single core
     def nli_aware(self):
         """
         Assigns a non-linear impairment score to every link in the network and selects a path with the least amount of
@@ -568,7 +501,7 @@ class Routing:
             source, destination = link[0], link[1]
             num_spans = self.topology[source][destination]['length'] / self.span_len
 
-            free_slots = self._find_free_slots(link_num=link)
+            free_slots = self.find_free_slots(net_spec_db=self.net_spec_db, des_link=link)
             xt_cost = self._find_xt_link_cost(free_slots_arr=free_slots, link_num=link)
             # Tradeoff between link length and the non-linear impairment cost
             if xt_type == 'with_length':
@@ -581,7 +514,6 @@ class Routing:
 
         return self._least_xt_path()
 
-    # TODO: Support for single core only?
     def nli_path(self, path: list):
         """
         Find the non-linear cost for a specific path.

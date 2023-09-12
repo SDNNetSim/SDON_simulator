@@ -2,10 +2,9 @@
 import numpy as np
 
 # Local application imports
-from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
 from sim_scripts.snr_measurements import SnrMeasurements
-from useful_functions.sim_functions import get_path_mod, sort_dict_keys, find_path_len
+from useful_functions.sim_functions import *  # pylint: disable=unused-wildcard-import
 
 
 class SDNController:
@@ -61,10 +60,6 @@ class SDNController:
         # The physical network topology as a networkX graph
         self.topology = None
         # Class related to all things for calculating the signal-to-noise ratio
-        # TODO: Might be able to identify other variables from the configuration file, for example, guard band
-        # TODO: Consistent naming conventions
-
-        # TODO: Ensure topology info updated correctly
         self.snr_obj = SnrMeasurements(properties=properties)
 
     def release(self):
@@ -248,6 +243,8 @@ class SDNController:
         self.release()
         return False
 
+    # TODO: At this time, there is no support for light segment slicing.
+    #  Code will be removed potentially in further discussions
     def handle_lps(self):
         """
         This method attempts to perform light path slicing (LPS) or dynamic LPS to allocate a request.
@@ -258,7 +255,6 @@ class SDNController:
 
         :return: A tuple containing the response and the updated network database or False and self.dist_block
         """
-
         if not self.dynamic_lps:
             resp = self.allocate_lps()
         else:
@@ -270,65 +266,48 @@ class SDNController:
 
         return False, self.dist_block, self.path
 
-    def _update_snr_obj(self, spectrum: dict):
+    def _handle_spectrum(self, mod_options: list):
         """
-        Updates parameters related to the SNR measurements class.
+        Given modulation options, iterate through them and attempt to allocate a request with one.
 
-        :param spectrum: The spectrum chosen for the current request
-        :type spectrum: dict
+        :param mod_options: The modulation formats to consider.
+        :type mod_options: list
+
+        :return: The spectrum found for allocation, false if none can be found.
+        :rtype: dict
         """
-        self.snr_obj.path = self.path
-        self.snr_obj.path_mod = self.path_mod
-        self.snr_obj.spectrum = spectrum
-        self.snr_obj.assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
-        self.snr_obj.spectral_slots = self.spectral_slots
-        self.snr_obj.net_spec_db = self.net_spec_db
+        spectrum = None
+        for modulation in mod_options:
+            if modulation is False:
+                if self.max_segments > 1:
+                    return self.handle_lps()
 
-    # TODO: Clean this up (potentially move to a different file)
-    def _route(self):
+                continue
+
+            self.path_mod = modulation
+            spectrum = get_spectrum(mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw, path=self.path,
+                                    net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
+                                    alloc_method=self.alloc_method, modulation=modulation, check_snr=self.check_snr,
+                                    snr_obj=self.snr_obj, path_mod=self.path_mod, spectral_slots=self.spectral_slots)
+
+            # We found a spectrum, no need to check other modulation formats
+            if spectrum is not False:
+                break
+
+        return spectrum
+
+    def _handle_routing(self):
         """
-        For a given request, attempt to route and assign a modulation format based on a routing method flag.
+        Given various request information, attempt to find a route for that request.
 
-        :return: A selected path and modulation format.
-        :rtype: tuple
+        :return: The route found, false otherwise.
+        :rtype: list
         """
-        routing_obj = Routing(source=self.source, destination=self.destination,
-                              topology=self.topology, net_spec_db=self.net_spec_db,
-                              mod_formats=self.mod_per_bw[self.chosen_bw], bandwidth=self.chosen_bw,
-                              guard_slots=self.guard_slots)
-
-        if self.route_method == 'nli_aware':
-            # TODO: Constant QPSK for now
-            slots_needed = self.mod_per_bw[self.chosen_bw]['QPSK']['slots_needed']
-
-            routing_obj.slots_needed = slots_needed
-            routing_obj.beta = self.beta
-            selected_path, path_mod = routing_obj.nli_aware()
-        # TODO: Add to configuration file
-        elif self.route_method == 'xt_aware':
-            selected_path, path_mod = routing_obj.xt_aware(beta=self.beta, xt_type='with_length')
-        elif self.route_method == 'least_congested':
-            selected_path = routing_obj.least_congested_path()
-            # TODO: Constant QPSK for now
-            path_mod = 'QPSK'
-        elif self.route_method == 'shortest_path':
-            selected_path, path_mod = routing_obj.shortest_path()
-        elif self.route_method == 'ai':
-            # Used for routing related to artificial intelligence
-            selected_path = self.ai_obj.route(source=int(self.source), destination=int(self.destination),
-                                              net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw,
-                                              guard_slots=self.guard_slots)
-
-            # TODO: Make this better
-            if not selected_path:
-                path_mod = None
-            else:
-                path_len = find_path_len(path=selected_path, topology=self.topology)
-                path_mod = get_path_mod(mod_formats=self.mod_per_bw[self.chosen_bw], path_len=path_len)
-        else:
-            raise NotImplementedError(f'Routing method not recognized, got: {self.route_method}.')
-
-        return selected_path, path_mod
+        route = get_route(source=self.source, destination=self.destination, topology=self.topology,
+                          net_spec_db=self.net_spec_db, mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw,
+                          guard_slots=self.guard_slots, beta=self.beta, route_method=self.route_method,
+                          ai_obj=self.ai_obj)
+        return route
 
     def handle_event(self, request_type):
         """
@@ -340,6 +319,7 @@ class SDNController:
 
         :return: The response with relevant information, network database, and physical topology
         """
+        # TODO: Update reasons for blocking (for example, distance blocking)
         # Even if the request is blocked, we still use one transponder
         self.num_transponders = 1
         self.dist_block = False
@@ -348,37 +328,26 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        self.path, self.path_mod = self._route()
+        self.path, self.path_mod = self._handle_routing()
 
         if self.path is not False:
-            if self.path_mod is not False:
-                slots_needed = self.mod_per_bw[self.chosen_bw][self.path_mod]['slots_needed']
-                spectrum_assignment = SpectrumAssignment(path=self.path, slots_needed=slots_needed,
-                                                         net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
-                                                         is_sliced=False, alloc_method=self.alloc_method)
+            if self.check_snr != 'None':
+                mod_options = sort_nested_dict_vals(self.mod_per_bw[self.chosen_bw], nested_key='max_length')
+            else:
+                mod_options = [self.path_mod]
 
-                spectrum = spectrum_assignment.find_free_spectrum()
+            spectrum = self._handle_spectrum(mod_options=mod_options)
+            # Request was blocked
+            if spectrum is False or spectrum is None:
+                return False, self.dist_block, self.path
 
-                if spectrum is not False:
-                    if self.check_snr:
-                        self._update_snr_obj(spectrum=spectrum)
-                        snr_check = self.snr_obj.check_snr()
-                        if not snr_check:
-                            return False, self.dist_block, self.path
+            resp = {
+                'path': self.path,
+                'mod_format': self.path_mod,
+                'is_sliced': False
+            }
+            self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
+            return resp, self.net_spec_db, self.num_transponders, self.path
 
-                    resp = {
-                        'path': self.path,
-                        'mod_format': self.path_mod,
-                        'is_sliced': False
-                    }
-                    self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
-                    return resp, self.net_spec_db, self.num_transponders, self.path
-
-                # Attempt to slice the request due to a congestion constraint
-                return self.handle_lps()
-
-            self.dist_block = True
-            # Attempt to slice the request due to a reach constraint
-            return self.handle_lps()
-
-        return False, True
+        self.dist_block = True
+        return False, self.dist_block, self.path

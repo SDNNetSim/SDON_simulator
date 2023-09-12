@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 import networkx as nx
-from sim_scripts.routing import Routing
 
 
 class TestRouting(unittest.TestCase):
@@ -25,6 +24,7 @@ class TestRouting(unittest.TestCase):
             (3, 4): {'cores_matrix': np.array([[0, 1, 0], [1, 0, 0]])}
         }
         self.mod_formats = {'QPSK': {'max_length': 150}, '16-QAM': {'max_length': 100}, '64-QAM': {'max_length': 50}}
+        from sim_scripts.routing import Routing  # pylint: disable=import-outside-toplevel
         self.routing = Routing(0, 4, self.topology, self.net_spec_db, self.mod_formats, 5, 200)
 
     def test_find_least_cong_path(self):

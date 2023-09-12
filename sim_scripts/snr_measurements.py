@@ -20,7 +20,6 @@ class SnrMeasurements:
         self.phi = properties['phi']
         self.bi_directional = properties['bi_directional']
         self.xt_noise = properties['xt_noise']
-        # TODO: Change this to a dictionary in the run_ini file
         self.requested_xt = properties['requested_xt']
 
         self.light_frequency = 1.9341 * 10 ** 14
@@ -264,10 +263,42 @@ class SnrMeasurements:
             psd_nli = self._calculate_psd_nli()
             psd_ase = (self.plank * self.light_frequency * self.nsp) * (
                     math.exp(self.attenuation * self.length * 10 ** 3) - 1)
-            mean_xt = self._calculate_pxt()
+            if self.xt_noise:
+                p_xt = self._calculate_pxt()
+            else:
+                p_xt = 0
 
             snr += (1 / ((self.center_psd * self.bandwidth) / (
-                    ((psd_ase + psd_nli) * self.bandwidth + mean_xt) * self.num_span)))
+                    ((psd_ase + psd_nli) * self.bandwidth + p_xt) * self.num_span)))
+
+        snr = 10 * math.log10(1 / snr)
+
+        resp = snr > self.req_snr
+        return resp
+
+    def check_snr_xt(self):
+        """
+        Determines whether the SNR threshold can be met for a single request.
+
+        :return: Whether the SNR threshold can be met.
+        :rtype: bool
+        """
+        snr = 0
+        self._init_center_vars()
+        for link in range(0, len(self.path) - 1):
+            self.link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
+
+            self._update_link_constants()
+            self._update_link_params(link=link)
+            psd_ase = (self.plank * self.light_frequency * self.nsp) * (
+                    math.exp(self.attenuation * self.length * 10 ** 3) - 1)
+            if self.xt_noise:
+                p_xt = self._calculate_pxt()
+            else:
+                p_xt = 0
+
+            snr += (1 / ((self.center_psd * self.bandwidth) / (
+                    (psd_ase * self.bandwidth + p_xt) * self.num_span)))
 
         snr = 10 * math.log10(1 / snr)
 
@@ -283,12 +314,14 @@ class SnrMeasurements:
         """
         cross_talk = 0
 
+        self._init_center_vars()
         for link in range(0, len(self.path) - 1):
             self.link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
-            self.length = self.topology_info['links'][self.link_id]['span_length']
-            self.num_span = self.topology_info['links'][self.link_id]['length'] / self.length
+            self._update_link_constants()
+            self._update_link_params(link=link)
+
             cross_talk += self._calculate_xt() * self.num_span
 
         cross_talk = 10 * math.log10(cross_talk)
-        resp = cross_talk < self.requested_xt
+        resp = cross_talk < self.requested_xt[self.path_mod]
         return resp

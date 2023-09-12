@@ -17,6 +17,7 @@ from config.setup_config import read_config
 #   - This would also add the support of threading different traffic volumes
 # TODO: Update tests
 # TODO: Update docs
+# TODO: Multiple class inheritance instead of updating local constructors over and over?
 
 
 class NetworkSimulator:
@@ -111,7 +112,7 @@ class NetworkSimulator:
 
         :return: None
         """
-        erlang_lst = [float(erlang) for erlang in range(50, 150, 50)]
+        erlang_lst = [float(erlang) for erlang in range(50, 250, 50)]
 
         for erlang in erlang_lst:
             self.properties['arrival_rate'] = self.properties['holding_time'] * float(

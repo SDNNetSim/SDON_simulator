@@ -1,11 +1,16 @@
 # Standard library imports
 import itertools
+import copy
 from typing import List
 from operator import itemgetter
 
 # Third-party library imports
 import numpy as np
 
+import useful_functions.sim_functions
+
+
+# TODO: Better naming conventions for some newly added methods and their variables
 
 class SpectrumAssignment:  # pylint: disable=too-few-public-methods
     """
@@ -59,6 +64,11 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         # The final response from this class
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
+
+        # TODO: Make this change throughout the simulator (if this makes sense)
+        self.find_free_slots = useful_functions.sim_functions.find_free_slots
+        self.find_free_channels = useful_functions.sim_functions.find_free_channels
+        self.get_channel_overlaps = useful_functions.sim_functions.get_channel_overlaps
 
     def _check_other_links(self, core_num, start_slot, end_slot):
         """
@@ -148,6 +158,60 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                                      'end_slot': end_index + self.guard_slots}
                     return
 
+    def _check_open_slots(self, open_slots_matrix: list, flag: bool, core_num: int, des_core: int):
+        """
+        Given a matrix of unallocated spectral slots, attempt to find a channel for the request.
+
+        :param open_slots_matrix: A matrix containing each core and open spectral slots on them.
+        :type open_slots_matrix: list
+
+        :param flag: A flag to determine if we should allocate using first or last fit.
+        :type flag: bool
+
+        :param core_num: The core number in which to check other links for a potential allocation.
+        :type core_num: int
+
+        :param des_core: Tell us if we'd like to force allocation to a certain core.
+        :type des_core: int
+
+        :return: If we were able to successfully allocate or not.
+        :rtype: bool
+        """
+        for tmp_arr in open_slots_matrix:
+            if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
+                for start_index in tmp_arr:
+                    if flag == 'last_fit':
+                        end_index = (start_index - self.slots_needed - self.guard_slots) + 1
+                    else:
+                        end_index = (start_index + self.slots_needed + self.guard_slots) - 1
+                    if end_index not in tmp_arr:
+                        break
+
+                    if len(self.path) > 2:
+                        if flag == 'last_fit':
+                            # Note that these are reversed since we search in decreasing order, but allocate in
+                            # increasing order
+                            self._check_other_links(core_num, end_index, start_index + self.guard_slots)
+                        else:
+                            self._check_other_links(core_num, start_index, end_index + self.guard_slots)
+
+                    if self.is_free is not False or len(self.path) <= 2:
+                        # Since we use enumeration prior and set the matrix equal to one core, the "core_num" will
+                        # always be zero even if our desired core index is different, is this lazy coding? Idek
+                        if des_core is not None:
+                            core_num = des_core
+
+                        if flag == 'last_fit':
+                            self.response = {'core_num': core_num, 'start_slot': end_index,
+                                             'end_slot': start_index + self.guard_slots}
+                        else:
+                            self.response = {'core_num': core_num, 'start_slot': start_index,
+                                             'end_slot': end_index + self.guard_slots}
+                        return True
+
+        return False
+
+    # TODO: Write tests for this method
     def _handle_first_last(self, flag: str = None, des_core: int = None):
         """
         Handles either first-fit or last-fit spectrum allocation.
@@ -158,45 +222,105 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         :param des_core: Determine if we'd like to force allocation onto a certain core.
         :type des_core: int
         """
-        # TODO: Check if this works properly
         if des_core is not None:
-            matrix = self.cores_matrix[des_core]
-            start = des_core
+            matrix = [self.cores_matrix[des_core]]
         else:
             matrix = self.cores_matrix
-            start = 0
 
-        for core_num, core_arr in enumerate(matrix, start=start):
+        for core_num, core_arr in enumerate(matrix):
             # To account for ONLY single core light segment slicing
             if core_num > 0 and self.single_core and self.is_sliced:
                 break
 
-            if flag == 'first_fit':
-                open_slots_arr = np.where(core_arr == 0)[0]
-            elif flag == 'last_fit':
-                # TODO: Ensure this works
-                open_slots_arr = reversed(np.where(core_arr == 0)[0])
-            else:
-                raise ValueError(f'Allocation flag not recognized, expected first or last, got: {flag}')
+            open_slots_arr = np.where(core_arr == 0)[0]
 
             # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
-            open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                                 itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+            if flag == 'last_fit':
+                open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
+                                     itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+            else:
+                open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
+                                     itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
 
-            for tmp_arr in open_slots_matrix:
-                if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
-                    for start_index in tmp_arr:
-                        end_index = (start_index + self.slots_needed + self.guard_slots) - 1
-                        if end_index not in tmp_arr:
-                            break
+            resp = self._check_open_slots(open_slots_matrix=open_slots_matrix, flag=flag, core_num=core_num,
+                                          des_core=des_core)
+            # We successfully found allocation on this core, no need to check the others
+            if resp:
+                return
 
-                        if len(self.path) > 2:
-                            self._check_other_links(core_num, start_index, end_index + self.guard_slots)
+    def _check_cores_channels(self):
+        """
+        For a given path, find the free channel intersections (between cores on that path) and the free slots for
+        each link.
 
-                        if self.is_free is not False or len(self.path) <= 2:
-                            self.response = {'core_num': core_num, 'start_slot': start_index,
-                                             'end_slot': end_index + self.guard_slots}
-                            return
+        :return: The free slots, free channel intersections, free slots intersections, and free channels.
+        :rtype: dict
+        """
+        resp = {'free_slots': {}, 'free_channels': {}, 'slots_inters': {}, 'channel_inters': {}}
+
+        for source_dest in zip(self.path, self.path[1:]):
+            free_slots = self.find_free_slots(net_spec_db=self.net_spec_db, des_link=source_dest)
+            free_channels = self.find_free_channels(net_spec_db=self.net_spec_db, slots_needed=self.slots_needed,
+                                                    des_link=source_dest)
+
+            resp['free_slots'].update({source_dest: free_slots})
+            resp['free_channels'].update({source_dest: free_channels})
+
+            for core_num in resp['free_slots'][source_dest]:
+                if core_num not in resp['slots_inters']:
+                    resp['slots_inters'].update({core_num: set(resp['free_slots'][source_dest][core_num])})
+
+                    resp['channel_inters'].update({core_num: resp['free_channels'][source_dest][core_num]})
+                else:
+                    intersection = resp['slots_inters'][core_num] & set(resp['free_slots'][source_dest][core_num])
+                    resp['slots_inters'][core_num] = intersection
+                    resp['channel_inters'][core_num] = [item for item in resp['channel_inters'][core_num] if
+                                                        item in resp['free_channels'][source_dest][core_num]]
+
+        return resp
+
+    def _find_best_core(self):
+        """
+        Finds the core with the least amount of overlapping super channels for previously allocated requests.
+
+        :return: The core with the least amount of overlapping channels.
+        :rtype: int
+        """
+        path_info = self._check_cores_channels()
+        all_channels = self.get_channel_overlaps(path_info['channel_inters'],
+                                                 path_info['free_slots'])
+        sorted_cores = sorted(all_channels['other_channels'], key=lambda k: len(all_channels['other_channels'][k]))
+
+        # TODO: Comment why
+        if len(sorted_cores) > 1:
+            if 6 in sorted_cores:
+                sorted_cores.remove(6)
+        return sorted_cores[0]
+
+    def _xt_aware_allocation(self):
+        """
+        Cross-talk aware spectrum allocation. Attempts to allocate a request with the least amount of cross-talk
+        interference on neighboring cores.
+
+        :return: The information of the request if allocated, false otherwise.
+        :rtype dict
+        """
+        core = self._find_best_core()
+        core_arr = copy.deepcopy(self.net_spec_db[(self.path[0], self.path[1])]['cores_matrix'])
+
+        # TODO: Passing a desired core to handle_first_last will work fine
+        for source, destination in zip(self.path, self.path[1:]):
+            # TODO: Comment why
+            if (source, destination) != (self.path[0], self.path[1]):
+                core_arr = core_arr + self.net_spec_db[(source, destination)]['cores_matrix']
+
+        self.cores_matrix = core_arr
+        # Graph coloring for cores
+        # TODO: Only works for seven cores? Raise error if cores aren't correct
+        if core in [0, 2, 4, 6]:
+            return self._handle_first_last(des_core=core, flag='first_fit')
+
+        return self._handle_first_last(des_core=core, flag='last_fit')
 
     def find_free_spectrum(self):
         """
@@ -221,6 +345,8 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             self._best_fit_allocation()
         elif self.alloc_method in ('first_fit', 'last_fit'):
             self._handle_first_last(flag=self.alloc_method)
+        elif self.alloc_method == 'cross_talk_aware':
+            self._xt_aware_allocation()
         else:
             raise NotImplementedError(f'Expected first_fit or best_fit, got: {self.alloc_method}')
 
