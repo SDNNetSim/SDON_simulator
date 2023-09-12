@@ -1,6 +1,5 @@
 # Standard library imports
 import itertools
-import copy
 from typing import List
 from operator import itemgetter
 
