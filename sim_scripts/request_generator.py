@@ -2,10 +2,13 @@
 from useful_functions.random_generation import set_seed, uniform_rv, exponential_rv
 
 
-def generate(seed: int, nodes: list, hold_time_mean: float, arr_rate_mean: float,
+def generate(sim_type: str, seed: int, nodes: list, hold_time_mean: float, arr_rate_mean: float,
              num_reqs: int, mod_per_bw: dict, req_dist: dict):
     """
     Generates requests for a simulation.
+
+    :param sim_type: The simulation type.
+    :type sim_type: str
 
     :param seed: Seed for random number generation.
     :type seed: int
@@ -44,7 +47,12 @@ def generate(seed: int, nodes: list, hold_time_mean: float, arr_rate_mean: float
     # Generate requests, multiply number of requests by two since we have arrival and departure types
     while len(requests) < (num_reqs * 2):
         current_time += exponential_rv(arr_rate_mean)
-        depart_time = current_time + exponential_rv(hold_time_mean)
+
+        # TODO: Update
+        if sim_type == 'arash':
+            depart_time = current_time + exponential_rv(1 / hold_time_mean)
+        else:
+            depart_time = current_time + exponential_rv(hold_time_mean)
 
         source = nodes[uniform_rv(len(nodes))]
         dest = nodes[uniform_rv(len(nodes))]
