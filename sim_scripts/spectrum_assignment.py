@@ -306,15 +306,6 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         :rtype dict
         """
         core = self._find_best_core()
-        core_arr = copy.deepcopy(self.net_spec_db[(self.path[0], self.path[1])]['cores_matrix'])
-
-        # TODO: Passing a desired core to handle_first_last will work fine
-        for source, destination in zip(self.path, self.path[1:]):
-            # TODO: Comment why
-            if (source, destination) != (self.path[0], self.path[1]):
-                core_arr = core_arr + self.net_spec_db[(source, destination)]['cores_matrix']
-
-        self.cores_matrix = core_arr
         # Graph coloring for cores
         # TODO: Only works for seven cores? Raise error if cores aren't correct
         if core in [0, 2, 4, 6]:
