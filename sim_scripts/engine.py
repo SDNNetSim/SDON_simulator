@@ -366,7 +366,8 @@ class Engine(SDNController):
                                   arr_rate_mean=self.properties['arrival_rate'],
                                   num_reqs=self.properties['num_requests'],
                                   mod_per_bw=self.properties['mod_per_bw'],
-                                  req_dist=self.properties['request_distribution'])
+                                  req_dist=self.properties['request_distribution'],
+                                  sim_type=self.properties['sim_type'])
 
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
 
