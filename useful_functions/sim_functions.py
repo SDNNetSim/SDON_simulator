@@ -240,10 +240,13 @@ def find_taken_channels(net_spec_db: dict, des_link: tuple):
     return resp
 
 
-def get_route(source: str, destination: str, topology: nx.Graph, net_spec_db: dict, mod_per_bw: dict, chosen_bw: str,
-              guard_slots: int, beta: float, route_method: str, ai_obj: object, k_paths: int = 1):
+def get_route(properties: dict, source: str, destination: str, topology: nx.Graph, net_spec_db: dict, chosen_bw: str,
+              ai_obj: object):
     """
     Given request information, attempt to find a route for the request for various routing methods.
+
+    :param properties: Contains various simulation configuration properties that are constant.
+    :type properties: dict
 
     :param source: The source node.
     :type source: str
@@ -257,67 +260,51 @@ def get_route(source: str, destination: str, topology: nx.Graph, net_spec_db: di
     :param net_spec_db: The network spectrum database.
     :type net_spec_db: dict
 
-    :param mod_per_bw: The modulation formats for each bandwidth.
-    :type mod_per_bw: dict
-
     :param chosen_bw: The chosen bandwidth.
     :type chosen_bw: str
 
-    :param guard_slots: The number of slots to be allocated for the guard band.
-    :type guard_slots: int
-
-    :param beta: A metric used for calculations in different routing method types.
-    :type beta: float
-
-    :param route_method: The desired routing method.
-    :type route_method: str
-
     :param ai_obj: The object for artificial intelligence, if it's being used.
     :type ai_obj: object
-
-    :param k_paths: The number of paths we should consider.
-    :type k_paths: int
-
 
     :return: The potential paths and path modulation formats.
     :rtype: dict
     """
     routing_obj = Routing(source=source, destination=destination,
                           topology=topology, net_spec_db=net_spec_db,
-                          mod_formats=mod_per_bw[chosen_bw], bandwidth=chosen_bw,
-                          guard_slots=guard_slots)
+                          mod_formats=properties['mod_per_bw'][chosen_bw], bandwidth=chosen_bw,
+                          guard_slots=properties['guard_slots'])
 
     # TODO: Return path and path modulation
     # TODO: Change constant QPSK modulation formats
-    if route_method == 'nli_aware':
-        slots_needed = mod_per_bw[chosen_bw]['QPSK']['slots_needed']
+    if properties['route_method'] == 'nli_aware':
+        slots_needed = properties['mod_per_bw'][chosen_bw]['QPSK']['slots_needed']
         routing_obj.slots_needed = slots_needed
-        routing_obj.beta = beta
+        routing_obj.beta = properties['beta']
         resp = routing_obj.nli_aware()
-    elif route_method == 'xt_aware':
+    elif properties['route_method'] == 'xt_aware':
         # TODO: Add xt_type to the configuration file
-        resp = routing_obj.xt_aware(beta=beta, xt_type='with_length')
-    elif route_method == 'least_congested':
+        resp = routing_obj.xt_aware(beta=properties['beta'], xt_type='with_length')
+    elif properties['route_method'] == 'least_congested':
         resp = routing_obj.least_congested_path()
-    elif route_method == 'shortest_path':
+    elif properties['route_method'] == 'shortest_path':
         resp = routing_obj.shortest_path()
-    elif route_method == 'k_shortest_path':
-        resp = routing_obj.k_shortest_path(k_paths=k_paths)
-    elif route_method == 'ai':
+    elif properties['route_method'] == 'k_shortest_path':
+        resp = routing_obj.k_shortest_path(k_paths=properties['k_paths'])
+    elif properties['route_method'] == 'ai':
         # Used for routing related to artificial intelligence
         selected_path = ai_obj.route(source=int(source), destination=int(destination),
                                      net_spec_db=net_spec_db, chosen_bw=chosen_bw,
-                                     guard_slots=guard_slots)
+                                     guard_slots=properties['guard_slots'])
 
         # A path could not be found, assign None to path modulation
         if not selected_path:
             resp = [selected_path], [False]
         else:
             path_len = find_path_len(path=selected_path, topology=topology)
-            path_mod = [get_path_mod(mod_formats=mod_per_bw[chosen_bw], path_len=path_len)]
+            path_mod = [get_path_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)]
             resp = [selected_path], [path_mod]
     else:
-        raise NotImplementedError(f'Routing method not recognized, got: {route_method}.')
+        raise NotImplementedError(f"Routing method not recognized, got: {properties['route_method']}.")
 
     return resp
 

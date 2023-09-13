@@ -285,13 +285,9 @@ class SDNController:
         return spectrum
 
     def _handle_routing(self):
-        # TODO: Move towards using self.properties and nothing more
-        resp = get_route(source=self.source, destination=self.destination, topology=self.topology,
-                         net_spec_db=self.net_spec_db, mod_per_bw=self.sdn_props['mod_per_bw'],
-                         chosen_bw=self.chosen_bw,
-                         guard_slots=self.sdn_props['guard_slots'], beta=self.sdn_props['beta'],
-                         route_method=self.sdn_props['route_method'],
-                         ai_obj=self.ai_obj, k_paths=self.sdn_props['k_paths'])
+        resp = get_route(properties=self.sdn_props, source=self.source, destination=self.destination,
+                         topology=self.topology, net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw,
+                         ai_obj=self.ai_obj)
         return resp
 
     def handle_event(self, request_type):
