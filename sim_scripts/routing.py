@@ -1,6 +1,7 @@
 # Standard library imports
 import math
 import copy
+import warnings
 from typing import List
 
 # Third-party library imports
@@ -398,7 +399,6 @@ class Routing:
 
         return before, after
 
-    # TODO: Only support for 7 core fiber
     def _find_num_overlapped(self, channel: int, core_num: int, link_num: int):
         """
         Finds the number of overlapped channels for a single core on a link.
@@ -415,6 +415,7 @@ class Routing:
         :return: The total number of overlapped channels normalized by the number of cores.
         :rtype: float
         """
+        warnings.warn('Method: fund_num_overlapped in routing used that only supports 7 cores per fiber.')
         # The number of overlapped channels
         num_overlapped = 0.0
         if core_num != 6:
@@ -438,7 +439,6 @@ class Routing:
 
         return num_overlapped
 
-    # TODO: Only support for 7 core fiber
     def _find_xt_link_cost(self, free_slots_arr: list, link_num: int):
         """
         Finds the cross-talk cost for a single link.
@@ -452,6 +452,7 @@ class Routing:
         :return: The total cross-talk value for the given link.
         :rtype float
         """
+        warnings.warn('Method: find_xt_link_cost in routing used that only supports 7 cores per fiber.')
         # Non-linear impairment cost calculation
         xt_cost = 0
         # Update MCI for available channel

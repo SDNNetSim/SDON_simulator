@@ -135,7 +135,6 @@ def get_channel_overlaps(free_channels: dict, free_slots: dict):
                         overlap = True
                         break
 
-                    # TODO: We may not want to break if we'd like to use this
                     resp['other_channels'][core_num].append(curr_channel)
 
                 # No need to check other cores, we already determined this channel overlaps with other channels
@@ -274,7 +273,6 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
                           mod_formats=properties['mod_per_bw'][chosen_bw], bandwidth=chosen_bw,
                           guard_slots=properties['guard_slots'])
 
-    # TODO: Return path and path modulation
     # TODO: Change constant QPSK modulation formats
     if properties['route_method'] == 'nli_aware':
         slots_needed = properties['mod_per_bw'][chosen_bw]['QPSK']['slots_needed']
