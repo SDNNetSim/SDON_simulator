@@ -48,6 +48,7 @@ class SDNController:
         # The physical network topology as a networkX graph
         self.topology = None
         # Class related to all things for calculating the signal-to-noise ratio
+        # TODO: Check on this functions constructor
         self.snr_obj = SnrMeasurements(properties=properties)
 
     def release(self):
