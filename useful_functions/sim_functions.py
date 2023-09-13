@@ -322,13 +322,13 @@ def get_route(source: str, destination: str, topology: nx.Graph, net_spec_db: di
     return resp
 
 
-def get_spectrum(mod_per_bw: dict, chosen_bw: str, path: list, net_spec_db: dict, guard_slots: int, alloc_method: str,
-                 modulation: str, check_snr: bool, snr_obj: object, path_mod: str, spectral_slots: int):
+def get_spectrum(properties: dict, chosen_bw: str, path: list, net_spec_db: dict, modulation: str, snr_obj: object,
+                 path_mod: str):
     """
     Given relevant request information, find a given spectrum for various allocation methods.
 
-    :param mod_per_bw: The modulation formats for each bandwidth.
-    :type mod_per_bw: dict
+    :param properties: Contains various simulation configuration properties that are constant.
+    :type properties: dict
 
     :param chosen_bw: The chosen bandwidth for this request.
     :type chosen_bw: str
@@ -339,17 +339,8 @@ def get_spectrum(mod_per_bw: dict, chosen_bw: str, path: list, net_spec_db: dict
     :param net_spec_db: The network spectrum database.
     :type net_spec_db: dict
 
-    :param guard_slots: The number of slots to be allocated to the guard band.
-    :type guard_slots: int
-
-    :param alloc_method: The desired allocation method.
-    :type alloc_method: str
-
     :param modulation: The modulation format chosen for this request.
     :type modulation: str
-
-    :param check_snr: A flag to check signal-to-noise ratio calculations or not.
-    :type check_snr: str
 
     :param snr_obj: If check_snr is true, the object containing all snr related methods.
     :type snr_obj: object
@@ -357,25 +348,24 @@ def get_spectrum(mod_per_bw: dict, chosen_bw: str, path: list, net_spec_db: dict
     :param path_mod: The modulation format for the given path.
     :type path_mod: str
 
-    :param spectral_slots: The number of spectral slots needed for the request.
-    :type spectral_slots: int
-
     :return: The information related to the spectrum found for allocation, false otherwise.
     :rtype: dict
     """
-    slots_needed = mod_per_bw[chosen_bw][modulation]['slots_needed']
+    slots_needed = properties['mod_per_bw'][chosen_bw][modulation]['slots_needed']
     spectrum_assignment = sim_scripts.spectrum_assignment.SpectrumAssignment(path=path, slots_needed=slots_needed,
                                                                              net_spec_db=net_spec_db,
-                                                                             guard_slots=guard_slots,
-                                                                             is_sliced=False, alloc_method=alloc_method)
+                                                                             guard_slots=properties['guard_slots'],
+                                                                             is_sliced=False,
+                                                                             alloc_method=properties[
+                                                                                 'allocation_method'])
 
     spectrum = spectrum_assignment.find_free_spectrum()
 
     if spectrum is not False:
-        if check_snr != 'None':
+        if properties['check_snr'] != 'None':
             _update_snr_obj(snr_obj=snr_obj, spectrum=spectrum, path=path, path_mod=path_mod,
-                            spectral_slots=spectral_slots, net_spec_db=net_spec_db)
-            snr_check = handle_snr(check_snr=check_snr, snr_obj=snr_obj)
+                            spectral_slots=properties['spectral_slots'], net_spec_db=net_spec_db)
+            snr_check = handle_snr(check_snr=properties['check_snr'], snr_obj=snr_obj)
 
             if not snr_check:
                 return False

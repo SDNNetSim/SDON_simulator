@@ -35,8 +35,6 @@ class SDNController:
         self.destination = None
         # The current path
         self.path = None
-        # The current path modulation format
-        self.path_mod = None
         # The chosen bandwidth for the current request
         self.chosen_bw = None
         # Determines if light slicing is limited to a single core or not
@@ -48,7 +46,6 @@ class SDNController:
         # The physical network topology as a networkX graph
         self.topology = None
         # Class related to all things for calculating the signal-to-noise ratio
-        # TODO: Check on this functions constructor
         self.snr_obj = SnrMeasurements(properties=properties)
 
     def release(self):
@@ -152,7 +149,8 @@ class SDNController:
                                                          net_spec_db=self.net_spec_db,
                                                          guard_slots=self.sdn_props['guard_slots'],
                                                          single_core=self.single_core,
-                                                         is_sliced=True, alloc_method=self.sdn_props['allocation_method'])
+                                                         is_sliced=True,
+                                                         alloc_method=self.sdn_props['allocation_method'])
                 selected_spectrum = spectrum_assignment.find_free_spectrum()
 
                 if selected_spectrum is not False:
@@ -205,7 +203,8 @@ class SDNController:
                                                          net_spec_db=self.net_spec_db,
                                                          guard_slots=self.sdn_props['guard_slots'],
                                                          single_core=self.single_core,
-                                                         is_sliced=True, alloc_method=self.sdn_props['allocation_method'])
+                                                         is_sliced=True,
+                                                         alloc_method=self.sdn_props['allocation_method'])
                 selected_spectrum = spectrum_assignment.find_free_spectrum()
 
                 if selected_spectrum is not False:
@@ -275,14 +274,9 @@ class SDNController:
 
                 continue
 
-            self.path_mod = modulation
-            # TODO: Move to use less params and just self.properties
-            spectrum = get_spectrum(mod_per_bw=self.sdn_props['mod_per_bw'], chosen_bw=self.chosen_bw, path=self.path,
-                                    net_spec_db=self.net_spec_db, guard_slots=self.sdn_props['guard_slots'],
-                                    alloc_method=self.sdn_props['allocation_method'], modulation=modulation,
-                                    check_snr=self.sdn_props['check_snr'],
-                                    snr_obj=self.snr_obj, path_mod=self.path_mod,
-                                    spectral_slots=self.sdn_props['spectral_slots'])
+            spectrum = get_spectrum(properties=self.sdn_props, chosen_bw=self.chosen_bw, path=self.path,
+                                    net_spec_db=self.net_spec_db, modulation=modulation, snr_obj=self.snr_obj,
+                                    path_mod=modulation)
 
             # We found a spectrum, no need to check other modulation formats
             if spectrum is not False:
@@ -323,9 +317,8 @@ class SDNController:
 
         for path, path_mod in zip(paths, path_mods):
             self.path = path
-            self.path_mod = path_mod
 
-            if path is not False and self.path_mod is not False:
+            if path is not False and path_mod is not False:
                 if self.sdn_props['check_snr'] != 'None':
                     mod_options = sort_nested_dict_vals(self.sdn_props['mod_per_bw'][self.chosen_bw],
                                                         nested_key='max_length')
@@ -339,7 +332,7 @@ class SDNController:
 
                 resp = {
                     'path': self.path,
-                    'mod_format': self.path_mod,
+                    'mod_format': path_mod,
                     'is_sliced': False
                 }
                 self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
