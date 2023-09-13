@@ -287,7 +287,7 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
     elif properties['route_method'] == 'least_congested':
         resp = routing_obj.least_congested_path()
     elif properties['route_method'] == 'shortest_path':
-        resp = routing_obj.shortest_path()
+        resp = routing_obj.least_weight_path(weight='length')
     elif properties['route_method'] == 'k_shortest_path':
         resp = routing_obj.k_shortest_path(k_paths=properties['k_paths'])
     elif properties['route_method'] == 'ai':

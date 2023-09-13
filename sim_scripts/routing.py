@@ -157,17 +157,19 @@ class Routing:
         # If no valid path was found, return a tuple indicating failure
         return [False], [False]
 
-    # TODO: Combine these three methods into one once modulation format gets figured out?
-    def shortest_path(self):
+    def least_weight_path(self, weight: str):
         """
-        Given a graph with a desired source and destination, find the shortest path with respect to link lengths.
+        Given a graph with a desired source and destination, find the shortest path with respect to a given weight.
+
+        :param weight: Determines the weight to consider for finding the shortest path.
+        :type weight: str
 
         :return: A tuple containing the shortest path and its modulation format
         :rtype: tuple
         """
         # This networkx function will always return the shortest paths in order
         paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
-                                             weight='length')
+                                             weight=weight)
 
         for path in paths_obj:
             path_len = self.find_path_len(path, self.topology)
@@ -252,37 +254,6 @@ class Routing:
 
         self.net_spec_db[links[0]]['cores_matrix'][0] = original_link
         return nli_worst
-
-    # TODO: Combine these with shortest paths and add a weight flag
-    def _least_nli_path(self):
-        """
-        Selects the path with the least amount of NLI cost.
-
-        :return: The path and modulation format chosen.
-        :rtype: tuple
-        """
-        # This networkx function will always return the shortest paths in order
-        paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
-                                             weight='nli_cost')
-
-        for path in paths_obj:
-            # TODO: Change always a constant modulation format
-            return [path], ['QPSK']
-
-    def _least_xt_path(self):
-        """
-        Selects the path with the least amount of xt cost.
-
-        :return: The path and modulation format chosen.
-        :rtype: tuple
-        """
-        # This networkx function will always return the shortest paths in order
-        paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
-                                             weight='xt_cost')
-
-        for path in paths_obj:
-            # TODO: Change always a constant modulation format
-            return [path], ['QPSK']
 
     # TODO: Potential repeat code
     def _find_channel_mci(self, num_spans: float, center_freq: float, taken_channels: list):
@@ -401,7 +372,7 @@ class Routing:
 
             self.topology[source][destination]['nli_cost'] = link_cost
 
-        return self._least_nli_path()
+        return self.least_weight_path(weight='nli_cost')
 
     # TODO: Move core number to the constructor?
     @staticmethod
@@ -528,7 +499,7 @@ class Routing:
 
             self.topology[source][destination]['xt_cost'] = link_cost
 
-        return self._least_xt_path()
+        return self.least_weight_path(weight='xt_cost')
 
     def nli_path(self, path: list):
         """
