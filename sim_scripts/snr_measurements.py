@@ -89,7 +89,8 @@ class SnrMeasurements:
         :return: The updated cross-phase modulation noise.
         :rtype: float
         """
-        num_slots = len(np.where(spectrum_contents == curr_link[self.spectrum['core_num']])[0]) * self.snr_props['bw_per_slot']
+        num_slots = len(np.where(spectrum_contents == curr_link[self.spectrum['core_num']])[0]) * self.snr_props[
+            'bw_per_slot']
         channel_freq = ((slot_index * self.snr_props['bw_per_slot']) + (num_slots / 2)) * 10 ** 9
 
         channel_bw = num_slots * 10 ** 9
@@ -209,8 +210,9 @@ class SnrMeasurements:
         :param link: The current link number of the path we are on.
         :type link: int
         """
-        self.mu_param = (3 * (self.snr_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2)) / (
-                2 * math.pi * self.attenuation * np.abs(self.dispersion))
+        self.mu_param = (3 * (
+                    self.snr_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2)) / (
+                                2 * math.pi * self.attenuation * np.abs(self.dispersion))
         self.sci_psd = self._calculate_sci_psd()
         self.xci_psd = self._calculate_xci(link=link)
         # TODO Add support for self.snr_props['topology_info']['links'][link_id]['fiber']['nsp']

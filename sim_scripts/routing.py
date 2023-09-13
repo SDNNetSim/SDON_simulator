@@ -178,7 +178,16 @@ class Routing:
 
             return [path], [mod_format]
 
-    def k_shortest_path(self, k_paths):
+    def k_shortest_path(self, k_paths: int):
+        """
+        Finds the k-shortest-paths based on link lengths.
+
+        :param k_paths: The number of paths to consider.
+        :type k_paths: int
+
+        :return: The k-shortest-paths with their modulation formats assigned.
+        :rtype: tuple
+        """
         paths = list()
         mod_formats = list()
         # This networkx function will always return the shortest paths in order

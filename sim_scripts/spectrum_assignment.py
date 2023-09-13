@@ -10,7 +10,6 @@ import numpy as np
 import useful_functions.sim_functions
 
 
-
 class SpectrumAssignment:  # pylint: disable=too-few-public-methods
     """
     Finds available spectrum slots for a given request.
