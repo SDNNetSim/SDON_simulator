@@ -309,13 +309,13 @@ def get_route(source: str, destination: str, topology: nx.Graph, net_spec_db: di
                                      net_spec_db=net_spec_db, chosen_bw=chosen_bw,
                                      guard_slots=guard_slots)
 
-        resp = {'paths': [selected_path]}
         # A path could not be found, assign None to path modulation
         if not selected_path:
-            resp['path_mods'] = [False]
+            resp = [selected_path], [False]
         else:
             path_len = find_path_len(path=selected_path, topology=topology)
-            resp['path_mods'] = [get_path_mod(mod_formats=mod_per_bw[chosen_bw], path_len=path_len)]
+            path_mod = [get_path_mod(mod_formats=mod_per_bw[chosen_bw], path_len=path_len)]
+            resp = [selected_path], [path_mod]
     else:
         raise NotImplementedError(f'Routing method not recognized, got: {route_method}.')
 

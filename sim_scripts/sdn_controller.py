@@ -326,15 +326,13 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        # TODO: Update to work with k-shortest paths
-        potential_paths = self._handle_routing()
+        paths, path_mods = self._handle_routing()
 
-        # TODO: Ensure this works for k-shortest paths and not using it as well
-        for path, path_mod in potential_paths.items():
+        for path, path_mod in zip(paths, path_mods):
             self.path = path
             self.path_mod = path_mod
 
-            if path is not False:
+            if path is not False and self.path_mod is not False:
                 if self.check_snr != 'None':
                     mod_options = sort_nested_dict_vals(self.mod_per_bw[self.chosen_bw], nested_key='max_length')
                 else:

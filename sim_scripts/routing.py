@@ -152,11 +152,10 @@ class Routing:
                 else:
                     least_cong_path = self.find_least_cong_path()
                     # TODO: Change, always a constant modulation format
-                    resp = {'paths': [least_cong_path], 'path_mods': ['QPSK']}
-                    return resp
+                    return [least_cong_path], 'QPSK'
 
         # If no valid path was found, return a tuple indicating failure
-        return {'paths': [False], 'path_mods': [False]}
+        return [False], [False]
 
     # TODO: Combine these three methods into one once modulation format gets figured out?
     def shortest_path(self):
@@ -174,8 +173,7 @@ class Routing:
             path_len = self.find_path_len(path, self.topology)
             mod_format = self.get_path_mod(self.mod_formats, path_len)
 
-            resp = {'paths': [path], 'path_mods': [mod_format]}
-            return resp
+            return [path], [mod_format]
 
     def k_shortest_path(self, k_paths):
         paths = list()
@@ -193,8 +191,7 @@ class Routing:
             paths.append(path)
             mod_formats.append(mod_format)
 
-        resp = {'paths': paths, 'path_mods': mod_formats}
-        return resp
+        return paths, mod_formats
 
     # TODO: Move these functions to useful functions eventually, also check the entire simulator for things like this
     def _setup_simulated_link(self, slots_per_core: int):
@@ -270,8 +267,7 @@ class Routing:
 
         for path in paths_obj:
             # TODO: Change always a constant modulation format
-            resp = {'paths': [path], 'path_mods': ['QPSK']}
-            return resp
+            return [path], ['QPSK']
 
     def _least_xt_path(self):
         """
@@ -286,9 +282,7 @@ class Routing:
 
         for path in paths_obj:
             # TODO: Change always a constant modulation format
-            resp = {'paths': [path], 'path_mods': ['QPSK']}
-
-            return resp
+            return [path], ['QPSK']
 
     # TODO: Potential repeat code
     def _find_channel_mci(self, num_spans: float, center_freq: float, taken_channels: list):
