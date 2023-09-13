@@ -349,7 +349,7 @@ def get_spectrum(mod_per_bw: dict, chosen_bw: str, path: list, net_spec_db: dict
     :type modulation: str
 
     :param check_snr: A flag to check signal-to-noise ratio calculations or not.
-    :type check_snr: bool
+    :type check_snr: str
 
     :param snr_obj: If check_snr is true, the object containing all snr related methods.
     :type snr_obj: object
@@ -372,7 +372,7 @@ def get_spectrum(mod_per_bw: dict, chosen_bw: str, path: list, net_spec_db: dict
     spectrum = spectrum_assignment.find_free_spectrum()
 
     if spectrum is not False:
-        if check_snr:
+        if check_snr != 'None':
             _update_snr_obj(snr_obj=snr_obj, spectrum=spectrum, path=path, path_mod=path_mod,
                             spectral_slots=spectral_slots, net_spec_db=net_spec_db)
             snr_check = handle_snr(check_snr=check_snr, snr_obj=snr_obj)
