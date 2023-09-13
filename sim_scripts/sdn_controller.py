@@ -22,6 +22,7 @@ class SDNController:
         :param ai_obj: Class containing all methods related to AI
         :type ai_obj: object
         """
+        # TODO: Move away from this and just use self.properties across methods (also check other methods for this)
         self.topology_info = properties['topology_info']
         self.cores_per_link = properties['cores_per_link']
         self.sim_type = properties['sim_type']
@@ -36,6 +37,7 @@ class SDNController:
         self.ai_obj = ai_obj
         self.spectral_slots = properties['spectral_slots']
         self.check_snr = properties['check_snr']
+        self.k_paths = properties['k_paths']
 
         # The current request id number
         self.req_id = None
@@ -285,6 +287,7 @@ class SDNController:
                 continue
 
             self.path_mod = modulation
+            # TODO: Move to use less params and just self.properties
             spectrum = get_spectrum(mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw, path=self.path,
                                     net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
                                     alloc_method=self.alloc_method, modulation=modulation, check_snr=self.check_snr,
@@ -297,17 +300,12 @@ class SDNController:
         return spectrum
 
     def _handle_routing(self):
-        """
-        Given various request information, attempt to find a route for that request.
-
-        :return: The route found, false otherwise.
-        :rtype: list
-        """
-        route = get_route(source=self.source, destination=self.destination, topology=self.topology,
-                          net_spec_db=self.net_spec_db, mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw,
-                          guard_slots=self.guard_slots, beta=self.beta, route_method=self.route_method,
-                          ai_obj=self.ai_obj)
-        return route
+        # TODO: Move towards using self.properties and nothing more
+        resp = get_route(source=self.source, destination=self.destination, topology=self.topology,
+                         net_spec_db=self.net_spec_db, mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw,
+                         guard_slots=self.guard_slots, beta=self.beta, route_method=self.route_method,
+                         ai_obj=self.ai_obj, k_paths=self.k_paths)
+        return resp
 
     def handle_event(self, request_type):
         """
@@ -328,26 +326,32 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        self.path, self.path_mod = self._handle_routing()
+        # TODO: Update to work with k-shortest paths
+        potential_paths = self._handle_routing()
 
-        if self.path is not False:
-            if self.check_snr != 'None':
-                mod_options = sort_nested_dict_vals(self.mod_per_bw[self.chosen_bw], nested_key='max_length')
-            else:
-                mod_options = [self.path_mod]
+        # TODO: Ensure this works for k-shortest paths and not using it as well
+        for path, path_mod in potential_paths.items():
+            self.path = path
+            self.path_mod = path_mod
 
-            spectrum = self._handle_spectrum(mod_options=mod_options)
-            # Request was blocked
-            if spectrum is False or spectrum is None:
-                return False, self.dist_block, self.path
+            if path is not False:
+                if self.check_snr != 'None':
+                    mod_options = sort_nested_dict_vals(self.mod_per_bw[self.chosen_bw], nested_key='max_length')
+                else:
+                    mod_options = [path_mod]
 
-            resp = {
-                'path': self.path,
-                'mod_format': self.path_mod,
-                'is_sliced': False
-            }
-            self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
-            return resp, self.net_spec_db, self.num_transponders, self.path
+                spectrum = self._handle_spectrum(mod_options=mod_options)
+                # Request was blocked
+                if spectrum is False or spectrum is None:
+                    return False, self.dist_block, self.path
+
+                resp = {
+                    'path': self.path,
+                    'mod_format': self.path_mod,
+                    'is_sliced': False
+                }
+                self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
+                return resp, self.net_spec_db, self.num_transponders, self.path
 
         self.dist_block = True
         return False, self.dist_block, self.path

@@ -241,7 +241,7 @@ def find_taken_channels(net_spec_db: dict, des_link: tuple):
 
 
 def get_route(source: str, destination: str, topology: nx.Graph, net_spec_db: dict, mod_per_bw: dict, chosen_bw: str,
-              guard_slots: int, beta: float, route_method: str, ai_obj: object):
+              guard_slots: int, beta: float, route_method: str, ai_obj: object, k_paths: int = 1):
     """
     Given request information, attempt to find a route for the request for various routing methods.
 
@@ -275,46 +275,51 @@ def get_route(source: str, destination: str, topology: nx.Graph, net_spec_db: di
     :param ai_obj: The object for artificial intelligence, if it's being used.
     :type ai_obj: object
 
+    :param k_paths: The number of paths we should consider.
+    :type k_paths: int
 
-    :return: The selected path and path modulation.
-    :rtype: tuple
+
+    :return: The potential paths and path modulation formats.
+    :rtype: dict
     """
     routing_obj = Routing(source=source, destination=destination,
                           topology=topology, net_spec_db=net_spec_db,
                           mod_formats=mod_per_bw[chosen_bw], bandwidth=chosen_bw,
                           guard_slots=guard_slots)
 
+    # TODO: Return path and path modulation
     # TODO: Change constant QPSK modulation formats
     if route_method == 'nli_aware':
         slots_needed = mod_per_bw[chosen_bw]['QPSK']['slots_needed']
         routing_obj.slots_needed = slots_needed
         routing_obj.beta = beta
-        selected_path, path_mod = routing_obj.nli_aware()
+        resp = routing_obj.nli_aware()
     elif route_method == 'xt_aware':
         # TODO: Add xt_type to the configuration file
-        selected_path, path_mod = routing_obj.xt_aware(beta=beta, xt_type='with_length')
+        resp = routing_obj.xt_aware(beta=beta, xt_type='with_length')
     elif route_method == 'least_congested':
-        selected_path = routing_obj.least_congested_path()
-        # TODO: Constant QPSK for now
-        path_mod = 'QPSK'
+        resp = routing_obj.least_congested_path()
     elif route_method == 'shortest_path':
-        selected_path, path_mod = routing_obj.shortest_path()
+        resp = routing_obj.shortest_path()
+    elif route_method == 'k_shortest_path':
+        resp = routing_obj.k_shortest_path(k_paths=k_paths)
     elif route_method == 'ai':
         # Used for routing related to artificial intelligence
         selected_path = ai_obj.route(source=int(source), destination=int(destination),
                                      net_spec_db=net_spec_db, chosen_bw=chosen_bw,
                                      guard_slots=guard_slots)
 
+        resp = {'paths': [selected_path]}
         # A path could not be found, assign None to path modulation
         if not selected_path:
-            path_mod = None
+            resp['path_mods'] = [False]
         else:
             path_len = find_path_len(path=selected_path, topology=topology)
-            path_mod = get_path_mod(mod_formats=mod_per_bw[chosen_bw], path_len=path_len)
+            resp['path_mods'] = [get_path_mod(mod_formats=mod_per_bw[chosen_bw], path_len=path_len)]
     else:
         raise NotImplementedError(f'Routing method not recognized, got: {route_method}.')
 
-    return selected_path, path_mod
+    return resp
 
 
 def get_spectrum(mod_per_bw: dict, chosen_bw: str, path: list, net_spec_db: dict, guard_slots: int, alloc_method: str,

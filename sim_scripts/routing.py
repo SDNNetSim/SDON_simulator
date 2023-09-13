@@ -151,10 +151,12 @@ class Routing:
                 # We exceeded minimum hops plus one, return the best path
                 else:
                     least_cong_path = self.find_least_cong_path()
-                    return least_cong_path
+                    # TODO: Change, always a constant modulation format
+                    resp = {'paths': [least_cong_path], 'path_mods': ['QPSK']}
+                    return resp
 
         # If no valid path was found, return a tuple indicating failure
-        return False, False, False
+        return {'paths': [False], 'path_mods': [False]}
 
     # TODO: Combine these three methods into one once modulation format gets figured out?
     def shortest_path(self):
@@ -172,7 +174,27 @@ class Routing:
             path_len = self.find_path_len(path, self.topology)
             mod_format = self.get_path_mod(self.mod_formats, path_len)
 
-            return path, mod_format
+            resp = {'paths': [path], 'path_mods': [mod_format]}
+            return resp
+
+    def k_shortest_path(self, k_paths):
+        paths = list()
+        mod_formats = list()
+        # This networkx function will always return the shortest paths in order
+        paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
+                                             weight='length')
+
+        for k, path in enumerate(paths_obj):
+            if k > k_paths - 1:
+                break
+            path_len = self.find_path_len(path, self.topology)
+            mod_format = self.get_path_mod(self.mod_formats, path_len)
+
+            paths.append(path)
+            mod_formats.append(mod_format)
+
+        resp = {'paths': paths, 'path_mods': mod_formats}
+        return resp
 
     # TODO: Move these functions to useful functions eventually, also check the entire simulator for things like this
     def _setup_simulated_link(self, slots_per_core: int):
@@ -234,6 +256,7 @@ class Routing:
         self.net_spec_db[links[0]]['cores_matrix'][0] = original_link
         return nli_worst
 
+    # TODO: Combine these with shortest paths and add a weight flag
     def _least_nli_path(self):
         """
         Selects the path with the least amount of NLI cost.
@@ -246,10 +269,9 @@ class Routing:
                                              weight='nli_cost')
 
         for path in paths_obj:
-            # TODO: Change always a constant
-            mod_format = 'QPSK'
-
-            return path, mod_format
+            # TODO: Change always a constant modulation format
+            resp = {'paths': [path], 'path_mods': ['QPSK']}
+            return resp
 
     def _least_xt_path(self):
         """
@@ -263,10 +285,10 @@ class Routing:
                                              weight='xt_cost')
 
         for path in paths_obj:
-            # TODO: Change always a constant
-            mod_format = 'QPSK'
+            # TODO: Change always a constant modulation format
+            resp = {'paths': [path], 'path_mods': ['QPSK']}
 
-            return path, mod_format
+            return resp
 
     # TODO: Potential repeat code
     def _find_channel_mci(self, num_spans: float, center_freq: float, taken_channels: list):
