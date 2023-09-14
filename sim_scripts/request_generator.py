@@ -1,3 +1,5 @@
+import warnings
+
 # Local application imports
 from useful_functions.random_generation import set_seed, uniform_rv, exponential_rv
 
@@ -39,7 +41,8 @@ def generate(sim_type: str, seed: int, nodes: list, hold_time_mean: float, arr_r
     current_time = 0
     counter_id = 1
     set_seed(seed=seed)
-    # TODO: Fixme if request distribution isn't an even number this gets stuck
+    warnings.warn('Request generation only works if the amount of requests can be evenly distributed.')
+
     bandwidth_counts = {bandwidth: int(req_dist[bandwidth] * num_reqs) for bandwidth in
                         mod_per_bw}
     bandwidth_list = list(mod_per_bw.keys())
@@ -48,7 +51,6 @@ def generate(sim_type: str, seed: int, nodes: list, hold_time_mean: float, arr_r
     while len(requests) < (num_reqs * 2):
         current_time += exponential_rv(arr_rate_mean)
 
-        # TODO: Update
         if sim_type == 'arash':
             depart_time = current_time + exponential_rv(1 / hold_time_mean)
         else:

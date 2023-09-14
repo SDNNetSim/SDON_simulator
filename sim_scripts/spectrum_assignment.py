@@ -1,5 +1,6 @@
 # Standard library imports
 import itertools
+import warnings
 from typing import List
 from operator import itemgetter
 
@@ -8,8 +9,6 @@ import numpy as np
 
 import useful_functions.sim_functions
 
-
-# TODO: Better naming conventions for some newly added methods and their variables
 
 class SpectrumAssignment:  # pylint: disable=too-few-public-methods
     """
@@ -64,7 +63,6 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         # The final response from this class
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
 
-        # TODO: Make this change throughout the simulator (if this makes sense)
         self.find_free_slots = useful_functions.sim_functions.find_free_slots
         self.find_free_channels = useful_functions.sim_functions.find_free_channels
         self.get_channel_overlaps = useful_functions.sim_functions.get_channel_overlaps
@@ -304,9 +302,9 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         :return: The information of the request if allocated, false otherwise.
         :rtype dict
         """
+        warnings.warn('Method: xt_aware_allocation used in spectrum_assignment that only supports 7 cores per fiber.')
         core = self._find_best_core()
         # Graph coloring for cores
-        # TODO: Only works for seven cores? Raise error if cores aren't correct
         if core in [0, 2, 4, 6]:
             return self._handle_first_last(des_core=core, flag='first_fit')
 

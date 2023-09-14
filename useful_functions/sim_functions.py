@@ -135,7 +135,6 @@ def get_channel_overlaps(free_channels: dict, free_slots: dict):
                         overlap = True
                         break
 
-                    # TODO: We may not want to break if we'd like to use this
                     resp['other_channels'][core_num].append(curr_channel)
 
                 # No need to check other cores, we already determined this channel overlaps with other channels
@@ -240,10 +239,13 @@ def find_taken_channels(net_spec_db: dict, des_link: tuple):
     return resp
 
 
-def get_route(source: str, destination: str, topology: nx.Graph, net_spec_db: dict, mod_per_bw: dict, chosen_bw: str,
-              guard_slots: int, beta: float, route_method: str, ai_obj: object):
+def get_route(properties: dict, source: str, destination: str, topology: nx.Graph, net_spec_db: dict, chosen_bw: str,
+              ai_obj: object):
     """
     Given request information, attempt to find a route for the request for various routing methods.
+
+    :param properties: Contains various simulation configuration properties that are constant.
+    :type properties: dict
 
     :param source: The source node.
     :type source: str
@@ -257,73 +259,61 @@ def get_route(source: str, destination: str, topology: nx.Graph, net_spec_db: di
     :param net_spec_db: The network spectrum database.
     :type net_spec_db: dict
 
-    :param mod_per_bw: The modulation formats for each bandwidth.
-    :type mod_per_bw: dict
-
     :param chosen_bw: The chosen bandwidth.
     :type chosen_bw: str
-
-    :param guard_slots: The number of slots to be allocated for the guard band.
-    :type guard_slots: int
-
-    :param beta: A metric used for calculations in different routing method types.
-    :type beta: float
-
-    :param route_method: The desired routing method.
-    :type route_method: str
 
     :param ai_obj: The object for artificial intelligence, if it's being used.
     :type ai_obj: object
 
-
-    :return: The selected path and path modulation.
-    :rtype: tuple
+    :return: The potential paths and path modulation formats.
+    :rtype: dict
     """
     routing_obj = Routing(source=source, destination=destination,
                           topology=topology, net_spec_db=net_spec_db,
-                          mod_formats=mod_per_bw[chosen_bw], bandwidth=chosen_bw,
-                          guard_slots=guard_slots)
+                          mod_formats=properties['mod_per_bw'][chosen_bw], bandwidth=chosen_bw,
+                          guard_slots=properties['guard_slots'])
 
     # TODO: Change constant QPSK modulation formats
-    if route_method == 'nli_aware':
-        slots_needed = mod_per_bw[chosen_bw]['QPSK']['slots_needed']
+    if properties['route_method'] == 'nli_aware':
+        slots_needed = properties['mod_per_bw'][chosen_bw]['QPSK']['slots_needed']
         routing_obj.slots_needed = slots_needed
-        routing_obj.beta = beta
-        selected_path, path_mod = routing_obj.nli_aware()
-    elif route_method == 'xt_aware':
+        routing_obj.beta = properties['beta']
+        resp = routing_obj.nli_aware()
+    elif properties['route_method'] == 'xt_aware':
         # TODO: Add xt_type to the configuration file
-        selected_path, path_mod = routing_obj.xt_aware(beta=beta, xt_type='with_length')
-    elif route_method == 'least_congested':
-        selected_path = routing_obj.least_congested_path()
-        # TODO: Constant QPSK for now
-        path_mod = 'QPSK'
-    elif route_method == 'shortest_path':
-        selected_path, path_mod = routing_obj.shortest_path()
-    elif route_method == 'ai':
+        resp = routing_obj.xt_aware(beta=properties['beta'], xt_type='with_length')
+    elif properties['route_method'] == 'least_congested':
+        resp = routing_obj.least_congested_path()
+    elif properties['route_method'] == 'shortest_path':
+        resp = routing_obj.least_weight_path(weight='length')
+    elif properties['route_method'] == 'k_shortest_path':
+        resp = routing_obj.k_shortest_path(k_paths=properties['k_paths'])
+    elif properties['route_method'] == 'ai':
         # Used for routing related to artificial intelligence
         selected_path = ai_obj.route(source=int(source), destination=int(destination),
                                      net_spec_db=net_spec_db, chosen_bw=chosen_bw,
-                                     guard_slots=guard_slots)
+                                     guard_slots=properties['guard_slots'])
 
         # A path could not be found, assign None to path modulation
         if not selected_path:
-            path_mod = None
+            resp = [selected_path], [False]
         else:
             path_len = find_path_len(path=selected_path, topology=topology)
-            path_mod = get_path_mod(mod_formats=mod_per_bw[chosen_bw], path_len=path_len)
+            path_mod = [get_path_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)]
+            resp = [selected_path], [path_mod]
     else:
-        raise NotImplementedError(f'Routing method not recognized, got: {route_method}.')
+        raise NotImplementedError(f"Routing method not recognized, got: {properties['route_method']}.")
 
-    return selected_path, path_mod
+    return resp
 
 
-def get_spectrum(mod_per_bw: dict, chosen_bw: str, path: list, net_spec_db: dict, guard_slots: int, alloc_method: str,
-                 modulation: str, check_snr: bool, snr_obj: object, path_mod: str, spectral_slots: int):
+def get_spectrum(properties: dict, chosen_bw: str, path: list, net_spec_db: dict, modulation: str, snr_obj: object,
+                 path_mod: str):
     """
     Given relevant request information, find a given spectrum for various allocation methods.
 
-    :param mod_per_bw: The modulation formats for each bandwidth.
-    :type mod_per_bw: dict
+    :param properties: Contains various simulation configuration properties that are constant.
+    :type properties: dict
 
     :param chosen_bw: The chosen bandwidth for this request.
     :type chosen_bw: str
@@ -334,17 +324,8 @@ def get_spectrum(mod_per_bw: dict, chosen_bw: str, path: list, net_spec_db: dict
     :param net_spec_db: The network spectrum database.
     :type net_spec_db: dict
 
-    :param guard_slots: The number of slots to be allocated to the guard band.
-    :type guard_slots: int
-
-    :param alloc_method: The desired allocation method.
-    :type alloc_method: str
-
     :param modulation: The modulation format chosen for this request.
     :type modulation: str
-
-    :param check_snr: A flag to check signal-to-noise ratio calculations or not.
-    :type check_snr: bool
 
     :param snr_obj: If check_snr is true, the object containing all snr related methods.
     :type snr_obj: object
@@ -352,25 +333,24 @@ def get_spectrum(mod_per_bw: dict, chosen_bw: str, path: list, net_spec_db: dict
     :param path_mod: The modulation format for the given path.
     :type path_mod: str
 
-    :param spectral_slots: The number of spectral slots needed for the request.
-    :type spectral_slots: int
-
     :return: The information related to the spectrum found for allocation, false otherwise.
     :rtype: dict
     """
-    slots_needed = mod_per_bw[chosen_bw][modulation]['slots_needed']
+    slots_needed = properties['mod_per_bw'][chosen_bw][modulation]['slots_needed']
     spectrum_assignment = sim_scripts.spectrum_assignment.SpectrumAssignment(path=path, slots_needed=slots_needed,
                                                                              net_spec_db=net_spec_db,
-                                                                             guard_slots=guard_slots,
-                                                                             is_sliced=False, alloc_method=alloc_method)
+                                                                             guard_slots=properties['guard_slots'],
+                                                                             is_sliced=False,
+                                                                             alloc_method=properties[
+                                                                                 'allocation_method'])
 
     spectrum = spectrum_assignment.find_free_spectrum()
 
     if spectrum is not False:
-        if check_snr:
+        if properties['check_snr'] != 'None':
             _update_snr_obj(snr_obj=snr_obj, spectrum=spectrum, path=path, path_mod=path_mod,
-                            spectral_slots=spectral_slots, net_spec_db=net_spec_db)
-            snr_check = handle_snr(check_snr=check_snr, snr_obj=snr_obj)
+                            spectral_slots=properties['spectral_slots'], net_spec_db=net_spec_db)
+            snr_check = handle_snr(check_snr=properties['check_snr'], snr_obj=snr_obj)
 
             if not snr_check:
                 return False

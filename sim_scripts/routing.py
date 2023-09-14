@@ -1,6 +1,7 @@
 # Standard library imports
 import math
 import copy
+import warnings
 from typing import List
 
 # Third-party library imports
@@ -151,28 +152,58 @@ class Routing:
                 # We exceeded minimum hops plus one, return the best path
                 else:
                     least_cong_path = self.find_least_cong_path()
-                    return least_cong_path
+                    # TODO: Change, always a constant modulation format
+                    return [least_cong_path], 'QPSK'
 
         # If no valid path was found, return a tuple indicating failure
-        return False, False, False
+        return [False], [False]
 
-    # TODO: Combine these three methods into one once modulation format gets figured out?
-    def shortest_path(self):
+    def least_weight_path(self, weight: str):
         """
-        Given a graph with a desired source and destination, find the shortest path with respect to link lengths.
+        Given a graph with a desired source and destination, find the shortest path with respect to a given weight.
+
+        :param weight: Determines the weight to consider for finding the shortest path.
+        :type weight: str
 
         :return: A tuple containing the shortest path and its modulation format
         :rtype: tuple
         """
         # This networkx function will always return the shortest paths in order
         paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
-                                             weight='length')
+                                             weight=weight)
 
         for path in paths_obj:
             path_len = self.find_path_len(path, self.topology)
             mod_format = self.get_path_mod(self.mod_formats, path_len)
 
-            return path, mod_format
+            return [path], [mod_format]
+
+    def k_shortest_path(self, k_paths: int):
+        """
+        Finds the k-shortest-paths based on link lengths.
+
+        :param k_paths: The number of paths to consider.
+        :type k_paths: int
+
+        :return: The k-shortest-paths with their modulation formats assigned.
+        :rtype: tuple
+        """
+        paths = list()
+        mod_formats = list()
+        # This networkx function will always return the shortest paths in order
+        paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
+                                             weight='length')
+
+        for k, path in enumerate(paths_obj):
+            if k > k_paths - 1:
+                break
+            path_len = self.find_path_len(path, self.topology)
+            mod_format = self.get_path_mod(self.mod_formats, path_len)
+
+            paths.append(path)
+            mod_formats.append(mod_format)
+
+        return paths, mod_formats
 
     # TODO: Move these functions to useful functions eventually, also check the entire simulator for things like this
     def _setup_simulated_link(self, slots_per_core: int):
@@ -233,40 +264,6 @@ class Routing:
 
         self.net_spec_db[links[0]]['cores_matrix'][0] = original_link
         return nli_worst
-
-    def _least_nli_path(self):
-        """
-        Selects the path with the least amount of NLI cost.
-
-        :return: The path and modulation format chosen.
-        :rtype: tuple
-        """
-        # This networkx function will always return the shortest paths in order
-        paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
-                                             weight='nli_cost')
-
-        for path in paths_obj:
-            # TODO: Change always a constant
-            mod_format = 'QPSK'
-
-            return path, mod_format
-
-    def _least_xt_path(self):
-        """
-        Selects the path with the least amount of xt cost.
-
-        :return: The path and modulation format chosen.
-        :rtype: tuple
-        """
-        # This networkx function will always return the shortest paths in order
-        paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
-                                             weight='xt_cost')
-
-        for path in paths_obj:
-            # TODO: Change always a constant
-            mod_format = 'QPSK'
-
-            return path, mod_format
 
     # TODO: Potential repeat code
     def _find_channel_mci(self, num_spans: float, center_freq: float, taken_channels: list):
@@ -385,7 +382,7 @@ class Routing:
 
             self.topology[source][destination]['nli_cost'] = link_cost
 
-        return self._least_nli_path()
+        return self.least_weight_path(weight='nli_cost')
 
     # TODO: Move core number to the constructor?
     @staticmethod
@@ -411,7 +408,6 @@ class Routing:
 
         return before, after
 
-    # TODO: Only support for 7 core fiber
     def _find_num_overlapped(self, channel: int, core_num: int, link_num: int):
         """
         Finds the number of overlapped channels for a single core on a link.
@@ -428,6 +424,7 @@ class Routing:
         :return: The total number of overlapped channels normalized by the number of cores.
         :rtype: float
         """
+        warnings.warn('Method: fund_num_overlapped in routing used that only supports 7 cores per fiber.')
         # The number of overlapped channels
         num_overlapped = 0.0
         if core_num != 6:
@@ -451,7 +448,6 @@ class Routing:
 
         return num_overlapped
 
-    # TODO: Only support for 7 core fiber
     def _find_xt_link_cost(self, free_slots_arr: list, link_num: int):
         """
         Finds the cross-talk cost for a single link.
@@ -465,6 +461,7 @@ class Routing:
         :return: The total cross-talk value for the given link.
         :rtype float
         """
+        warnings.warn('Method: find_xt_link_cost in routing used that only supports 7 cores per fiber.')
         # Non-linear impairment cost calculation
         xt_cost = 0
         # Update MCI for available channel
@@ -512,7 +509,7 @@ class Routing:
 
             self.topology[source][destination]['xt_cost'] = link_cost
 
-        return self._least_xt_path()
+        return self.least_weight_path(weight='xt_cost')
 
     def nli_path(self, path: list):
         """

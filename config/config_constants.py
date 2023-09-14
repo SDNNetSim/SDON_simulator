@@ -65,4 +65,5 @@ OTHER_OPTIONS = {
     'bi_directional': str_to_bool,
     'xt_noise': str_to_bool,
     'requested_xt': ast.literal_eval,
+    'k_paths': int,
 }

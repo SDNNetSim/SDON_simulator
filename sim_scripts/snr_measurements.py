@@ -8,19 +8,14 @@ class SnrMeasurements:
     Calculates SNR for a given request.
     """
 
-    def __init__(self, properties):
-        self.guard_slots = properties['guard_slots']
-        self.bw_per_slot = properties['bw_per_slot']
-        self.input_power = properties['input_power']
-        self.spectral_slots = properties['spectral_slots']
-        self.topology_info = properties['topology_info']
-        # Flag to show a use of the EGN model or the GN model for SNR calculations
-        self.egn_model = properties['egn_model']
-        # A parameter related to the EGN model
-        self.phi = properties['phi']
-        self.bi_directional = properties['bi_directional']
-        self.xt_noise = properties['xt_noise']
-        self.requested_xt = properties['requested_xt']
+    def __init__(self, properties: dict):
+        """
+        Initializes the SnrMeasurements class.
+
+        :param properties: Contains various simulation properties.
+        :type properties: dict
+        """
+        self.snr_props = properties
 
         self.light_frequency = 1.9341 * 10 ** 14
         self.plank = 6.62607004e-34
@@ -94,11 +89,12 @@ class SnrMeasurements:
         :return: The updated cross-phase modulation noise.
         :rtype: float
         """
-        num_slots = len(np.where(spectrum_contents == curr_link[self.spectrum['core_num']])[0]) * self.bw_per_slot
-        channel_freq = ((slot_index * self.bw_per_slot) + (num_slots / 2)) * 10 ** 9
+        num_slots = len(np.where(spectrum_contents == curr_link[self.spectrum['core_num']])[0]) * self.snr_props[
+            'bw_per_slot']
+        channel_freq = ((slot_index * self.snr_props['bw_per_slot']) + (num_slots / 2)) * 10 ** 9
 
         channel_bw = num_slots * 10 ** 9
-        channel_psd = self.input_power / channel_bw
+        channel_psd = self.snr_props['input_power'] / channel_bw
         if self.center_freq != channel_freq:
             new_xci = curr_xci + ((channel_psd ** 2) * math.log(
                 abs((abs(self.center_freq - channel_freq) + (channel_bw / 2)) / (
@@ -123,7 +119,7 @@ class SnrMeasurements:
         self.visited_channels = []
         # Cross-phase modulation noise
         xci_noise = 0
-        for slot_index in range(self.spectral_slots):
+        for slot_index in range(self.snr_props['spectral_slots']):
             curr_link = self.net_spec_db[(self.path[link], self.path[link + 1])]['cores_matrix']
             spectrum_contents = curr_link[self.spectrum['core_num']][slot_index]
 
@@ -148,7 +144,7 @@ class SnrMeasurements:
         # A statistical mean of the cross-talk
         mean_xt = (2 * self.bend_radius * self.coupling_coeff ** 2) / (self.prop_const * self.core_pitch)
         # The cross-talk noise power
-        power_xt = adjacent_cores * mean_xt * self.length * 1e3 * self.input_power
+        power_xt = adjacent_cores * mean_xt * self.length * 1e3 * self.snr_props['input_power']
 
         return power_xt
 
@@ -182,12 +178,12 @@ class SnrMeasurements:
         eff_span_len = (1 - math.e ** (-2 * self.attenuation * self.length * 10 ** 3)) / (2 * self.attenuation)
 
         baud_rate = int(self.req_bit_rate) * 10 ** 9 / 2
-        temp_coef = ((self.topology_info['links'][self.link_id]['fiber']['non_linearity'] ** 2) * (
+        temp_coef = ((self.snr_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2) * (
                 eff_span_len ** 2) * (self.center_psd ** 3) * (self.bandwidth ** 2)) / (
                             (baud_rate ** 2) * math.pi * self.dispersion * (self.length * 10 ** 3))
 
         # The PSD correction term
-        psd_correction = (80 / 81) * self.phi[self.path_mod] * temp_coef * hn_series
+        psd_correction = (80 / 81) * self.snr_props['phi'][self.path_mod] * temp_coef * hn_series
 
         return psd_correction
 
@@ -199,7 +195,7 @@ class SnrMeasurements:
         :rtype float
         """
         # Determine if we're using the GN or EGN model
-        if self.egn_model:
+        if self.snr_props['egn_model']:
             psd_correction = self._handle_egn_model()
             psd_nli = ((self.sci_psd + self.xci_psd) * self.mu_param * self.center_psd) - psd_correction
         else:
@@ -214,21 +210,22 @@ class SnrMeasurements:
         :param link: The current link number of the path we are on.
         :type link: int
         """
-        self.mu_param = (3 * (self.topology_info['links'][self.link_id]['fiber']['non_linearity'] ** 2)) / (
-                2 * math.pi * self.attenuation * np.abs(self.dispersion))
+        self.mu_param = (3 * (
+                    self.snr_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2)) / (
+                                2 * math.pi * self.attenuation * np.abs(self.dispersion))
         self.sci_psd = self._calculate_sci_psd()
         self.xci_psd = self._calculate_xci(link=link)
-        # TODO Add support for self.topology_info['links'][link_id]['fiber']['nsp']
+        # TODO Add support for self.snr_props['topology_info']['links'][link_id]['fiber']['nsp']
         self.nsp = 1.8
 
-        self.length = self.topology_info['links'][self.link_id]['span_length']
-        self.num_span = self.topology_info['links'][self.link_id]['length'] / self.length
+        self.length = self.snr_props['topology_info']['links'][self.link_id]['span_length']
+        self.num_span = self.snr_props['topology_info']['links'][self.link_id]['length'] / self.length
 
     def _update_link_constants(self):
         """
         Updates non-linear impairment parameters that will remain constant for future calculations.
         """
-        self.link = self.topology_info['links'][self.link_id]['fiber']
+        self.link = self.snr_props['topology_info']['links'][self.link_id]['fiber']
         self.attenuation = self.link['attenuation']
         self.dispersion = self.link['dispersion']
         self.bend_radius = self.link['bending_radius']
@@ -240,10 +237,10 @@ class SnrMeasurements:
         """
         Updates variables for the center frequency, bandwidth, and PSD for the current request.
         """
-        self.center_freq = ((self.spectrum['start_slot'] * self.bw_per_slot) + (
-                (self.assigned_slots * self.bw_per_slot) / 2)) * 10 ** 9
-        self.bandwidth = self.assigned_slots * self.bw_per_slot * 10 ** 9
-        self.center_psd = self.input_power / self.bandwidth
+        self.center_freq = ((self.spectrum['start_slot'] * self.snr_props['bw_per_slot']) + (
+                (self.assigned_slots * self.snr_props['bw_per_slot']) / 2)) * 10 ** 9
+        self.bandwidth = self.assigned_slots * self.snr_props['bw_per_slot'] * 10 ** 9
+        self.center_psd = self.snr_props['input_power'] / self.bandwidth
 
     def check_snr(self):
         """
@@ -263,7 +260,7 @@ class SnrMeasurements:
             psd_nli = self._calculate_psd_nli()
             psd_ase = (self.plank * self.light_frequency * self.nsp) * (
                     math.exp(self.attenuation * self.length * 10 ** 3) - 1)
-            if self.xt_noise:
+            if self.snr_props['xt_noise']:
                 p_xt = self._calculate_pxt()
             else:
                 p_xt = 0
@@ -292,7 +289,7 @@ class SnrMeasurements:
             self._update_link_params(link=link)
             psd_ase = (self.plank * self.light_frequency * self.nsp) * (
                     math.exp(self.attenuation * self.length * 10 ** 3) - 1)
-            if self.xt_noise:
+            if self.snr_props['xt_noise']:
                 p_xt = self._calculate_pxt()
             else:
                 p_xt = 0
@@ -323,5 +320,5 @@ class SnrMeasurements:
             cross_talk += self._calculate_xt() * self.num_span
 
         cross_talk = 10 * math.log10(cross_talk)
-        resp = cross_talk < self.requested_xt[self.path_mod]
+        resp = cross_talk < self.snr_props['requested_xt'][self.path_mod]
         return resp

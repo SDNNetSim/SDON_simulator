@@ -22,20 +22,8 @@ class SDNController:
         :param ai_obj: Class containing all methods related to AI
         :type ai_obj: object
         """
-        self.topology_info = properties['topology_info']
-        self.cores_per_link = properties['cores_per_link']
-        self.sim_type = properties['sim_type']
-        self.alloc_method = properties['allocation_method']
-        self.route_method = properties['route_method']
-        self.dynamic_lps = properties['dynamic_lps']
-        self.ai_algorithm = properties['ai_algorithm']
-        self.beta = properties['beta']
-        self.max_segments = properties['max_segments']
-        self.guard_slots = properties['guard_slots']
-        self.mod_per_bw = properties['mod_per_bw']
+        self.sdn_props = properties
         self.ai_obj = ai_obj
-        self.spectral_slots = properties['spectral_slots']
-        self.check_snr = properties['check_snr']
 
         # The current request id number
         self.req_id = None
@@ -47,8 +35,6 @@ class SDNController:
         self.destination = None
         # The current path
         self.path = None
-        # The current path modulation format
-        self.path_mod = None
         # The chosen bandwidth for the current request
         self.chosen_bw = None
         # Determines if light slicing is limited to a single core or not
@@ -73,7 +59,7 @@ class SDNController:
             src_dest = (src, dest)
             dest_src = (dest, src)
 
-            for core_num in range(self.cores_per_link):
+            for core_num in range(self.sdn_props['cores_per_link']):
                 core_arr = self.net_spec_db[src_dest]['cores_matrix'][core_num]
                 req_indexes = np.where(core_arr == self.req_id)
                 guard_bands = np.where(core_arr == (self.req_id * -1))
@@ -101,7 +87,7 @@ class SDNController:
 
         :return: None
         """
-        if self.guard_slots:
+        if self.sdn_props['guard_slots']:
             end_slot = end_slot - 1
         else:
             end_slot += 1
@@ -119,7 +105,7 @@ class SDNController:
             self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
             self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
 
-            if self.guard_slots:
+            if self.sdn_props['guard_slots']:
                 if self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot] != 0.0 or \
                         self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot] != 0.0:
                     raise BufferError("Attempted to allocate a taken spectrum.")
@@ -133,12 +119,12 @@ class SDNController:
 
         :return: True if LPS is successfully carried out, False otherwise
         """
-        if self.chosen_bw == '25' or self.max_segments == 1:
+        if self.chosen_bw == '25' or self.sdn_props['max_segments'] == 1:
             return False
 
         path_len = find_path_len(self.path, self.topology)
         # Sort the dictionary in descending order by bandwidth
-        modulation_formats = sort_dict_keys(self.mod_per_bw)
+        modulation_formats = sort_dict_keys(self.sdn_props['mod_per_bw'])
 
         for bandwidth, modulation_dict in modulation_formats.items():
             # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
@@ -151,7 +137,7 @@ class SDNController:
                 continue
 
             num_segments = int(int(self.chosen_bw) / int(bandwidth))
-            if num_segments > self.max_segments:
+            if num_segments > self.sdn_props['max_segments']:
                 break
             self.num_transponders = num_segments
 
@@ -161,8 +147,10 @@ class SDNController:
                 spectrum_assignment = SpectrumAssignment(path=self.path,
                                                          slots_needed=modulation_dict[tmp_format]['slots_needed'],
                                                          net_spec_db=self.net_spec_db,
-                                                         guard_slots=self.guard_slots, single_core=self.single_core,
-                                                         is_sliced=True, alloc_method=self.alloc_method)
+                                                         guard_slots=self.sdn_props['guard_slots'],
+                                                         single_core=self.single_core,
+                                                         is_sliced=True,
+                                                         alloc_method=self.sdn_props['allocation_method'])
                 selected_spectrum = spectrum_assignment.find_free_spectrum()
 
                 if selected_spectrum is not False:
@@ -189,12 +177,12 @@ class SDNController:
         """
         resp = dict()
 
-        if self.max_segments == 1:
+        if self.sdn_props['max_segments'] == 1:
             return False
 
         path_len = find_path_len(self.path, self.topology)
         # Sort the dictionary in descending order by bandwidth
-        modulation_formats = sort_dict_keys(self.mod_per_bw)
+        modulation_formats = sort_dict_keys(self.sdn_props['mod_per_bw'])
 
         remaining_bw = int(self.chosen_bw)
         num_segments = 0
@@ -213,8 +201,10 @@ class SDNController:
                 spectrum_assignment = SpectrumAssignment(path=self.path,
                                                          slots_needed=modulation_dict[tmp_format]['slots_needed'],
                                                          net_spec_db=self.net_spec_db,
-                                                         guard_slots=self.guard_slots, single_core=self.single_core,
-                                                         is_sliced=True, alloc_method=self.alloc_method)
+                                                         guard_slots=self.sdn_props['guard_slots'],
+                                                         single_core=self.single_core,
+                                                         is_sliced=True,
+                                                         alloc_method=self.sdn_props['allocation_method'])
                 selected_spectrum = spectrum_assignment.find_free_spectrum()
 
                 if selected_spectrum is not False:
@@ -226,7 +216,7 @@ class SDNController:
                     remaining_bw -= int(bandwidth)
                     num_segments += 1
 
-                    if num_segments > self.max_segments:
+                    if num_segments > self.sdn_props['max_segments']:
                         self.release()
                         self.dist_block = False
                         return False
@@ -243,8 +233,6 @@ class SDNController:
         self.release()
         return False
 
-    # TODO: At this time, there is no support for light segment slicing.
-    #  Code will be removed potentially in further discussions
     def handle_lps(self):
         """
         This method attempts to perform light path slicing (LPS) or dynamic LPS to allocate a request.
@@ -255,7 +243,7 @@ class SDNController:
 
         :return: A tuple containing the response and the updated network database or False and self.dist_block
         """
-        if not self.dynamic_lps:
+        if not self.sdn_props['dynamic_lps']:
             resp = self.allocate_lps()
         else:
             resp = self.allocate_dynamic_lps()
@@ -264,7 +252,9 @@ class SDNController:
             return {'path': self.path, 'mod_format': resp,
                     'is_sliced': True}, self.net_spec_db, self.num_transponders, self.path
 
-        return False, self.dist_block, self.path
+        # return False, self.dist_block, self.path
+        raise NotImplementedError(
+            'Light path slicing is not supported at this point in time, but will be in the future.')
 
     def _handle_spectrum(self, mod_options: list):
         """
@@ -279,16 +269,14 @@ class SDNController:
         spectrum = None
         for modulation in mod_options:
             if modulation is False:
-                if self.max_segments > 1:
+                if self.sdn_props['max_segments'] > 1:
                     return self.handle_lps()
 
                 continue
 
-            self.path_mod = modulation
-            spectrum = get_spectrum(mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw, path=self.path,
-                                    net_spec_db=self.net_spec_db, guard_slots=self.guard_slots,
-                                    alloc_method=self.alloc_method, modulation=modulation, check_snr=self.check_snr,
-                                    snr_obj=self.snr_obj, path_mod=self.path_mod, spectral_slots=self.spectral_slots)
+            spectrum = get_spectrum(properties=self.sdn_props, chosen_bw=self.chosen_bw, path=self.path,
+                                    net_spec_db=self.net_spec_db, modulation=modulation, snr_obj=self.snr_obj,
+                                    path_mod=modulation)
 
             # We found a spectrum, no need to check other modulation formats
             if spectrum is not False:
@@ -297,17 +285,10 @@ class SDNController:
         return spectrum
 
     def _handle_routing(self):
-        """
-        Given various request information, attempt to find a route for that request.
-
-        :return: The route found, false otherwise.
-        :rtype: list
-        """
-        route = get_route(source=self.source, destination=self.destination, topology=self.topology,
-                          net_spec_db=self.net_spec_db, mod_per_bw=self.mod_per_bw, chosen_bw=self.chosen_bw,
-                          guard_slots=self.guard_slots, beta=self.beta, route_method=self.route_method,
-                          ai_obj=self.ai_obj)
-        return route
+        resp = get_route(properties=self.sdn_props, source=self.source, destination=self.destination,
+                         topology=self.topology, net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw,
+                         ai_obj=self.ai_obj)
+        return resp
 
     def handle_event(self, request_type):
         """
@@ -328,26 +309,30 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        self.path, self.path_mod = self._handle_routing()
+        paths, path_mods = self._handle_routing()
 
-        if self.path is not False:
-            if self.check_snr != 'None':
-                mod_options = sort_nested_dict_vals(self.mod_per_bw[self.chosen_bw], nested_key='max_length')
-            else:
-                mod_options = [self.path_mod]
+        for path, path_mod in zip(paths, path_mods):
+            self.path = path
 
-            spectrum = self._handle_spectrum(mod_options=mod_options)
-            # Request was blocked
-            if spectrum is False or spectrum is None:
-                return False, self.dist_block, self.path
+            if path is not False and path_mod is not False:
+                if self.sdn_props['check_snr'] != 'None':
+                    mod_options = sort_nested_dict_vals(self.sdn_props['mod_per_bw'][self.chosen_bw],
+                                                        nested_key='max_length')
+                else:
+                    mod_options = [path_mod]
 
-            resp = {
-                'path': self.path,
-                'mod_format': self.path_mod,
-                'is_sliced': False
-            }
-            self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
-            return resp, self.net_spec_db, self.num_transponders, self.path
+                spectrum = self._handle_spectrum(mod_options=mod_options)
+                # Request was blocked
+                if spectrum is False or spectrum is None:
+                    return False, self.dist_block, self.path
+
+                resp = {
+                    'path': self.path,
+                    'mod_format': path_mod,
+                    'is_sliced': False
+                }
+                self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
+                return resp, self.net_spec_db, self.num_transponders, self.path
 
         self.dist_block = True
         return False, self.dist_block, self.path

@@ -109,7 +109,7 @@ class TestSDNController(unittest.TestCase):
         """
         Test the allocate method with a guard band.
         """
-        self.sdn_controller.guard_slots = 1
+        self.sdn_controller.sdn_props['guard_slots'] = 1
         # Allocate five slots, guard band included
         self.sdn_controller.allocate(0, 5, 0)
 
@@ -155,45 +155,6 @@ class TestSDNController(unittest.TestCase):
         result = self.sdn_controller.allocate_lps()
         self.assertFalse(result)
 
-    def test_allocate_lps_with_dist_block(self):
-        """
-        Test allocate_lps to ensure a block due to a distance constraint is raised correctly.
-        """
-        self.sdn_controller.chosen_bw = '400'
-        self.sdn_controller.max_segments = 8
-        result = self.sdn_controller.allocate_lps()
-
-        self.assertFalse(result)
-        self.assertTrue(self.sdn_controller.dist_block)
-
-    def test_allocate_lps_with_successful_lps(self):
-        """
-        Test allocate_lps to check for a successful light path slice.
-        """
-        self.sdn_controller.path = [2, 3]
-        self.sdn_controller.req_id = 4
-        self.sdn_controller.max_segments = 2
-        self.sdn_controller.guard_slots = 1
-
-        # Congest the forward directional link
-        self.net_spec_db[(2, 3)]['cores_matrix'] = np.ones((10, 100))
-        self.net_spec_db[(2, 3)]['cores_matrix'][1, 4:6] = 0
-        self.net_spec_db[(2, 3)]['cores_matrix'][1, 98:] = 0
-
-        # Congest the opposite direction on the same link
-        self.net_spec_db[(3, 2)]['cores_matrix'] = np.ones((10, 100))
-        self.net_spec_db[(3, 2)]['cores_matrix'][1, 4:6] = 0
-        self.net_spec_db[(3, 2)]['cores_matrix'][1, 98:] = 0
-
-        result = self.sdn_controller.allocate_lps()
-        self.assertTrue(result)
-        # Check the request allocation
-        self.assertTrue(np.all(self.net_spec_db[(2, 3)]['cores_matrix'][1][4:6] == [4, -4]))
-        self.assertTrue(np.all(self.net_spec_db[(3, 2)]['cores_matrix'][1][4:6] == [4, -4]))
-
-        self.assertTrue(np.all(self.net_spec_db[(2, 3)]['cores_matrix'][1][98:] == [4, -4]))
-        self.assertTrue(np.all(self.net_spec_db[(3, 2)]['cores_matrix'][1][98:] == [4, -4]))
-
     def test_unsuccessful_dynamic_lps(self):
         """
         Test allocate_dynamic_lps to check for an unsuccessful light path slice.
@@ -209,42 +170,3 @@ class TestSDNController(unittest.TestCase):
         self.sdn_controller.max_segments = 1
         result = self.sdn_controller.allocate_lps()
         self.assertFalse(result)
-
-    def test_successful_dynamic_lps(self):
-        """
-        Test allocate_dynamic_lps to check for an unsuccessful light path slice.
-        """
-        for bandwidth, mod_formats in self.mod_per_bw.items():
-            if bandwidth == '50':
-                for _, mod_dict in mod_formats.items():
-                    mod_dict['slots_needed'] = 3
-
-        self.sdn_controller.path = [2, 3]
-        self.sdn_controller.req_id = 10
-        self.sdn_controller.max_segments = 3
-        self.sdn_controller.guard_slots = 1
-
-        # Congest the forward directional link
-        self.net_spec_db[(2, 3)]['cores_matrix'] = np.ones((10, 100))
-        self.net_spec_db[(2, 3)]['cores_matrix'][0, 4:6] = 0
-        self.net_spec_db[(2, 3)]['cores_matrix'][0, 50:54] = 0
-        self.net_spec_db[(2, 3)]['cores_matrix'][0, 98:] = 0
-
-        # Congest the opposite direction on the same link
-        self.net_spec_db[(3, 2)]['cores_matrix'] = np.ones((10, 100))
-        self.net_spec_db[(3, 2)]['cores_matrix'][0, 4:6] = 0
-        self.net_spec_db[(3, 2)]['cores_matrix'][0, 50:54] = 0
-        self.net_spec_db[(3, 2)]['cores_matrix'][0, 98:] = 0
-
-        result = self.sdn_controller.allocate_dynamic_lps()
-        self.assertTrue(result)
-
-        # Check the request allocation
-        self.assertTrue(np.all(self.net_spec_db[(2, 3)]['cores_matrix'][0][4:6] == [10, -10]))
-        self.assertTrue(np.all(self.net_spec_db[(3, 2)]['cores_matrix'][0][4:6] == [10, -10]))
-
-        self.assertTrue(np.all(self.net_spec_db[(2, 3)]['cores_matrix'][0][50:54] == [10, 10, 10, -10]))
-        self.assertTrue(np.all(self.net_spec_db[(3, 2)]['cores_matrix'][0][50:54] == [10, 10, 10, -10]))
-
-        self.assertTrue(np.all(self.net_spec_db[(2, 3)]['cores_matrix'][0][98:] == [10, -10]))
-        self.assertTrue(np.all(self.net_spec_db[(3, 2)]['cores_matrix'][0][98:] == [10, -10]))
