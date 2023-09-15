@@ -473,7 +473,7 @@ class Engine(SDNController):
 
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.properties['erlang']} "
-                      f"thread number: {self.properties['thread_num']}.")
+                      f"simulation number: {self.properties['thread_num']}.")
 
             if self.properties['ai_algorithm'] != 'None':
                 self._init_ai_obj(iteration=iteration)

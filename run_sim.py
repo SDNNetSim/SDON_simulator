@@ -123,7 +123,7 @@ class NetworkSimulator:
             self.create_input()
 
             if erlang == erlang_lst[0]:
-                self.save_input(file_name='sim_input.json', data=self.properties)
+                self.save_input(file_name=f"sim_input_{self.properties['thread_num']}.json", data=self.properties)
 
             engine = Engine(properties=self.properties)
             engine.run()
