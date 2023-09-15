@@ -508,5 +508,6 @@ class Engine(SDNController):
 
             self._save_sim_results()
 
-        print(f"Simulation for Erlang: {self.properties['erlang']} finished.")
+        print(f"Erlang: {self.properties['erlang']} finished for "
+              f"simulation number: {self.properties['thread_num']}.")
         self._save_sim_results()

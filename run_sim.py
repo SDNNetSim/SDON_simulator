@@ -1,6 +1,8 @@
 # Standard library imports
 import json
 import time
+import threading
+import copy
 
 # Third-party library imports
 import concurrent.futures
@@ -14,10 +16,8 @@ from config.setup_config import read_config
 
 
 # TODO: Structure this so objects are not re-created every time :D
-#   - This would also add the support of threading different traffic volumes
 # TODO: Update tests
 # TODO: Update docs
-# TODO: Multiple class inheritance instead of updating local constructors over and over?
 
 
 class NetworkSimulator:
@@ -53,7 +53,7 @@ class NetworkSimulator:
         with open(f"{path}/{file_name}", 'w', encoding='utf-8') as file:
             json.dump(data, file, indent=4)
 
-    def create_input(self):
+    def create_input(self, local_props):
         """
         Create the input data for the simulation.
 
@@ -62,20 +62,38 @@ class NetworkSimulator:
 
         :return: None
         """
-        bw_info = create_bw_info(sim_type=self.properties['sim_type'])
-        bw_file = f"bw_info_{self.properties['thread_num']}.json"
+        bw_info = create_bw_info(sim_type=local_props['sim_type'])
+        bw_file = f"bw_info_{local_props['thread_num']}.json"
 
         self.save_input(file_name=bw_file, data=bw_info)
 
-        path = f"./data/input/{self.properties['network']}/{self.properties['date']}/" \
-               f"{self.properties['curr_time']}/{bw_file}"
+        path = f"./data/input/{local_props['network']}/{local_props['date']}/" \
+               f"{local_props['curr_time']}/{bw_file}"
         with open(path, 'r', encoding='utf-8') as file_object:
-            self.properties['mod_per_bw'] = json.load(file_object)
+            local_props['mod_per_bw'] = json.load(file_object)
 
-        network_data = create_network(const_weight=self.properties['const_link_weight'],
-                                      net_name=self.properties['network'])
-        self.properties['topology_info'] = create_pt(cores_per_link=self.properties['cores_per_link'],
-                                                     network_data=network_data)
+        network_data = create_network(const_weight=local_props['const_link_weight'],
+                                      net_name=local_props['network'])
+        local_props['topology_info'] = create_pt(cores_per_link=local_props['cores_per_link'],
+                                                 network_data=network_data)
+
+        return local_props
+
+    def _run_yue(self, arr_rate_mean, start):
+        arr_rate_mean = float(arr_rate_mean)
+        local_props = copy.deepcopy(self.properties)
+
+        local_props['erlang'] = arr_rate_mean / local_props['holding_time']
+        arr_rate_mean *= float(local_props['cores_per_link'])
+        local_props['arrival_rate'] = arr_rate_mean
+        self.create_input(local_props=local_props)
+
+        if arr_rate_mean == start:
+            file_name = f"sim_input_{self.properties['thread_num']}.json"
+            self.save_input(file_name=file_name, data=local_props)
+
+        engine = Engine(properties=local_props)
+        engine.run()
 
     def run_yue(self):
         """
@@ -87,23 +105,32 @@ class NetworkSimulator:
         arr_rate_obj = self.properties['arrival_rate']
         start, stop, step = arr_rate_obj['start'], arr_rate_obj['stop'], arr_rate_obj['step']
 
-        for arr_rate_mean in range(start, stop, step):
-            arr_rate_mean = float(arr_rate_mean)
+        if self.properties['thread_erlangs']:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = []
+                for arr_rate_mean in range(start, stop, step):
+                    time.sleep(0.5)
+                    future = executor.submit(self._run_yue, arr_rate_mean=arr_rate_mean, start=start)
+                    futures.append(future)
 
-            self.properties['erlang'] = arr_rate_mean / self.properties['holding_time']
-            arr_rate_mean *= float(self.properties['cores_per_link'])
-            self.properties['arrival_rate'] = arr_rate_mean
-            self.create_input()
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+        else:
+            for arr_rate_mean in range(start, stop, step):
+                self._run_yue(arr_rate_mean=arr_rate_mean, start=start)
 
-            file_name = f"sim_input_{self.properties['thread_num']}.json"
+    def _run_arash(self, erlang, first_erlang):
+        local_props = copy.deepcopy(self.properties)
+        local_props['arrival_rate'] = (local_props['cores_per_link'] * erlang) / local_props['holding_time']
+        local_props['erlang'] = erlang
 
-            if arr_rate_mean == start:
-                self.save_input(file_name=file_name, data=self.properties)
+        local_props = self.create_input(local_props=local_props)
 
-            self.properties['input_fp'] = f"./data/input/{self.properties['network']}/{self.properties['date']}/" \
-                                          f"{self.properties['curr_time']}/{file_name}"
-            engine = Engine(properties=self.properties)
-            engine.run()
+        if first_erlang:
+            self.save_input(file_name=f"sim_input_{local_props['thread_num']}.json", data=local_props)
+
+        engine = Engine(properties=local_props)
+        engine.run()
 
     def run_arash(self):
         """
@@ -112,21 +139,33 @@ class NetworkSimulator:
 
         :return: None
         """
-        erlang_lst = [float(erlang) for erlang in range(50, 850, 50)]
+        erlang_obj = self.properties['erlangs']
+        start, stop, step = erlang_obj['start'], erlang_obj['stop'], erlang_obj['step']
+        erlang_lst = [float(erlang) for erlang in range(start, stop, step)]
 
-        for erlang in erlang_lst:
-            self.properties['arrival_rate'] = (self.properties['cores_per_link'] * erlang) / self.properties[
-                'holding_time']
+        if self.properties['thread_erlangs']:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = []
+                for erlang in erlang_lst:
+                    if erlang == erlang_lst[0]:
+                        first_erlang = True
+                    else:
+                        first_erlang = False
 
-            self.properties['erlang'] = erlang
+                    time.sleep(0.5)
+                    future = executor.submit(self._run_arash, erlang=erlang, first_erlang=first_erlang)
+                    futures.append(future)
 
-            self.create_input()
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+        else:
+            for erlang in erlang_lst:
+                if erlang == erlang_lst[0]:
+                    first_erlang = True
+                else:
+                    first_erlang = False
 
-            if erlang == erlang_lst[0]:
-                self.save_input(file_name=f"sim_input_{self.properties['thread_num']}.json", data=self.properties)
-
-            engine = Engine(properties=self.properties)
-            engine.run()
+                self._run_arash(erlang=erlang, first_erlang=first_erlang)
 
     def run_sim(self, **kwargs):
         """
@@ -166,6 +205,7 @@ def run(threads_obj: dict):
             sim_obj = NetworkSimulator()
             class_inst = sim_obj.run_sim
 
+            time.sleep(0.5)
             future = executor.submit(class_inst, thread_num=thread_num, thread_params=thread_params,
                                      sim_start=sim_start)
 
