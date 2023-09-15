@@ -38,6 +38,7 @@ ARASH_REQUIRED_OPTIONS = {
     'sim_type': str,
     'network': str,
     'holding_time': float,
+    'erlangs': ast.literal_eval,
     'thread_erlangs': str_to_bool,
     'num_requests': int,
     'max_iters': int,
