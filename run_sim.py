@@ -105,7 +105,7 @@ class NetworkSimulator:
         start, stop, step = arr_rate_obj['start'], arr_rate_obj['stop'], arr_rate_obj['step']
 
         if self.properties['thread_erlangs']:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
+            with concurrent.futures.ProcessPoolExecutor() as executor:
                 futures = []
                 for arr_rate_mean in range(start, stop, step):
                     time.sleep(0.5)
@@ -143,7 +143,7 @@ class NetworkSimulator:
         erlang_lst = [float(erlang) for erlang in range(start, stop, step)]
 
         if self.properties['thread_erlangs']:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
+            with concurrent.futures.ProcessPoolExecutor() as executor:
                 futures = []
                 for erlang in erlang_lst:
                     first_erlang = (erlang == erlang_lst[0])
@@ -188,7 +188,7 @@ def run(threads_obj: dict):
 
     :return: None
     """
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = []
 
         for thread_num, thread_params in threads_obj.items():
