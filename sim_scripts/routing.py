@@ -373,6 +373,7 @@ class Routing:
         :return: The path from source to destination with the least amount of NLI cost.
         :rtype: list
         """
+        # TODO: Time complexity here is a problem
         for link in self.net_spec_db:
             source, destination = link[0], link[1]
             num_spans = self.topology[source][destination]['length'] / self.span_len
@@ -382,7 +383,8 @@ class Routing:
 
             self.topology[source][destination]['nli_cost'] = link_cost
 
-        return self.least_weight_path(weight='nli_cost')
+        resp = self.least_weight_path(weight='nli_cost')
+        return resp
 
     # TODO: Move core number to the constructor?
     @staticmethod
