@@ -314,12 +314,16 @@ class SDNController:
         for path, path_mod in zip(paths, path_mods):
             self.path = path
 
-            if path is not False and path_mod is not False:
+            # TODO: Spectrum assignment always overrides modulation format chosen when using check snr
+            if path is not False:
                 if self.sdn_props['check_snr'] != 'None':
                     mod_options = sort_nested_dict_vals(self.sdn_props['mod_per_bw'][self.chosen_bw],
                                                         nested_key='max_length')
                 else:
-                    mod_options = [path_mod]
+                    if path_mod is not False:
+                        mod_options = [path_mod]
+                    else:
+                        return False, self.dist_block, self.path
 
                 spectrum = self._handle_spectrum(mod_options=mod_options)
                 # Request was blocked
