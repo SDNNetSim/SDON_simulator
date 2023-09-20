@@ -268,7 +268,7 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
     :return: The potential paths and path modulation formats.
     :rtype: dict
     """
-    routing_obj = Routing(source=source, destination=destination,
+    routing_obj = Routing(print_warn=properties['warnings'], source=source, destination=destination,
                           topology=topology, net_spec_db=net_spec_db,
                           mod_formats=properties['mod_per_bw'][chosen_bw], bandwidth=chosen_bw,
                           guard_slots=properties['guard_slots'])
@@ -337,7 +337,8 @@ def get_spectrum(properties: dict, chosen_bw: str, path: list, net_spec_db: dict
     :rtype: dict
     """
     slots_needed = properties['mod_per_bw'][chosen_bw][modulation]['slots_needed']
-    spectrum_assignment = sim_scripts.spectrum_assignment.SpectrumAssignment(path=path, slots_needed=slots_needed,
+    spectrum_assignment = sim_scripts.spectrum_assignment.SpectrumAssignment(print_warn=properties['warnings'],
+                                                                             path=path, slots_needed=slots_needed,
                                                                              net_spec_db=net_spec_db,
                                                                              guard_slots=properties['guard_slots'],
                                                                              is_sliced=False,

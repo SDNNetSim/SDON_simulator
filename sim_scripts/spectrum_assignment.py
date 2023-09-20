@@ -15,10 +15,14 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
     Finds available spectrum slots for a given request.
     """
 
-    def __init__(self, path: List[int] = None, slots_needed: int = None, net_spec_db: dict = None,
-                 guard_slots: int = None, single_core: bool = False, is_sliced: bool = False, alloc_method: str = None):
+    def __init__(self, print_warn: bool = None, path: List[int] = None, slots_needed: int = None,
+                 net_spec_db: dict = None, guard_slots: int = None, single_core: bool = False,
+                 is_sliced: bool = False, alloc_method: str = None):
         """
         Initializes the SpectrumAssignment class.
+
+        :param print_warn: Determines if we want to print warnings or not.
+        :type print_warn: bool
 
         :param path: A list of integers representing the path for the request.
         :type path: List[int]
@@ -41,6 +45,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         :param alloc_method: A string representing the allocation policy.
         :type alloc_method: str
         """
+        self.print_warn = print_warn
         self.path = path
         self.single_core = single_core
         self.is_sliced = is_sliced
@@ -302,7 +307,9 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         :return: The information of the request if allocated, false otherwise.
         :rtype dict
         """
-        warnings.warn('Method: xt_aware_allocation used in spectrum_assignment that only supports 7 cores per fiber.')
+        if self.print_warn:
+            warnings.warn('Method: xt_aware_allocation used in '
+                          'spectrum_assignment that only supports 7 cores per fiber.')
         core = self._find_best_core()
         # Graph coloring for cores
         if core in [0, 2, 4, 6]:

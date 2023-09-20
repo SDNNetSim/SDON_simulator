@@ -17,11 +17,14 @@ class Routing:
     This class contains methods for routing packets in a network topology.
     """
 
-    def __init__(self, source: str = None, destination: str = None, topology: nx.Graph = None, net_spec_db: dict = None,
-                 mod_formats: dict = None, slots_needed: int = None, guard_slots: int = None, beta: float = None,
-                 bandwidth: str = None):
+    def __init__(self, print_warn: bool = None, source: str = None, destination: str = None, topology: nx.Graph = None,
+                 net_spec_db: dict = None, mod_formats: dict = None, slots_needed: int = None, guard_slots: int = None,
+                 beta: float = None, bandwidth: str = None):
         """
         Initializes the Routing class.
+
+        :param print_warn: If we'd like to print warnings or not.
+        :type print_warn: bool
 
         :param source: The source node ID.
         :type source: str
@@ -50,6 +53,7 @@ class Routing:
         :param bandwidth: The required bandwidth for the connection.
         :type bandwidth: str
         """
+        self.print_warn = print_warn
         self.source = source
         self.destination = destination
         self.topology = topology
@@ -426,7 +430,8 @@ class Routing:
         :return: The total number of overlapped channels normalized by the number of cores.
         :rtype: float
         """
-        warnings.warn('Method: fund_num_overlapped in routing used that only supports 7 cores per fiber.')
+        if self.print_warn:
+            warnings.warn('Method: fund_num_overlapped in routing used that only supports 7 cores per fiber.')
         # The number of overlapped channels
         num_overlapped = 0.0
         if core_num != 6:
@@ -463,7 +468,8 @@ class Routing:
         :return: The total cross-talk value for the given link.
         :rtype float
         """
-        warnings.warn('Method: find_xt_link_cost in routing used that only supports 7 cores per fiber.')
+        if self.print_warn:
+            warnings.warn('Method: find_xt_link_cost in routing used that only supports 7 cores per fiber.')
         # Non-linear impairment cost calculation
         xt_cost = 0
         # Update MCI for available channel
