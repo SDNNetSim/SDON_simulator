@@ -199,7 +199,7 @@ class SnrMeasurements:
             psd_correction = self._handle_egn_model()
             psd_nli = ((self.sci_psd + self.xci_psd) * self.mu_param * self.center_psd) - psd_correction
         else:
-            psd_nli = ((self.sci_psd + self.xci_psd) * self.mu_param * self.center_psd)
+            psd_nli = (self.sci_psd + self.xci_psd) * self.mu_param * self.center_psd
 
         return psd_nli
 

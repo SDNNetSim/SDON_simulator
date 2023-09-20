@@ -110,8 +110,8 @@ class SDNController:
                         self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot] != 0.0:
                     raise BufferError("Attempted to allocate a taken spectrum.")
 
-                self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
-                self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot] = (self.req_id * -1)
+                self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot] = self.req_id * -1
+                self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot] = self.req_id * -1
 
     def allocate_lps(self):
         """
