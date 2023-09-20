@@ -317,7 +317,7 @@ class SnrMeasurements:
             self._update_link_constants()
             self._update_link_params(link=link)
 
-            cross_talk += self._calculate_xt() * self.num_span
+            cross_talk += (self._calculate_xt() * self.num_span)
 
         cross_talk = 10 * math.log10(cross_talk)
         resp = cross_talk < self.snr_props['requested_xt'][self.path_mod]
