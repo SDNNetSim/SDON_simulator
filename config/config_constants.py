@@ -17,6 +17,7 @@ def str_to_bool(string):
 YUE_REQUIRED_OPTIONS = {
     'sim_type': str,
     'network': str,
+    'warnings': str_to_bool,
     'bw_per_slot': float,
     'thread_erlangs': str_to_bool,
     'holding_time': float,
@@ -37,6 +38,7 @@ YUE_REQUIRED_OPTIONS = {
 ARASH_REQUIRED_OPTIONS = {
     'sim_type': str,
     'network': str,
+    'warnings': str_to_bool,
     'holding_time': float,
     'erlangs': ast.literal_eval,
     'thread_erlangs': str_to_bool,
