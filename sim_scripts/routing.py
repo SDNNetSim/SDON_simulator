@@ -496,7 +496,8 @@ class Routing:
         :return: The path with the least amount of interference.
         :rtype: list
         """
-        for link in self.net_spec_db:
+        # At the moment, we have identical bi-directional links (no need to loop over all links)
+        for link in list(self.net_spec_db.keys())[::2]:
             source, destination = link[0], link[1]
             num_spans = self.topology[source][destination]['length'] / self.span_len
 
@@ -509,7 +510,9 @@ class Routing:
             else:
                 link_cost = num_spans * xt_cost
 
+            # At the moment, we have identical bi-directional links
             self.topology[source][destination]['xt_cost'] = link_cost
+            self.topology[destination][source]['xt_cost'] = link_cost
 
         return self.least_weight_path(weight='xt_cost')
 
