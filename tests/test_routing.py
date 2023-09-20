@@ -25,7 +25,7 @@ class TestRouting(unittest.TestCase):
         }
         self.mod_formats = {'QPSK': {'max_length': 150}, '16-QAM': {'max_length': 100}, '64-QAM': {'max_length': 50}}
         from sim_scripts.routing import Routing  # pylint: disable=import-outside-toplevel
-        self.routing = Routing(0, 4, self.topology, self.net_spec_db, self.mod_formats, 5, 200)
+        self.routing = Routing(False, 0, 4, self.topology, self.net_spec_db, self.mod_formats, 5, 200)
 
     def test_find_least_cong_path(self):
         """

@@ -34,7 +34,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         """
         Tests the best_fit_allocation method.
         """
-        spectrum_assignment = SpectrumAssignment([0, 1], 1, self.net_spec_db, 1)
+        spectrum_assignment = SpectrumAssignment(False, [0, 1], 1, self.net_spec_db, 1)
         spectrum_assignment.cores_per_link = 4
         spectrum_assignment._best_fit_allocation()  # pylint: disable=protected-access
 
@@ -44,7 +44,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         """
         Tests the check_other_links method.
         """
-        spectrum_assignment = SpectrumAssignment([0, 1, 2], 1, self.net_spec_db, 1)
+        spectrum_assignment = SpectrumAssignment(False, [0, 1, 2], 1, self.net_spec_db, 1)
         spectrum_assignment.cores_per_link = 4
         spectrum_assignment._check_other_links(1, 3, 5)  # pylint: disable=protected-access
 
@@ -54,7 +54,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         """
         Tests the first_fit_allocation method.
         """
-        spectrum_assignment = SpectrumAssignment([0, 1], 1, self.net_spec_db, 1)
+        spectrum_assignment = SpectrumAssignment(False, [0, 1], 1, self.net_spec_db, 1)
         spectrum_assignment.cores_per_link = 4
         spectrum_assignment.cores_matrix = self.net_spec_db[(0, 1)]['cores_matrix']
         spectrum_assignment._handle_first_last(flag='first_fit')  # pylint: disable=protected-access
