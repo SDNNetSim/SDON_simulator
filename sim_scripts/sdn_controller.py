@@ -1,6 +1,6 @@
 # Standard library imports
-import numpy as np
 import time
+import numpy as np
 
 # Local application imports
 from sim_scripts.spectrum_assignment import SpectrumAssignment

@@ -10,7 +10,7 @@ from sim_scripts.request_generator import generate
 from sim_scripts.sdn_controller import SDNController
 from useful_functions.handle_dirs_files import create_dir
 from useful_functions.ai_functions import *  # pylint: disable=unused-wildcard-import
-from useful_functions.sim_functions import *
+from useful_functions.sim_functions import *  # pylint: disable=unused-wildcard-import
 
 
 class Engine(SDNController):
@@ -513,8 +513,8 @@ class Engine(SDNController):
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
-                    num_transponders = self._handle_arrival(curr_time, iteration)
                     # TODO: Commented for now
+                    # num_transponders = self._handle_arrival(curr_time, iteration)
                     # self._update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1
