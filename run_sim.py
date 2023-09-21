@@ -108,7 +108,7 @@ class NetworkSimulator:
             with concurrent.futures.ProcessPoolExecutor() as executor:
                 futures = []
                 for arr_rate_mean in range(start, stop, step):
-                    time.sleep(0.5)
+                    time.sleep(1.0)
                     future = executor.submit(self._run_yue, arr_rate_mean=arr_rate_mean, start=start)
                     futures.append(future)
 
@@ -147,7 +147,7 @@ class NetworkSimulator:
                 futures = []
                 for erlang in erlang_lst:
                     first_erlang = (erlang == erlang_lst[0])
-                    time.sleep(0.5)
+                    time.sleep(1.0)
                     future = executor.submit(self._run_arash, erlang=erlang, first_erlang=first_erlang)
                     futures.append(future)
 
@@ -191,12 +191,12 @@ def run(threads_obj: dict):
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = []
 
+        sim_start = time.strftime("%m%d_%H:%M:%S")
         for thread_num, thread_params in threads_obj.items():
-            sim_start = time.strftime("%m%d_%H:%M:%S")
             sim_obj = NetworkSimulator()
             class_inst = sim_obj.run_sim
 
-            time.sleep(0.5)
+            time.sleep(1.0)
             future = executor.submit(class_inst, thread_num=thread_num, thread_params=thread_params,
                                      sim_start=sim_start)
 
