@@ -90,20 +90,6 @@ def find_path_len(path: List[str], topology: nx.Graph):
     return path_len
 
 
-def find_path_hops(path: List[str]):
-    """
-    Finds the number of hops in a given path.
-
-    :param path: The path taken.
-    :type path: List[str]
-
-    :return: The number of hops.
-    :rtype: int
-    """
-    # Minus one because the first node does not count as a hop
-    return len(path) - 1
-
-
 def get_channel_overlaps(free_channels: dict, free_slots: dict):
     """
     Given the free channels and free slots on a given path, find the number of overlapping and non-overlapping channels

@@ -311,7 +311,6 @@ class SDNController:
             return self.net_spec_db
 
         start_time = time.time()
-        # TODO: Probably add xt_cost here
         paths, path_mods, path_weights = self._handle_routing()
         route_time = time.time() - start_time
 

@@ -184,7 +184,6 @@ class Routing:
                 path_len = self.find_path_len(path, self.topology)
 
             mod_format = self.get_path_mod(self.mod_formats, path_len)
-            # TODO: Account for this structural change in all routing methods
             return [path], [mod_format], [path_len]
 
     def k_shortest_path(self, k_paths: int):
