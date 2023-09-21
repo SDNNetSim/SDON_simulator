@@ -10,6 +10,7 @@ from sim_scripts.request_generator import generate
 from sim_scripts.sdn_controller import SDNController
 from useful_functions.handle_dirs_files import create_dir
 from useful_functions.ai_functions import *  # pylint: disable=unused-wildcard-import
+from useful_functions.sim_functions import *
 
 
 class Engine(SDNController):
@@ -68,6 +69,15 @@ class Engine(SDNController):
         self.request_snapshots = {}
         # Holds the request numbers of all the requests currently active in the network
         self.active_requests = set()
+        # TODO: Since we use super, we can move some of these to SDN controller if we want and have access
+        # The number of hops for each route found
+        self.hops = np.array([])
+        # The route length (in m) for every route chosen
+        self.path_lens = np.array([])
+        # The time taken to route each request
+        self.route_times = np.array([])
+        # The weights calculated for each request, may be cross-talk, length again, or other weighted routing methods
+        self.path_weights = np.array([])
 
         # For the purposes of saving relevant simulation information to a certain pathway
         self.sim_info = f"{self.properties['network']}/{self.properties['sim_start'].split('_')[0]}/" \
@@ -141,6 +151,7 @@ class Engine(SDNController):
             'cores_per_link': self.properties['cores_per_link'],
             'hold_time_mean': self.properties['holding_time'],
             'spectral_slots': self.properties['spectral_slots'],
+            # TODO: Remove trans mean and max segments from calculations (being called)
             'max_segments': self.properties['max_segments'],
             'trans_mean': np.mean(self.trans_arr),
             'dist_percent': np.mean(self.dist_block_arr) * 100.0,
@@ -151,7 +162,12 @@ class Engine(SDNController):
             'dynamic_lps': self.properties['dynamic_lps'],
             'is_training': self.properties['ai_arguments']['is_training'],
             'beta': self.properties['beta'],
+            # TODO: Remove from calculations (being called)
             'request_snapshots': self.request_snapshots,
+            'hops': self.hops,
+            'route_times': self.route_times,
+            'path_lengths': self.path_lens,
+            'weights': self.path_weights,
         }
 
         base_fp = "data/output/"
@@ -262,6 +278,12 @@ class Engine(SDNController):
             return 1
 
         response_data, num_transponders = resp[0], resp[2]
+
+        self.hops = np.append(self.hops, len(response_data['path']) - 1)
+        self.path_lens = np.append(self.path_lens, find_path_len(path=response_data['path'], topology=self.topology))
+        self.route_times = np.append(self.route_times, response_data['route_time'])
+        self.path_weights = np.append(self.path_weights, response_data['path_weight'])
+
         self.reqs_status.update({self.req_id: {
             "mod_format": response_data['mod_format'],
             "path": response_data['path'],

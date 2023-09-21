@@ -90,6 +90,20 @@ def find_path_len(path: List[str], topology: nx.Graph):
     return path_len
 
 
+def find_path_hops(path: List[str]):
+    """
+    Finds the number of hops in a given path.
+
+    :param path: The path taken.
+    :type path: List[str]
+
+    :return: The number of hops.
+    :rtype: int
+    """
+    # Minus one because the first node does not count as a hop
+    return len(path) - 1
+
+
 def get_channel_overlaps(free_channels: dict, free_slots: dict):
     """
     Given the free channels and free slots on a given path, find the number of overlapping and non-overlapping channels
@@ -296,11 +310,11 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
 
         # A path could not be found, assign None to path modulation
         if not selected_path:
-            resp = [selected_path], [False]
+            resp = [selected_path], [False], [False]
         else:
             path_len = find_path_len(path=selected_path, topology=topology)
             path_mod = [get_path_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)]
-            resp = [selected_path], [path_mod]
+            resp = [selected_path], [path_mod], [path_len]
     else:
         raise NotImplementedError(f"Routing method not recognized, got: {properties['route_method']}.")
 

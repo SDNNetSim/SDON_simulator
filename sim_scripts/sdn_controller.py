@@ -1,5 +1,6 @@
 # Standard library imports
 import numpy as np
+import time
 
 # Local application imports
 from sim_scripts.spectrum_assignment import SpectrumAssignment
@@ -309,9 +310,12 @@ class SDNController:
             self.release()
             return self.net_spec_db
 
-        paths, path_mods = self._handle_routing()
+        start_time = time.time()
+        # TODO: Probably add xt_cost here
+        paths, path_mods, path_weights = self._handle_routing()
+        route_time = time.time() - start_time
 
-        for path, path_mod in zip(paths, path_mods):
+        for path, path_mod, path_weight in zip(paths, path_mods, path_weights):
             self.path = path
 
             # TODO: Spectrum assignment always overrides modulation format chosen when using check snr
@@ -333,6 +337,9 @@ class SDNController:
                 resp = {
                     'path': self.path,
                     'mod_format': path_mod,
+                    'route_time': route_time,
+                    'path_weight': path_weight,
+                    'xt_cost': None,
                     'is_sliced': False
                 }
                 self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
