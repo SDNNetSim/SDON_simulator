@@ -513,8 +513,8 @@ class Engine(SDNController):
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
-                    # TODO: Commented for now
-                    # num_transponders = self._handle_arrival(curr_time, iteration)
+                    # TODO: Commented for now and removed num_transponders return
+                    self._handle_arrival(curr_time, iteration)
                     # self._update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1
