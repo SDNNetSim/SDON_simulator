@@ -151,7 +151,6 @@ class Engine(SDNController):
             'cores_per_link': self.properties['cores_per_link'],
             'hold_time_mean': self.properties['holding_time'],
             'spectral_slots': self.properties['spectral_slots'],
-            # TODO: Remove trans mean and max segments from calculations (being called)
             'max_segments': self.properties['max_segments'],
             'trans_mean': np.mean(self.trans_arr),
             'dist_percent': np.mean(self.dist_block_arr) * 100.0,
@@ -162,7 +161,6 @@ class Engine(SDNController):
             'dynamic_lps': self.properties['dynamic_lps'],
             'is_training': self.properties['ai_arguments']['is_training'],
             'beta': self.properties['beta'],
-            # TODO: Remove from calculations (being called)
             'request_snapshots': self.request_snapshots,
             'hops': self.hops,
             'route_times': self.route_times,
