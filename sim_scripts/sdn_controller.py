@@ -339,7 +339,6 @@ class SDNController:
                     'mod_format': path_mod,
                     'route_time': route_time,
                     'path_weight': path_weight,
-                    'xt_cost': None,
                     'is_sliced': False
                 }
                 self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
