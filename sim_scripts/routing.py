@@ -156,11 +156,11 @@ class Routing:
                 # We exceeded minimum hops plus one, return the best path
                 else:
                     least_cong_path = self.find_least_cong_path()
-                    # TODO: Change, always a constant modulation format
-                    return [least_cong_path], 'QPSK'
+                    # TODO: Change, always a constant modulation format and path weight is None
+                    return [least_cong_path], 'QPSK', None
 
         # If no valid path was found, return a tuple indicating failure
-        return [False], [False]
+        return [False], [False], [False]
 
     def least_weight_path(self, weight: str):
         """
@@ -177,10 +177,14 @@ class Routing:
                                              weight=weight)
 
         for path in paths_obj:
-            path_len = self.find_path_len(path, self.topology)
-            mod_format = self.get_path_mod(self.mod_formats, path_len)
+            if weight == 'xt_cost':
+                # TODO: Path length does not matter when using xt_cost in routing?
+                path_len = sum(self.topology[path[i]][path[i + 1]][weight] for i in range(len(path) - 1))
+            else:
+                path_len = self.find_path_len(path, self.topology)
 
-            return [path], [mod_format]
+            mod_format = self.get_path_mod(self.mod_formats, path_len)
+            return [path], [mod_format], [path_len]
 
     def k_shortest_path(self, k_paths: int):
         """
@@ -194,6 +198,7 @@ class Routing:
         """
         paths = list()
         mod_formats = list()
+        path_lens = list()
         # This networkx function will always return the shortest paths in order
         paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
                                              weight='length')
@@ -206,8 +211,9 @@ class Routing:
 
             paths.append(path)
             mod_formats.append(mod_format)
+            path_lens.append(path_len)
 
-        return paths, mod_formats
+        return paths, mod_formats, path_lens
 
     # TODO: Move these functions to useful functions eventually, also check the entire simulator for things like this
     def _setup_simulated_link(self, slots_per_core: int):
@@ -520,7 +526,8 @@ class Routing:
             self.topology[source][destination]['xt_cost'] = link_cost
             self.topology[destination][source]['xt_cost'] = link_cost
 
-        return self.least_weight_path(weight='xt_cost')
+        resp = self.least_weight_path(weight='xt_cost')
+        return resp
 
     def nli_path(self, path: list):
         """

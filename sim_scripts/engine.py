@@ -10,6 +10,7 @@ from sim_scripts.request_generator import generate
 from sim_scripts.sdn_controller import SDNController
 from useful_functions.handle_dirs_files import create_dir
 from useful_functions.ai_functions import *  # pylint: disable=unused-wildcard-import
+from useful_functions.sim_functions import *  # pylint: disable=unused-wildcard-import
 
 
 class Engine(SDNController):
@@ -68,6 +69,15 @@ class Engine(SDNController):
         self.request_snapshots = {}
         # Holds the request numbers of all the requests currently active in the network
         self.active_requests = set()
+        # TODO: Since we use super, we can move some of these to SDN controller if we want and have access
+        # The number of hops for each route found
+        self.hops = np.array([])
+        # The route length (in m) for every route chosen
+        self.path_lens = np.array([])
+        # The time taken to route each request
+        self.route_times = np.array([])
+        # The weights calculated for each request, may be cross-talk, length again, or other weighted routing methods
+        self.path_weights = np.array([])
 
         # For the purposes of saving relevant simulation information to a certain pathway
         self.sim_info = f"{self.properties['network']}/{self.properties['sim_start'].split('_')[0]}/" \
@@ -122,36 +132,48 @@ class Engine(SDNController):
 
         return free_slots
 
-    def _save_sim_results(self):
+    def _save_sim_results(self, iteration):
         """
         Saves the simulation results to a file like #_erlang.json.
 
         :return: None
         """
-        for _, obj in self.request_snapshots.items():
-            for key, lst in obj.items():
-                obj[key] = np.mean(lst)
+        # TODO: Commented for now
+        # for _, obj in self.request_snapshots.items():
+        #     for key, lst in obj.items():
+        #         obj[key] = np.mean(lst)
 
-        self.stats_dict['misc_stats'] = {
-            'blocking_mean': self.blocking_mean,
-            'blocking_variance': self.blocking_variance,
-            'ci_rate_block': self.block_ci_rate,
-            'ci_percent_block': self.block_ci_percent,
-            'num_reqs': self.properties['num_requests'],
-            'cores_per_link': self.properties['cores_per_link'],
-            'hold_time_mean': self.properties['holding_time'],
-            'spectral_slots': self.properties['spectral_slots'],
-            'max_segments': self.properties['max_segments'],
+        self.stats_dict['blocking_mean'] = self.blocking_mean
+        self.stats_dict['blocking_variance'] = self.blocking_variance
+        self.stats_dict['ci_rate_block'] = self.block_ci_rate
+        self.stats_dict['ci_percent_block'] = self.block_ci_percent
+
+        if iteration == 0:
+            self.stats_dict['sim_params'] = {
+                'num_reqs': self.properties['num_requests'],
+                'cores_per_link': self.properties['cores_per_link'],
+                'hold_time_mean': self.properties['holding_time'],
+                'spectral_slots': self.properties['spectral_slots'],
+                'max_segments': self.properties['max_segments'],
+                'alloc_method': self.properties['allocation_method'],
+                'route_method': self.properties['route_method'],
+                'dynamic_lps': self.properties['dynamic_lps'],
+                'is_training': self.properties['ai_arguments']['is_training'],
+                'beta': self.properties['beta'],
+            }
+
+        self.stats_dict['misc_stats'][iteration] = {
             'trans_mean': np.mean(self.trans_arr),
             'dist_percent': np.mean(self.dist_block_arr) * 100.0,
             'cong_percent': np.mean(self.cong_block_arr) * 100.0,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
-            'alloc_method': self.properties['allocation_method'],
-            'route_method': self.properties['route_method'],
-            'dynamic_lps': self.properties['dynamic_lps'],
-            'is_training': self.properties['ai_arguments']['is_training'],
-            'beta': self.properties['beta'],
-            'request_snapshots': self.request_snapshots,
+            # 'request_snapshots': self.request_snapshots,
+            'hops': np.mean(self.hops),
+            'route_times': np.mean(self.route_times),
+            'path_lengths': np.mean(self.path_lens),
+            'weight_max': float(self.path_weights.max(initial=-np.inf)),
+            'weight_min': float(self.path_weights.min(initial=np.inf)),
+            'weight_mean': np.mean(self.path_weights),
         }
 
         base_fp = "data/output/"
@@ -191,7 +213,7 @@ class Engine(SDNController):
         if self.block_ci_percent <= 5:
             print(f"Confidence interval of {round(self.block_ci_percent, 2)}% reached on simulation "
                   f"{iteration + 1}, ending and saving results for Erlang: {self.properties['erlang']}")
-            self._save_sim_results()
+            self._save_sim_results(iteration=iteration)
             return True
 
         return False
@@ -262,6 +284,12 @@ class Engine(SDNController):
             return 1
 
         response_data, num_transponders = resp[0], resp[2]
+
+        self.hops = np.append(self.hops, len(response_data['path']) - 1)
+        self.path_lens = np.append(self.path_lens, find_path_len(path=response_data['path'], topology=self.topology))
+        self.route_times = np.append(self.route_times, response_data['route_time'])
+        self.path_weights = np.append(self.path_weights, response_data['path_weight'])
+
         self.reqs_status.update({self.req_id: {
             "mod_format": response_data['mod_format'],
             "path": response_data['path'],
@@ -485,8 +513,9 @@ class Engine(SDNController):
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
-                    num_transponders = self._handle_arrival(curr_time, iteration)
-                    self._update_request_snapshots_dict(request_number, num_transponders)
+                    # TODO: Commented for now and removed num_transponders return
+                    self._handle_arrival(curr_time, iteration)
+                    # self._update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1
                 elif req_type == "release":
@@ -510,8 +539,8 @@ class Engine(SDNController):
             if (iteration + 1) % 20 == 0 or iteration == 0:
                 self._print_iter_stats(iteration)
 
-            self._save_sim_results()
+            self._save_sim_results(iteration=iteration)
 
         print(f"Erlang: {self.properties['erlang']} finished for "
               f"simulation number: {self.properties['thread_num']}.")
-        self._save_sim_results()
+        self._save_sim_results(iteration=self.properties['max_iters'] - 1)

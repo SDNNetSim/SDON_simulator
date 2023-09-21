@@ -10,36 +10,36 @@ import numpy as np
 from useful_functions.handle_dirs_files import create_dir
 
 
-# TODO: Plot differences between lines
-
+# TODO: Fix other methods to work for new structure
 
 class PlotStats:
     """
     A class for computing and plotting statistical analysis for simulations.
     """
 
-    def __init__(self, net_name: str, data_dir: str = None, latest_date: str = None, latest_time: str = None,
-                 plot_threads: list = None):
+    def __init__(self, net_names: list, dates: list, times: list, sims: list):
         """
         Initializes the PlotStats class.
         """
         # Information to retrieve desired data
-        self.net_name = net_name
-        self.data_dir = data_dir
-        self.latest_date = latest_date
-        self.latest_time = latest_time
-        # Desired threads to be plotted
-        self.plot_threads = plot_threads
+        self.net_names = net_names
+        self.dates = dates
+        self.times = times
+        self.sims = sims
+        self.base_dir = '../data/output'
         self.file_info = self.get_file_info()
 
         # The final dictionary containing information for all plots
-        self.plot_dict = {}
+        self.plot_dict = None
+        self.time = None
+        self.sim_num = None
+        self.erlang_dict = None
         self.num_cores = None
         # Miscellaneous customizations visually
         self.colors = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
         self.markers = ['o', '^', 's', 'x']
-        self.x_ticks = [10, 100, 200, 300, 400]
+        self.x_ticks = [800, 850, 900, 950, 1000]
 
         self.get_data()
 
@@ -47,118 +47,162 @@ class PlotStats:
         """
         Obtains all the filenames of the output data from the simulations.
         """
+        resp = dict()
         # Default to the latest time if a data directory wasn't specified
-        if self.latest_date is None or self.latest_time is None:
-            self.data_dir = f'../data/output/{self.net_name}/'
-            dir_list = os.listdir(self.data_dir)
-            self.latest_date = sorted(dir_list)[-1]
-            dir_list = os.listdir(os.path.join(self.data_dir, self.latest_date))
-            self.latest_time = sorted(dir_list)[-1]
-            self.data_dir = os.path.join(self.data_dir, f'{self.latest_date}/{self.latest_time}')
+        if self.dates is None or self.times is None:
+            dirs = [f'{self.base_dir}/{self.net_names[0]}/']
+            dir_list = os.listdir(dirs[0])
+            self.dates = [sorted(dir_list)[-1]]
+            dir_list = os.listdir(os.path.join(dirs[0], self.dates[0]))
+            self.times = [sorted(dir_list)[-1]]
+            dirs = [os.path.join(dirs[0], f'{self.dates[0]}/{self.times[0]}')]
 
-        files_dict = {}
-        self.data_dir = f'../data/output/{self.net_name}/{self.latest_date}/{self.latest_time}'
+        for network, date, time in zip(self.net_names, self.dates, self.times):
+            resp[time] = {'network': network, 'date': date, 'sims': dict()}
+            curr_dir = f'{self.base_dir}/{network}/{date}/{time}'
 
-        # Sort by thread number
-        dirs = os.listdir(self.data_dir)
-        sorted_dirs = sorted(dirs, key=lambda x: int(x[1:]))
-        for thread in sorted_dirs:
-            if thread not in self.plot_threads:
-                continue
-            curr_fp = os.path.join(self.data_dir, thread)
-            files_dict[thread] = list()
+            # Sort by sim number
+            sim_dirs = os.listdir(curr_dir)
+            sim_dirs = sorted(sim_dirs, key=lambda x: int(x[1:]))
 
-            files = os.listdir(curr_fp)
-            sorted_files = sorted(files, key=lambda x: float(x.split('_')[0]))
-            for erlang_file in sorted_files:
-                files_dict[thread].append(erlang_file.split('_')[0])
+            for curr_sim in sim_dirs:
+                # User selected to not run this simulation
+                if curr_sim not in self.sims:
+                    continue
+                curr_fp = os.path.join(curr_dir, curr_sim)
+                resp[time]['sims'][curr_sim] = list()
+                files = os.listdir(curr_fp)
+                sorted_files = sorted(files, key=lambda x: float(x.split('_')[0]))
 
-        return files_dict
+                for erlang_file in sorted_files:
+                    resp[time]['sims'][curr_sim].append(erlang_file.split('_')[0])
+
+        return resp
+
+    def _find_misc_info(self, erlang):
+        # TODO: Params for this
+        if erlang in (10, 100, 400):
+            self.plot_dict[self.time][self.sim_num]['taken_slots'][erlang] = dict()
+            self.plot_dict[self.time][self.sim_num]['block_per_req'][erlang] = dict()
+            self.plot_dict[self.time][self.sim_num]['active_requests'][erlang] = dict()
+            self.plot_dict[self.time][self.sim_num]['guard_bands'][erlang] = dict()
+            self.plot_dict[self.time][self.sim_num]['num_segments'][erlang] = list()
+
+            for request_number, request_info in self.erlang_dict['misc_stats']['request_snapshots'].items():
+                request_number = int(request_number)
+                # Plot every 'x' amount of request snapshots
+                if request_number % 1 == 0 or request_number == 1:
+                    cores_per_link = self.erlang_dict['misc_stats']['cores_per_link']
+
+                    taken_slots = request_info['occ_slots'] / cores_per_link
+                    self.plot_dict[self.time][self.sim_num]['taken_slots'][erlang][request_number] = taken_slots
+                    self.plot_dict[self.time][self.sim_num]['block_per_req'][erlang][request_number] = request_info[
+                        'blocking_prob']
+
+                    active_requests = request_info['active_requests'] / cores_per_link
+                    self.plot_dict[self.time][self.sim_num]['active_requests'][erlang][request_number] = active_requests
+
+                    guard_bands = request_info['guard_bands'] / cores_per_link
+                    self.plot_dict[self.time][self.sim_num]['guard_bands'][erlang][request_number] = guard_bands
+
+                self.plot_dict[self.time][self.sim_num]['num_segments'][erlang].append(request_info['num_segments'])
+
+    @staticmethod
+    def _snake_to_title(snake_str):
+        words = snake_str.split('_')
+        title_str = ' '.join(word.capitalize() for word in words)
+        return title_str
+
+    def _find_algorithm(self):
+        route_method = self._snake_to_title(snake_str=self.erlang_dict['misc_stats']['route_method'])
+        alloc_method = self._snake_to_title(snake_str=self.erlang_dict['misc_stats']['alloc_method'])
+
+        algorithm = f'{route_method} - {alloc_method}'
+        self.plot_dict[self.time][self.sim_num]['algorithm'] = algorithm
+
+    def _find_sim_info(self, network):
+        self.plot_dict[self.time][self.sim_num]['hold_time_mean'] = self.erlang_dict['misc_stats']['hold_time_mean']
+        self.plot_dict[self.time][self.sim_num]['cores_per_link'] = self.erlang_dict['misc_stats']['cores_per_link']
+        self.plot_dict[self.time][self.sim_num]['spectral_slots'] = self.erlang_dict['misc_stats']['spectral_slots']
+        self.plot_dict[self.time][self.sim_num]['network'] = network
+
+        self.plot_dict[self.time][self.sim_num]['max_segments'] = self.erlang_dict['misc_stats']['max_segments']
+        self.num_cores = self.erlang_dict['misc_stats']['cores_per_link']
+
+    def _find_blocking(self):
+        # For training, no mean was calculated as we wanted to run for every iteration (no CI)
+        if self.erlang_dict['misc_stats']['is_training']:
+            self.plot_dict[self.time][self.sim_num]['blocking_vals'].append(
+                np.average(list(self.erlang_dict['block_per_sim'].values())))
+        else:
+            self.plot_dict[self.time][self.sim_num]['blocking_vals'].append(
+                self.erlang_dict['misc_stats']['blocking_mean'])
+
+        self.plot_dict[self.time][self.sim_num]['distance_block'].append(self.erlang_dict['misc_stats']['dist_percent'])
+        self.plot_dict[self.time][self.sim_num]['cong_block'].append(self.erlang_dict['misc_stats']['cong_percent'])
+
+    def _find_bw_blocks(self):
+        # Convert how many times a bandwidth was blocked to a percentage
+        tmp_sum = sum(self.erlang_dict['misc_stats']['block_per_bw'].values())
+        for key in self.erlang_dict['misc_stats']['block_per_bw']:
+            try:
+                tmp_value = self.erlang_dict['misc_stats']['block_per_bw'][key] / tmp_sum * 100
+            except ZeroDivisionError:
+                tmp_value = 0
+
+            if key not in self.plot_dict[self.time][self.sim_num]['block_per_bw'].keys():
+                self.plot_dict[self.time][self.sim_num]['block_per_bw'][key] = list()
+
+            self.plot_dict[self.time][self.sim_num]['block_per_bw'][key].append(round(tmp_value, 2))
+
+    def _update_plot_dict(self):
+        if self.plot_dict is None:
+            self.plot_dict = {self.time: {}}
+
+        self.plot_dict[self.time][self.sim_num] = {
+            'erlang_vals': [],
+            'blocking_vals': [],
+            'average_transponders': [],
+            'distance_block': [],
+            'cong_block': [],
+            'block_per_bw': {},
+            'hold_time_mean': None,
+            'cores_per_link': None,
+            'spectral_slots': None,
+            'max_segments': None,
+            'num_segments': {},
+            'taken_slots': {},
+            'block_per_req': {},
+            'active_requests': {},
+            'guard_bands': {},
+        }
 
     def get_data(self):
         """
         Structures all data to be plotted.
         """
-        for thread, erlang_values in self.file_info.items():
-            self.plot_dict[thread] = {
-                'erlang_vals': [],
-                'blocking_vals': [],
-                'average_transponders': [],
-                'distance_block': [],
-                'cong_block': [],
-                'block_per_bw': {},
-                'hold_time_mean': None,
-                'cores_per_link': None,
-                'spectral_slots': None,
-                'max_segments': None,
-                'num_segments': {},
-                'taken_slots': {},
-                'block_per_req': {},
-                'active_requests': {},
-                'guard_bands': {},
-            }
-            for erlang in erlang_values:
-                curr_fp = os.path.join(self.data_dir, f'{thread}/{erlang}_erlang.json')
-                with open(curr_fp, 'r', encoding='utf-8') as file_obj:
-                    erlang_dict = json.load(file_obj)
+        for time, obj in self.file_info.items():
+            self.time = time
+            for curr_sim, erlang_vals in obj['sims'].items():
+                self.sim_num = curr_sim
+                self._update_plot_dict()
+                for erlang in erlang_vals:
+                    curr_fp = os.path.join(self.base_dir, obj['network'], obj['date'], time, curr_sim,
+                                           f'{erlang}_erlang.json')
+                    with open(curr_fp, 'r', encoding='utf-8') as file_obj:
+                        erlang_dict = json.load(file_obj)
 
-                erlang = int(erlang.split('.')[0])
-                self.plot_dict[thread]['erlang_vals'].append(erlang)
+                    erlang = int(erlang.split('.')[0])
+                    self.plot_dict[self.time][self.sim_num]['erlang_vals'].append(erlang)
+                    self.plot_dict[self.time][self.sim_num]['average_transponders'].append(
+                        erlang_dict['misc_stats']['trans_mean'])
 
-                if erlang_dict['misc_stats']['is_training']:
-                    self.plot_dict[thread]['blocking_vals'].append(
-                        np.average(list(erlang_dict['block_per_sim'].values())))
-                else:
-                    self.plot_dict[thread]['blocking_vals'].append(erlang_dict['misc_stats']['blocking_mean'])
-                self.plot_dict[thread]['average_transponders'].append(erlang_dict['misc_stats']['trans_mean'])
-                self.plot_dict[thread]['distance_block'].append(erlang_dict['misc_stats']['dist_percent'])
-                self.plot_dict[thread]['cong_block'].append(erlang_dict['misc_stats']['cong_percent'])
-
-                # Convert how many times a bandwidth was blocked to a percentage
-                tmp_sum = sum(erlang_dict['misc_stats']['block_per_bw'].values())
-                for key in erlang_dict['misc_stats']['block_per_bw']:
-                    tmp_value = erlang_dict['misc_stats']['block_per_bw'][key] / tmp_sum * 100
-
-                    if key not in self.plot_dict[thread]['block_per_bw'].keys():
-                        self.plot_dict[thread]['block_per_bw'][key] = list()
-
-                    self.plot_dict[thread]['block_per_bw'][key].append(round(tmp_value, 2))
-
-                self.plot_dict[thread]['hold_time_mean'] = erlang_dict['misc_stats']['hold_time_mean']
-                self.plot_dict[thread]['cores_per_link'] = erlang_dict['misc_stats']['cores_per_link']
-                self.plot_dict[thread]['spectral_slots'] = erlang_dict['misc_stats']['spectral_slots']
-
-                self.plot_dict[thread]['max_segments'] = erlang_dict['misc_stats']['max_segments']
-                self.num_cores = erlang_dict['misc_stats']['cores_per_link']
-
-                if erlang in (10, 100, 400):
-                    self.plot_dict[thread]['taken_slots'][erlang] = dict()
-                    self.plot_dict[thread]['block_per_req'][erlang] = dict()
-                    self.plot_dict[thread]['active_requests'][erlang] = dict()
-                    self.plot_dict[thread]['guard_bands'][erlang] = dict()
-                    self.plot_dict[thread]['num_segments'][erlang] = list()
-
-                    for request_number, request_info in erlang_dict['misc_stats']['request_snapshots'].items():
-                        request_number = int(request_number)
-                        # Plot every 'x' amount of request snapshots
-                        if request_number % 1 == 0 or request_number == 1:
-                            self.plot_dict[thread]['taken_slots'][erlang][request_number] = request_info['occ_slots'] / \
-                                                                                            erlang_dict['misc_stats'][
-                                                                                                'cores_per_link']
-                            self.plot_dict[thread]['block_per_req'][erlang][request_number] = request_info[
-                                'blocking_prob']
-                            self.plot_dict[thread]['active_requests'][erlang][request_number] = request_info[
-                                                                                                    'active_requests'] / \
-                                                                                                erlang_dict[
-                                                                                                    'misc_stats'][
-                                                                                                    'cores_per_link']
-
-                            self.plot_dict[thread]['guard_bands'][erlang][request_number] = request_info[
-                                                                                                'guard_bands'] / \
-                                                                                            erlang_dict['misc_stats'][
-                                                                                                'cores_per_link']
-
-                        self.plot_dict[thread]['num_segments'][erlang].append(request_info['num_segments'])
+                    self.erlang_dict = erlang_dict
+                    self._find_blocking()
+                    self._find_bw_blocks()
+                    self._find_algorithm()
+                    self._find_sim_info(network=obj['network'])
+                    self._find_misc_info(erlang=erlang)
 
     @staticmethod
     def running_average(lst, interval):
@@ -193,7 +237,7 @@ class PlotStats:
         :param file_name: A string representing the name of the file to save the plot as
         :type file_name: str
         """
-        file_path = f'./output/{self.net_name}/{self.latest_date}/{self.latest_time}'
+        file_path = f'./output/{self.net_names}/{self.dates}/{self.times}'
         create_dir(file_path)
         plt.savefig(f'{file_path}/{file_name}_core{self.num_cores}.png')
 
@@ -275,20 +319,21 @@ class PlotStats:
         """
         Plots the blocking probability for each Erlang value.
         """
-        self._setup_plot(f'{self.net_name} BP vs. Erlang (C={self.num_cores})', 'Blocking Probability', 'Erlang')
+        self._setup_plot('USNet Average BP vs. Erlang (C=7)', 'Blocking Probability', 'Erlang')
 
         style_count = 0
         legend_list = list()
-        for _, thread_obj in self.plot_dict.items():
-            color = self.colors[style_count]
-            line_style = self.line_styles[style_count]
-            marker = self.markers[style_count]
+        for _, objs in self.plot_dict.items():
+            for _, sim_obj in objs.items():
+                color = self.colors[style_count]
+                line_style = self.line_styles[style_count]
+                marker = self.markers[style_count]
 
-            plt.plot(thread_obj['erlang_vals'], thread_obj['blocking_vals'], color=color, linestyle=line_style,
-                     marker=marker, markersize=2.3)
-            legend_list.append(f"C ={thread_obj['cores_per_link']} LS ={thread_obj['max_segments']}")
+                plt.plot(sim_obj['erlang_vals'], sim_obj['blocking_vals'], color=color, linestyle=line_style,
+                         marker=marker, markersize=2.3)
+                legend_list.append(f"{sim_obj['algorithm']}")
 
-            style_count += 1
+                style_count += 1
 
         plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
         plt.legend(legend_list)
@@ -300,7 +345,7 @@ class PlotStats:
         """
         Plots the blocking probability, but for each request at that point in time.
         """
-        self._setup_plot(f'{self.net_name} Request Snapshot vs. Blocking Probability (C={self.num_cores})',
+        self._setup_plot(f'{self.net_names} Request Snapshot vs. Blocking Probability (C={self.num_cores})',
                          'Blocking Probability', 'Request Number', x_ticks=False)
 
         legend_list = list()
@@ -331,7 +376,7 @@ class PlotStats:
         """
         Plots the average number of transponders used for each Erlang value.
         """
-        self._setup_plot(f'{self.net_name} Transponders vs. Erlang (C={self.num_cores})', 'Transponders', 'Erlang',
+        self._setup_plot(f'{self.net_names} Transponders vs. Erlang (C={self.num_cores})', 'Transponders', 'Erlang',
                          y_ticks=False)
         plt.ylim(0.9, 2.5)
 
@@ -353,7 +398,7 @@ class PlotStats:
         """
         Plots the number of slots taken in the entire network for certain request snapshots.
         """
-        self._setup_plot(f'{self.net_name} Request Snapshot vs. Slots Occupied (C={self.num_cores})', 'Slots Occupied',
+        self._setup_plot(f'{self.net_names} Request Snapshot vs. Slots Occupied (C={self.num_cores})', 'Slots Occupied',
                          'Request Number',
                          y_ticks=False, x_ticks=False)
 
@@ -386,7 +431,7 @@ class PlotStats:
         """
         Plots the number of segments each request has been sliced into.
         """
-        self._setup_plot(f'{self.net_name} Number of Segments vs. Occurrences (C={self.num_cores})', 'Occurrences',
+        self._setup_plot(f'{self.net_names} Number of Segments vs. Occurrences (C={self.num_cores})', 'Occurrences',
                          'Number of Segments',
                          y_ticks=False, x_ticks=False, grid=False)
 
@@ -416,7 +461,7 @@ class PlotStats:
         """
         Plots the amount of active requests in the network at specific intervals.
         """
-        self._setup_plot(f'{self.net_name} Request Snapshot vs. Active Requests (C={self.num_cores})',
+        self._setup_plot(f'{self.net_names} Request Snapshot vs. Active Requests (C={self.num_cores})',
                          'Active Requests', 'Request Number',
                          y_ticks=False, x_ticks=False)
 
@@ -450,7 +495,7 @@ class PlotStats:
         """
         Plots the number of guard bands being used in the network on average.
         """
-        self._setup_plot(f'{self.net_name} Request Snapshot vs. Guard Bands (C={self.num_cores})', 'Guard Bands',
+        self._setup_plot(f'{self.net_names} Request Snapshot vs. Guard Bands (C={self.num_cores})', 'Guard Bands',
                          'Request Number',
                          y_ticks=False, x_ticks=False)
 
@@ -491,7 +536,7 @@ class PlotStats:
 
         self._plot_sub_plots(plot_info=plot_info, x_ticks=self.x_ticks, x_lim=[self.x_ticks[0], self.x_ticks[-1]],
                              x_label='Erlang', y_ticks=[20, 40, 60, 80, 100], y_lim=[-1, 101], y_label='Percent',
-                             legend=['Cong.', 'Dist.'], filename='percents', title=f"Block Percent {self.net_name}")
+                             legend=['Cong.', 'Dist.'], filename='percents', title=f"Block Percent {self.net_names}")
         plt.show()
 
     def plot_bandwidths(self):
@@ -509,7 +554,7 @@ class PlotStats:
 
         self._plot_sub_plots(plot_info=plot_info, x_ticks=self.x_ticks, x_lim=[self.x_ticks[0], self.x_ticks[-1]],
                              x_label='Erlang', y_ticks=[20, 40, 60, 80, 100], y_lim=[-1, 101], y_label='Percent',
-                             legend=['50', '100', '400'], filename='bandwidths', title=f'Band Block {self.net_name}')
+                             legend=['50', '100', '400'], filename='bandwidths', title=f'Band Block {self.net_names}')
         plt.show()
 
 
@@ -517,16 +562,16 @@ def main():
     """
     Controls this script.
     """
-    plot_obj = PlotStats(net_name='USNet', latest_date='0726', latest_time='15:08:49',
-                         plot_threads=['t1', 't2', 't3', 't4'])
-    # plot_obj.plot_blocking()
+    plot_obj = PlotStats(net_names=['USNet', 'USNet'], dates=['0921'], times=['19:32:30'],
+                         sims=['s1', 's2'])
+    plot_obj.plot_blocking()
     # plot_obj.plot_blocking_per_request()
     # plot_obj.plot_transponders()
     # plot_obj.plot_slots_taken()
     # plot_obj.plot_active_requests()
     # plot_obj.plot_guard_bands()
     # plot_obj.plot_num_segments()
-    plot_obj.plot_dist_cong()
+    # plot_obj.plot_dist_cong()
     # plot_obj.plot_bandwidths()
 
 

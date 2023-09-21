@@ -63,7 +63,7 @@ class TestRouting(unittest.TestCase):
         """
         expected_path = [0, 1, 2, 3, 4]
         expected_mod_format = '16-QAM'
-        path, mod_format = self.routing.least_weight_path(weight='length')
+        path, mod_format, _ = self.routing.least_weight_path(weight='length')
 
         self.assertEqual(path[0], expected_path)
         self.assertEqual(mod_format[0], expected_mod_format)

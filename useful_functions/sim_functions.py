@@ -296,11 +296,11 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
 
         # A path could not be found, assign None to path modulation
         if not selected_path:
-            resp = [selected_path], [False]
+            resp = [selected_path], [False], [False]
         else:
             path_len = find_path_len(path=selected_path, topology=topology)
             path_mod = [get_path_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)]
-            resp = [selected_path], [path_mod]
+            resp = [selected_path], [path_mod], [path_len]
     else:
         raise NotImplementedError(f"Routing method not recognized, got: {properties['route_method']}.")
 

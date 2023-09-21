@@ -23,7 +23,8 @@ def _copy_dict_vals(dest_key: str, dictionary: dict):
     return dictionary
 
 
-def _setup_threads(config: configparser.ConfigParser, config_dict: dict, sections: list, option_types: dict):
+def _setup_threads(config: configparser.ConfigParser, config_dict: dict, sections: list, option_types: dict,
+                   other_options: dict):
     """
     Checks if multiple threads should be run. If so, structure each sim's params.
 
@@ -39,6 +40,9 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
     :param option_types: A dictionary of all options along with their desired conversion type.
     :type option_types: dict
 
+    :param other_options: A dictionary of non-required options that may change between sims.
+    :type other_options: dict
+
     :return: An updated dictionary with parameters for every simulation if they exist.
     :rtype: dict
     """
@@ -46,7 +50,10 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
         config_dict = _copy_dict_vals(dest_key=new_thread, dictionary=config_dict)
         # Make desired changes for this thread
         for key, value in config.items(new_thread):
-            target_type = option_types[key]
+            try:
+                target_type = option_types[key]
+            except KeyError:
+                target_type = other_options[key]
             config_dict[new_thread][key] = target_type(value)
 
     return config_dict
@@ -92,7 +99,7 @@ def read_config():
 
         # Ignoring index zero since we've already handled s1, the first simulation
         resp = _setup_threads(config=config, config_dict=config_dict, sections=config.sections()[1:],
-                              option_types=required_options)
+                              option_types=required_options, other_options=other_options)
         return resp
 
     except configparser.Error as error:
