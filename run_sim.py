@@ -146,7 +146,7 @@ class NetworkSimulator:
             with concurrent.futures.ProcessPoolExecutor() as executor:
                 futures = []
                 for erlang in erlang_lst:
-                    first_erlang = (erlang == erlang_lst[0])
+                    first_erlang = erlang == erlang_lst[0]
                     time.sleep(1.0)
                     future = executor.submit(self._run_arash, erlang=erlang, first_erlang=first_erlang)
                     futures.append(future)
@@ -155,7 +155,7 @@ class NetworkSimulator:
                     future.result()
         else:
             for erlang in erlang_lst:
-                first_erlang = (erlang == erlang_lst[0])
+                first_erlang = erlang == erlang_lst[0]
                 self._run_arash(erlang=erlang, first_erlang=first_erlang)
 
     def run_sim(self, **kwargs):
