@@ -45,7 +45,7 @@ class NetworkSimulator:
 
         :return: None
         """
-        path = f"data/input/{self.properties['network']}/{self.properties['date']}/{self.properties['curr_time']}"
+        path = f"data/input/{self.properties['network']}/{self.properties['date']}/{self.properties['sim_start']}"
 
         create_dir(path)
         create_dir('data/output')
@@ -68,7 +68,7 @@ class NetworkSimulator:
         self.save_input(file_name=bw_file, data=bw_info)
 
         path = f"./data/input/{local_props['network']}/{local_props['date']}/" \
-               f"{local_props['curr_time']}/{bw_file}"
+               f"{local_props['sim_start']}/{bw_file}"
         with open(path, 'r', encoding='utf-8') as file_object:
             local_props['mod_per_bw'] = json.load(file_object)
 
@@ -168,8 +168,10 @@ class NetworkSimulator:
         self.properties = kwargs['thread_params']
         # The date and current time derived from the simulation start
         self.properties['date'] = kwargs['sim_start'].split('_')[0]
-        self.properties['curr_time'] = kwargs['sim_start'].split('_')[1]
-        self.properties['sim_start'] = kwargs['sim_start']
+
+        tmp_list = kwargs['sim_start'].split('_')
+        time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}'
+        self.properties['sim_start'] = time_string
 
         # To keep track of each thread run and save results
         self.properties['thread_num'] = kwargs['thread_num']
@@ -192,7 +194,7 @@ def run(threads_obj: dict):
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = []
 
-        sim_start = time.strftime("%m%d_%H:%M:%S")
+        sim_start = time.strftime("%m%d_%H_%M_%S.%f")[:-3]
         for thread_num, thread_params in threads_obj.items():
             sim_obj = NetworkSimulator()
             class_inst = sim_obj.run_sim

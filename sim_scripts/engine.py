@@ -74,8 +74,7 @@ class Engine(SDNController):
         self.path_weights = np.array([])
 
         # For the purposes of saving relevant simulation information to a certain pathway
-        self.sim_info = f"{self.properties['network']}/{self.properties['sim_start'].split('_')[0]}/" \
-                        f"{self.properties['sim_start'].split('_')[1]}"
+        self.sim_info = f"{self.properties['network']}/{self.properties['date']}/{self.properties['sim_start']}"
         # Contains all methods related to artificial intelligence
         self.ai_obj = AIMethods(properties=self.properties, sim_info=self.sim_info)
 
