@@ -1,6 +1,7 @@
 # Standard library imports
 import json
 import time
+from datetime import datetime
 import copy
 
 # Third-party library imports
@@ -170,7 +171,7 @@ class NetworkSimulator:
         self.properties['date'] = kwargs['sim_start'].split('_')[0]
 
         tmp_list = kwargs['sim_start'].split('_')
-        time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}'
+        time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
         self.properties['sim_start'] = time_string
 
         # To keep track of each thread run and save results
@@ -194,7 +195,7 @@ def run(threads_obj: dict):
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = []
 
-        sim_start = time.strftime("%m%d_%H_%M_%S.%f")[:-3]
+        sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
         for thread_num, thread_params in threads_obj.items():
             sim_obj = NetworkSimulator()
             class_inst = sim_obj.run_sim

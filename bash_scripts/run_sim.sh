@@ -4,7 +4,7 @@
 #SBATCH -c 16
 #SBATCH --mem=16000
 #SBATCH -t 0-01:00:00
-#SBATCH -o /slurm/slurm-%j.out
+#SBATCH -o slurm-%j.out
 
 # shellcheck disable=SC2164
 cd
