@@ -12,6 +12,7 @@ from handle_data.generate_data import create_bw_info, create_pt
 from sim_scripts.engine import Engine
 from useful_functions.handle_dirs_files import create_dir
 from config.setup_config import read_config
+from config.parse_args import parse_args
 
 
 # TODO: Structure this so objects are not re-created every time :D
@@ -207,5 +208,6 @@ def run(threads_obj: dict):
 
 
 if __name__ == '__main__':
-    threads_obj = read_config()
+    args_obj = parse_args()
+    threads_obj = read_config(args_obj=args_obj)
     run(threads_obj=threads_obj)

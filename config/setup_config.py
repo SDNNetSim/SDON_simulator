@@ -24,7 +24,7 @@ def _copy_dict_vals(dest_key: str, dictionary: dict):
 
 
 def _setup_threads(config: configparser.ConfigParser, config_dict: dict, sections: list, option_types: dict,
-                   other_options: dict):
+                   other_options: dict, args_obj: dict):
     """
     Checks if multiple threads should be run. If so, structure each sim's params.
 
@@ -43,6 +43,9 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
     :param other_options: A dictionary of non-required options that may change between sims.
     :type other_options: dict
 
+    :param args_obj: Arguments passed via the command line (if any).
+    :type args_obj: dict
+
     :return: An updated dictionary with parameters for every simulation if they exist.
     :rtype: dict
     """
@@ -55,13 +58,19 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
             except KeyError:
                 target_type = other_options[key]
             config_dict[new_thread][key] = target_type(value)
+            # TODO: Only support for changing all s<values> as of now
+            if args_obj[key] is not None:
+                config_dict[new_thread][key] = args_obj[key]
 
     return config_dict
 
 
-def read_config():
+def read_config(args_obj: dict):
     """
     Reads and structures necessary data from the configuration file in the run_ini directory.
+
+    :param args_obj: Arguments passed via the command line (if any).
+    :type args_obj: dict
     """
     config_dict = {'s1': dict()}
     config = configparser.ConfigParser()
@@ -92,6 +101,10 @@ def read_config():
                 target_type = other_options[key]
                 config_dict['s1'][key] = target_type(value)
 
+            # TODO: Only support for changing all s<values> as of now
+            if args_obj[key] is not None:
+                config_dict['s1'][key] = args_obj[key]
+
         # Init other options to None if they haven't been specified
         for option in other_options:
             if option not in config_dict['s1']:
@@ -99,7 +112,7 @@ def read_config():
 
         # Ignoring index zero since we've already handled s1, the first simulation
         resp = _setup_threads(config=config, config_dict=config_dict, sections=config.sections()[1:],
-                              option_types=required_options, other_options=other_options)
+                              option_types=required_options, other_options=other_options, args_obj=args_obj)
         return resp
 
     except configparser.Error as error:
@@ -108,4 +121,4 @@ def read_config():
 
 
 if __name__ == '__main__':
-    read_config()
+    read_config(args_obj={'Test': None})
