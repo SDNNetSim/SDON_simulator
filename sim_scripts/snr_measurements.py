@@ -337,7 +337,9 @@ class SnrMeasurements:
             self._update_link_constants()
             self._update_link_params(link=link)
             cross_talk += (self._calculate_xt( adjacent_cores =  self._check_adjacent_link_cores(link = (self.path[link], self.path[link + 1]))) * self.num_span)
-
-        cross_talk = 10 * math.log10(cross_talk)
-        resp = cross_talk < self.snr_props['requested_xt'][self.path_mod]
+        if cross_talk == 0 :
+            resp = True
+        else:
+            cross_talk = 10 * math.log10(cross_talk)
+            resp = cross_talk < self.snr_props['requested_xt'][self.path_mod]
         return resp
