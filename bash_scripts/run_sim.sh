@@ -11,12 +11,6 @@ cd
 # shellcheck disable=SC2164
 cd /work/pi_vinod_vokkarane_uml_edu/git/SDN_Simulator/
 
-cat <<-PYTHONSCRIPT >mypythonscript.py
-    #!/usr/bin/env python3
-    import sys
-    job_names = ["job1", "job2"]
-    job_index = int(sys.args[1])
-    print(job_names[job_index])
-PYTHONSCRIPT
+beta_array=("0.000001" "0.1")
 
-python run_sim.py $SLURM_ARRAY_TASK_ID
+python run_sim.py --beta beta_array[$SLURM_ARRAY_TASK_ID]
