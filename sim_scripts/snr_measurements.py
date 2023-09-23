@@ -302,6 +302,26 @@ class SnrMeasurements:
         resp = snr > self.req_snr
         return resp
 
+    def _check_adjacent_link_cores(self, link):
+        no_overlapped_core = 0
+        if self.spectrum['core_num'] != 6:
+            # The neighboring core directly before the currently selected core
+            before = 5 if self.spectrum['core_num'] == 0 else self.spectrum['core_num'] - 1
+            # The neighboring core directly after the currently selected core
+            after = 0 if self.spectrum['core_num'] == 5 else self.spectrum['core_num'] + 1
+            adjacent_cores = [before, after, 6]
+        else:
+            adjacent_cores = list(range(6))
+            
+        for core in adjacent_cores:
+            for slt in self.net_spec_db[link]['cores_matrix'][core][self.spectrum['start_slot']:self.spectrum['end_slot']]:
+                if slt > 0:
+                    no_overlapped_core += 1
+                    break
+        return no_overlapped_core
+                
+            
+        
     def check_xt(self):
         """
         Checks the amount of cross-talk interference on a single request.
@@ -316,8 +336,7 @@ class SnrMeasurements:
             self.link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
             self._update_link_constants()
             self._update_link_params(link=link)
-
-            cross_talk += (self._calculate_xt() * self.num_span)
+            cross_talk += (self._calculate_xt( adjacent_cores =  self._check_adjacent_link_cores(link = (self.path[link], self.path[link + 1]))) * self.num_span)
 
         cross_talk = 10 * math.log10(cross_talk)
         resp = cross_talk < self.snr_props['requested_xt'][self.path_mod]
