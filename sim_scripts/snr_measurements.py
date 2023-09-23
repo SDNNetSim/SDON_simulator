@@ -211,7 +211,7 @@ class SnrMeasurements:
         :type link: int
         """
         self.mu_param = (3 * (
-                    self.snr_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2)) / (
+                self.snr_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2)) / (
                                 2 * math.pi * self.attenuation * np.abs(self.dispersion))
         self.sci_psd = self._calculate_sci_psd()
         self.xci_psd = self._calculate_xci(link=link)
@@ -302,8 +302,8 @@ class SnrMeasurements:
         resp = snr > self.req_snr
         return resp
 
-    def _check_adjacent_link_cores(self, link):
-        no_overlapped_core = 0
+    def _check_adjacent_cores(self, link_nodes: tuple):
+        resp = 0
         if self.spectrum['core_num'] != 6:
             # The neighboring core directly before the currently selected core
             before = 5 if self.spectrum['core_num'] == 0 else self.spectrum['core_num'] - 1
@@ -312,16 +312,16 @@ class SnrMeasurements:
             adjacent_cores = [before, after, 6]
         else:
             adjacent_cores = list(range(6))
-            
-        for core in adjacent_cores:
-            for slt in self.net_spec_db[link]['cores_matrix'][core][self.spectrum['start_slot']:self.spectrum['end_slot']]:
-                if slt > 0:
-                    no_overlapped_core += 1
-                    break
-        return no_overlapped_core
-                
-            
-        
+
+        for core_num in adjacent_cores:
+            core_contents = self.net_spec_db[link_nodes]['cores_matrix'][core_num]
+            slot_contents = set(core_contents[self.spectrum['start_slot']:self.spectrum['end_slot']])
+
+            if slot_contents != {0.0}:
+                resp += 1
+
+        return resp * self.num_span
+
     def check_xt(self):
         """
         Checks the amount of cross-talk interference on a single request.
@@ -333,13 +333,18 @@ class SnrMeasurements:
 
         self._init_center_vars()
         for link in range(0, len(self.path) - 1):
-            self.link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
+            link_nodes = (self.path[link], self.path[link + 1])
+            self.link_id = self.net_spec_db[link_nodes]['link_num']
             self._update_link_constants()
             self._update_link_params(link=link)
-            cross_talk += (self._calculate_xt( adjacent_cores =  self._check_adjacent_link_cores(link = (self.path[link], self.path[link + 1]))) * self.num_span)
-        if cross_talk == 0 :
+
+            adjacent_cores = self._check_adjacent_cores(link_nodes=link_nodes)
+            cross_talk += self._calculate_xt(adjacent_cores=adjacent_cores)
+
+        if cross_talk == 0:
             resp = True
         else:
             cross_talk = 10 * math.log10(cross_talk)
             resp = cross_talk < self.snr_props['requested_xt'][self.path_mod]
+
         return resp
