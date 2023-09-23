@@ -354,11 +354,12 @@ def get_spectrum(properties: dict, chosen_bw: str, path: list, net_spec_db: dict
             snr_check = handle_snr(check_snr=properties['check_snr'], snr_obj=snr_obj)
 
             if not snr_check:
-                return False
+                return False, 'xt_threshold'
 
-        return spectrum
+        # No reason for blocking, return spectrum and None
+        return spectrum, None
 
-    return False
+    return False, 'congestion'
 
 
 def _update_snr_obj(snr_obj: object, spectrum: dict, path: list, path_mod: str, spectral_slots: int, net_spec_db: dict):

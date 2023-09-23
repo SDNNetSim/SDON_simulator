@@ -43,7 +43,7 @@ class SDNController:
         # The number of transponders used to allocate the request
         self.num_transponders = 1
         # Determines whether the block was due to distance or congestion
-        self.dist_block = False
+        self.block_reason = False
         # The physical network topology as a networkX graph
         self.topology = None
         # Class related to all things for calculating the signal-to-noise ratio
@@ -134,7 +134,7 @@ class SDNController:
 
             tmp_format = get_path_mod(modulation_dict, path_len)
             if tmp_format is False:
-                self.dist_block = True
+                self.block_reason = True
                 continue
 
             num_segments = int(int(self.chosen_bw) / int(bandwidth))
@@ -161,7 +161,7 @@ class SDNController:
                 else:
                     self.release()
                     is_allocated = False
-                    self.dist_block = False
+                    self.block_reason = False
                     break
 
             if is_allocated:
@@ -195,7 +195,7 @@ class SDNController:
 
             tmp_format = get_path_mod(modulation_dict, path_len)
             if tmp_format is False:
-                self.dist_block = True
+                self.block_reason = True
                 continue
 
             while True:
@@ -219,10 +219,10 @@ class SDNController:
 
                     if num_segments > self.sdn_props['max_segments']:
                         self.release()
-                        self.dist_block = False
+                        self.block_reason = False
                         return False
                 else:
-                    self.dist_block = False
+                    self.block_reason = False
                     break
 
                 if remaining_bw == 0:
@@ -239,10 +239,10 @@ class SDNController:
         This method attempts to perform light path slicing (LPS) or dynamic LPS to allocate a request.
         If successful, it returns a response containing the allocated path, modulation format,
         and the number of transponders used. Otherwise, it returns a tuple of False and the
-        value of self.dist_block indicating whether the allocation failed due to congestion or
+        value of self.block_reason indicating whether the allocation failed due to congestion or
         a length constraint.
 
-        :return: A tuple containing the response and the updated network database or False and self.dist_block
+        :return: A tuple containing the response and the updated network database or False and self.block_reason
         """
         if not self.sdn_props['dynamic_lps']:
             resp = self.allocate_lps()
@@ -253,16 +253,16 @@ class SDNController:
             return {'path': self.path, 'mod_format': resp,
                     'is_sliced': True}, self.net_spec_db, self.num_transponders, self.path
 
-        # return False, self.dist_block, self.path
+        # return False, self.block_reason, self.path
         raise NotImplementedError(
             'Light path slicing is not supported at this point in time, but will be in the future.')
 
-    def _handle_spectrum(self, mod_options: list):
+    def _handle_spectrum(self, mod_options: dict):
         """
         Given modulation options, iterate through them and attempt to allocate a request with one.
 
         :param mod_options: The modulation formats to consider.
-        :type mod_options: list
+        :type mod_options: dict
 
         :return: The spectrum found for allocation, false if none can be found.
         :rtype: dict
@@ -275,9 +275,11 @@ class SDNController:
 
                 continue
 
-            spectrum = get_spectrum(properties=self.sdn_props, chosen_bw=self.chosen_bw, path=self.path,
-                                    net_spec_db=self.net_spec_db, modulation=modulation, snr_obj=self.snr_obj,
-                                    path_mod=modulation)
+            spectrum, self.block_reason = get_spectrum(properties=self.sdn_props, chosen_bw=self.chosen_bw,
+                                                       path=self.path,
+                                                       net_spec_db=self.net_spec_db, modulation=modulation,
+                                                       snr_obj=self.snr_obj,
+                                                       path_mod=modulation)
 
             # We found a spectrum, no need to check other modulation formats
             if spectrum is not False:
@@ -301,10 +303,9 @@ class SDNController:
 
         :return: The response with relevant information, network database, and physical topology
         """
-        # TODO: Update reasons for blocking (for example, distance blocking)
         # Even if the request is blocked, we still use one transponder
         self.num_transponders = 1
-        self.dist_block = False
+        self.block_reason = None
 
         if request_type == "release":
             self.release()
@@ -326,12 +327,13 @@ class SDNController:
                     if path_mod is not False:
                         mod_options = [path_mod]
                     else:
-                        return False, self.dist_block, self.path
+                        self.block_reason = 'distance'
+                        return False, self.block_reason, self.path
 
                 spectrum = self._handle_spectrum(mod_options=mod_options)
                 # Request was blocked
                 if spectrum is False or spectrum is None:
-                    return False, self.dist_block, self.path
+                    return False, self.block_reason, self.path
 
                 resp = {
                     'path': self.path,
@@ -343,5 +345,5 @@ class SDNController:
                 self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
                 return resp, self.net_spec_db, self.num_transponders, self.path
 
-        self.dist_block = True
-        return False, self.dist_block, self.path
+        self.block_reason = 'distance'
+        return False, self.block_reason, self.path

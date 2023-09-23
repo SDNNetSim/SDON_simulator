@@ -57,13 +57,7 @@ class Engine(SDNController):
         self.block_ci_percent = None
 
         # Number of blocks due to a distance constraint
-        self.num_dist_block = 0
-        # Array used to take an average of the distance blocks across multiple simulation iterations
-        self.dist_block_arr = np.array([])
-        # Number of blocks due to a congestion constraint
-        self.num_cong_block = 0
-        # Array used to take an average of the congestion blocks across multiple simulation iterations
-        self.cong_block_arr = np.array([])
+        self.block_reasons = {'distance': None, 'congestion': None, 'xt_threshold': None}
         # A dictionary holding "snapshots" of each request. Info related to how many spectral slots are occupied,
         # active requests, and how many times this particular request was sliced
         self.request_snapshots = {}
@@ -164,8 +158,7 @@ class Engine(SDNController):
 
         self.stats_dict['misc_stats'][iteration] = {
             'trans_mean': np.mean(self.trans_arr),
-            'dist_percent': np.mean(self.dist_block_arr) * 100.0,
-            'cong_percent': np.mean(self.cong_block_arr) * 100.0,
+            'block_reasons': self.block_reasons,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
             # 'request_snapshots': self.request_snapshots,
             'hops': np.mean(self.hops),
@@ -259,6 +252,7 @@ class Engine(SDNController):
 
         resp = self.handle_event(request_type='arrival')
 
+        # TODO: AI algorithm needs to be updated to new structure for blocking reasons
         if self.properties['ai_algorithm'] != 'None':
             if not resp[0]:
                 routed = False
@@ -266,17 +260,11 @@ class Engine(SDNController):
                 routed = True
             self.ai_obj.update(routed=routed, iteration=iteration)
 
-        # TODO: Should probably make this more readable
         # Request was blocked
         if not resp[0]:
             self.num_blocked_reqs += 1
-            # No transponders used
-            # Determine if blocking was due to distance or congestion
-            if resp[1]:
-                self.num_dist_block += 1
-            else:
-                self.num_cong_block += 1
-
+            # Update the reason for blocking
+            self.block_reasons[resp[1]] += 1
             # Update how many times this bandwidth type has been blocked
             self.block_per_bw[self.chosen_bw] += 1
 
@@ -419,10 +407,8 @@ class Engine(SDNController):
         :return: None
         """
         if self.num_blocked_reqs > 0:
-            self.dist_block_arr = np.append(self.dist_block_arr,
-                                            float(self.num_dist_block) / float(self.num_blocked_reqs))
-            self.cong_block_arr = np.append(self.cong_block_arr,
-                                            float(self.num_cong_block) / float(self.num_blocked_reqs))
+            for block_type, num_times in self.block_reasons.items():
+                self.block_reasons[block_type] = num_times / float(self.num_blocked_reqs)
 
     def _update_request_snapshots_dict(self, request_number, num_transponders):
         """
@@ -475,8 +461,7 @@ class Engine(SDNController):
         :return: None
         """
         # Initialize variables for this iteration of the simulation
-        self.num_dist_block = 0
-        self.num_cong_block = 0
+        self.block_reasons = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
         self.num_trans = 0
         self.num_blocked_reqs = 0
         self.reqs_status = dict()
