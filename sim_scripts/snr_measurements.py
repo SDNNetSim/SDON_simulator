@@ -131,7 +131,7 @@ class SnrMeasurements:
 
         return xci_noise
 
-    def _calculate_pxt(self, adjacent_cores: int = 6):
+    def _calculate_pxt(self, adjacent_cores: int):
         """
         Calculates the cross-talk noise power.
 
@@ -144,22 +144,26 @@ class SnrMeasurements:
         # A statistical mean of the cross-talk
         mean_xt = (2 * self.bend_radius * self.coupling_coeff ** 2) / (self.prop_const * self.core_pitch)
         # The cross-talk noise power
+        # TODO: Should we use span or link length?
         power_xt = adjacent_cores * mean_xt * self.length * 1e3 * self.snr_props['input_power']
 
         return power_xt
 
-    def _calculate_xt(self, adjacent_cores: int = 6):
+    def _calculate_xt(self, adjacent_cores: int, link_length: int):
         """
         Calculates the cross-talk interference based on the number of adjacent cores.
 
         :param adjacent_cores: The number of adjacent cores to the channel.
         :type adjacent_cores: int
 
+        :param link_length: The current length of the link.
+        :type link_length: int
+
         :return: The cross-talk normalized by the number of adjacent cores.
         :rtype: float
         """
         mean_xt = (2 * self.bend_radius * (self.coupling_coeff ** 2)) / (self.prop_const * self.core_pitch)
-        resp_xt = (1 - math.exp(-2 * mean_xt * self.length * 1e3)) / (1 + math.exp(-2 * mean_xt * self.length * 1e3))
+        resp_xt = (1 - math.exp(-2 * mean_xt * link_length * 1e3)) / (1 + math.exp(-2 * mean_xt * link_length * 1e3))
 
         return resp_xt * adjacent_cores
 
@@ -320,7 +324,7 @@ class SnrMeasurements:
             if slot_contents != {0.0}:
                 resp += 1
 
-        return resp * self.num_span
+        return resp
 
     def check_xt(self):
         """
@@ -335,11 +339,12 @@ class SnrMeasurements:
         for link in range(0, len(self.path) - 1):
             link_nodes = (self.path[link], self.path[link + 1])
             self.link_id = self.net_spec_db[link_nodes]['link_num']
+            link_length = self.snr_props['topology_info']['links'][self.link_id]['length']
             self._update_link_constants()
             self._update_link_params(link=link)
 
             adjacent_cores = self._check_adjacent_cores(link_nodes=link_nodes)
-            cross_talk += self._calculate_xt(adjacent_cores=adjacent_cores)
+            cross_talk += self._calculate_xt(adjacent_cores=adjacent_cores, link_length=link_length)
 
         if cross_talk == 0:
             resp = True

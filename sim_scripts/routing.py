@@ -516,6 +516,7 @@ class Routing:
             free_slots = self.find_free_slots(net_spec_db=self.net_spec_db, des_link=link)
             xt_cost = self._find_xt_link_cost(free_slots_arr=free_slots, link_num=link)
             # Tradeoff between link length and the non-linear impairment cost
+            # TODO: Add to configuration file
             if xt_type == 'with_length':
                 link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
                             ((1 - beta) * xt_cost)
