@@ -272,7 +272,7 @@ class SDNController:
         for modulation in mod_options:
             if modulation is False:
                 if self.sdn_props['max_segments'] > 1:
-                    return self.handle_lps()
+                    raise NotImplementedError
 
                 continue
 

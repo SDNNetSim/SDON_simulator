@@ -265,7 +265,7 @@ class SnrMeasurements:
             psd_ase = (self.plank * self.light_frequency * self.nsp) * (
                     math.exp(self.attenuation * self.length * 10 ** 3) - 1)
             if self.snr_props['xt_noise']:
-                p_xt = self._calculate_pxt()
+                p_xt = self._calculate_pxt(adjacent_cores=None)
             else:
                 p_xt = 0
 
@@ -294,7 +294,7 @@ class SnrMeasurements:
             psd_ase = (self.plank * self.light_frequency * self.nsp) * (
                     math.exp(self.attenuation * self.length * 10 ** 3) - 1)
             if self.snr_props['xt_noise']:
-                p_xt = self._calculate_pxt()
+                p_xt = self._calculate_pxt(adjacent_cores=None)
             else:
                 p_xt = 0
 
