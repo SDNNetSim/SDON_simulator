@@ -461,12 +461,12 @@ class Routing:
 
         return num_overlapped
 
-    def _find_xt_link_cost(self, free_slots_arr: list, link_num: int):
+    def _find_xt_link_cost(self, free_slots: dict, link_num: int):
         """
         Finds the cross-talk cost for a single link.
 
-        :param free_slots_arr: A matrix identifying the indexes of spectral slots that are free.
-        :type free_slots_arr: list
+        :param free_slots: A matrix identifying the indexes of spectral slots that are free.
+        :type free_slots: dict
 
         :param link_num: The link number to check the cross-talk on.
         :type link_num: int
@@ -480,15 +480,15 @@ class Routing:
         xt_cost = 0
         # Update MCI for available channel
         num_free_slots = 0
-        for core_num in free_slots_arr:
-            num_free_slots += len(free_slots_arr[core_num])
-            for channel in free_slots_arr[core_num]:
+        for core_num in free_slots:
+            num_free_slots += len(free_slots[core_num])
+            for channel in free_slots[core_num]:
                 # The number of overlapped channels
                 num_overlapped = self._find_num_overlapped(channel=channel, core_num=core_num, link_num=link_num)
                 xt_cost += num_overlapped
 
         # A constant score of 1000 if the link is fully congested
-        if len(free_slots_arr) == 0:
+        if len(free_slots) == 0:
             return 1000.0
 
         link_cost = xt_cost / num_free_slots
@@ -514,7 +514,7 @@ class Routing:
             num_spans = self.topology[source][destination]['length'] / self.span_len
 
             free_slots = self.find_free_slots(net_spec_db=self.net_spec_db, des_link=link)
-            xt_cost = self._find_xt_link_cost(free_slots_arr=free_slots, link_num=link)
+            xt_cost = self._find_xt_link_cost(free_slots=free_slots, link_num=link)
             # Tradeoff between link length and the non-linear impairment cost
             # TODO: Add to configuration file
             if xt_type == 'with_length':

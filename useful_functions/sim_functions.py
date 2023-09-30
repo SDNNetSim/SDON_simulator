@@ -346,20 +346,21 @@ def get_spectrum(properties: dict, chosen_bw: str, path: list, net_spec_db: dict
                                                                                  'allocation_method'])
 
     spectrum = spectrum_assignment.find_free_spectrum()
+    xt_cost = None
 
     if spectrum is not False:
         if properties['check_snr'] != 'None':
             _update_snr_obj(snr_obj=snr_obj, spectrum=spectrum, path=path, path_mod=path_mod,
                             spectral_slots=properties['spectral_slots'], net_spec_db=net_spec_db)
-            snr_check = handle_snr(check_snr=properties['check_snr'], snr_obj=snr_obj)
+            snr_check, xt_cost = handle_snr(check_snr=properties['check_snr'], snr_obj=snr_obj)
 
             if not snr_check:
-                return False, 'xt_threshold'
+                return False, 'xt_threshold', xt_cost
 
         # No reason for blocking, return spectrum and None
-        return spectrum, None
+        return spectrum, None, xt_cost
 
-    return False, 'congestion'
+    return False, 'congestion', xt_cost
 
 
 def _update_snr_obj(snr_obj: object, spectrum: dict, path: list, path_mod: str, spectral_slots: int, net_spec_db: dict):
@@ -406,12 +407,12 @@ def handle_snr(check_snr: str, snr_obj: object):
     :rtype: bool
     """
     if check_snr == "snr_calculation_nli":
-        snr_check = snr_obj.check_snr()
+        snr_check, xt_cost = snr_obj.check_snr()
     elif check_snr == "xt_calculation":
-        snr_check = snr_obj.check_xt()
+        snr_check, xt_cost = snr_obj.check_xt()
     elif check_snr == "snr_calculation_xt":
-        snr_check = snr_obj.check_snr_xt()
+        snr_check, xt_cost = snr_obj.check_snr_xt()
     else:
         raise NotImplementedError(f'Unexpected check_snr flag got: {check_snr}')
 
-    return snr_check
+    return snr_check, xt_cost

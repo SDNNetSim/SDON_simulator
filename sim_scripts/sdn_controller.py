@@ -268,6 +268,7 @@ class SDNController:
         :rtype: dict
         """
         spectrum = None
+        xt_cost = None
         for modulation in mod_options:
             if modulation is False:
                 if self.sdn_props['max_segments'] > 1:
@@ -275,17 +276,17 @@ class SDNController:
 
                 continue
 
-            spectrum, self.block_reason = get_spectrum(properties=self.sdn_props, chosen_bw=self.chosen_bw,
-                                                       path=self.path,
-                                                       net_spec_db=self.net_spec_db, modulation=modulation,
-                                                       snr_obj=self.snr_obj,
-                                                       path_mod=modulation)
+            spectrum, self.block_reason, xt_cost = get_spectrum(properties=self.sdn_props, chosen_bw=self.chosen_bw,
+                                                                path=self.path,
+                                                                net_spec_db=self.net_spec_db, modulation=modulation,
+                                                                snr_obj=self.snr_obj,
+                                                                path_mod=modulation)
 
             # We found a spectrum, no need to check other modulation formats
             if spectrum is not False:
                 break
 
-        return spectrum
+        return spectrum, xt_cost
 
     def _handle_routing(self):
         resp = get_route(properties=self.sdn_props, source=self.source, destination=self.destination,
@@ -330,7 +331,7 @@ class SDNController:
                         self.block_reason = 'distance'
                         return False, self.block_reason, self.path
 
-                spectrum = self._handle_spectrum(mod_options=mod_options)
+                spectrum, xt_cost = self._handle_spectrum(mod_options=mod_options)
                 # Request was blocked
                 if spectrum is False or spectrum is None:
                     return False, self.block_reason, self.path
@@ -340,6 +341,7 @@ class SDNController:
                     'mod_format': path_mod,
                     'route_time': route_time,
                     'path_weight': path_weight,
+                    'xt_cost': xt_cost,
                     'is_sliced': False
                 }
                 self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])

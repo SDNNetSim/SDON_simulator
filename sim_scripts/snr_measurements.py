@@ -352,4 +352,4 @@ class SnrMeasurements:
             cross_talk = 10 * math.log10(cross_talk)
             resp = cross_talk < self.snr_props['requested_xt'][self.path_mod]
 
-        return resp
+        return resp, cross_talk

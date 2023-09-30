@@ -142,23 +142,13 @@ class Engine(SDNController):
         self.stats_dict['ci_percent_block'] = self.block_ci_percent
 
         if iteration == 0:
-            self.stats_dict['sim_params'] = {
-                'num_reqs': self.properties['num_requests'],
-                'cores_per_link': self.properties['cores_per_link'],
-                'hold_time_mean': self.properties['holding_time'],
-                'spectral_slots': self.properties['spectral_slots'],
-                'max_segments': self.properties['max_segments'],
-                'alloc_method': self.properties['allocation_method'],
-                'route_method': self.properties['route_method'],
-                'dynamic_lps': self.properties['dynamic_lps'],
-                'is_training': self.properties['ai_arguments']['is_training'],
-                'beta': self.properties['beta'],
-            }
+            self.stats_dict['sim_params'] = self.properties
 
         self.stats_dict['misc_stats'][iteration] = {
             'trans_mean': np.mean(self.trans_arr),
             'block_reasons': self.block_reasons,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
+            # TODO: Commented for now
             # 'request_snapshots': self.request_snapshots,
             'hops': np.mean(self.hops),
             'route_times': np.mean(self.route_times),
@@ -166,6 +156,7 @@ class Engine(SDNController):
             'weight_max': float(self.path_weights.max(initial=-np.inf)),
             'weight_min': float(self.path_weights.min(initial=np.inf)),
             'weight_mean': np.mean(self.path_weights),
+            'weight_std': np.std(self.path_weights)
         }
 
         base_fp = "data/output/"
@@ -275,7 +266,8 @@ class Engine(SDNController):
         self.hops = np.append(self.hops, len(response_data['path']) - 1)
         self.path_lens = np.append(self.path_lens, find_path_len(path=response_data['path'], topology=self.topology))
         self.route_times = np.append(self.route_times, response_data['route_time'])
-        self.path_weights = np.append(self.path_weights, response_data['path_weight'])
+        # TODO: This is always xt_cost for now
+        self.path_weights = np.append(self.path_weights, response_data['xt_cost'])
 
         self.reqs_status.update({self.req_id: {
             "mod_format": response_data['mod_format'],
