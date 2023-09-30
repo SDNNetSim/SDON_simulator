@@ -22,7 +22,7 @@ def create_pt(cores_per_link: int, network_data: dict):
         'num_cores': cores_per_link,
         'fiber_type': 0,  # TODO: Is this always supposed to be 0? Add a comment explaining why if so.
         'bending_radius': 0.05,
-        'mode_coupling_co': 1.27e-5,
+        'mode_coupling_co': 4.0e-4,
         'propagation_const': 4e6,
         'core_pitch': 4e-5,
     }
@@ -76,9 +76,11 @@ def create_bw_info(sim_type: str = None):
         })
     elif sim_type == 'arash':
         bw_info.update({
-            '100': {'QPSK': {'slots_needed': 3, 'max_length': 1700}, '8-QAM': {'slots_needed': 2, 'max_length': 700},
+            '100': {'QPSK': {'slots_needed': 3, 'max_length': 1700},
                     '16-QAM': {'slots_needed': 2, 'max_length': 500}, '64-QAM': {'slots_needed': 1, 'max_length': 100}},
-            '400': {'QPSK': {'slots_needed': 10, 'max_length': 400}, '8-QAM': {'slots_needed': 7, 'max_length': 100},
+            '200': {'QPSK': {'slots_needed': 5, 'max_length': 0},
+                    '16-QAM': {'slots_needed': 3, 'max_length': 0}, '64-QAM': {'slots_needed': 2, 'max_length': 0}},
+            '400': {'QPSK': {'slots_needed': 10, 'max_length': 400},
                     '16-QAM': {'slots_needed': 5, 'max_length': 100}, '64-QAM': {'slots_needed': 4, 'max_length': 0}},
         })
 
