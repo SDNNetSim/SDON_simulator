@@ -178,7 +178,6 @@ class Routing:
 
         for path in paths_obj:
             if weight == 'xt_cost':
-                # TODO: Path length does not matter when using xt_cost in routing?
                 path_len = sum(self.topology[path[i]][path[i + 1]][weight] for i in range(len(path) - 1))
             else:
                 path_len = self.find_path_len(path, self.topology)
