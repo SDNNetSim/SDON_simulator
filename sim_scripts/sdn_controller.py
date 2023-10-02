@@ -332,9 +332,9 @@ class SDNController:
                         return False, self.block_reason, self.path
 
                 spectrum, xt_cost = self._handle_spectrum(mod_options=mod_options)
-                # Request was blocked
+                # Request was blocked for this path
                 if spectrum is False or spectrum is None:
-                    return False, self.block_reason, self.path
+                    continue
 
                 resp = {
                     'path': self.path,
@@ -347,5 +347,4 @@ class SDNController:
                 self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
                 return resp, self.net_spec_db, self.num_transponders, self.path
 
-        self.block_reason = 'distance'
         return False, self.block_reason, self.path
