@@ -16,44 +16,44 @@ class QLearning:
     Controls methods related to the Q-learning reinforcement learning algorithm.
     """
 
-    def __init__(self, params: dict):
+    def __init__(self, properties: dict):
         """
         Initializes the QLearning class.
         """
-        if params['is_training']:
+        ai_arguments = properties['ai_arguments']
+        if ai_arguments['is_training']:
             self.sim_type = 'train'
         else:
             self.sim_type = 'test'
         # Contains all state and action value pairs
         self.q_table = None
-        self.epsilon = params['epsilon']
-        self.episodes = params['episodes']
-        self.learn_rate = params['learn_rate']
-        self.discount = params['discount']
-        self.topology = params['topology']
-        self.table_path = params['table_path']
-        self.cores_per_link = params['cores_per_link']
-        self.curr_episode = params['curr_episode']
-        self.mod_per_bw = params['mod_per_bw']
-        self.guard_slots = params['guard_slots']
+        # TODO: Try to just use properties and not all these variables
+        self.epsilon = ai_arguments['epsilon']
+        self.episodes = properties['max_iters']
+        self.learn_rate = ai_arguments['learn_rate']
+        self.discount = ai_arguments['discount']
+        self.table_path = ai_arguments['table_path']
+        self.cores_per_link = properties['cores_per_link']
+        self.mod_per_bw = properties['mod_per_bw']
+        self.guard_slots = properties['guard_slots']
+        self.topology = properties['topology']
 
         # Statistics to evaluate our reward function
+        # TODO: Make numpy arrays but when saving convert back to python lists
         self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': {}}
 
+        self.curr_episode = None
         # Source node, destination node, and the resulting path
         self.source = None
         self.destination = None
         self.chosen_path = None
         # The chosen bandwidth for the current request
         self.chosen_bw = None
-        # The NLI cost for a given path
-        self.nli_cost = None
-        # The worst possible NLI cost for a single link in the network
-        self.nli_worst = None
         # The latest up-to-date network spectrum database
         self.net_spec_db = None
         # Simulation methods related to routing
-        self.routing_obj = Routing(beta=params['beta'], topology=self.topology, guard_slots=params['guard_slots'])
+        self.routing_obj = Routing(beta=properties['beta'], topology=self.topology,
+                                   guard_slots=properties['guard_slots'])
 
     @staticmethod
     def set_seed(seed: int):
@@ -76,6 +76,7 @@ class QLearning:
         if self.epsilon < 0.0:
             raise ValueError(f'Epsilon should be greater than 0 but it is {self.epsilon}')
 
+    # TODO: Let's use numpy arrays and most likely need to update how average reward is calculated
     def _update_rewards_dict(self, reward: float = None):
         """
         Updates the reward dictionary for plotting purposes later on.
@@ -95,6 +96,7 @@ class QLearning:
             self.rewards_dict['average'] = sum(self.rewards_dict['rewards'][episode]) / float(
                 len(self.rewards_dict['rewards'][episode]))
 
+    # TODO: Should be the same, double check
     def save_table(self):
         """
         Saves the current Q-table to a desired path.
@@ -104,17 +106,19 @@ class QLearning:
         file_path = f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/{self.sim_type}_table_c{self.cores_per_link}.npy'
         np.save(file_path, self.q_table)
 
-        params_dict = {
+        properties_dict = {
             'epsilon': self.epsilon,
             'episodes': self.episodes,
             'learn_rate': self.learn_rate,
             'discount_factor': self.discount,
             'reward_info': self.rewards_dict
         }
-        with open(f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/hyper_params_c{self.cores_per_link}.json', 'w',
+        with open(f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/hyper_properties_c{self.cores_per_link}.json',
+                  'w',
                   encoding='utf-8') as file:
-            json.dump(params_dict, file)
+            json.dump(properties_dict, file)
 
+    # TODO: Should be the same, double check
     def load_table(self):
         """
         Loads a previously trained Q-table.
@@ -126,13 +130,13 @@ class QLearning:
             print('File not found, please ensure if you are testing, an already trained file exists and has been '
                   'specified correctly.')
 
-        with open(f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/hyper_params_c{self.cores_per_link}.json',
+        with open(f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/hyper_properties_c{self.cores_per_link}.json',
                   encoding='utf-8') as file:
-            params_obj = json.load(file)
-            self.epsilon = params_obj['epsilon']
-            self.learn_rate = params_obj['learn_rate']
-            self.discount = params_obj['discount_factor']
-            self.rewards_dict = params_obj['reward_info']
+            properties_obj = json.load(file)
+            self.epsilon = properties_obj['epsilon']
+            self.learn_rate = properties_obj['learn_rate']
+            self.discount = properties_obj['discount_factor']
+            self.rewards_dict = properties_obj['reward_info']
 
     def _get_nli_cost(self):
         """
@@ -154,6 +158,10 @@ class QLearning:
         self.nli_cost = self.routing_obj.nli_path(path=self.chosen_path)
         return self.nli_cost
 
+    # TODO: Need to calculate intra-core XT worst case for different networks
+    def _get_xt_cost(self):
+        raise NotImplementedError
+
     def update_environment(self, routed: bool):
         """
         Updates the Q-learning environment.
@@ -161,6 +169,7 @@ class QLearning:
         :param routed: Whether the path chosen was successfully routed or not.
         :type routed: bool
         """
+        # TODO: Remove these to different policy methods
         if not routed:
             reward = -1.0
         else:
@@ -183,7 +192,7 @@ class QLearning:
 
             current_q = self.q_table[(state, new_state)]
             new_q = ((1.0 - self.learn_rate) * current_q) + (
-                    self.learn_rate * (reward + self.discount * max_future_q))
+                    self.learn_rate * (reward + (self.discount * max_future_q)))
 
             self.q_table[(state, new_state)] = new_q
 
@@ -240,6 +249,8 @@ class QLearning:
         while True:
             random_float = np.round(np.random.uniform(0, 1), decimals=1)
             if random_float < self.epsilon:
+                # TODO: Produce array of random numbers to attempt to find one at random, if you've checked all of them,
+                #   - Then we must need to block
                 next_node = np.random.randint(len(nodes))
                 if str(next_node) in self.chosen_path or np.isnan(self.q_table[(curr_node, next_node)]):
                     continue
@@ -250,6 +261,7 @@ class QLearning:
 
             if found_next is not False:
                 if next_node == self.destination:
+                    # TODO: Change for crosstalk
                     self._get_nli_cost()
 
                     return self.chosen_path

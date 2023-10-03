@@ -13,18 +13,15 @@ class SDNController:
     Handles spectrum allocation for a request in the simulation.
     """
 
-    def __init__(self, properties: dict = None, ai_obj: object = None):
+    def __init__(self, properties: dict = None):
         """
         Initializes the SDNController class.
 
         :param properties: Contains various simulation properties.
         :type properties: dict
-
-        :param ai_obj: Class containing all methods related to AI
-        :type ai_obj: object
         """
         self.sdn_props = properties
-        self.ai_obj = ai_obj
+        self.ai_obj = None
 
         # The current request id number
         self.req_id = None

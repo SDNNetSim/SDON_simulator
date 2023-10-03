@@ -75,11 +75,11 @@ class Engine(SDNController):
 
         # For the purposes of saving relevant simulation information to a certain pathway
         self.sim_info = f"{self.properties['network']}/{self.properties['date']}/{self.properties['sim_start']}"
-        # Contains all methods related to artificial intelligence
-        self.ai_obj = AIMethods(properties=self.properties, sim_info=self.sim_info)
 
         # Initialize the constructor of the SDNController class
-        super().__init__(properties=self.properties, ai_obj=self.ai_obj)
+        super().__init__(properties=self.properties)
+        self._create_topology()
+        self.ai_obj = AIMethods(properties=self.properties)
 
     def _get_total_occupied_slots(self):
         """
@@ -161,7 +161,7 @@ class Engine(SDNController):
 
         base_fp = "data/output/"
 
-        if self.properties['ai_algorithm'] != 'None':
+        if self.properties['route_method'] == 'ai':
             self.ai_obj.save()
 
         # Save threads to child directories
@@ -243,12 +243,12 @@ class Engine(SDNController):
         resp = self.handle_event(request_type='arrival')
 
         # TODO: AI algorithm needs to be updated to new structure for blocking reasons
-        if self.properties['ai_algorithm'] != 'None':
+        if self.properties['route_method'] == 'ai':
             if not resp[0]:
                 routed = False
             else:
                 routed = True
-            self.ai_obj.update(routed=routed, iteration=iteration)
+            self.ai_obj.update(routed=routed)
 
         # Request was blocked
         if not resp[0]:
@@ -332,6 +332,8 @@ class Engine(SDNController):
 
             # Add links to physical topology
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
+        # TODO: Change self.topology to this variable
+        self.properties['topology'] = self.topology
 
     def _create_cores_matrix(self, num_cores):
         """
@@ -422,29 +424,6 @@ class Engine(SDNController):
 
         self.request_snapshots[request_number]['num_segments'].append(num_transponders)
 
-    def _init_ai_obj(self, iteration: int):
-        """
-        Initializes the variables for an AI object with respect to a single iteration of the simulation.
-
-        :param iteration: The current iteration of the simulation
-        :type iteration: int
-        """
-        # TODO: Just add to params and pass to other classes...:)
-        self.properties['ai_arguments']['episodes'] = self.properties['max_iters']
-        self.properties['ai_arguments']['cores_per_link'] = self.properties['cores_per_link']
-        self.properties['ai_arguments']['erlang'] = self.properties['erlang']
-        self.properties['ai_arguments']['topology'] = self.topology
-        self.properties['ai_arguments']['curr_episode'] = iteration
-        self.properties['ai_arguments']['beta'] = self.properties['beta']
-        self.properties['ai_arguments']['mod_per_bw'] = self.properties['mod_per_bw']
-        self.properties['ai_arguments']['guard_slots'] = self.properties['guard_slots']
-
-        if self.properties['ai_arguments']['is_training']:
-            self.properties['ai_arguments']['table_path'] = self.sim_info
-
-        self.ai_obj.setup(algorithm=self.properties['ai_algorithm'],
-                          params=self.properties['ai_arguments'])
-
     def _init_iter_vars(self):
         """
         Initializes the variables for a single iteration of the simulation.
@@ -473,14 +452,13 @@ class Engine(SDNController):
         """
         for iteration in range(self.properties["max_iters"]):
             self._init_iter_vars()
-            self._create_topology()
+
+            if self.properties['route_method'] == 'ai':
+                self.ai_obj.episode = iteration
 
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.properties['erlang']} "
                       f"simulation number: {self.properties['thread_num']}.")
-
-            if self.properties['ai_algorithm'] != 'None':
-                self._init_ai_obj(iteration=iteration)
 
             seed = self.properties["seeds"][iteration] if self.properties["seeds"] else iteration + 1
             self._generate_requests(seed)

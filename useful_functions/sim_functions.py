@@ -268,10 +268,12 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
     :return: The potential paths and path modulation formats.
     :rtype: dict
     """
-    routing_obj = Routing(print_warn=properties['warnings'], source=source, destination=destination,
-                          topology=topology, net_spec_db=net_spec_db,
-                          mod_formats=properties['mod_per_bw'][chosen_bw], bandwidth=chosen_bw,
-                          guard_slots=properties['guard_slots'])
+    # The artificial intelligence objects have their own routing class
+    if properties['ai_algorithm'] == 'None':
+        routing_obj = Routing(print_warn=properties['warnings'], source=source, destination=destination,
+                              topology=topology, net_spec_db=net_spec_db,
+                              mod_formats=properties['mod_per_bw'][chosen_bw], bandwidth=chosen_bw,
+                              guard_slots=properties['guard_slots'])
 
     # TODO: Change constant QPSK modulation formats
     if properties['route_method'] == 'nli_aware':
@@ -288,6 +290,7 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
         resp = routing_obj.least_weight_path(weight='length')
     elif properties['route_method'] == 'k_shortest_path':
         resp = routing_obj.k_shortest_path(k_paths=properties['k_paths'])
+    # TODO: Check this
     elif properties['route_method'] == 'ai':
         # Used for routing related to artificial intelligence
         selected_path = ai_obj.route(source=int(source), destination=int(destination),
@@ -298,7 +301,10 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
         if not selected_path:
             resp = [selected_path], [False], [False]
         else:
-            path_len = find_path_len(path=selected_path, topology=topology)
+            try:
+                path_len = find_path_len(path=selected_path, topology=topology)
+            except:
+                print('Begin debug sim_functions line 307.')
             path_mod = [get_path_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)]
             resp = [selected_path], [path_mod], [path_len]
     else:
