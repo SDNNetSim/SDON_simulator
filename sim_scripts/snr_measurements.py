@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import networkx as nx
 
 
 class SnrMeasurements:
@@ -149,7 +150,7 @@ class SnrMeasurements:
 
         return power_xt
 
-    def _calculate_xt(self, adjacent_cores: int, link_length: int):
+    def calculate_xt(self, adjacent_cores: int, link_length: int):
         """
         Calculates the cross-talk interference based on the number of adjacent cores.
 
@@ -306,7 +307,7 @@ class SnrMeasurements:
         resp = snr > self.req_snr
         return resp
 
-    def _check_adjacent_cores(self, link_nodes: tuple):
+    def check_adjacent_cores(self, link_nodes: tuple):
         resp = 0
         if self.spectrum['core_num'] != 6:
             # The neighboring core directly before the currently selected core
@@ -326,6 +327,15 @@ class SnrMeasurements:
 
         return resp
 
+    def find_worst_xt(self, flag: str):
+        if flag == 'intra_core':
+            max_length = max(nx.get_edge_attributes(self.snr_props['topology'], 'length').values(), default=0.0)
+            resp = self.calculate_xt(adjacent_cores=6, link_length=max_length)
+        else:
+            raise NotImplementedError
+
+        return resp, max_length
+
     def check_xt(self):
         """
         Checks the amount of cross-talk interference on a single request.
@@ -343,8 +353,8 @@ class SnrMeasurements:
             self._update_link_constants()
             self._update_link_params(link=link)
 
-            adjacent_cores = self._check_adjacent_cores(link_nodes=link_nodes)
-            cross_talk += self._calculate_xt(adjacent_cores=adjacent_cores, link_length=link_length)
+            adjacent_cores = self.check_adjacent_cores(link_nodes=link_nodes)
+            cross_talk += self.calculate_xt(adjacent_cores=adjacent_cores, link_length=link_length)
 
         if cross_talk == 0:
             resp = True

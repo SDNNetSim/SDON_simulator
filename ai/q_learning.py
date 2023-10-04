@@ -7,8 +7,9 @@ import numpy as np
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
-from useful_functions.sim_functions import get_path_mod, find_path_len
+from useful_functions.sim_functions import get_path_mod, find_path_len, sort_nested_dict_vals
 from sim_scripts.routing import Routing
+from sim_scripts.snr_measurements import SnrMeasurements
 
 
 class QLearning:
@@ -41,9 +42,8 @@ class QLearning:
         self.chosen_bw = None
         # The latest up-to-date network spectrum database
         self.net_spec_db = None
-        # TODO: Update
-        self.adjacent_cores = None
         self.xt_worst = None
+        self.max_length = None
         self.reward_policies = {
             'baseline': self._get_baseline_reward,
             'xt_percent': self._get_xt_percent_reward,
@@ -52,6 +52,7 @@ class QLearning:
         # Simulation methods related to routing
         self.routing_obj = Routing(beta=properties['beta'], topology=properties['topology'],
                                    guard_slots=properties['guard_slots'])
+        self.snr_obj = SnrMeasurements(properties=self.properties)
 
     @staticmethod
     def set_seed(seed: int):
@@ -74,7 +75,6 @@ class QLearning:
         if self.ai_arguments['epsilon'] < 0.0:
             raise ValueError(f"Epsilon should be greater than 0 but it is {self.ai_arguments['epsilon']}")
 
-    # TODO: How are we going to consider rewards combined for each Erlang value? We need rewards at every time step!
     def _update_rewards_dict(self, reward: float = None):
         """
         Updates the reward dictionary for plotting purposes later on.
@@ -141,42 +141,40 @@ class QLearning:
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
 
-    def _get_xt_cost(self):
-        # TODO: Make sure chosen_bw is being updated
-        mod_formats = self.properties['mod_per_bw'][self.chosen_bw]
-        path_len = find_path_len(self.chosen_path, self.properties['topology'])
-        mod_format = get_path_mod(mod_formats, path_len)
-
-        self.routing_obj.net_spec_db = self.net_spec_db
-
-        if not mod_format:
-            return False
-
-        self.routing_obj.slots_needed = self.properties['mod_per_bw'][self.chosen_bw][mod_format]['slots_needed']
-
+    def _path_xt_cost(self):
+        self.snr_obj.net_spec_db = self.net_spec_db
         if self.xt_worst is None:
-            # TODO: Implement these functions
-            self.xt_worst = self.routing_obj.find_worst_xt(type='intra_core')
-        xt_cost = self.routing_obj.xt_cost(path=self.chosen_path)
-        return xt_cost
+            # Finds the worst possible XT for a link in the network
+            self.xt_worst, self.max_length = self.snr_obj.find_worst_xt(flag='intra_core')
+
+        self.snr_obj.path = self.chosen_path
+        _, path_xt = self.snr_obj.check_xt()
+
+        return path_xt
 
     @staticmethod
-    def _get_baseline_reward(routed):
+    def _get_baseline_reward(routed: bool):
         return 1.0 if routed else -1.0
 
-    def _get_xt_percent_reward(self, routed):
+    def _get_xt_percent_reward(self, routed: bool):
         if routed:
-            xt_cost = self._get_xt_cost()
-            # TODO: Update xt_worst (how?)
-            return 1.0 - xt_cost / self.xt_worst
+            path_xt = self._path_xt_cost()
+            # We want to consider the number of links not nodes, hence, minus one
+            return 1.0 - path_xt / (self.xt_worst * float(len(self.chosen_path) - 1))
 
         return -1.0
 
-    def _get_xt_estimation_reward(self, routed):
+    def _get_xt_estimation_reward(self, routed: bool):
         if routed:
             numerator = float(self.properties['erlang']) / 10.0
-            # TODO: Update adjacent cores in other scripts (ensure a float value
-            denominator = (float(len(self.chosen_path)) - 1) * self.adjacent_cores
+
+            adjacent_cores = 0
+            for link in range(0, len(self.chosen_path) - 1):
+                link_nodes = (self.chosen_path[link], self.chosen_path[link + 1])
+                adjacent_cores += self.snr_obj.check_adjacent_cores(link_nodes=link_nodes)
+
+            # We want to consider the number of hops not nodes, hence, minus one
+            denominator = (float(len(self.chosen_path)) - 1) * adjacent_cores
             return numerator / denominator
         else:
             return -1.0
@@ -255,6 +253,7 @@ class QLearning:
 
         return False, None
 
+    # TODO: Pass a loop of modulation formats outside this script, only assume one inside
     def route(self):
         """
         Based on the Q-learning algorithm, find a route for any given request.

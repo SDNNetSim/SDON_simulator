@@ -301,10 +301,8 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
         if not selected_path:
             resp = [selected_path], [False], [False]
         else:
-            try:
-                path_len = find_path_len(path=selected_path, topology=topology)
-            except:
-                print('Begin debug sim_functions line 307.')
+            # TODO: What is this?
+            path_len = find_path_len(path=selected_path, topology=topology)
             path_mod = [get_path_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)]
             resp = [selected_path], [path_mod], [path_len]
     else:
