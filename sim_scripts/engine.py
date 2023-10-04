@@ -246,22 +246,20 @@ class Engine(SDNController):
 
         resp = self.handle_event(request_type='arrival')
 
-        # TODO: AI algorithm needs to be updated to new structure for blocking reasons
         if self.properties['route_method'] == 'ai':
             if not resp[0]:
                 routed = False
+                spectrum = {}
             else:
+                spectrum = resp[0]['spectrum']
                 routed = True
-            self.ai_obj.update(routed=routed)
+            self.ai_obj.update(routed=routed, spectrum=spectrum)
 
         # Request was blocked
         if not resp[0]:
             self.num_blocked_reqs += 1
             # Update the reason for blocking
-            try:
-                self.block_reasons[resp[1]] += 1
-            except KeyError:
-                print('Begin debug in engine.py at line 264')
+            self.block_reasons[resp[1]] += 1
             # Update how many times this bandwidth type has been blocked
             self.block_per_bw[self.chosen_bw] += 1
 

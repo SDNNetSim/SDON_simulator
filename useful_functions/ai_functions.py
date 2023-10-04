@@ -13,7 +13,7 @@ class AIMethods:
         """
         self.properties = properties
         self.algorithm = properties['ai_algorithm']
-        
+
         self.episode = 0
         self.seed = None
         # An object for the chosen AI algorithm
@@ -27,15 +27,18 @@ class AIMethods:
         """
         self.ai_obj.save_table()
 
-    def _q_update_env(self, routed: bool):
+    def _q_update_env(self, routed: bool, spectrum: dict):
         """
         Updates the Q-learning environment.
 
         :param routed: A flag to determine if a request was routed or not.
         :type routed: bool
+
+        :param spectrum: Relevant information related to the spectrum assignment.
+        :type spectrum: dict
         """
         self.ai_obj.curr_episode = self.episode
-        self.ai_obj.update_environment(routed=routed)
+        self.ai_obj.update_environment(routed=routed, spectrum=spectrum)
         # Decay epsilon for half of the iterations evenly each time
         if 1 <= self.episode <= self.episode // 2 and self.ai_obj.sim_type == 'train':
             decay_amount = (self.ai_obj.epsilon / (self.episode // 2) - 1)
@@ -108,7 +111,7 @@ class AIMethods:
         Responsible for updating environment information.
         """
         if self.algorithm == 'q_learning':
-            self._q_update_env(routed=kwargs['routed'])
+            self._q_update_env(routed=kwargs['routed'], spectrum=kwargs['spectrum'])
 
     def _setup(self):
         """
