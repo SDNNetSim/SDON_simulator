@@ -164,7 +164,6 @@ class QLearning:
     def _get_baseline_reward(routed: bool, spectrum: dict):  # pylint: disable=unused-argument
         return 1.0 if routed else -1.0
 
-    # TODO: Debug these two policies
     def _get_xt_percent_reward(self, routed: bool, spectrum: dict):
         if routed:
             path_xt = self._path_xt_cost(spectrum=spectrum)
