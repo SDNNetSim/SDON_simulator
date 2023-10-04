@@ -81,7 +81,7 @@ class AIMethods:
         self.ai_obj.setup_environment()
 
         # Load a pre-trained table or start a new one
-        if self.ai_obj.sim_type == 'train' and self.properties['erlang'] == self.properties['erlangs']['start']:
+        if self.ai_obj.sim_type == 'train':
             self.ai_obj.save_table()
         else:
             self.ai_obj.load_table()
