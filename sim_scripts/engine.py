@@ -224,16 +224,13 @@ class Engine(SDNController):
 
         self.stats_dict['block_per_sim'][iteration] = block_percentage
 
-    def _handle_arrival(self, curr_time, iteration):
+    def _handle_arrival(self, curr_time):
         """
         Updates the SDN controller to handle an arrival request. Also retrieves and calculates relevant request
         statistics.
 
         :param curr_time: The arrival time of the request
         :type curr_time: float
-
-        :param iteration: The current iteration of the simulation.
-        :type iteration: int
 
         :return: The number of transponders used for the request
         """
@@ -473,7 +470,7 @@ class Engine(SDNController):
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
                     # TODO: Commented for now and removed num_transponders return
-                    self._handle_arrival(curr_time, iteration)
+                    self._handle_arrival(curr_time)
                     # self._update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1

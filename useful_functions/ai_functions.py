@@ -41,7 +41,7 @@ class AIMethods:
         self.ai_obj.update_environment(routed=routed, spectrum=spectrum)
         # Decay epsilon for half of the iterations evenly each time
         if 1 <= self.episode <= self.episode // 2 and self.ai_obj.sim_type == 'train':
-            decay_amount = (self.ai_obj.epsilon / (self.episode // 2) - 1)
+            decay_amount = self.ai_obj.ai_arguments['epsilon'] / (self.episode // 2) - 1
             self.ai_obj.decay_epsilon(amount=decay_amount)
 
     def _q_spectrum(self):

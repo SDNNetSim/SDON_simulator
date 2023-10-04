@@ -163,10 +163,7 @@ class SnrMeasurements:
         :return: The cross-talk normalized by the number of adjacent cores.
         :rtype: float
         """
-        try:
-            mean_xt = (2 * self.bend_radius * (self.coupling_coeff ** 2)) / (self.prop_const * self.core_pitch)
-        except:
-            print('Begin debug line 169 snr_measurements')
+        mean_xt = (2 * self.bend_radius * (self.coupling_coeff ** 2)) / (self.prop_const * self.core_pitch)
         resp_xt = (1 - math.exp(-2 * mean_xt * link_length * 1e3)) / (1 + math.exp(-2 * mean_xt * link_length * 1e3))
 
         return resp_xt * adjacent_cores
@@ -311,6 +308,14 @@ class SnrMeasurements:
         return resp
 
     def check_adjacent_cores(self, link_nodes: tuple):
+        """
+        Given a link, finds the number of cores which have overlapping channels on a fiber.
+
+        :param link_nodes: The source and destination nodes.
+        :type link_nodes: tuple
+
+        :return: The number of adjacent cores that have overlapping channels.
+        """
         resp = 0
         if self.spectrum['core_num'] != 6:
             # The neighboring core directly before the currently selected core
@@ -331,10 +336,16 @@ class SnrMeasurements:
         return resp
 
     def find_worst_xt(self, flag: str):
-        # TODO: Not updating link constants
-        if flag == 'intra_core':
-            # max_length = max(nx.get_edge_attributes(self.snr_props['topology'], 'length').values(), default=0.0)
+        """
+        Finds the worst possible cross-talk.
 
+        :param flag: Determines which type of cross-talk is being considered.
+        :type flag: str
+
+        :return: The maximum length of the link found and the cross-talk calculated.
+        :rtype: tuple
+        """
+        if flag == 'intra_core':
             edge_lengths = nx.get_edge_attributes(self.snr_props['topology'], 'length')
             max_link = max(edge_lengths, key=edge_lengths.get, default=None)
             self.link_id = self.net_spec_db[max_link]['link_num']
