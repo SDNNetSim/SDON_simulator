@@ -148,6 +148,7 @@ class QLearning:
         self.rewards_dict = properties_obj['reward_info']
 
     def _path_xt_cost(self, spectrum: dict):
+        # TODO: Move the variables you can to somewhere in common instead of private methods
         self.snr_obj.net_spec_db = self.net_spec_db
         self.snr_obj.spectrum = spectrum
         self.snr_obj.assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
@@ -155,7 +156,6 @@ class QLearning:
             # Finds the worst possible XT for a link in the network
             self.xt_worst, self.max_length = self.snr_obj.find_worst_xt(flag='intra_core')
 
-        # TODO: Need to pass the spectrum here (start and end slots)
         self.snr_obj.path = self.chosen_path
         _, path_xt = self.snr_obj.check_xt()
 
@@ -177,16 +177,21 @@ class QLearning:
     def _get_xt_estimation_reward(self, routed: bool, spectrum: dict):
         if routed:
             numerator = float(self.properties['erlang']) / 10.0
-
             adjacent_cores = 0
             for link in range(0, len(self.chosen_path) - 1):
                 link_nodes = (self.chosen_path[link], self.chosen_path[link + 1])
+                self.snr_obj.spectrum = spectrum
+                self.snr_obj.net_spec_db = self.net_spec_db
                 adjacent_cores += self.snr_obj.check_adjacent_cores(link_nodes=link_nodes)
 
-            # We want to consider the number of hops not nodes, hence, minus one
-            denominator = (float(len(self.chosen_path)) - 1) * adjacent_cores
+            # No neighboring cores, reward the erlang value
+            if adjacent_cores == 0:
+                denominator = 1.0
+            else:
+                # We want to consider the number of hops not nodes, hence, minus one
+                denominator = (float(len(self.chosen_path)) - 1) * adjacent_cores
+
             return numerator / denominator
-        # TODO: Not sure what to make this constant
         else:
             return -1.0
 
