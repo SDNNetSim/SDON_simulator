@@ -7,7 +7,6 @@ import numpy as np
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
-from useful_functions.sim_functions import get_path_mod, find_path_len, sort_nested_dict_vals
 from sim_scripts.routing import Routing
 from sim_scripts.snr_measurements import SnrMeasurements
 
@@ -162,7 +161,7 @@ class QLearning:
         return path_xt
 
     @staticmethod
-    def _get_baseline_reward(routed: bool, spectrum: dict):
+    def _get_baseline_reward(routed: bool, spectrum: dict):  # pylint: disable=unused-argument
         return 1.0 if routed else -1.0
 
     # TODO: Debug these two policies
@@ -192,8 +191,8 @@ class QLearning:
                 denominator = (float(len(self.chosen_path)) - 1) * adjacent_cores
 
             return numerator / denominator
-        else:
-            return -1.0
+
+        return -1.0
 
     def update_environment(self, routed: bool, spectrum: dict):
         """
