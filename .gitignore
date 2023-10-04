@@ -20,6 +20,7 @@ ai/data/*
 ai/plots/*
 
 config/run_ini/config.ini
+bash_scripts/slurm/*
 
 useful_functions/__pycache__/*
 handle_data/__pycache__/*
