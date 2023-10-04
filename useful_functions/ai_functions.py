@@ -34,6 +34,7 @@ class AIMethods:
         :param routed: A flag to determine if a request was routed or not.
         :type routed: bool
         """
+        self.ai_obj.curr_episode = self.episode
         self.ai_obj.update_environment(routed=routed)
         # Decay epsilon for half of the iterations evenly each time
         if 1 <= self.episode <= self.episode // 2 and self.ai_obj.sim_type == 'train':

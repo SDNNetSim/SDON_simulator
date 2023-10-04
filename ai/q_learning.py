@@ -30,7 +30,6 @@ class QLearning:
         # Contains all state and action value pairs
         self.q_table = None
         # Statistics to evaluate our reward function
-        # TODO: Check this
         self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': {}}
 
         self.curr_episode = None
@@ -88,11 +87,18 @@ class QLearning:
         else:
             self.rewards_dict['rewards'][episode].append(reward)
 
-        if self.curr_episode == self.properties['max_iters'] - 1:
-            self.rewards_dict['min'] = min(self.rewards_dict['rewards'][episode])
-            self.rewards_dict['max'] = max(self.rewards_dict['rewards'][episode])
-            self.rewards_dict['average'] = sum(self.rewards_dict['rewards'][episode]) / float(
-                len(self.rewards_dict['rewards'][episode]))
+        if self.curr_episode == self.properties['max_iters'] - 1 and \
+                len(self.rewards_dict['rewards'][episode]) == self.properties['num_requests']:
+            matrix = np.array([])
+            for episode, curr_list in self.rewards_dict['rewards'].items():
+                if episode == '0':
+                    matrix = np.array([curr_list])
+                else:
+                    matrix = np.vstack((matrix, curr_list))
+
+            self.rewards_dict['min'] = matrix.min(axis=0, initial=np.inf).tolist()
+            self.rewards_dict['max'] = matrix.max(axis=0, initial=np.inf * -1.0).tolist()
+            self.rewards_dict['average'] = matrix.mean(axis=0).tolist()
 
     def save_table(self):
         """
@@ -156,6 +162,7 @@ class QLearning:
     def _get_baseline_reward(routed: bool):
         return 1.0 if routed else -1.0
 
+    # TODO: Debug these two policies
     def _get_xt_percent_reward(self, routed: bool):
         if routed:
             path_xt = self._path_xt_cost()
@@ -176,6 +183,7 @@ class QLearning:
             # We want to consider the number of hops not nodes, hence, minus one
             denominator = (float(len(self.chosen_path)) - 1) * adjacent_cores
             return numerator / denominator
+        # TODO: Not sure what to make this constant
         else:
             return -1.0
 
@@ -190,7 +198,7 @@ class QLearning:
         if policy not in self.reward_policies:
             raise NotImplementedError('Reward policy not recognized.')
 
-        reward = self.reward_policies[policy](self, routed)
+        reward = self.reward_policies[policy](routed=routed)
         self._update_rewards_dict(reward=reward)
 
         for i in range(len(self.chosen_path) - 1):
@@ -253,7 +261,6 @@ class QLearning:
 
         return False, None
 
-    # TODO: Pass a loop of modulation formats outside this script, only assume one inside
     def route(self):
         """
         Based on the Q-learning algorithm, find a route for any given request.

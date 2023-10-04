@@ -168,8 +168,12 @@ class Engine(SDNController):
         base_fp += f"/{self.sim_info}/{self.properties['thread_num']}"
         create_dir(base_fp)
 
+        tmp_topology = copy.deepcopy(self.properties['topology'])
+        del self.properties['topology']
         with open(f"{base_fp}/{self.properties['erlang']}_erlang.json", 'w', encoding='utf-8') as file_path:
             json.dump(self.stats_dict, file_path, indent=4)
+
+        self.properties['topology'] = tmp_topology
 
     def _check_confidence_interval(self, iteration):
         """
@@ -254,7 +258,10 @@ class Engine(SDNController):
         if not resp[0]:
             self.num_blocked_reqs += 1
             # Update the reason for blocking
-            self.block_reasons[resp[1]] += 1
+            try:
+                self.block_reasons[resp[1]] += 1
+            except KeyError:
+                print('Begin debug in engine.py at line 264')
             # Update how many times this bandwidth type has been blocked
             self.block_per_bw[self.chosen_bw] += 1
 
