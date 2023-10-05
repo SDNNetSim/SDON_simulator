@@ -266,6 +266,7 @@ class SDNController:
         """
         spectrum = None
         xt_cost = None
+        mod_chosen = None
         for modulation in mod_options:
             if modulation is False:
                 if self.sdn_props['max_segments'] > 1:
@@ -281,9 +282,10 @@ class SDNController:
 
             # We found a spectrum, no need to check other modulation formats
             if spectrum is not False:
+                mod_chosen = modulation
                 break
 
-        return spectrum, xt_cost
+        return spectrum, xt_cost, mod_chosen
 
     def _handle_routing(self):
         resp = get_route(properties=self.sdn_props, source=self.source, destination=self.destination,
@@ -328,14 +330,14 @@ class SDNController:
                         self.block_reason = 'distance'
                         return False, self.block_reason, self.path
 
-                spectrum, xt_cost = self._handle_spectrum(mod_options=mod_options)
+                spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options)
                 # Request was blocked for this path
                 if spectrum is False or spectrum is None:
                     continue
 
                 resp = {
                     'path': self.path,
-                    'mod_format': path_mod,
+                    'mod_format': modulation,
                     'route_time': route_time,
                     'path_weight': path_weight,
                     'xt_cost': xt_cost,

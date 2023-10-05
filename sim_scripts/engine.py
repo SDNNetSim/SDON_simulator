@@ -247,10 +247,12 @@ class Engine(SDNController):
             if not resp[0]:
                 routed = False
                 spectrum = {}
+                path_mod = ''
             else:
                 spectrum = resp[0]['spectrum']
                 routed = True
-            self.ai_obj.update(routed=routed, spectrum=spectrum)
+                path_mod = resp[0]['mod_format']
+            self.ai_obj.update(routed=routed, spectrum=spectrum, path_mod=path_mod)
 
         # Request was blocked
         if not resp[0]:
