@@ -191,7 +191,7 @@ class QLearning:
 
             return numerator / denominator
 
-        return -1.0
+        return (float(self.properties['erlang']) * -1.0) / 10.0
 
     def update_environment(self, routed: bool, spectrum: dict):
         """
@@ -281,13 +281,17 @@ class QLearning:
         while True:
             random_float = np.round(np.random.uniform(0, 1), decimals=1)
             if random_float < self.ai_arguments['epsilon']:
-                # TODO: Produce array of random numbers to attempt to find one at random, if you've checked all of them,
-                #   - Then we must need to block
-                next_node = np.random.randint(len(nodes))
-                if str(next_node) in self.chosen_path or np.isnan(self.q_table[(curr_node, next_node)]):
-                    continue
-                self.chosen_path.append(str(next_node))
-                found_next = True
+                found_next = False
+                next_node = None
+                random_options = np.random.choice(len(nodes), size=len(nodes), replace=False)
+
+                for random_node in random_options:
+                    if str(random_node) in self.chosen_path or np.isnan(self.q_table[(curr_node, random_node)]):
+                        continue
+                    self.chosen_path.append(str(random_node))
+                    next_node = random_node
+                    found_next = True
+                    break
             else:
                 found_next, next_node = self._find_next_node(curr_node)
 
