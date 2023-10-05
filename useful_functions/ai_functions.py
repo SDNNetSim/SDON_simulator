@@ -7,15 +7,19 @@ class AIMethods:
     Contains methods related to artificial intelligence for the simulator.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, properties: dict):
         """
         Initializes the AIMethods class.
         """
-        self.algorithm = kwargs['properties']['ai_algorithm']
+        self.properties = properties
+        self.algorithm = properties['ai_algorithm']
 
+        self.episode = 0
         self.seed = None
         # An object for the chosen AI algorithm
         self.ai_obj = None
+
+        self._setup()
 
     def _q_save(self):
         """
@@ -23,21 +27,21 @@ class AIMethods:
         """
         self.ai_obj.save_table()
 
-    def _q_update_env(self, routed: bool, iteration: int):
+    def _q_update_env(self, routed: bool, spectrum: dict):
         """
         Updates the Q-learning environment.
 
         :param routed: A flag to determine if a request was routed or not.
         :type routed: bool
 
-        :param iteration: The current iteration of the simulation.
-        :type iteration: int
+        :param spectrum: Relevant information related to the spectrum assignment.
+        :type spectrum: dict
         """
-        self.ai_obj.update_environment(routed=routed)
-
+        self.ai_obj.curr_episode = self.episode
+        self.ai_obj.update_environment(routed=routed, spectrum=spectrum)
         # Decay epsilon for half of the iterations evenly each time
-        if 1 <= iteration <= iteration // 2 and self.ai_obj.sim_type == 'train':
-            decay_amount = (self.ai_obj.epsilon / (iteration // 2) - 1)
+        if 1 <= self.episode <= self.episode // 2 and self.ai_obj.sim_type == 'train':
+            decay_amount = self.ai_obj.ai_arguments['epsilon'] / (self.episode // 2) - 1
             self.ai_obj.decay_epsilon(amount=decay_amount)
 
     def _q_spectrum(self):
@@ -69,20 +73,15 @@ class AIMethods:
         path = self.ai_obj.route()
         return path
 
-    def _init_q_learning(self, params: dict):
+    def _init_q_learning(self):
         """
         Initializes a QLearning class and sets up the initial environment and Q-table.
         """
-        if params['curr_episode'] == 0:
-            self.ai_obj = QLearning(params=params)
-        else:
-            self.ai_obj.curr_episode = params['curr_episode']
-
+        self.ai_obj.curr_episode = self.episode
         self.ai_obj.setup_environment()
 
         # Load a pre-trained table or start a new one
-        # TODO: Erlang a hard-coded value :(
-        if self.ai_obj.sim_type == 'train' and params['erlang'] == 10 or params['erlang'] == 50:
+        if self.ai_obj.sim_type == 'train':
             self.ai_obj.save_table()
         else:
             self.ai_obj.load_table()
@@ -112,13 +111,15 @@ class AIMethods:
         Responsible for updating environment information.
         """
         if self.algorithm == 'q_learning':
-            self._q_update_env(routed=kwargs['routed'], iteration=kwargs['iteration'])
+            self._q_update_env(routed=kwargs['routed'], spectrum=kwargs['spectrum'])
 
-    def setup(self, **kwargs):
+    def _setup(self):
         """
         Responsible for setting up available AI algorithms and their methods.
         """
+        # TODO: Didn't pass is_training here
         if self.algorithm == 'q_learning':
-            self._init_q_learning(params=kwargs['params'])
+            self.ai_obj = QLearning(properties=self.properties)
+            self._init_q_learning()
         else:
             raise NotImplementedError(f'Algorithm: {self.algorithm} not recognized.')

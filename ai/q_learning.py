@@ -7,8 +7,8 @@ import numpy as np
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
-from useful_functions.sim_functions import get_path_mod, find_path_len
 from sim_scripts.routing import Routing
+from sim_scripts.snr_measurements import SnrMeasurements
 
 
 class QLearning:
@@ -16,44 +16,41 @@ class QLearning:
     Controls methods related to the Q-learning reinforcement learning algorithm.
     """
 
-    def __init__(self, params: dict):
+    def __init__(self, properties: dict):
         """
         Initializes the QLearning class.
         """
-        if params['is_training']:
+        self.properties = properties
+        self.ai_arguments = properties['ai_arguments']
+        if self.ai_arguments['is_training']:
             self.sim_type = 'train'
         else:
             self.sim_type = 'test'
         # Contains all state and action value pairs
         self.q_table = None
-        self.epsilon = params['epsilon']
-        self.episodes = params['episodes']
-        self.learn_rate = params['learn_rate']
-        self.discount = params['discount']
-        self.topology = params['topology']
-        self.table_path = params['table_path']
-        self.cores_per_link = params['cores_per_link']
-        self.curr_episode = params['curr_episode']
-        self.mod_per_bw = params['mod_per_bw']
-        self.guard_slots = params['guard_slots']
-
         # Statistics to evaluate our reward function
         self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': {}}
 
+        self.curr_episode = None
         # Source node, destination node, and the resulting path
         self.source = None
         self.destination = None
         self.chosen_path = None
         # The chosen bandwidth for the current request
         self.chosen_bw = None
-        # The NLI cost for a given path
-        self.nli_cost = None
-        # The worst possible NLI cost for a single link in the network
-        self.nli_worst = None
         # The latest up-to-date network spectrum database
         self.net_spec_db = None
+        self.xt_worst = None
+        self.max_length = None
+        self.reward_policies = {
+            'baseline': self._get_baseline_reward,
+            'xt_percent': self._get_xt_percent_reward,
+            'xt_estimation': self._get_xt_estimation_reward,
+        }
         # Simulation methods related to routing
-        self.routing_obj = Routing(beta=params['beta'], topology=self.topology, guard_slots=params['guard_slots'])
+        self.routing_obj = Routing(beta=properties['beta'], topology=properties['topology'],
+                                   guard_slots=properties['guard_slots'])
+        self.snr_obj = SnrMeasurements(properties=self.properties)
 
     @staticmethod
     def set_seed(seed: int):
@@ -72,9 +69,9 @@ class QLearning:
         :param amount: The amount to decay epsilon by.
         :type amount: float
         """
-        self.epsilon -= amount
-        if self.epsilon < 0.0:
-            raise ValueError(f'Epsilon should be greater than 0 but it is {self.epsilon}')
+        self.ai_arguments['epsilon'] -= amount
+        if self.ai_arguments['epsilon'] < 0.0:
+            raise ValueError(f"Epsilon should be greater than 0 but it is {self.ai_arguments['epsilon']}")
 
     def _update_rewards_dict(self, reward: float = None):
         """
@@ -89,84 +86,128 @@ class QLearning:
         else:
             self.rewards_dict['rewards'][episode].append(reward)
 
-        if self.curr_episode == self.episodes - 1:
-            self.rewards_dict['min'] = min(self.rewards_dict['rewards'][episode])
-            self.rewards_dict['max'] = max(self.rewards_dict['rewards'][episode])
-            self.rewards_dict['average'] = sum(self.rewards_dict['rewards'][episode]) / float(
-                len(self.rewards_dict['rewards'][episode]))
+        if self.curr_episode == self.properties['max_iters'] - 1 and \
+                len(self.rewards_dict['rewards'][episode]) == self.properties['num_requests']:
+            matrix = np.array([])
+            for episode, curr_list in self.rewards_dict['rewards'].items():
+                if episode == '0':
+                    matrix = np.array([curr_list])
+                else:
+                    matrix = np.vstack((matrix, curr_list))
+
+            self.rewards_dict['min'] = matrix.min(axis=0, initial=np.inf).tolist()
+            self.rewards_dict['max'] = matrix.max(axis=0, initial=np.inf * -1.0).tolist()
+            self.rewards_dict['average'] = matrix.mean(axis=0).tolist()
 
     def save_table(self):
         """
         Saves the current Q-table to a desired path.
         """
-        create_dir(f'ai/models/q_tables/{self.table_path}')
+        if self.sim_type == 'test':
+            raise NotImplementedError
 
-        file_path = f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/{self.sim_type}_table_c{self.cores_per_link}.npy'
-        np.save(file_path, self.q_table)
+        if self.ai_arguments['table_path'] == 'None':
+            self.ai_arguments['table_path'] = f"{self.properties['network']}/{self.properties['sim_start']}"
 
-        params_dict = {
-            'epsilon': self.epsilon,
-            'episodes': self.episodes,
-            'learn_rate': self.learn_rate,
-            'discount_factor': self.discount,
+        create_dir(f"ai/models/q_tables/{self.ai_arguments['table_path']}")
+        file_path = f"{os.getcwd()}/ai/models/q_tables/{self.ai_arguments['table_path']}/"
+        file_name = f"{self.properties['erlang']}_table_c{self.properties['cores_per_link']}.npy"
+        np.save(file_path + file_name, self.q_table)
+
+        properties_dict = {
+            'epsilon': self.ai_arguments['epsilon'],
+            'episodes': self.properties['max_iters'],
+            'learn_rate': self.ai_arguments['learn_rate'],
+            'discount_factor': self.ai_arguments['discount'],
             'reward_info': self.rewards_dict
         }
-        with open(f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/hyper_params_c{self.cores_per_link}.json', 'w',
-                  encoding='utf-8') as file:
-            json.dump(params_dict, file)
+        file_name = f"{self.properties['erlang']}_params.json"
+        with open(f"{file_path}/{file_name}", 'w', encoding='utf-8') as file:
+            json.dump(properties_dict, file)
 
     def load_table(self):
         """
         Loads a previously trained Q-table.
         """
+        file_path = f"{os.getcwd()}/ai/models/q_tables/{self.ai_arguments['table_path']}/"
+        file_name = f"{self.sim_type}_table_c{self.ai_arguments['cores_per_link']}.npy"
         try:
-            file_path = f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/{self.sim_type}_table_c{self.cores_per_link}.npy'
-            self.q_table = np.load(file_path)
+            self.q_table = np.load(file_path + file_name)
         except FileNotFoundError:
             print('File not found, please ensure if you are testing, an already trained file exists and has been '
                   'specified correctly.')
 
-        with open(f'{os.getcwd()}/ai/models/q_tables/{self.table_path}/hyper_params_c{self.cores_per_link}.json',
-                  encoding='utf-8') as file:
-            params_obj = json.load(file)
-            self.epsilon = params_obj['epsilon']
-            self.learn_rate = params_obj['learn_rate']
-            self.discount = params_obj['discount_factor']
-            self.rewards_dict = params_obj['reward_info']
+        file_name = f"hyper_properties_c{self.ai_arguments['cores_per_link']}.json"
+        with open(f"{file_path}{file_name}", encoding='utf-8') as file:
+            properties_obj = json.load(file)
 
-    def _get_nli_cost(self):
-        """
-        Uses the routing object to get the non-linear impairment cost from the selected path.
-        """
-        mod_formats = self.mod_per_bw[self.chosen_bw]
-        path_len = find_path_len(self.chosen_path, self.topology)
-        mod_format = get_path_mod(mod_formats, path_len)
+        self.ai_arguments['epsilon'] = properties_obj['epsilon']
+        self.ai_arguments['learn_rate'] = properties_obj['learn_rate']
+        self.ai_arguments['discount'] = properties_obj['discount_factor']
+        self.rewards_dict = properties_obj['reward_info']
 
-        self.routing_obj.net_spec_db = self.net_spec_db
+    def _path_xt_cost(self, spectrum: dict):
+        # TODO: Move the variables you can to somewhere in common instead of private methods
+        self.snr_obj.net_spec_db = self.net_spec_db
+        self.snr_obj.spectrum = spectrum
+        self.snr_obj.assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
+        if self.xt_worst is None:
+            # Finds the worst possible XT for a link in the network
+            self.xt_worst, self.max_length = self.snr_obj.find_worst_xt(flag='intra_core')
 
-        if not mod_format:
-            return False
+        self.snr_obj.path = self.chosen_path
+        _, path_xt = self.snr_obj.check_xt()
 
-        self.routing_obj.slots_needed = self.mod_per_bw[self.chosen_bw][mod_format]['slots_needed']
+        return path_xt
 
-        if self.nli_worst is None:
-            self.nli_worst = self.routing_obj.find_worst_nli()
-        self.nli_cost = self.routing_obj.nli_path(path=self.chosen_path)
-        return self.nli_cost
+    @staticmethod
+    def _get_baseline_reward(routed: bool, spectrum: dict):  # pylint: disable=unused-argument
+        return 1.0 if routed else -1.0
 
-    def update_environment(self, routed: bool):
+    def _get_xt_percent_reward(self, routed: bool, spectrum: dict):
+        if routed:
+            path_xt = self._path_xt_cost(spectrum=spectrum)
+            # We want to consider the number of links not nodes, hence, minus one
+            return 1.0 - path_xt / (self.xt_worst * float(len(self.chosen_path) - 1))
+
+        return -1.0
+
+    def _get_xt_estimation_reward(self, routed: bool, spectrum: dict):
+        if routed:
+            numerator = float(self.properties['erlang']) / 10.0
+            adjacent_cores = 0
+            for link in range(0, len(self.chosen_path) - 1):
+                link_nodes = (self.chosen_path[link], self.chosen_path[link + 1])
+                self.snr_obj.spectrum = spectrum
+                self.snr_obj.net_spec_db = self.net_spec_db
+                adjacent_cores += self.snr_obj.check_adjacent_cores(link_nodes=link_nodes)
+
+            # No neighboring cores, reward the erlang value
+            if adjacent_cores == 0:
+                denominator = 1.0
+            else:
+                # We want to consider the number of hops not nodes, hence, minus one
+                denominator = (float(len(self.chosen_path)) - 1) * adjacent_cores
+
+            return numerator / denominator
+
+        return (float(self.properties['erlang']) * -1.0) / 10.0
+
+    def update_environment(self, routed: bool, spectrum: dict):
         """
         Updates the Q-learning environment.
 
         :param routed: Whether the path chosen was successfully routed or not.
         :type routed: bool
-        """
-        if not routed:
-            reward = -1.0
-        else:
-            # NLI worst relates to the worst NLI for a single link
-            reward = 1.0 - (self.nli_cost / (self.nli_worst * float(len(self.chosen_path))))
 
+        :param spectrum: Relevant information regarding the spectrum of the current request.
+        :type spectrum: dict
+        """
+        policy = self.ai_arguments.get('policy')
+        if policy not in self.reward_policies:
+            raise NotImplementedError('Reward policy not recognized.')
+
+        reward = self.reward_policies[policy](routed=routed, spectrum=spectrum)
         self._update_rewards_dict(reward=reward)
 
         for i in range(len(self.chosen_path) - 1):
@@ -182,8 +223,8 @@ class QLearning:
                 max_future_q = np.nanargmax(self.q_table[new_state])
 
             current_q = self.q_table[(state, new_state)]
-            new_q = ((1.0 - self.learn_rate) * current_q) + (
-                    self.learn_rate * (reward + self.discount * max_future_q))
+            new_q = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + (
+                    self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q)))
 
             self.q_table[(state, new_state)] = new_q
 
@@ -191,7 +232,7 @@ class QLearning:
         """
         Initializes the environment i.e., the Q-table.
         """
-        num_nodes = len(list(self.topology.nodes()))
+        num_nodes = len(list(self.properties['topology'].nodes()))
         self.q_table = np.zeros((num_nodes, num_nodes))
 
         for source in range(0, num_nodes):
@@ -202,7 +243,7 @@ class QLearning:
                     continue
 
                 # A link exists between these two nodes
-                if str(source) in self.topology.neighbors((str(destination))):
+                if str(source) in self.properties['topology'].neighbors((str(destination))):
                     self.q_table[(source, destination)] = 0
                 else:
                     self.q_table[(source, destination)] = np.nan
@@ -239,19 +280,23 @@ class QLearning:
         curr_node = self.source
         while True:
             random_float = np.round(np.random.uniform(0, 1), decimals=1)
-            if random_float < self.epsilon:
-                next_node = np.random.randint(len(nodes))
-                if str(next_node) in self.chosen_path or np.isnan(self.q_table[(curr_node, next_node)]):
-                    continue
-                self.chosen_path.append(str(next_node))
-                found_next = True
+            if random_float < self.ai_arguments['epsilon']:
+                found_next = False
+                next_node = None
+                random_options = np.random.choice(len(nodes), size=len(nodes), replace=False)
+
+                for random_node in random_options:
+                    if str(random_node) in self.chosen_path or np.isnan(self.q_table[(curr_node, random_node)]):
+                        continue
+                    self.chosen_path.append(str(random_node))
+                    next_node = random_node
+                    found_next = True
+                    break
             else:
                 found_next, next_node = self._find_next_node(curr_node)
 
             if found_next is not False:
                 if next_node == self.destination:
-                    self._get_nli_cost()
-
                     return self.chosen_path
 
                 curr_node = next_node

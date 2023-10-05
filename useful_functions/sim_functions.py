@@ -268,10 +268,12 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
     :return: The potential paths and path modulation formats.
     :rtype: dict
     """
-    routing_obj = Routing(print_warn=properties['warnings'], source=source, destination=destination,
-                          topology=topology, net_spec_db=net_spec_db,
-                          mod_formats=properties['mod_per_bw'][chosen_bw], bandwidth=chosen_bw,
-                          guard_slots=properties['guard_slots'])
+    # The artificial intelligence objects have their own routing class
+    if properties['ai_algorithm'] == 'None':
+        routing_obj = Routing(print_warn=properties['warnings'], source=source, destination=destination,
+                              topology=topology, net_spec_db=net_spec_db,
+                              mod_formats=properties['mod_per_bw'][chosen_bw], bandwidth=chosen_bw,
+                              guard_slots=properties['guard_slots'])
 
     # TODO: Change constant QPSK modulation formats
     if properties['route_method'] == 'nli_aware':

@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import networkx as nx
 
 
 class SnrMeasurements:
@@ -149,7 +150,7 @@ class SnrMeasurements:
 
         return power_xt
 
-    def _calculate_xt(self, adjacent_cores: int, link_length: int):
+    def calculate_xt(self, adjacent_cores: int, link_length: int):
         """
         Calculates the cross-talk interference based on the number of adjacent cores.
 
@@ -225,7 +226,7 @@ class SnrMeasurements:
         self.length = self.snr_props['topology_info']['links'][self.link_id]['span_length']
         self.num_span = self.snr_props['topology_info']['links'][self.link_id]['length'] / self.length
 
-    def _update_link_constants(self):
+    def update_link_constants(self):
         """
         Updates non-linear impairment parameters that will remain constant for future calculations.
         """
@@ -258,7 +259,7 @@ class SnrMeasurements:
         for link in range(0, len(self.path) - 1):
             self.link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
 
-            self._update_link_constants()
+            self.update_link_constants()
             self._update_link_params(link=link)
 
             psd_nli = self._calculate_psd_nli()
@@ -289,7 +290,7 @@ class SnrMeasurements:
         for link in range(0, len(self.path) - 1):
             self.link_id = self.net_spec_db[(self.path[link], self.path[link + 1])]['link_num']
 
-            self._update_link_constants()
+            self.update_link_constants()
             self._update_link_params(link=link)
             psd_ase = (self.plank * self.light_frequency * self.nsp) * (
                     math.exp(self.attenuation * self.length * 10 ** 3) - 1)
@@ -306,7 +307,15 @@ class SnrMeasurements:
         resp = snr > self.req_snr
         return resp
 
-    def _check_adjacent_cores(self, link_nodes: tuple):
+    def check_adjacent_cores(self, link_nodes: tuple):
+        """
+        Given a link, finds the number of cores which have overlapping channels on a fiber.
+
+        :param link_nodes: The source and destination nodes.
+        :type link_nodes: tuple
+
+        :return: The number of adjacent cores that have overlapping channels.
+        """
         resp = 0
         if self.spectrum['core_num'] != 6:
             # The neighboring core directly before the currently selected core
@@ -326,6 +335,29 @@ class SnrMeasurements:
 
         return resp
 
+    def find_worst_xt(self, flag: str):
+        """
+        Finds the worst possible cross-talk.
+
+        :param flag: Determines which type of cross-talk is being considered.
+        :type flag: str
+
+        :return: The maximum length of the link found and the cross-talk calculated.
+        :rtype: tuple
+        """
+        if flag == 'intra_core':
+            edge_lengths = nx.get_edge_attributes(self.snr_props['topology'], 'length')
+            max_link = max(edge_lengths, key=edge_lengths.get, default=None)
+            self.link_id = self.net_spec_db[max_link]['link_num']
+            max_length = edge_lengths.get(max_link, 0.0)
+            self.update_link_constants()
+            resp = self.calculate_xt(adjacent_cores=6, link_length=max_length)
+            resp = 10 * math.log10(resp)
+        else:
+            raise NotImplementedError
+
+        return resp, max_length
+
     def check_xt(self):
         """
         Checks the amount of cross-talk interference on a single request.
@@ -340,11 +372,11 @@ class SnrMeasurements:
             link_nodes = (self.path[link], self.path[link + 1])
             self.link_id = self.net_spec_db[link_nodes]['link_num']
             link_length = self.snr_props['topology_info']['links'][self.link_id]['length']
-            self._update_link_constants()
+            self.update_link_constants()
             self._update_link_params(link=link)
 
-            adjacent_cores = self._check_adjacent_cores(link_nodes=link_nodes)
-            cross_talk += self._calculate_xt(adjacent_cores=adjacent_cores, link_length=link_length)
+            adjacent_cores = self.check_adjacent_cores(link_nodes=link_nodes)
+            cross_talk += self.calculate_xt(adjacent_cores=adjacent_cores, link_length=link_length)
 
         if cross_talk == 0:
             resp = True
