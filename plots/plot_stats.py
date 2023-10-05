@@ -321,7 +321,7 @@ def main():
     """
     Controls this script.
     """
-    times = []
+    # times = []
     plot_obj = PlotStats(net_names=['NSFNet'], dates=['1005'], times=[['16_16_41_039558']],
                          sims=['s1'])
     plot_obj.plot_blocking()
