@@ -98,6 +98,7 @@ class QLearning:
             self.rewards_dict['min'] = matrix.min(axis=0, initial=np.inf).tolist()
             self.rewards_dict['max'] = matrix.max(axis=0, initial=np.inf * -1.0).tolist()
             self.rewards_dict['average'] = matrix.mean(axis=0).tolist()
+            self.rewards_dict.pop('rewards')
 
     def save_table(self):
         """
@@ -107,7 +108,8 @@ class QLearning:
             raise NotImplementedError
 
         if self.ai_arguments['table_path'] == 'None':
-            self.ai_arguments['table_path'] = f"{self.properties['network']}/{self.properties['sim_start']}"
+            self.ai_arguments['table_path'] = f"{self.properties['network']}/" \
+                                              f"{self.properties['sim_start']}/{self.properties['thread_num']}"
 
         create_dir(f"ai/models/q_tables/{self.ai_arguments['table_path']}")
         file_path = f"{os.getcwd()}/ai/models/q_tables/{self.ai_arguments['table_path']}/"
