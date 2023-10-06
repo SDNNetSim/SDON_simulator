@@ -326,12 +326,16 @@ class SnrMeasurements:
         else:
             adjacent_cores = list(range(6))
 
-        for core_num in adjacent_cores:
-            core_contents = self.net_spec_db[link_nodes]['cores_matrix'][core_num]
-            slot_contents = set(core_contents[self.spectrum['start_slot']:self.spectrum['end_slot']])
+        for curr_slot in range(self.spectrum['start_slot'], self.spectrum['end_slot']):
+            overlapped = 0
+            for core_num in adjacent_cores:
+                core_contents = self.net_spec_db[link_nodes]['cores_matrix'][core_num][curr_slot]
+                if core_contents != 0.0:
+                    overlapped += 1
 
-            if slot_contents != {0.0}:
-                resp += 1
+            # Determine which slot has the maximum number of overlapping channels
+            if overlapped > resp:
+                resp = overlapped
 
         return resp
 
