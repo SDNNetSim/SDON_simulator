@@ -330,7 +330,7 @@ class SnrMeasurements:
             overlapped = 0
             for core_num in adjacent_cores:
                 core_contents = self.net_spec_db[link_nodes]['cores_matrix'][core_num][curr_slot]
-                if core_contents != 0.0:
+                if core_contents > 0.0:
                     overlapped += 1
 
             # Determine which slot has the maximum number of overlapping channels
