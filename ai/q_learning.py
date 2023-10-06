@@ -98,6 +98,7 @@ class QLearning:
             self.rewards_dict['min'] = matrix.min(axis=0, initial=np.inf).tolist()
             self.rewards_dict['max'] = matrix.max(axis=0, initial=np.inf * -1.0).tolist()
             self.rewards_dict['average'] = matrix.mean(axis=0).tolist()
+            self.rewards_dict.pop('rewards')
 
     def save_table(self):
         """
@@ -107,7 +108,8 @@ class QLearning:
             raise NotImplementedError
 
         if self.ai_arguments['table_path'] == 'None':
-            self.ai_arguments['table_path'] = f"{self.properties['network']}/{self.properties['sim_start']}"
+            self.ai_arguments['table_path'] = f"{self.properties['network']}/" \
+                                              f"{self.properties['sim_start']}/{self.properties['thread_num']}"
 
         create_dir(f"ai/models/q_tables/{self.ai_arguments['table_path']}")
         file_path = f"{os.getcwd()}/ai/models/q_tables/{self.ai_arguments['table_path']}/"
@@ -146,11 +148,12 @@ class QLearning:
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
 
-    def _path_xt_cost(self, spectrum: dict):
+    def _path_xt_cost(self, spectrum: dict, path_mod: str):
         # TODO: Move the variables you can to somewhere in common instead of private methods
         self.snr_obj.net_spec_db = self.net_spec_db
         self.snr_obj.spectrum = spectrum
         self.snr_obj.assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
+        self.snr_obj.path_mod = path_mod
         if self.xt_worst is None:
             # Finds the worst possible XT for a link in the network
             self.xt_worst, self.max_length = self.snr_obj.find_worst_xt(flag='intra_core')
@@ -161,18 +164,18 @@ class QLearning:
         return path_xt
 
     @staticmethod
-    def _get_baseline_reward(routed: bool, spectrum: dict):  # pylint: disable=unused-argument
+    def _get_baseline_reward(routed: bool, spectrum: dict, path_mod: str):  # pylint: disable=unused-argument
         return 1.0 if routed else -1.0
 
-    def _get_xt_percent_reward(self, routed: bool, spectrum: dict):
+    def _get_xt_percent_reward(self, routed: bool, spectrum: dict, path_mod: str):
         if routed:
-            path_xt = self._path_xt_cost(spectrum=spectrum)
+            path_xt = self._path_xt_cost(spectrum=spectrum, path_mod=path_mod)
             # We want to consider the number of links not nodes, hence, minus one
             return 1.0 - path_xt / (self.xt_worst * float(len(self.chosen_path) - 1))
 
         return -1.0
 
-    def _get_xt_estimation_reward(self, routed: bool, spectrum: dict):
+    def _get_xt_estimation_reward(self, routed: bool, spectrum: dict, path_mod: str):  # pylint: disable=unused-argument
         if routed:
             numerator = float(self.properties['erlang']) / 10.0
             adjacent_cores = 0
@@ -193,7 +196,7 @@ class QLearning:
 
         return (float(self.properties['erlang']) * -1.0) / 10.0
 
-    def update_environment(self, routed: bool, spectrum: dict):
+    def update_environment(self, routed: bool, spectrum: dict, path_mod: str):
         """
         Updates the Q-learning environment.
 
@@ -207,7 +210,7 @@ class QLearning:
         if policy not in self.reward_policies:
             raise NotImplementedError('Reward policy not recognized.')
 
-        reward = self.reward_policies[policy](routed=routed, spectrum=spectrum)
+        reward = self.reward_policies[policy](routed=routed, spectrum=spectrum, path_mod=path_mod)
         self._update_rewards_dict(reward=reward)
 
         for i in range(len(self.chosen_path) - 1):

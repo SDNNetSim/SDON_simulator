@@ -38,7 +38,7 @@ class PlotStats:
         self.colors = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
         self.markers = ['o', '^', 's', 'x']
-        self.x_ticks = [200, 300, 400, 500, 600, 700]
+        self.x_ticks = [50, 100, 150, 200]
 
         self._get_data()
 
@@ -321,42 +321,11 @@ def main():
     """
     Controls this script.
     """
-    times = [
-        # beta = 1.0
-        '12_25_44_950876',
-        # beta = 0.9
-        '12_25_44_727252',
-        # beta = 0.8
-        '12_25_13_633317',
-        # beta = 0.7
-        '11_35_03_895500',
-        # beta = 0.6
-        '11_35_01_021682',
-        # beta = 0.5
-        '22_38_06_455877',
-        # beta = 0.4
-        '22_38_06_317002',
-        # beta = 0.3
-        '22_38_06_348728',
-        # beta = 0.2
-        '22_38_06_348645',
-        # beta = 0.1
-        '22_38_06_348798',
-        # beta = 0.000001
-        '22_38_06_397731',
-        # k = 2
-        '16_15_55_029251',
-        # k = 3
-        '16_15_52_100304',
-        # k = 4
-        '16_15_52_280391',
-        # k = 5
-        '16_15_53_848492',
-    ]
-    plot_obj = PlotStats(net_names=['NSFNet'], dates=['0930'], times=[times],
+    # times = []
+    plot_obj = PlotStats(net_names=['NSFNet'], dates=['1005'], times=[['16_16_41_039558']],
                          sims=['s1'])
-    # plot_obj.plot_blocking()
-    plot_obj.plot_crosstalk()
+    plot_obj.plot_blocking()
+    # plot_obj.plot_crosstalk()
     # plot_obj.plot_path_length()
     # plot_obj.plot_hops()
     # plot_obj.plot_times()
