@@ -123,5 +123,7 @@ class AIMethods:
         if self.algorithm == 'q_learning':
             self.ai_obj = QLearning(properties=self.properties)
             self._init_q_learning()
+        elif self.algorithm == 'None':
+            pass
         else:
             raise NotImplementedError(f'Algorithm: {self.algorithm} not recognized.')
