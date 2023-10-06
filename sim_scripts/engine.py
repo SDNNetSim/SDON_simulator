@@ -409,7 +409,7 @@ class Engine(SDNController):
             for block_type, num_times in self.block_reasons.items():
                 self.block_reasons[block_type] = num_times / float(self.num_blocked_reqs)
 
-    def _update_request_snapshots_dict(self, request_number, num_transponders):
+    def _update_request_snapshots_dict(self, request_number, num_transponders):  # pylint: disable=unused-argument
         """
         Updates the request snapshot dictionary with information about the current request.
 
