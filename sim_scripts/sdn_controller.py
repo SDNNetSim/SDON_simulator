@@ -347,5 +347,6 @@ class SDNController:
                 self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
                 return resp, self.net_spec_db, self.num_transponders, self.path
 
-        self.block_reason = 'distance'
+            self.block_reason = 'distance'
+
         return False, self.block_reason, self.path
