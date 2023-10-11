@@ -7,6 +7,7 @@ import numpy as np
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
+from useful_functions.sim_functions import find_max_length, find_path_len
 from sim_scripts.routing import Routing
 from sim_scripts.snr_measurements import SnrMeasurements
 
@@ -41,10 +42,9 @@ class QLearning:
         # The latest up-to-date network spectrum database
         self.net_spec_db = None
         self.xt_worst = None
-        self.max_length = None
         self.reward_policies = {
             'baseline': self._get_baseline_reward,
-            'xt_percent': self._get_xt_percent_reward,
+            'ratio': self._get_ratio_reward,
             'xt_estimation': self._get_xt_estimation_reward,
         }
         # Simulation methods related to routing
@@ -108,8 +108,8 @@ class QLearning:
             raise NotImplementedError
 
         if self.ai_arguments['table_path'] == 'None':
-            self.ai_arguments['table_path'] = f"{self.properties['network']}/" \
-                                              f"{self.properties['sim_start']}/{self.properties['thread_num']}"
+            date_time = f"{self.properties['network']}/{self.properties['date']}/{self.properties['sim_start']}"
+            self.ai_arguments['table_path'] = f"{date_time}/{self.properties['thread_num']}"
 
         create_dir(f"ai/models/q_tables/{self.ai_arguments['table_path']}")
         file_path = f"{os.getcwd()}/ai/models/q_tables/{self.ai_arguments['table_path']}/"
@@ -148,7 +148,7 @@ class QLearning:
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
 
-    def _path_xt_cost(self, spectrum: dict, path_mod: str):
+    def _path_cost(self, spectrum: dict, path_mod: str):
         # TODO: Move the variables you can to somewhere in common instead of private methods
         self.snr_obj.net_spec_db = self.net_spec_db
         self.snr_obj.spectrum = spectrum
@@ -156,22 +156,34 @@ class QLearning:
         self.snr_obj.path_mod = path_mod
         if self.xt_worst is None:
             # Finds the worst possible XT for a link in the network
-            self.xt_worst, self.max_length = self.snr_obj.find_worst_xt(flag='intra_core')
+            self.xt_worst, _ = self.snr_obj.find_worst_xt(flag='intra_core')
 
+        max_length = find_max_length(source=self.chosen_path[0], destination=self.chosen_path[-1],
+                                     topology=self.properties['topology'])
         self.snr_obj.path = self.chosen_path
         _, path_xt = self.snr_obj.check_xt()
 
-        return path_xt
+        return path_xt, max_length
 
     @staticmethod
     def _get_baseline_reward(routed: bool, spectrum: dict, path_mod: str):  # pylint: disable=unused-argument
         return 1.0 if routed else -1.0
 
-    def _get_xt_percent_reward(self, routed: bool, spectrum: dict, path_mod: str):
+    def _get_ratio_reward(self, routed: bool, spectrum: dict, path_mod: str):
         if routed:
-            path_xt = self._path_xt_cost(spectrum=spectrum, path_mod=path_mod)
+            path_xt, longest_len = self._path_cost(spectrum=spectrum, path_mod=path_mod)
             # We want to consider the number of links not nodes, hence, minus one
-            return 1.0 - (path_xt / (self.xt_worst * float(len(self.chosen_path) - 1)))
+            q_term_one = path_xt / (self.xt_worst * float(len(self.chosen_path) - 1))
+
+            bandwidth_obj = self.properties['mod_per_bw'][self.chosen_bw]
+            slots_used = float(bandwidth_obj[path_mod]['slots_needed'])
+            max_slots = float(max(item['slots_needed'] for item in bandwidth_obj.values()))
+            q_term_two = slots_used / max_slots
+
+            path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
+            q_term_three = path_len / longest_len
+
+            return 3.0 - q_term_one - q_term_two - q_term_three
 
         return -1.0
 
@@ -190,11 +202,15 @@ class QLearning:
                 denominator = 1.0
             else:
                 # We want to consider the number of hops not nodes, hence, minus one
-                denominator = (float(len(self.chosen_path)) - 1) * adjacent_cores
+                slots_used = float(self.properties['mod_per_bw'][self.chosen_bw][path_mod]['slots_needed'])
+                path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
+                # Span length is a constant at 100 KM
+                num_span = path_len / 100.0
+                denominator = num_span * adjacent_cores * slots_used
 
             return numerator / denominator
 
-        return float(self.properties['erlang']) * -1.0
+        return -1.0
 
     def update_environment(self, routed: bool, spectrum: dict, path_mod: str):
         """

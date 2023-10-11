@@ -36,6 +36,29 @@ def get_path_mod(mod_formats: dict, path_len: int):
     return resp
 
 
+def find_max_length(source: int, destination: int, topology: nx.Graph):
+    """
+    Find the maximum path length possible.
+
+    :param source: The source node.
+    :type source: int
+
+    :param destination: The destination node.
+    :type destination: int
+
+    :param topology: The network topology.
+    :type topology: nx.Graph
+
+    :return: The length of the longest path possible.
+    :rtype: float
+    """
+    paths = list(nx.shortest_simple_paths(topology, source, destination))
+    longest_path = paths[-1]
+    resp = find_path_len(path=longest_path, topology=topology)
+
+    return resp
+
+
 def sort_nested_dict_vals(original_dict: dict, nested_key: str):
     """
     Sort a dictionary by a value which belongs to a nested key.

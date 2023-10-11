@@ -1,5 +1,6 @@
 # Standard library imports
 import json
+import signal
 
 # Third party library imports
 import networkx as nx
@@ -41,6 +42,7 @@ class Engine(SDNController):
         self.num_blocked_reqs = 0
         # The network spectrum database
         self.net_spec_db = dict()
+        self.iteration = 0
         # Used to track the total number of transponders in a simulation
         self.num_trans = 0
         # Used to take an average of the total amount of transponders for multiple simulation iterations
@@ -131,7 +133,7 @@ class Engine(SDNController):
 
         return free_slots
 
-    def _save_sim_results(self, iteration):
+    def _save_sim_results(self):
         """
         Saves the simulation results to a file like #_erlang.json.
 
@@ -154,10 +156,10 @@ class Engine(SDNController):
         self.stats_dict['ci_rate_block'] = self.block_ci_rate
         self.stats_dict['ci_percent_block'] = self.block_ci_percent
 
-        if iteration == 0:
+        if self.iteration == 0:
             self.stats_dict['sim_params'] = self.properties
 
-        self.stats_dict['misc_stats'][iteration] = {
+        self.stats_dict['misc_stats'][self.iteration] = {
             'trans_mean': np.mean(self.trans_arr),
             'block_reasons': self.block_reasons,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
@@ -185,7 +187,7 @@ class Engine(SDNController):
 
         self.properties['topology'] = tmp_topology
 
-    def _check_confidence_interval(self, iteration):
+    def _check_confidence_interval(self):
         """
         Checks if the confidence interval is high enough to stop the simulation.
 
@@ -209,13 +211,13 @@ class Engine(SDNController):
 
         if self.block_ci_percent <= 5:
             print(f"Confidence interval of {round(self.block_ci_percent, 2)}% reached on simulation "
-                  f"{iteration + 1}, ending and saving results for Erlang: {self.properties['erlang']}")
-            self._save_sim_results(iteration=iteration)
+                  f"{self.iteration + 1}, ending and saving results for Erlang: {self.properties['erlang']}")
+            self._save_sim_results()
             return True
 
         return False
 
-    def _calculate_block_percent(self, iteration):
+    def _calculate_block_percent(self):
         """
         Calculates the percentage of blocked requests for the current iteration and updates the blocking in the
         statistics dictionary.
@@ -232,7 +234,7 @@ class Engine(SDNController):
         else:
             block_percentage = self.num_blocked_reqs / self.properties['num_requests']
 
-        self.stats_dict['block_per_sim'][iteration] = block_percentage
+        self.stats_dict['block_per_sim'][self.iteration] = block_percentage
 
     def _handle_arrival(self, curr_time):
         """
@@ -362,7 +364,7 @@ class Engine(SDNController):
         """
         return np.zeros((num_cores, self.properties['spectral_slots']))
 
-    def _print_iter_stats(self, iteration):
+    def _print_iter_stats(self):
         """
         Print iteration statistics.
 
@@ -371,7 +373,7 @@ class Engine(SDNController):
 
         :return: None
         """
-        print(f"Iteration {iteration + 1} out of {self.properties['max_iters']} "
+        print(f"Iteration {self.iteration + 1} out of {self.properties['max_iters']} "
               f"completed for Erlang: {self.properties['erlang']}")
         block_percent_arr = np.array(list(self.stats_dict['block_per_sim'].values()))
         print(f'Mean of blocking: {np.mean(block_percent_arr)}')
@@ -477,10 +479,16 @@ class Engine(SDNController):
         :return: None
         """
         for iteration in range(self.properties["max_iters"]):
+            self.iteration = iteration
             self._init_iter_vars()
+
+            signal.signal(signal.SIGINT, self._save_sim_results)
+            signal.signal(signal.SIGTERM, self._save_sim_results)
 
             if self.properties['route_method'] == 'ai':
                 self.ai_obj.episode = iteration
+                signal.signal(signal.SIGINT, self.ai_obj.save)
+                signal.signal(signal.SIGTERM, self.ai_obj.save)
 
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.properties['erlang']} "
@@ -503,23 +511,23 @@ class Engine(SDNController):
                 else:
                     raise NotImplementedError
 
-            self._calculate_block_percent(iteration)
+            self._calculate_block_percent()
             self._update_blocking_distribution()
             self._update_transponders()
 
             # Some form of ML/RL is being used, ignore confidence intervals for training and testing
             if self.properties['ai_algorithm'] == 'None':
-                if self._check_confidence_interval(iteration):
+                if self._check_confidence_interval():
                     return
             else:
                 if not self.properties['ai_arguments']['is_training']:
-                    if self._check_confidence_interval(iteration):
+                    if self._check_confidence_interval():
                         return
 
             if (iteration + 1) % 20 == 0 or iteration == 0:
-                self._print_iter_stats(iteration)
+                self._print_iter_stats()
 
-            self._save_sim_results(iteration=iteration)
+            self._save_sim_results()
 
         print(f"Erlang: {self.properties['erlang']} finished for "
               f"simulation number: {self.properties['thread_num']}.")
