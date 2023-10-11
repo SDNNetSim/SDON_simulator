@@ -171,13 +171,13 @@ class QLearning:
         if routed:
             path_xt = self._path_xt_cost(spectrum=spectrum, path_mod=path_mod)
             # We want to consider the number of links not nodes, hence, minus one
-            return 1.0 - path_xt / (self.xt_worst * float(len(self.chosen_path) - 1))
+            return 1.0 - (path_xt / (self.xt_worst * float(len(self.chosen_path) - 1)))
 
         return -1.0
 
     def _get_xt_estimation_reward(self, routed: bool, spectrum: dict, path_mod: str):  # pylint: disable=unused-argument
         if routed:
-            numerator = float(self.properties['erlang']) / 10.0
+            numerator = float(self.properties['erlang'])
             adjacent_cores = 0
             for link in range(0, len(self.chosen_path) - 1):
                 link_nodes = (self.chosen_path[link], self.chosen_path[link + 1])
@@ -194,7 +194,7 @@ class QLearning:
 
             return numerator / denominator
 
-        return (float(self.properties['erlang']) * -1.0) / 10.0
+        return float(self.properties['erlang']) * -1.0
 
     def update_environment(self, routed: bool, spectrum: dict, path_mod: str):
         """

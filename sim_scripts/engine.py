@@ -13,6 +13,9 @@ from useful_functions.ai_functions import *  # pylint: disable=unused-wildcard-i
 from useful_functions.sim_functions import *  # pylint: disable=unused-wildcard-import
 
 
+# TODO: Flags to determine what we want and don't want to save
+
+
 class Engine(SDNController):
     """
     Controls the simulation.
@@ -71,7 +74,10 @@ class Engine(SDNController):
         # The time taken to route each request
         self.route_times = np.array([])
         # The weights calculated for each request, may be cross-talk, length again, or other weighted routing methods
-        self.path_weights = np.array([])
+        # TODO: Change to a dictionary
+        # TODO: Shouldn't path weights be initialized after each iter?
+        self.path_weights = dict()
+        self.mods_used = dict()
 
         # For the purposes of saving relevant simulation information to a certain pathway
         self.sim_info = f"{self.properties['network']}/{self.properties['date']}/{self.properties['sim_start']}"
@@ -131,10 +137,17 @@ class Engine(SDNController):
 
         :return: None
         """
-        # TODO: Commented for now
-        # for _, obj in self.request_snapshots.items():
-        #     for key, lst in obj.items():
-        #         obj[key] = np.mean(lst)
+        for _, obj in self.request_snapshots.items():
+            for key, lst in obj.items():
+                obj[key] = np.mean(lst)
+
+        for _, mod_obj in self.path_weights.items():
+            for modulation, lst in mod_obj.items():
+                if len(lst) == 0:
+                    mod_obj[modulation] = {'mean': 0, 'std': 0, 'min': 0, 'max': 0}
+                else:
+                    mod_obj[modulation] = {'mean': np.mean(lst), 'std': np.std(lst), 'min': np.min(lst),
+                                           'max': np.max(lst)}
 
         self.stats_dict['blocking_mean'] = self.blocking_mean
         self.stats_dict['blocking_variance'] = self.blocking_variance
@@ -148,15 +161,12 @@ class Engine(SDNController):
             'trans_mean': np.mean(self.trans_arr),
             'block_reasons': self.block_reasons,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
-            # TODO: Commented for now
-            # 'request_snapshots': self.request_snapshots,
+            'request_snapshots': self.request_snapshots,
             'hops': np.mean(self.hops),
             'route_times': np.mean(self.route_times),
             'path_lengths': np.mean(self.path_lens),
-            'weight_max': float(self.path_weights.max(initial=-np.inf)),
-            'weight_min': float(self.path_weights.min(initial=np.inf)),
-            'weight_mean': np.mean(self.path_weights),
-            'weight_std': np.std(self.path_weights)
+            'weight_info': self.path_weights,
+            'modulation_formats': self.mods_used,
         }
 
         base_fp = "data/output/"
@@ -270,8 +280,10 @@ class Engine(SDNController):
         self.hops = np.append(self.hops, len(response_data['path']) - 1)
         self.path_lens = np.append(self.path_lens, find_path_len(path=response_data['path'], topology=self.topology))
         self.route_times = np.append(self.route_times, response_data['route_time'])
+        path_mod = resp[0]['mod_format']
+        self.mods_used[self.chosen_bw][path_mod] += 1
         # TODO: This is always xt_cost for now
-        self.path_weights = np.append(self.path_weights, response_data['xt_cost'])
+        self.path_weights[self.chosen_bw][path_mod].append(response_data['xt_cost'])
 
         self.reqs_status.update({self.req_id: {
             "mod_format": response_data['mod_format'],
@@ -407,7 +419,7 @@ class Engine(SDNController):
             for block_type, num_times in self.block_reasons.items():
                 self.block_reasons[block_type] = num_times / float(self.num_blocked_reqs)
 
-    def _update_request_snapshots_dict(self, request_number, num_transponders):
+    def _update_request_snapshots_dict(self, request_number, num_transponders):  # pylint: disable=unused-argument
         """
         Updates the request snapshot dictionary with information about the current request.
 
@@ -417,16 +429,18 @@ class Engine(SDNController):
         :param num_transponders: The number of transponders the request used
         :type num_transponders: int
         """
-        occupied_slots, guard_bands = self._get_total_occupied_slots()
+        # TODO: Uncomment and add support for saving configurations for Q-Learning branch
+        # occupied_slots, guard_bands = self._get_total_occupied_slots()
 
-        self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
-        self.request_snapshots[request_number]['guard_bands'].append(guard_bands)
-        self.request_snapshots[request_number]['active_requests'].append(len(self.active_requests))
+        # self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
+        # self.request_snapshots[request_number]['guard_bands'].append(guard_bands)
+        # TODO: Need the above function for this line to work
+        # self.request_snapshots[request_number]['active_requests'].append(len(self.active_requests))
 
-        blocking_prob = self.num_blocked_reqs / request_number
-        self.request_snapshots[request_number]["blocking_prob"].append(blocking_prob)
+        # blocking_prob = self.num_blocked_reqs / request_number
+        # self.request_snapshots[request_number]["blocking_prob"].append(blocking_prob)
 
-        self.request_snapshots[request_number]['num_segments'].append(num_transponders)
+        # self.request_snapshots[request_number]['num_segments'].append(num_transponders)
 
     def _init_iter_vars(self):
         """
@@ -439,14 +453,22 @@ class Engine(SDNController):
         self.num_trans = 0
         self.num_blocked_reqs = 0
         self.reqs_status = dict()
-        for request_number in range(1, self.properties['num_requests'] + 1):
-            self.request_snapshots[request_number] = {
-                'occ_slots': [],
-                'guard_bands': [],
-                'blocking_prob': [],
-                'num_segments': [],
-                'active_requests': []
-            }
+        # TODO: Uncomment after save config variables added
+        # for request_number in range(0, self.properties['num_requests'] + 1, 2):
+        #     self.request_snapshots[request_number] = {
+        #         # 'occ_slots': [],
+        #         # 'guard_bands': [],
+        #         'blocking_prob': [],
+        #         # 'num_segments': [],
+        #         'active_requests': []
+        #     }
+        self.path_weights = dict()
+        for bandwidth, obj in self.properties['mod_per_bw'].items():
+            self.mods_used[bandwidth] = dict()
+            self.path_weights[bandwidth] = dict()
+            for modulation in obj.keys():
+                self.path_weights[bandwidth][modulation] = list()
+                self.mods_used[bandwidth][modulation] = 0
 
     def run(self):
         """
@@ -471,9 +493,9 @@ class Engine(SDNController):
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
-                    # TODO: Commented for now and removed num_transponders return
-                    self._handle_arrival(curr_time)
-                    # self._update_request_snapshots_dict(request_number, num_transponders)
+                    num_transponders = self._handle_arrival(curr_time)
+                    if request_number % 2 == 0:
+                        self._update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1
                 elif req_type == "release":
@@ -501,4 +523,3 @@ class Engine(SDNController):
 
         print(f"Erlang: {self.properties['erlang']} finished for "
               f"simulation number: {self.properties['thread_num']}.")
-        self._save_sim_results(iteration=self.properties['max_iters'] - 1)
