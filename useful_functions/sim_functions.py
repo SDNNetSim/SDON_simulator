@@ -284,6 +284,11 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
     elif properties['route_method'] == 'xt_aware':
         # TODO: Add xt_type to the configuration file
         resp = routing_obj.xt_aware(beta=properties['beta'], xt_type='with_length')
+    elif properties['route_method'] == 'xt_load_aware':
+        # TODO: Add xt_type to the configuration file
+        # TODO: Add checking modulation format and set slots_needed
+        routing_obj.slots_needed = 3
+        resp = routing_obj.xt_load_aware(beta=properties['beta'], xt_type='with_length')
     elif properties['route_method'] == 'least_congested':
         resp = routing_obj.least_congested_path()
     elif properties['route_method'] == 'shortest_path':
