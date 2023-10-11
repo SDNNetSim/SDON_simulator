@@ -1,5 +1,6 @@
 import configparser
 
+from useful_functions.handle_dirs_files import create_dir
 from config import config_constants
 
 
@@ -79,7 +80,9 @@ def read_config(args_obj: dict):
         config.read('config/run_ini/config.ini')
 
         if not config.has_section('s1') or not config.has_option('s1', 'sim_type'):
-            raise ValueError("Missing 's1' section in the configuration file or simulation type option.")
+            create_dir('config/run_ini')
+            raise ValueError("Missing 's1' section in the configuration file or simulation type option. "
+                             "Please ensure you have a file called config.ini in the run_ini directory.")
 
         if config['s1']['sim_type'] == 'arash':
             required_options = config_constants.ARASH_REQUIRED_OPTIONS
