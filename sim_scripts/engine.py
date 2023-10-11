@@ -13,6 +13,9 @@ from useful_functions.ai_functions import *  # pylint: disable=unused-wildcard-i
 from useful_functions.sim_functions import *  # pylint: disable=unused-wildcard-import
 
 
+# TODO: Flags to determine what we want and don't want to save
+
+
 class Engine(SDNController):
     """
     Controls the simulation.
@@ -71,7 +74,9 @@ class Engine(SDNController):
         # The time taken to route each request
         self.route_times = np.array([])
         # The weights calculated for each request, may be cross-talk, length again, or other weighted routing methods
-        self.path_weights = np.array([])
+        # TODO: Change to a dictionary
+        # TODO: Shouldn't path weights be initialized after each iter?
+        self.path_weights = dict()
         self.mods_used = dict()
 
         # For the purposes of saving relevant simulation information to a certain pathway
@@ -136,6 +141,14 @@ class Engine(SDNController):
             for key, lst in obj.items():
                 obj[key] = np.mean(lst)
 
+        for _, mod_obj in self.path_weights.items():
+            for modulation, lst in mod_obj.items():
+                if len(lst) == 0:
+                    mod_obj[modulation] = {'mean': 0, 'std': 0, 'min': 0, 'max': 0}
+                else:
+                    mod_obj[modulation] = {'mean': np.mean(lst), 'std': np.std(lst), 'min': np.min(lst),
+                                           'max': np.max(lst)}
+
         self.stats_dict['blocking_mean'] = self.blocking_mean
         self.stats_dict['blocking_variance'] = self.blocking_variance
         self.stats_dict['ci_rate_block'] = self.block_ci_rate
@@ -152,10 +165,7 @@ class Engine(SDNController):
             'hops': np.mean(self.hops),
             'route_times': np.mean(self.route_times),
             'path_lengths': np.mean(self.path_lens),
-            'weight_max': float(self.path_weights.max(initial=-np.inf)),
-            'weight_min': float(self.path_weights.min(initial=np.inf)),
-            'weight_mean': np.mean(self.path_weights),
-            'weight_std': np.std(self.path_weights),
+            'weight_info': self.path_weights,
             'modulation_formats': self.mods_used,
         }
 
@@ -252,8 +262,6 @@ class Engine(SDNController):
                 spectrum = resp[0]['spectrum']
                 routed = True
                 path_mod = resp[0]['mod_format']
-                # TODO: Generalize to work without AI too
-                self.mods_used[self.chosen_bw][path_mod] += 1
             self.ai_obj.update(routed=routed, spectrum=spectrum, path_mod=path_mod)
 
         # Request was blocked
@@ -272,8 +280,10 @@ class Engine(SDNController):
         self.hops = np.append(self.hops, len(response_data['path']) - 1)
         self.path_lens = np.append(self.path_lens, find_path_len(path=response_data['path'], topology=self.topology))
         self.route_times = np.append(self.route_times, response_data['route_time'])
+        path_mod = resp[0]['mod_format']
+        self.mods_used[self.chosen_bw][path_mod] += 1
         # TODO: This is always xt_cost for now
-        self.path_weights = np.append(self.path_weights, response_data['xt_cost'])
+        self.path_weights[self.chosen_bw][path_mod].append(response_data['xt_cost'])
 
         self.reqs_status.update({self.req_id: {
             "mod_format": response_data['mod_format'],
@@ -419,14 +429,16 @@ class Engine(SDNController):
         :param num_transponders: The number of transponders the request used
         :type num_transponders: int
         """
+        # TODO: Uncomment and add support for saving configurations for Q-Learning branch
         # occupied_slots, guard_bands = self._get_total_occupied_slots()
 
         # self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
         # self.request_snapshots[request_number]['guard_bands'].append(guard_bands)
-        self.request_snapshots[request_number]['active_requests'].append(len(self.active_requests))
+        # TODO: Need the above function for this line to work
+        # self.request_snapshots[request_number]['active_requests'].append(len(self.active_requests))
 
-        blocking_prob = self.num_blocked_reqs / request_number
-        self.request_snapshots[request_number]["blocking_prob"].append(blocking_prob)
+        # blocking_prob = self.num_blocked_reqs / request_number
+        # self.request_snapshots[request_number]["blocking_prob"].append(blocking_prob)
 
         # self.request_snapshots[request_number]['num_segments'].append(num_transponders)
 
@@ -441,17 +453,21 @@ class Engine(SDNController):
         self.num_trans = 0
         self.num_blocked_reqs = 0
         self.reqs_status = dict()
-        for request_number in range(0, self.properties['num_requests'] + 1, 2):
-            self.request_snapshots[request_number] = {
-                # 'occ_slots': [],
-                # 'guard_bands': [],
-                'blocking_prob': [],
-                # 'num_segments': [],
-                'active_requests': []
-            }
+        # TODO: Uncomment after save config variables added
+        # for request_number in range(0, self.properties['num_requests'] + 1, 2):
+        #     self.request_snapshots[request_number] = {
+        #         # 'occ_slots': [],
+        #         # 'guard_bands': [],
+        #         'blocking_prob': [],
+        #         # 'num_segments': [],
+        #         'active_requests': []
+        #     }
+        self.path_weights = dict()
         for bandwidth, obj in self.properties['mod_per_bw'].items():
             self.mods_used[bandwidth] = dict()
+            self.path_weights[bandwidth] = dict()
             for modulation in obj.keys():
+                self.path_weights[bandwidth][modulation] = list()
                 self.mods_used[bandwidth][modulation] = 0
 
     def run(self):
@@ -507,4 +523,3 @@ class Engine(SDNController):
 
         print(f"Erlang: {self.properties['erlang']} finished for "
               f"simulation number: {self.properties['thread_num']}.")
-        self._save_sim_results(iteration=self.properties['max_iters'] - 1)
