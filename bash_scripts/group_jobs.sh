@@ -7,7 +7,7 @@ if [[ $# -lt 1 ]]; then
 fi
 
 START_DATE=$(date -d "$1" "+%Y-%m-%d")
-GROUP_USERS=("ryan_mccann_student_uml_edu" "arash_rezaee_student_uml_edu" "shamsun_edib_student_uml_edu" "kenneth_watts_student_uml_edu")
+GROUP_USERS=("ryan_mccann_student_uml_edu" "arash_rezaee_student_uml_edu" "shamsunnahar_edib_student_uml_edu" "kenneth_watts_student_uml_edu")
 
 print_user_resources() {
     local user=$1
