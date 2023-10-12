@@ -240,7 +240,7 @@ def find_taken_channels(net_spec_db: dict, des_link: tuple):
 
 
 def get_route(properties: dict, source: str, destination: str, topology: nx.Graph, net_spec_db: dict, chosen_bw: str,
-              ai_obj: object):
+              ai_obj: object, modulation_format: str):
     """
     Given request information, attempt to find a route for the request for various routing methods.
 
@@ -287,7 +287,7 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
     elif properties['route_method'] == 'xt_load_aware':
         # TODO: Add xt_type to the configuration file
         # TODO: Add checking modulation format and set slots_needed
-        routing_obj.slots_needed = 3
+        routing_obj.slots_needed = routing_obj.mod_formats[modulation_format]['slots_needed']
         resp = routing_obj.xt_load_aware(beta=properties['beta'], xt_type='with_length')
     elif properties['route_method'] == 'least_congested':
         resp = routing_obj.least_congested_path()
