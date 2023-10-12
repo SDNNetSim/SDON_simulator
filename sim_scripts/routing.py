@@ -537,7 +537,6 @@ class Routing:
 
         # A constant score of 1000 if the link is fully congested
         if len(free_slots) == 0:
-            print('full')
             return 1000.0
 
         link_cost = xt_cost / num_free_slots
@@ -642,8 +641,6 @@ class Routing:
                 xt_cost, xt_cost_norm = self._find_xt_load_link_cost(free_channels=free_channels, link_num=link)
                 # Tradeoff between link length and the non-linear impairment cost
                 # TODO: Add to configuration file
-                if xt_cost != 0:
-                    print('xt')
                 if xt_type == 'with_length':
                     link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
                                 ((1 - beta) * xt_cost)
