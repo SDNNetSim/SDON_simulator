@@ -31,4 +31,5 @@ PARAMETERS = [
     ['route_method', str, ''],
     ['request_distribution', dict, ''],
     ['arrival_rate', dict, ''],
+    ['save_snapshots', bool, ''],
 ]

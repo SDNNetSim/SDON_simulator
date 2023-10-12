@@ -33,6 +33,7 @@ YUE_REQUIRED_OPTIONS = {
     'allocation_method': str,
     'route_method': str,
     'request_distribution': ast.literal_eval,
+    'save_snapshots': str_to_bool,
 }
 
 ARASH_REQUIRED_OPTIONS = {
@@ -55,6 +56,7 @@ ARASH_REQUIRED_OPTIONS = {
     'route_method': str,
     'request_distribution': ast.literal_eval,
     'beta': float,
+    'save_snapshots': str_to_bool,
 }
 
 OTHER_OPTIONS = {

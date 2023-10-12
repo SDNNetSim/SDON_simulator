@@ -431,18 +431,16 @@ class Engine(SDNController):
         :param num_transponders: The number of transponders the request used
         :type num_transponders: int
         """
-        # TODO: Update to work functionally
         occupied_slots, guard_bands = self._get_total_occupied_slots()
 
-        # self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
-        # self.request_snapshots[request_number]['guard_bands'].append(guard_bands)
-        # TODO: Need the above function for this line to work
+        self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
+        self.request_snapshots[request_number]['guard_bands'].append(guard_bands)
         self.request_snapshots[request_number]['active_requests'].append(len(self.active_requests))
 
         blocking_prob = self.num_blocked_reqs / request_number
         self.request_snapshots[request_number]["blocking_prob"].append(blocking_prob)
 
-        # self.request_snapshots[request_number]['num_segments'].append(num_transponders)
+        self.request_snapshots[request_number]['num_segments'].append(num_transponders)
 
     def _init_iter_vars(self):
         """
@@ -455,15 +453,17 @@ class Engine(SDNController):
         self.num_trans = 0
         self.num_blocked_reqs = 0
         self.reqs_status = dict()
-        # TODO: Update to work functionally
-        for request_number in range(0, self.properties['num_requests'] + 1, 5):
-            self.request_snapshots[request_number] = {
-                #         # 'occ_slots': [],
-                #         # 'guard_bands': [],
-                'blocking_prob': [],
-                #         # 'num_segments': [],
-                'active_requests': [],
-            }
+
+        if self.properties['save_snapshots']:
+            for request_number in range(0, self.properties['num_requests'] + 1, 5):
+                self.request_snapshots[request_number] = {
+                    'occ_slots': [],
+                    'guard_bands': [],
+                    'blocking_prob': [],
+                    'num_segments': [],
+                    'active_requests': [],
+                }
+
         self.path_weights = dict()
         for bandwidth, obj in self.properties['mod_per_bw'].items():
             self.mods_used[bandwidth] = dict()
@@ -502,8 +502,8 @@ class Engine(SDNController):
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
                     num_transponders = self._handle_arrival(curr_time)
-                    # TODO: Update to work functionally
-                    if request_number % 5 == 0:
+
+                    if request_number % 5 == 0 and self.properties['save_snapshots']:
                         self._update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1
