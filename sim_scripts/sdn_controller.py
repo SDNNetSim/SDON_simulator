@@ -287,10 +287,10 @@ class SDNController:
 
         return spectrum, xt_cost, mod_chosen
 
-    def _handle_routing(self):
+    def _handle_routing(self, modulation_format):
         resp = get_route(properties=self.sdn_props, source=self.source, destination=self.destination,
                          topology=self.topology, net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw,
-                         ai_obj=self.ai_obj)
+                         ai_obj=self.ai_obj, modulation_format =modulation_format)
         return resp
 
     def handle_event(self, request_type):
@@ -310,42 +310,79 @@ class SDNController:
         if request_type == "release":
             self.release()
             return self.net_spec_db
+        if self.sdn_props['route_method'] == 'xt_load_aware':
+            for mod in self.sdn_props['mod_per_bw'][self.chosen_bw].keys():
+                start_time = time.time()
+                paths, path_mods, path_weights = self._handle_routing(mod)
+                route_time = time.time() - start_time
 
-        start_time = time.time()
-        paths, path_mods, path_weights = self._handle_routing()
-        route_time = time.time() - start_time
+                for path, path_mod, path_weight in zip(paths, path_mods, path_weights):
+                    self.path = path
 
-        for path, path_mod, path_weight in zip(paths, path_mods, path_weights):
-            self.path = path
+                    # TODO: Spectrum assignment always overrides modulation format chosen when using check snr
+                    if path is not False:
+                        # if self.sdn_props['check_snr'] != 'None':
+                        #     mod_options = sort_nested_dict_vals(self.sdn_props['mod_per_bw'][self.chosen_bw],
+                        #                                         nested_key='max_length')
+                        # else:
+                        #     if path_mod is not False:
+                        #         mod_options = [path_mod]
+                        #     else:
+                        #         self.block_reason = 'distance'
+                        #         return False, self.block_reason, self.path
 
-            # TODO: Spectrum assignment always overrides modulation format chosen when using check snr
-            if path is not False:
-                if self.sdn_props['check_snr'] != 'None':
-                    mod_options = sort_nested_dict_vals(self.sdn_props['mod_per_bw'][self.chosen_bw],
-                                                        nested_key='max_length')
-                else:
-                    if path_mod is not False:
-                        mod_options = [path_mod]
+                        spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=[mod])
+                        # Request was blocked for this path
+                        if spectrum is False or spectrum is None:
+                            continue
+
+                        resp = {
+                            'path': self.path,
+                            'mod_format': modulation,
+                            'route_time': route_time,
+                            'path_weight': path_weight,
+                            'xt_cost': xt_cost,
+                            'is_sliced': False,
+                            'spectrum': spectrum
+                        }
+                        self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
+                        return resp, self.net_spec_db, self.num_transponders, self.path
+        else:
+            start_time = time.time()
+            paths, path_mods, path_weights = self._handle_routing()
+            route_time = time.time() - start_time
+
+            for path, path_mod, path_weight in zip(paths, path_mods, path_weights):
+                self.path = path
+
+                # TODO: Spectrum assignment always overrides modulation format chosen when using check snr
+                if path is not False:
+                    if self.sdn_props['check_snr'] != 'None':
+                        mod_options = sort_nested_dict_vals(self.sdn_props['mod_per_bw'][self.chosen_bw],
+                                                            nested_key='max_length')
                     else:
-                        self.block_reason = 'distance'
-                        return False, self.block_reason, self.path
+                        if path_mod is not False:
+                            mod_options = [path_mod]
+                        else:
+                            self.block_reason = 'distance'
+                            return False, self.block_reason, self.path
 
-                spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options)
-                # Request was blocked for this path
-                if spectrum is False or spectrum is None:
-                    continue
+                    spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options)
+                    # Request was blocked for this path
+                    if spectrum is False or spectrum is None:
+                        continue
 
-                resp = {
-                    'path': self.path,
-                    'mod_format': modulation,
-                    'route_time': route_time,
-                    'path_weight': path_weight,
-                    'xt_cost': xt_cost,
-                    'is_sliced': False,
-                    'spectrum': spectrum
-                }
-                self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
-                return resp, self.net_spec_db, self.num_transponders, self.path
+                    resp = {
+                        'path': self.path,
+                        'mod_format': modulation,
+                        'route_time': route_time,
+                        'path_weight': path_weight,
+                        'xt_cost': xt_cost,
+                        'is_sliced': False,
+                        'spectrum': spectrum
+                    }
+                    self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
+                    return resp, self.net_spec_db, self.num_transponders, self.path
 
         self.block_reason = 'distance'
         return False, self.block_reason, self.path
