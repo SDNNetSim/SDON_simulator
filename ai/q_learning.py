@@ -199,14 +199,13 @@ class QLearning:
 
             # No neighboring cores, reward the erlang value
             if adjacent_cores == 0:
-                denominator = 1.0
-            else:
-                # We want to consider the number of hops not nodes, hence, minus one
-                slots_used = float(self.properties['mod_per_bw'][self.chosen_bw][path_mod]['slots_needed'])
-                path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
-                # Span length is a constant at 100 KM
-                num_span = path_len / 100.0
-                denominator = num_span * adjacent_cores * slots_used
+                adjacent_cores = 1.0
+            # We want to consider the number of hops not nodes, hence, minus one
+            slots_used = float(self.properties['mod_per_bw'][self.chosen_bw][path_mod]['slots_needed'])
+            path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
+            # Span length is a constant at 100 KM
+            num_span = path_len / 100.0
+            denominator = num_span * adjacent_cores * slots_used
 
             return numerator / denominator
 
