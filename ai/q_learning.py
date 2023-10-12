@@ -185,7 +185,7 @@ class QLearning:
 
             return 3.0 - q_term_one - q_term_two - q_term_three
 
-        return -1.0
+        return -100.0
 
     def _get_xt_estimation_reward(self, routed: bool, spectrum: dict, path_mod: str):  # pylint: disable=unused-argument
         if routed:
@@ -210,7 +210,7 @@ class QLearning:
 
             return numerator / denominator
 
-        return -1.0
+        return -100.0
 
     def update_environment(self, routed: bool, spectrum: dict, path_mod: str):
         """
