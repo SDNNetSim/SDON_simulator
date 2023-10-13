@@ -48,10 +48,10 @@ class PlotStats:
 
     def _get_file_info(self):
         resp = dict()
-        for network, date, times in zip(self.net_names, self.dates, self.times):
+        for networks, dates, times in zip(self.net_names, self.dates, self.times):
             for sim_index, curr_time in enumerate(times):
-                resp[curr_time] = {'network': network, 'date': date, 'sims': dict()}
-                curr_dir = f'{self.base_dir}/{network}/{date}/{curr_time}'
+                resp[curr_time] = {'network': networks[sim_index], 'date': dates[sim_index], 'sims': dict()}
+                curr_dir = f'{self.base_dir}/{networks[sim_index]}/{dates[sim_index]}/{curr_time}'
 
                 # Sort by sim number
                 sim_dirs = os.listdir(curr_dir)
@@ -85,8 +85,8 @@ class PlotStats:
         # Remove duplicates but maintain order
         unique_list = []
         for item in input_list:
-            if item not in unique_list:
-                unique_list.append(item)
+            if item[0] not in unique_list:
+                unique_list.append(item[0])
 
         # If after removing duplicates there's more than one string, use "&" before the last string
         if len(unique_list) > 1:
@@ -118,6 +118,8 @@ class PlotStats:
         return np.array(extracted_values)
 
     def _find_algorithm(self):
+        # TODO: Change
+        num_requests = str(self.erlang_dict['sim_params']['num_requests'])[:2]
         route_method = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['route_method'])
         # TODO: Use eventually
         # alloc_method = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['allocation_method'])
@@ -125,10 +127,11 @@ class PlotStats:
         if route_method == 'Ai':
             policy = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['ai_arguments']['policy'])
             param = f"Policy={policy}"
+        # TODO: Change
         elif route_method == 'Xt Aware':
-            param = f"$\\beta$={self.erlang_dict['sim_params']['beta']}"
+            param = f"$\\beta$={self.erlang_dict['sim_params']['beta']} | {num_requests}k"
         else:
-            param = f"k={self.erlang_dict['sim_params']['k_paths']}"
+            param = f"k={self.erlang_dict['sim_params']['k_paths']}| {num_requests}k"
 
         algorithm = f'{param}'
         self.plot_dict[self.time][self.sim_num]['algorithm'] = algorithm
@@ -136,6 +139,7 @@ class PlotStats:
     def _get_rewards(self):
         base_path = f"../ai/models/q_tables/{self.network}/{self.date}"
         des_path = os.path.join(base_path, f"{self.time}/{self.sim_num}/{self.erlang}_params.json")
+
         with open(des_path, 'r', encoding='utf-8') as file_obj:
             file_content = json.load(file_obj)
 
@@ -144,7 +148,11 @@ class PlotStats:
             if episode == '0':
                 reward_matrix = np.array([curr_list])
             else:
-                reward_matrix = np.vstack((reward_matrix, curr_list))
+                try:
+                    reward_matrix = np.vstack((reward_matrix, curr_list))
+                except ValueError:
+                    print('Reward matrix did not reach a full 50,000 iterations. Continuing.')
+                    continue
 
         min_rewards = reward_matrix.min(axis=0, initial=np.inf).tolist()
         max_rewards = reward_matrix.max(axis=0, initial=np.inf * -1.0).tolist()
@@ -185,7 +193,13 @@ class PlotStats:
         path_lens = self._dict_to_list(self.erlang_dict['misc_stats'], 'path_lengths')
         hops = self._dict_to_list(self.erlang_dict['misc_stats'], 'hops')
         times = self._dict_to_list(self.erlang_dict['misc_stats'], 'route_times') * 10 ** 3
-        min_rewards, max_rewards, average_rewards = self._get_rewards()
+        if self.erlang_dict['sim_params']['ai_algorithm'] != 'None':
+            min_rewards, max_rewards, average_rewards = self._get_rewards()
+            self.plot_dict[self.time][self.sim_num]['min_rewards'].append(min_rewards)
+            self.plot_dict[self.time][self.sim_num]['max_rewards'].append(max_rewards)
+            self.plot_dict[self.time][self.sim_num]['average_rewards'].append(average_rewards)
+            self.plot_dict[self.time][self.sim_num]['time_steps'].append(np.arange(len(average_rewards)))
+
         xt_block = self._dict_to_list(self.erlang_dict['misc_stats'], 'xt_threshold', ['block_reasons'])
         cong_block = self._dict_to_list(self.erlang_dict['misc_stats'], 'congestion', ['block_reasons'])
         dist_block = self._dict_to_list(self.erlang_dict['misc_stats'], 'distance', ['block_reasons'])
@@ -200,10 +214,6 @@ class PlotStats:
         self.plot_dict[self.time][self.sim_num]['path_lengths'].append(average_len)
         self.plot_dict[self.time][self.sim_num]['hops'].append(average_hop)
         self.plot_dict[self.time][self.sim_num]['route_times'].append(average_times)
-        self.plot_dict[self.time][self.sim_num]['min_rewards'].append(min_rewards)
-        self.plot_dict[self.time][self.sim_num]['max_rewards'].append(max_rewards)
-        self.plot_dict[self.time][self.sim_num]['average_rewards'].append(average_rewards)
-        self.plot_dict[self.time][self.sim_num]['time_steps'].append(np.arange(len(average_rewards)))
         self.plot_dict[self.time][self.sim_num]['xt_block'].append(average_xt_block)
         self.plot_dict[self.time][self.sim_num]['cong_block'].append(average_cong_block)
         self.plot_dict[self.time][self.sim_num]['dist_block'].append(average_dist_block)
@@ -290,7 +300,7 @@ class PlotStats:
                     self._find_sim_info(network=obj['network'])
 
     def _save_plot(self, file_name: str):
-        file_path = f'./output/{self.net_names[-1]}/{self.dates[-1]}/{self.times[0][-1]}'
+        file_path = f'./output/{self.net_names[0][-1]}/{self.dates[0][-1]}/{self.times[0][-1]}'
         create_dir(file_path)
         plt.savefig(f'{file_path}/{file_name}_core{self.num_cores}.png')
 
@@ -380,7 +390,7 @@ class PlotStats:
             axis.set_xlabel('Bandwidths (Gbps)')
             axis.legend(['QPSK', '16-QAM', '64-QAM'])
 
-            axis.set_ylim(0, 15000)
+            axis.set_ylim(0, 17000)
             plt.tight_layout()
             self._save_plot(file_name=f"{file_name}_{policy.split('=')[1].lower()}_{erlangs[index]}")
             plt.show()
@@ -483,6 +493,7 @@ class PlotStats:
         self._plot_helper_one(x_vals='erlang_vals', y_vals=['blocking_vals'], file_name='average_bp')
 
 
+# TODO: Break into smaller functions
 def find_times(dates_networks: dict, filters: dict):
     """
     Given a list of dates, find simulations based on given parameters being the same. For example, each simulation
@@ -499,6 +510,8 @@ def find_times(dates_networks: dict, filters: dict):
     """
     resp_times = list()
     resp_sims = list()
+    resp_networks = list()
+    resp_dates = list()
     info_dict = dict()
     for curr_date, curr_network in dates_networks.items():
         times_path = f'../data/output/{curr_network}/{curr_date}'
@@ -517,38 +530,65 @@ def find_times(dates_networks: dict, filters: dict):
                     file_content = json.load(file_obj)
 
                 keep_config = True
-                for name, value in filters.items():
-                    if file_content['sim_params'][name] != value:
+                for name, lst in filters['not_filters'].items():
+                    # TODO: Generalize
+                    if file_content['sim_params'][name] not in lst:
                         keep_config = False
                         break
+                    else:
+                        if file_content['sim_params']['route_method'] == 'k_shortest_path':
+                            k = file_content['sim_params']['k_paths']
+                            if k != 1 and k != 5:
+                                keep_config = False
+                                break
+                        elif file_content['sim_params']['route_method'] == 'xt_aware':
+                            beta = file_content['sim_params']['beta']
+                            if beta != 0.4 and beta != 0.8:
+                                keep_config = False
+                                break
 
                 if keep_config:
                     if curr_time not in info_dict:
-                        info_dict[curr_time] = list()
-                    info_dict[curr_time].append(curr_sim)
+                        info_dict[curr_time] = {'sim_nums': list(), 'networks': list(), 'dates': list()}
+                    info_dict[curr_time]['sim_nums'].append(curr_sim)
+                    info_dict[curr_time]['networks'].append(curr_network)
+                    info_dict[curr_time]['dates'].append(curr_date)
 
-    for time, sim_nums in info_dict.items():
+    for time, obj in info_dict.items():
         resp_times.append([time])
-        resp_sims.append(sim_nums)
+        resp_sims.append(obj['sim_nums'])
+        resp_networks.append(obj['networks'])
+        resp_dates.append(obj['dates'])
 
-    return resp_times, resp_sims
+    return resp_times, resp_sims, resp_networks, resp_dates
 
 
 def main():
     """
     Controls this script.
     """
-    filters = {'ai_algorithm': 'q_learning', 'max_iters': 100}
-    sim_times, sim_nums = find_times(dates_networks={'1011': 'NSFNet'}, filters=filters)
-    plot_obj = PlotStats(net_names=['NSFNet'], dates=['1011'], times=sim_times, sims=sim_nums)
+    filters = {
+        'not_filters': {
+            'num_requests': [50000],
+            # 'max_iters': [100],
+            # 'spectral_slots': [256]
+        },
+        'in_filters': {
+            # 'k_paths': [1, 5],
+            # 'beta': [0.4, 0.8]
+        }
+    }
+    sim_times, sim_nums, networks, dates = find_times(
+        dates_networks={'1012': 'NSFNet'}, filters=filters)
+    plot_obj = PlotStats(net_names=networks, dates=dates, times=sim_times, sims=sim_nums)
 
-    # plot_obj.plot_blocking()
-    # plot_obj.plot_crosstalk()
-    # plot_obj.plot_path_length()
-    # plot_obj.plot_hops()
-    plot_obj.plot_rewards()
-    plot_obj.plot_block_reasons()
-    plot_obj.plot_mod_formats()
+    plot_obj.plot_blocking()
+    plot_obj.plot_crosstalk()
+    plot_obj.plot_path_length()
+    plot_obj.plot_hops()
+    # plot_obj.plot_rewards()
+    # plot_obj.plot_block_reasons()
+    # plot_obj.plot_mod_formats()
 
 
 if __name__ == '__main__':

@@ -185,7 +185,7 @@ class QLearning:
 
             return 3.0 - q_term_one - q_term_two - q_term_three
 
-        return -100.0
+        return -1200.0
 
     def _get_xt_estimation_reward(self, routed: bool, spectrum: dict, path_mod: str):  # pylint: disable=unused-argument
         if routed:
@@ -200,14 +200,13 @@ class QLearning:
             # No neighboring cores, reward the erlang value
             if adjacent_cores == 0:
                 adjacent_cores = 1.0
-            # We want to consider the number of hops not nodes, hence, minus one
             slots_used = float(self.properties['mod_per_bw'][self.chosen_bw][path_mod]['slots_needed'])
+            # TODO: Working on this
             path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
-            # Span length is a constant at 100 KM
-            num_span = path_len / 100.0
-            denominator = num_span * adjacent_cores * slots_used
+            # denominator = path_len * adjacent_cores * slots_used * float(len(self.chosen_path) - 1)
+            denominator = adjacent_cores * slots_used * float(len(self.chosen_path) - 1)
 
-            return numerator / denominator
+            return numerator - (adjacent_cores + slots_used + float(len(self.chosen_path)) + path_len)
 
         return -100.0
 
