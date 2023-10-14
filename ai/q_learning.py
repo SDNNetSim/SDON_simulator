@@ -4,6 +4,7 @@ import json
 
 # Third party imports
 import numpy as np
+import networkx as nx
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
@@ -21,6 +22,7 @@ class QLearning:
         """
         Initializes the QLearning class.
         """
+        # TODO: Need a K-Paths variable
         self.properties = properties
         self.ai_arguments = properties['ai_arguments']
         if self.ai_arguments['is_training']:
@@ -42,6 +44,7 @@ class QLearning:
         # The latest up-to-date network spectrum database
         self.net_spec_db = None
         self.xt_worst = None
+        self.k_paths = None
         self.reward_policies = {
             'baseline': self._get_baseline_reward,
             'ratio': self._get_ratio_reward,
@@ -148,8 +151,8 @@ class QLearning:
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
 
+    # TODO: Two of these policies will most likely need minor modifications
     def _path_cost(self, spectrum: dict, path_mod: str):
-        # TODO: Move the variables you can to somewhere in common instead of private methods
         self.snr_obj.net_spec_db = self.net_spec_db
         self.snr_obj.spectrum = spectrum
         self.snr_obj.assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
@@ -227,98 +230,67 @@ class QLearning:
         reward = self.reward_policies[policy](routed=routed, spectrum=spectrum, path_mod=path_mod)
         self._update_rewards_dict(reward=reward)
 
-        for i in range(len(self.chosen_path) - 1):
-            # Source node, current state
-            state = int(self.chosen_path[i])
-            # Destination node, new state
-            new_state = int(self.chosen_path[i + 1])
+        max_future_q = float('-inf')
+        current_q = None
+        path_index = None
+        source = int(self.chosen_path[0])
+        destination = int(self.chosen_path[-1])
+        for index, matrix in enumerate(self.q_table[source][destination]):
+            path = matrix[0]
+            curr_value = matrix[1]
 
-            # The terminating node, there is no future state (equal to reward for now)
-            if i + 1 == len(self.chosen_path):
-                max_future_q = reward
-            else:
-                max_future_q = np.nanargmax(self.q_table[new_state])
+            if path == self.chosen_path:
+                path_index = index
+                current_q = curr_value
 
-            current_q = self.q_table[(state, new_state)]
-            new_q = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + (
-                    self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q)))
+            if curr_value > max_future_q:
+                max_future_q = curr_value
 
-            self.q_table[(state, new_state)] = new_q
+        new_q = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + (
+                self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q)))
+
+        self.q_table[source][destination][path_index][1] = new_q
 
     def setup_environment(self):
         """
         Initializes the environment i.e., the Q-table.
         """
         num_nodes = len(list(self.properties['topology'].nodes()))
-        self.q_table = np.zeros((num_nodes, num_nodes))
+        self.k_paths = self.properties['k_paths']
+        self.q_table = [[[] for _ in range(num_nodes)] for _ in range(num_nodes)]
 
         for source in range(0, num_nodes):
             for destination in range(0, num_nodes):
                 # A node cannot be attached to itself
                 if source == destination:
-                    self.q_table[(source, destination)] = np.nan
                     continue
 
                 # A link exists between these two nodes
-                if str(source) in self.properties['topology'].neighbors((str(destination))):
-                    self.q_table[(source, destination)] = 0
-                else:
-                    self.q_table[(source, destination)] = np.nan
-
-    def _find_next_node(self, curr_node: int):
-        """
-        Sort through the Q-values in a given row (current node) and choose the best one. Note that we can't always
-        choose the maximum Q-value since we do not allow a node to be in the same path more than once.
-
-        :param curr_node: The current node number.
-        :type curr_node: int
-        """
-        array_to_sort = self.q_table[curr_node]
-        # Create a mask to ignore nan values
-        mask = ~np.isnan(array_to_sort)
-        # Sort ignoring non-nan values but keeping original indexes
-        sorted_indexes = np.argsort(-array_to_sort[mask])
-        sorted_original_indexes = np.where(mask)[0][sorted_indexes]
-
-        for next_node in sorted_original_indexes:
-            if str(next_node) not in self.chosen_path:
-                self.chosen_path.append(str(next_node))
-                return True, next_node
-
-        return False, None
+                shortest_paths = nx.shortest_simple_paths(self.properties['topology'], str(source), str(destination))
+                for k, curr_path in enumerate(shortest_paths):
+                    if k >= self.k_paths:
+                        break
+                    # Initial Q-values set to zero
+                    self.q_table[source][destination].append([curr_path, 0])
 
     def route(self):
         """
         Based on the Q-learning algorithm, find a route for any given request.
         """
-        self.chosen_path = [str(self.source)]
-        nodes = self.q_table[self.source]
+        random_float = np.round(np.random.uniform(0, 1), decimals=1)
+        if random_float < self.ai_arguments['epsilon']:
+            random_path = np.random.choice(self.k_paths)
+            # Always zero indexes because the next index is the corresponding q-value for that path
+            self.chosen_path = self.q_table[self.source][self.destination][random_path][0]
+        else:
+            max_value = float('-inf')
+            # Navigate the nested list
+            for outer_list in self.q_table[self.source][self.destination]:
+                if outer_list[1] > max_value:
+                    max_value = outer_list[1]
+                    self.chosen_path = outer_list[0]
 
-        curr_node = self.source
-        while True:
-            random_float = np.round(np.random.uniform(0, 1), decimals=1)
-            if random_float < self.ai_arguments['epsilon']:
-                found_next = False
-                next_node = None
-                random_options = np.random.choice(len(nodes), size=len(nodes), replace=False)
+        if len(self.chosen_path) == 0:
+            raise ValueError('The chosen path can not be None')
 
-                for random_node in random_options:
-                    if str(random_node) in self.chosen_path or np.isnan(self.q_table[(curr_node, random_node)]):
-                        continue
-                    self.chosen_path.append(str(random_node))
-                    next_node = random_node
-                    found_next = True
-                    break
-            else:
-                found_next, next_node = self._find_next_node(curr_node)
-
-            if found_next is not False:
-                if next_node == self.destination:
-                    return self.chosen_path
-
-                curr_node = next_node
-                nodes = self.q_table[next_node]
-                continue
-
-            # Q-routing chose too many nodes, no path found due to Q-routing constraint
-            return False
+        return self.chosen_path
