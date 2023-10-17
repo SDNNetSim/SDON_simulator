@@ -34,6 +34,7 @@ YUE_REQUIRED_OPTIONS = {
     'route_method': str,
     'request_distribution': ast.literal_eval,
     'save_snapshots': str_to_bool,
+    'xt_type': str,
 }
 
 ARASH_REQUIRED_OPTIONS = {
@@ -57,6 +58,7 @@ ARASH_REQUIRED_OPTIONS = {
     'request_distribution': ast.literal_eval,
     'beta': float,
     'save_snapshots': str_to_bool,
+    'xt_type': str,
 }
 
 OTHER_OPTIONS = {
@@ -73,4 +75,5 @@ OTHER_OPTIONS = {
     'xt_noise': str_to_bool,
     'requested_xt': ast.literal_eval,
     'k_paths': int,
+    'xt_type': str,
 }

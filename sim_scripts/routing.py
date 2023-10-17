@@ -519,8 +519,10 @@ class Routing:
             if xt_type == 'with_length':
                 link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
                             ((1 - beta) * xt_cost)
-            else:
+            elif xt_type == 'without_length':
                 link_cost = num_spans * xt_cost
+            else:
+                raise ValueError('XT type not recognized.')
 
             # At the moment, we have identical bi-directional links
             self.topology[source][destination]['xt_cost'] = link_cost

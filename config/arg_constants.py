@@ -32,4 +32,5 @@ PARAMETERS = [
     ['request_distribution', dict, ''],
     ['arrival_rate', dict, ''],
     ['save_snapshots', bool, ''],
+    ['xt_type', str, ''],
 ]

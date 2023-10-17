@@ -306,7 +306,7 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
         resp = routing_obj.nli_aware()
     elif properties['route_method'] == 'xt_aware':
         # TODO: Add xt_type to the configuration file
-        resp = routing_obj.xt_aware(beta=properties['beta'], xt_type='with_length')
+        resp = routing_obj.xt_aware(beta=properties['beta'], xt_type=properties['xt_type'])
     elif properties['route_method'] == 'least_congested':
         resp = routing_obj.least_congested_path()
     elif properties['route_method'] == 'shortest_path':
