@@ -472,6 +472,8 @@ class Engine(SDNController):
                 self.path_weights[bandwidth][modulation] = list()
                 self.mods_used[bandwidth][modulation] = 0
 
+            self.block_per_bw[bandwidth] = 0
+
     def run(self):
         """
         Runs the SDN simulation.
