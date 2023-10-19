@@ -143,6 +143,24 @@ class Engine(SDNController):
             for key, lst in obj.items():
                 obj[key] = np.mean(lst)
 
+        for _, mod_obj in self.path_weights.items():
+            for modulation, lst in mod_obj.items():
+                # Modulation was never used
+                if len(lst) == 0:
+                    mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
+                else:
+                    min_max_lst = list()
+                    average_list = list()
+                    for curr_value in lst:
+                        if curr_value == 0.0:
+                            average_list.append(curr_value)
+                        else:
+                            min_max_lst.append(10.0 ** (curr_value / 10.0))
+                            average_list.append(10.0 ** (curr_value / 10.0))
+                    mod_obj[modulation] = {'mean': np.mean(average_list), 'std': np.std(average_list),
+                                           'min': np.min(min_max_lst), 'max': np.max(min_max_lst),
+                                           'min_0': np.min(average_list)}
+
         self.stats_dict['blocking_mean'] = self.blocking_mean
         self.stats_dict['blocking_variance'] = self.blocking_variance
         self.stats_dict['ci_rate_block'] = self.block_ci_rate
@@ -156,9 +174,11 @@ class Engine(SDNController):
             'block_reasons': self.block_reasons,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
             'request_snapshots': self.request_snapshots,
-            'hops': list(self.hops),
+            'hops': {'mean': np.mean(self.hops), 'min': np.min(self.hops),
+                     'max': np.max(self.hops)},
             'route_times': np.mean(self.route_times),
-            'path_lengths': list(self.path_lens),
+            'path_lengths': {'mean': np.mean(self.path_lens), 'min': np.min(self.path_lens),
+                             'max': np.max(self.path_lens)},
             'weight_info': self.path_weights,
             'modulation_formats': self.mods_used,
         }
