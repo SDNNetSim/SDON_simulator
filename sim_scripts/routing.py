@@ -536,7 +536,7 @@ class Routing:
                 xt_cost += num_overlapped
 
         # A constant score of 1000 if the link is fully congested
-        if len(free_slots) == 0:
+        if sum(len(matrix) for matrix in free_slots.values()) == 0: 
             return 1000.0
 
         link_cost = xt_cost / num_free_slots
@@ -633,9 +633,9 @@ class Routing:
             num_spans = self.topology[source][destination]['length'] / self.span_len
 
             free_slots = self.find_free_slots(net_spec_db=self.net_spec_db, des_link=link)
-            free_channels = self.find_free_channels(net_spec_db=self.net_spec_db, slots_needed=self.slots_needed,
-                                                des_link=link)
-            if len(free_channels) == 0: 
+            free_channels = self.find_free_channels(net_spec_db=self.net_spec_db, slots_needed=self.slots_needed + self.guard_slots,
+                                    des_link=link)
+            if sum(len(matrix) for matrix in free_channels.values()) == 0: 
                 link_cost = 1000
             else:
                 xt_cost, xt_cost_norm = self._find_xt_load_link_cost(free_channels=free_channels, link_num=link)

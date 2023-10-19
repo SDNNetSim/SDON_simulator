@@ -314,6 +314,7 @@ class SDNController:
             for mod in self.sdn_props['mod_per_bw'][self.chosen_bw].keys():
                 start_time = time.time()
                 paths, path_mods, path_weights = self._handle_routing(mod)
+                path_mods = [mod]
                 route_time = time.time() - start_time
 
                 for path, path_mod, path_weight in zip(paths, path_mods, path_weights):
@@ -349,7 +350,7 @@ class SDNController:
                         return resp, self.net_spec_db, self.num_transponders, self.path
         else:
             start_time = time.time()
-            paths, path_mods, path_weights = self._handle_routing()
+            paths, path_mods, path_weights = self._handle_routing(modulation_format = None)
             route_time = time.time() - start_time
 
             for path, path_mod, path_weight in zip(paths, path_mods, path_weights):

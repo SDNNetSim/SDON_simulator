@@ -339,6 +339,9 @@ class Engine(SDNController):
             # Add links to physical topology
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
         # TODO: Change self.topology to this variable
+        nx.draw(self.topology, with_labels=True, node_size=500, node_color='lightblue', font_size=12, font_color='black')
+        import matplotlib.pyplot as plt
+        plt.show()
         self.properties['topology'] = self.topology
 
     def _create_cores_matrix(self, num_cores):
