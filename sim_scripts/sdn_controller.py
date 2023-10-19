@@ -326,7 +326,7 @@ class SDNController:
                     raise ValueError('You must check that max lengths are not zero!')
                 else:
                     if path_mod is not False:
-                        mod_options = [path_mod]
+                        mod_options = path_mod
                     else:
                         self.block_reason = 'distance'
                         return False, self.block_reason, self.path
@@ -334,6 +334,7 @@ class SDNController:
                 spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options)
                 # Request was blocked for this path
                 if spectrum is False or spectrum is None:
+                    self.block_reason = 'congestion'
                     continue
 
                 resp = {
