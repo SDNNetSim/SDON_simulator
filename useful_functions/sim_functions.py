@@ -72,9 +72,9 @@ def sort_nested_dict_vals(original_dict: dict, nested_key: str):
     :return: The sorted dictionary (ascending).
     :rtype: dict
     """
-    sorted_dict = OrderedDict(sorted(original_dict.items(), key=lambda x: x[1][nested_key]))
-
-    return dict(sorted_dict)
+    sorted_items = sorted(original_dict.items(), key=lambda x: x[1][nested_key])
+    sorted_dict = dict(sorted_items)
+    return sorted_dict
 
 
 def sort_dict_keys(dictionary: dict):
@@ -374,7 +374,7 @@ def get_spectrum(properties: dict, chosen_bw: str, path: list, net_spec_db: dict
     xt_cost = None
 
     if spectrum is not False:
-        if properties['check_snr'] != 'None':
+        if properties['check_snr'] != 'None' and properties['check_snr'] is not None:
             _update_snr_obj(snr_obj=snr_obj, spectrum=spectrum, path=path, path_mod=path_mod,
                             spectral_slots=properties['spectral_slots'], net_spec_db=net_spec_db)
             snr_check, xt_cost = handle_snr(check_snr=properties['check_snr'], snr_obj=snr_obj)
