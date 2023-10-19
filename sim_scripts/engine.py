@@ -143,14 +143,6 @@ class Engine(SDNController):
             for key, lst in obj.items():
                 obj[key] = np.mean(lst)
 
-        for _, mod_obj in self.path_weights.items():
-            for modulation, lst in mod_obj.items():
-                if len(lst) == 0:
-                    mod_obj[modulation] = {'mean': 0, 'std': 0, 'min': 0, 'max': 0}
-                else:
-                    mod_obj[modulation] = {'mean': np.mean(lst), 'std': np.std(lst), 'min': np.min(lst),
-                                           'max': np.max(lst)}
-
         self.stats_dict['blocking_mean'] = self.blocking_mean
         self.stats_dict['blocking_variance'] = self.blocking_variance
         self.stats_dict['ci_rate_block'] = self.block_ci_rate
@@ -164,9 +156,9 @@ class Engine(SDNController):
             'block_reasons': self.block_reasons,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
             'request_snapshots': self.request_snapshots,
-            'hops': np.mean(self.hops),
+            'hops': self.hops,
             'route_times': np.mean(self.route_times),
-            'path_lengths': np.mean(self.path_lens),
+            'path_lengths': self.path_lens,
             'weight_info': self.path_weights,
             'modulation_formats': self.mods_used,
         }
