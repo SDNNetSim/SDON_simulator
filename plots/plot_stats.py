@@ -42,7 +42,7 @@ class PlotStats:
         self.colors = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
         self.markers = ['o', '^', 's', 'x']
-        self.x_ticks = list(range(200, 1000, 50))
+        self.x_ticks = list(range(10, 720, 50))
 
         self._get_data()
 
@@ -118,20 +118,24 @@ class PlotStats:
         return np.array(extracted_values)
 
     def _find_algorithm(self):
-        # TODO: Change
         num_requests = str(self.erlang_dict['sim_params']['num_requests'])[:2]
         route_method = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['route_method'])
-        # TODO: Use eventually
         # alloc_method = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['allocation_method'])
 
         if route_method == 'Ai':
             policy = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['ai_arguments']['policy'])
             param = f"Policy={policy}"
-        # TODO: Change
         elif route_method == 'Xt Aware':
-            param = f"$\\beta$={self.erlang_dict['sim_params']['beta']} | {num_requests}k"
+            xt_type = self.erlang_dict['sim_params']['xt_type']
+            if xt_type == 'with_length':
+                param = f"$\\beta$={self.erlang_dict['sim_params']['beta']}"
+            else:
+                param = f"Span * XT"
+        elif self.erlang_dict['sim_params']['sim_type'] == 'yue':
+            cores_used = self.erlang_dict['sim_params']['cores_per_link']
+            param = f"C={cores_used}"
         else:
-            param = f"k={self.erlang_dict['sim_params']['k_paths']}| {num_requests}k"
+            param = f"k={self.erlang_dict['sim_params']['k_paths']}"
 
         algorithm = f'{param}'
         self.plot_dict[self.time][self.sim_num]['algorithm'] = algorithm
@@ -143,20 +147,9 @@ class PlotStats:
         with open(des_path, 'r', encoding='utf-8') as file_obj:
             file_content = json.load(file_obj)
 
-        reward_matrix = np.array([])
-        for episode, curr_list in file_content['reward_info']['rewards'].items():
-            if episode == '0':
-                reward_matrix = np.array([curr_list])
-            else:
-                try:
-                    reward_matrix = np.vstack((reward_matrix, curr_list))
-                except ValueError:
-                    print('Reward matrix did not reach a full 50,000 iterations. Continuing.')
-                    continue
-
-        min_rewards = reward_matrix.min(axis=0, initial=np.inf).tolist()
-        max_rewards = reward_matrix.max(axis=0, initial=np.inf * -1.0).tolist()
-        average_rewards = np.mean(reward_matrix, axis=0).tolist()
+        min_rewards = file_content['reward_info']['min']
+        max_rewards = file_content['reward_info']['max']
+        average_rewards = file_content['reward_info']['average']
 
         return min_rewards, max_rewards, average_rewards
 
@@ -190,8 +183,8 @@ class PlotStats:
                         modulation_info[bandwidth][modulation].append(np.mean(mod_usages))
 
     def _find_misc_stats(self):
-        path_lens = self._dict_to_list(self.erlang_dict['misc_stats'], 'path_lengths')
-        hops = self._dict_to_list(self.erlang_dict['misc_stats'], 'hops')
+        path_lens = self._dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['path_lengths'])
+        hops = self._dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['hops'])
         times = self._dict_to_list(self.erlang_dict['misc_stats'], 'route_times') * 10 ** 3
         if self.erlang_dict['sim_params']['ai_algorithm'] != 'None':
             min_rewards, max_rewards, average_rewards = self._get_rewards()
@@ -200,21 +193,18 @@ class PlotStats:
             self.plot_dict[self.time][self.sim_num]['average_rewards'].append(average_rewards)
             self.plot_dict[self.time][self.sim_num]['time_steps'].append(np.arange(len(average_rewards)))
 
-        xt_block = self._dict_to_list(self.erlang_dict['misc_stats'], 'xt_threshold', ['block_reasons'])
         cong_block = self._dict_to_list(self.erlang_dict['misc_stats'], 'congestion', ['block_reasons'])
         dist_block = self._dict_to_list(self.erlang_dict['misc_stats'], 'distance', ['block_reasons'])
 
         average_len = np.mean(path_lens)
         average_hop = np.mean(hops)
         average_times = np.mean(times)
-        average_xt_block = np.mean(xt_block)
         average_cong_block = np.mean(cong_block)
         average_dist_block = np.mean(dist_block)
 
         self.plot_dict[self.time][self.sim_num]['path_lengths'].append(average_len)
         self.plot_dict[self.time][self.sim_num]['hops'].append(average_hop)
         self.plot_dict[self.time][self.sim_num]['route_times'].append(average_times)
-        self.plot_dict[self.time][self.sim_num]['xt_block'].append(average_xt_block)
         self.plot_dict[self.time][self.sim_num]['cong_block'].append(average_cong_block)
         self.plot_dict[self.time][self.sim_num]['dist_block'].append(average_dist_block)
 
@@ -238,10 +228,12 @@ class PlotStats:
             std_vals = self._dict_to_list(mod_dict, 'std', [modulation])
             std_xt = np.mean(std_vals)
             min_xt = xt_vals.min(initial=np.inf)
+            max_xt = xt_vals.max(initial=-10000)
 
             self.plot_dict[self.time][self.sim_num]['mod_xt'][modulation]['mean'].append(average_xt)
             self.plot_dict[self.time][self.sim_num]['mod_xt'][modulation]['std'].append(std_xt)
             self.plot_dict[self.time][self.sim_num]['mod_xt'][modulation]['min'].append(min_xt)
+            self.plot_dict[self.time][self.sim_num]['mod_xt'][modulation]['max'].append(max_xt)
 
     def _update_plot_dict(self):
         if self.plot_dict is None:
@@ -264,9 +256,9 @@ class PlotStats:
             'dist_block': [],
             'cong_block': [],
             'mod_xt': {
-                'QPSK': {'mean': [], 'std': [], 'min': []},
-                '16-QAM': {'mean': [], 'std': [], 'min': []},
-                '64-QAM': {'mean': [], 'std': [], 'min': []},
+                'QPSK': {'mean': [], 'std': [], 'min': [], 'max': []},
+                '16-QAM': {'mean': [], 'std': [], 'min': [], 'max': []},
+                '64-QAM': {'mean': [], 'std': [], 'min': [], 'max': []},
             },
             'holding_time': None,
             'cores_per_link': None,
@@ -293,7 +285,11 @@ class PlotStats:
 
                     self.erlang_dict = erlang_dict
                     self._find_blocking()
-                    self._find_crosstalk()
+
+                    check_snr = self.erlang_dict['sim_params']['check_snr']
+                    if check_snr != 'None' and check_snr is not None:
+                        self._find_crosstalk()
+
                     self._find_algorithm()
                     self._find_modulation_info()
                     self._find_misc_stats()
@@ -306,7 +302,7 @@ class PlotStats:
 
     def _setup_plot(self, title, y_label, x_label, grid=True, y_ticks=True, y_lim=False, x_ticks=True):
         plt.figure(figsize=(7, 5), dpi=300)
-        plt.title(f"{self.title_names} {title} R={self.num_requests} | C={self.num_cores}")
+        plt.title(f"{self.title_names} {title} R={self.num_requests}")
         plt.ylabel(y_label)
         plt.xlabel(x_label)
 
@@ -367,6 +363,9 @@ class PlotStats:
                 policy = sim_obj['algorithm']
 
                 for bandwidth, mod_objs in sim_obj['modulations'].items():
+                    # TODO: Change
+                    if bandwidth == '100':
+                        continue
                     data[bandwidth] = list()
                     for _, usages in mod_objs.items():
                         data[bandwidth].append(usages)
@@ -401,6 +400,8 @@ class PlotStats:
             for _, sim_obj in objs.items():
                 if sim_obj['algorithm'][0] == 'k':
                     style = 'dashed'
+                elif sim_obj['algorithm'] == 'Span * XT':
+                    style = 'dashdot'
                 else:
                     style = 'solid'
 
@@ -431,7 +432,7 @@ class PlotStats:
         """
         Plots the modulation format usage per bandwidth.
         """
-        self._plot_helper_two(file_name='mods', erlang_indexes=[0, 8, -1])
+        self._plot_helper_two(file_name='mods', erlang_indexes=[0, 5, 11])
 
     def plot_block_reasons(self):
         """
@@ -448,7 +449,7 @@ class PlotStats:
         self._setup_plot("Average Rewards requests", 'Average Reward', 'Time Steps (Request Numbers)',
                          y_ticks=False, x_ticks=False)
         self._plot_helper_one(x_vals='time_steps', y_vals=['average_rewards'], file_name='average_rewards',
-                              reward_flag=[0, 8, -1])
+                              reward_flag=[-1])
 
     def plot_times(self):
         """
@@ -477,19 +478,27 @@ class PlotStats:
         """
         mod_formats = ['QPSK', '16-QAM', '64-QAM']
         for curr_format in mod_formats:
-            self._setup_plot(f'{curr_format} Average XT vs. Erlang', 'Crosstalk (dB)', 'Erlang', y_ticks=False)
-            self._plot_helper_one(x_vals='erlang_vals', y_vals=['mean'], file_name=f'average_xt_{curr_format}',
-                                  xt_flag=curr_format)
+            # self._setup_plot(f'{curr_format} Average XT vs. Erlang', 'Crosstalk (dB)', 'Erlang', y_ticks=False)
+            # self._plot_helper_one(x_vals='erlang_vals', y_vals=['mean'], file_name=f'average_xt_{curr_format}',
+            #                       xt_flag=curr_format)
 
-            self._setup_plot(f'{curr_format} Min XT vs. Erlang', 'Crosstalk (dB)', 'Erlang', y_ticks=False)
+            self._setup_plot(f'{curr_format} Best XT vs. Erlang', 'Crosstalk (dB)', 'Erlang', y_ticks=False)
             self._plot_helper_one(x_vals='erlang_vals', y_vals=['min'], file_name=f'min_xt_{curr_format}',
                                   xt_flag=curr_format)
+
+            # self._setup_plot(f'{curr_format} Max XT vs. Erlang', 'Crosstalk (dB)', 'Erlang', y_ticks=False)
+            # self._plot_helper_one(x_vals='erlang_vals', y_vals=['max'], file_name=f'max_xt_{curr_format}',
+            #                       xt_flag=curr_format)
+
+    def plot_bandwidth_blocking(self):
+        self._setup_plot("Weighted Blocking. vs. Erlang", 'Weighted BP', 'Erlang', y_ticks=True)
+        self._plot_helper_one(x_vals='erlang_vals', y_vals=['band_blocking'], file_name='weighted_bp')
 
     def plot_blocking(self):
         """
         Plots the average blocking probability for each Erlang value.
         """
-        self._setup_plot("Average Blocking Prob. vs. Erlang", 'Average Blocking Probability', 'Erlang', y_ticks=False)
+        self._setup_plot("Average Blocking Prob. vs. Erlang", 'Average Blocking Probability', 'Erlang', y_ticks=True)
         self._plot_helper_one(x_vals='erlang_vals', y_vals=['blocking_vals'], file_name='average_bp')
 
 
@@ -569,7 +578,7 @@ def main():
     """
     filters = {
         'not_filters': {
-            'num_requests': [50000],
+            # 'num_requests': [50000],
             # 'max_iters': [100],
             # 'spectral_slots': [256]
         },
@@ -579,16 +588,17 @@ def main():
         }
     }
     sim_times, sim_nums, networks, dates = find_times(
-        dates_networks={'1012': 'NSFNet'}, filters=filters)
+        dates_networks={'1019': 'USNet'}, filters=filters)
     plot_obj = PlotStats(net_names=networks, dates=dates, times=sim_times, sims=sim_nums)
 
     plot_obj.plot_blocking()
-    plot_obj.plot_crosstalk()
+    # plot_obj.plot_crosstalk()
     plot_obj.plot_path_length()
     plot_obj.plot_hops()
     # plot_obj.plot_rewards()
     # plot_obj.plot_block_reasons()
     # plot_obj.plot_mod_formats()
+    # plot_obj.plot_bandwidth_blocking()
 
 
 if __name__ == '__main__':
