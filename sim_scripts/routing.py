@@ -78,6 +78,7 @@ class Routing:
         self.max_link = max(nx.get_edge_attributes(topology, 'length').values(), default=0.0)
         # Length for one span in km
         self.span_len = 100.0
+        self.max_span = self.max_link / self.span_len
 
         self.find_free_slots = useful_functions.sim_functions.find_free_slots
         self.find_free_channels = useful_functions.sim_functions.find_free_channels
@@ -487,7 +488,7 @@ class Routing:
                 xt_cost += num_overlapped
 
         # A constant score of 1000 if the link is fully congested
-        if len(free_slots) == 0:
+        if num_free_slots == 0:
             return 1000.0
 
         link_cost = xt_cost / num_free_slots
@@ -515,12 +516,11 @@ class Routing:
             free_slots = self.find_free_slots(net_spec_db=self.net_spec_db, des_link=link)
             xt_cost = self._find_xt_link_cost(free_slots=free_slots, link_num=link)
             # Tradeoff between link length and the non-linear impairment cost
-            # TODO: Add to configuration file
             if xt_type == 'with_length':
                 link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
                             ((1 - beta) * xt_cost)
             elif xt_type == 'without_length':
-                link_cost = num_spans * xt_cost
+                link_cost = (num_spans / self.max_span) * xt_cost
             else:
                 raise ValueError('XT type not recognized.')
 
