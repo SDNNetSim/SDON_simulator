@@ -323,6 +323,10 @@ class SDNController:
                 if self.sdn_props['check_snr'] != 'None':
                     mod_options = sort_nested_dict_vals(self.sdn_props['mod_per_bw'][self.chosen_bw],
                                                         nested_key='max_length')
+                    # TODO: Change
+                    mod_options = {'64-QAM': {'max_length': 100, 'slots_needed': 1},
+                                   '16-QAM': {'max_length': 500, 'slots_needed': 2},
+                                   'QPSK': {'max_length': 1700, 'slots_needed': 3}}
                 else:
                     if path_mod is not False:
                         mod_options = [path_mod]
