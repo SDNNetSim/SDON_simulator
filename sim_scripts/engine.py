@@ -156,10 +156,10 @@ class Engine(SDNController):
             'block_reasons': self.block_reasons,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
             'request_snapshots': self.request_snapshots,
-            'hops': self.hops,
+            'hops': list(self.hops),
             'route_times': np.mean(self.route_times),
-            'path_lengths': self.path_lens,
-            'weight_info': self.path_weights,
+            'path_lengths': list(self.path_lens),
+            'weight_info': list(self.path_weights),
             'modulation_formats': self.mods_used,
         }
 
