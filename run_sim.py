@@ -179,8 +179,8 @@ class NetworkSimulator:
 
         if self.properties['sim_type'] == 'yue':
             self.run_yue()
-
-        self.run_arash()
+        else:
+            self.run_arash()
 
 
 def run(threads_obj: dict):
