@@ -8,7 +8,7 @@ import networkx as nx
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
-from useful_functions.sim_functions import find_max_length, find_path_len
+from useful_functions.sim_functions import find_path_len, find_path_congestion
 from sim_scripts.routing import Routing
 
 
@@ -46,6 +46,14 @@ class QLearning:
         self.reward_policies = {
             'baseline': self._get_baseline_reward,
             'policy_one': self._get_policy_one,
+            'policy_two': self._get_policy_two,
+            'policy_three': self._get_policy_three,
+            'policy_four': self._get_policy_four,
+            'policy_five': self._get_policy_five,
+            'policy_six': self._get_policy_six,
+            'policy_seven': self._get_policy_seven,
+            'policy_eight': self._get_policy_eight,
+            'policy_nine': self._get_policy_nine,
         }
         # Simulation methods related to routing
         self.routing_obj = Routing(beta=properties['beta'], topology=properties['topology'],
@@ -147,30 +155,95 @@ class QLearning:
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
 
-    def _path_cost(self):
-        max_length = find_max_length(source=self.chosen_path[0], destination=self.chosen_path[-1],
-                                     topology=self.properties['topology'])
-
-        return max_length
-
     @staticmethod
     def _get_baseline_reward(routed: bool, path_mod: str):  # pylint: disable=unused-argument
         return 1.0 if routed else -1.0
 
     def _get_policy_one(self, routed: bool, path_mod: str):
+        congestion = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
+
         if routed:
-            longest_len = self._path_cost()
-            bandwidth_obj = self.properties['mod_per_bw'][self.chosen_bw]
-            slots_used = float(bandwidth_obj[path_mod]['slots_needed'])
-            max_slots = float(max(item['slots_needed'] for item in bandwidth_obj.values()))
-            q_term_one = slots_used / max_slots
+            reward = (1 / congestion)
+            return reward
 
-            path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
-            q_term_two = path_len / longest_len
+        return -100.0
 
-            return 3.0 - q_term_one - q_term_two
+    def _get_policy_two(self, routed: bool, path_mod: str):
+        congestion = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
 
-        return -20.0
+        if routed:
+            reward = (1 / congestion) * 10.0
+            return reward
+
+        return -1.0
+
+    def _get_policy_three(self, routed: bool, path_mod: str):
+        congestion = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
+
+        if routed:
+            reward = (1 / congestion) * 10.0
+            return reward
+
+        return -50.0
+
+    def _get_policy_four(self, routed: bool, path_mod: str):
+        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
+
+        if routed:
+            reward = 100.0 / path_len
+            return reward
+
+        return path_len * -1.0
+
+    def _get_policy_five(self, routed: bool, path_mod: str):
+        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
+
+        if routed:
+            reward = 1.0 / path_len
+            return reward
+
+        return -100.0
+
+    def _get_policy_six(self, routed: bool, path_mod: str):
+        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
+
+        if routed:
+            reward = 3000.0 / path_len
+            return reward
+
+        return -1000.0
+
+    def _get_policy_seven(self, routed: bool, path_mod: str):
+        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
+        congestion = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
+
+        if routed:
+            reward = (3000.0 / path_len) + (1 / congestion)
+            return reward
+
+        return -100.0
+
+    def _get_policy_eight(self, routed: bool, path_mod: str):
+        erlang = float(self.properties['erlang'])
+        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
+        congestion = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
+
+        if routed:
+            reward = (3000.0 / path_len) + (1 / congestion) * 10.0
+            return reward
+
+        return -10.0
+
+    def _get_policy_nine(self, routed: bool, path_mod: str):
+        erlang = float(self.properties['erlang'])
+        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
+        congestion = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
+
+        if routed:
+            reward = (3000.0 / path_len) + (1 / congestion) * 100.0
+            return reward
+
+        return -50.0
 
     def update_environment(self, routed: bool, spectrum: dict, path_mod: str):  # pylint: disable=unused-argument
         """
