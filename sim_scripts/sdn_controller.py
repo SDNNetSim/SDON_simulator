@@ -321,15 +321,12 @@ class SDNController:
             # TODO: Spectrum assignment always overrides modulation format chosen when using check snr
             if path is not False:
                 if self.sdn_props['check_snr'] != 'None' and self.sdn_props['check_snr'] is not None:
-                    mod_options = sort_nested_dict_vals(self.sdn_props['mod_per_bw'][self.chosen_bw],
-                                                        nested_key='max_length')
-                    raise ValueError('You must check that max lengths are not zero!')
+                    raise ValueError('You must check that max lengths are not zero before running this.')
+                if path_mod is not False:
+                    mod_options = path_mod
                 else:
-                    if path_mod is not False:
-                        mod_options = path_mod
-                    else:
-                        self.block_reason = 'distance'
-                        return False, self.block_reason, self.path
+                    self.block_reason = 'distance'
+                    return False, self.block_reason, self.path
 
                 spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options)
                 # Request was blocked for this path
