@@ -149,17 +149,8 @@ class Engine(SDNController):
                 if len(lst) == 0:
                     mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
                 else:
-                    min_max_lst = list()
-                    average_list = list()
-                    for curr_value in lst:
-                        if curr_value == 0.0:
-                            average_list.append(curr_value)
-                        else:
-                            min_max_lst.append(10.0 ** (curr_value / 10.0))
-                            average_list.append(10.0 ** (curr_value / 10.0))
-                    mod_obj[modulation] = {'mean': np.mean(average_list), 'std': np.std(average_list),
-                                           'min': np.min(min_max_lst), 'max': np.max(min_max_lst),
-                                           'min_0': np.min(average_list)}
+                    mod_obj[modulation] = {'mean': float(np.mean(lst)), 'std': float(np.std(lst)),
+                                           'min': float(np.min(lst)), 'max': float(np.max(lst))}
 
         self.stats_dict['blocking_mean'] = self.blocking_mean
         self.stats_dict['blocking_variance'] = self.blocking_variance
@@ -296,8 +287,11 @@ class Engine(SDNController):
         self.route_times = np.append(self.route_times, response_data['route_time'])
         path_mod = resp[0]['mod_format']
         self.mods_used[self.chosen_bw][path_mod] += 1
-        # TODO: This is always xt_cost for now
-        self.path_weights[self.chosen_bw][path_mod].append(response_data['xt_cost'])
+
+        if self.properties['check_snr'] is None or self.properties['check_snr'] == 'None':
+            self.path_weights[self.chosen_bw][path_mod].append(response_data['path_weight'])
+        else:
+            self.path_weights[self.chosen_bw][path_mod].append(response_data['xt_cost'])
 
         self.reqs_status.update({self.req_id: {
             "mod_format": response_data['mod_format'],
@@ -515,6 +509,7 @@ class Engine(SDNController):
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
+                    self.ai_obj.req_id = request_number
                     num_transponders = self._handle_arrival(curr_time)
 
                     if request_number % 5 == 0 and self.properties['save_snapshots']:
