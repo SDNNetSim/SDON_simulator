@@ -210,7 +210,7 @@ class Routing:
             mod_format = self.get_path_mod(self.mod_formats, path_len)
 
             paths.append(path)
-            mod_formats.append(mod_format)
+            mod_formats.append([mod_format])
             path_lens.append(path_len)
 
         return paths, mod_formats, path_lens
