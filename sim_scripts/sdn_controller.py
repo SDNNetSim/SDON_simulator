@@ -320,15 +320,10 @@ class SDNController:
 
             # TODO: Spectrum assignment always overrides modulation format chosen when using check snr
             if path is not False:
-                if self.sdn_props['check_snr'] != 'None':
+                if self.sdn_props['check_snr'] != 'None' and self.sdn_props['check_snr'] is not None:
                     mod_options = sort_nested_dict_vals(self.sdn_props['mod_per_bw'][self.chosen_bw],
                                                         nested_key='max_length')
-                    # TODO: Change
-                    mod_options = {
-                        '64-QAM': self.sdn_props['mod_per_bw'][self.chosen_bw]['64-QAM'],
-                        '16-QAM': self.sdn_props['mod_per_bw'][self.chosen_bw]['16-QAM'],
-                        'QPSK': self.sdn_props['mod_per_bw'][self.chosen_bw]['QPSK'],
-                    }
+                    raise ValueError('You must check that max lengths are not zero!')
                 else:
                     if path_mod is not False:
                         mod_options = [path_mod]
