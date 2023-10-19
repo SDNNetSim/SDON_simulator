@@ -27,3 +27,4 @@ handle_data/__pycache__/*
 config/__pycache__/*
 ai/__pycache__/*
 sim_scripts/__pycache__/*
+.vscode/
