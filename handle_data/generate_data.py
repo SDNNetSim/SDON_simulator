@@ -58,30 +58,17 @@ def create_bw_info(sim_type: str = None):
     if sim_type not in ['yue', 'arash', None]:
         raise NotImplementedError(f"Invalid simulation type '{sim_type}'")
 
-    bw_info = dict()
-
-    # fill the template with maximum lengths for the given bandwidth
-    if sim_type == 'yue':
-        bw_info.update({
-            '25': {'QPSK': {'max_length': 22160, 'slots_needed': 1}, '16-QAM': {'max_length': 9500, 'slots_needed': 1},
-                   '64-QAM': {'max_length': 3664, 'slots_needed': 1}},
-            '50': {'QPSK': {'max_length': 11080, 'slots_needed': 2}, '16-QAM': {'max_length': 4750, 'slots_needed': 1},
-                   '64-QAM': {'max_length': 1832, 'slots_needed': 1}},
-            '100': {'QPSK': {'max_length': 5540, 'slots_needed': 4}, '16-QAM': {'max_length': 2375, 'slots_needed': 2},
-                    '64-QAM': {'max_length': 916, 'slots_needed': 2}},
-            '200': {'QPSK': {'max_length': 2770, 'slots_needed': 8}, '16-QAM': {'max_length': 1187, 'slots_needed': 4},
-                    '64-QAM': {'max_length': 458, 'slots_needed': 3}},
-            '400': {'QPSK': {'max_length': 1385, 'slots_needed': 16}, '16-QAM': {'max_length': 594, 'slots_needed': 8},
-                    '64-QAM': {'max_length': 229, 'slots_needed': 6}},
-        })
-    elif sim_type == 'arash':
-        bw_info.update({
-            '100': {'QPSK': {'slots_needed': 3, 'max_length': 1700},
-                    '16-QAM': {'slots_needed': 2, 'max_length': 500}, '64-QAM': {'slots_needed': 1, 'max_length': 100}},
-            '200': {'QPSK': {'slots_needed': 5, 'max_length': 0},
-                    '16-QAM': {'slots_needed': 3, 'max_length': 0}, '64-QAM': {'slots_needed': 2, 'max_length': 0}},
-            '400': {'QPSK': {'slots_needed': 10, 'max_length': 400},
-                    '16-QAM': {'slots_needed': 5, 'max_length': 100}, '64-QAM': {'slots_needed': 4, 'max_length': 0}},
-        })
+    bw_info = {
+        '25': {'QPSK': {'max_length': 22160, 'slots_needed': 1}, '16-QAM': {'max_length': 9500, 'slots_needed': 1},
+               '64-QAM': {'max_length': 3664, 'slots_needed': 1}},
+        '50': {'QPSK': {'max_length': 11080, 'slots_needed': 2}, '16-QAM': {'max_length': 4750, 'slots_needed': 1},
+               '64-QAM': {'max_length': 1832, 'slots_needed': 1}},
+        '100': {'QPSK': {'max_length': 5540, 'slots_needed': 4}, '16-QAM': {'max_length': 2375, 'slots_needed': 2},
+                '64-QAM': {'max_length': 916, 'slots_needed': 2}},
+        '200': {'QPSK': {'max_length': 2770, 'slots_needed': 8}, '16-QAM': {'max_length': 1187, 'slots_needed': 4},
+                '64-QAM': {'max_length': 458, 'slots_needed': 3}},
+        '400': {'QPSK': {'max_length': 1385, 'slots_needed': 16}, '16-QAM': {'max_length': 594, 'slots_needed': 8},
+                '64-QAM': {'max_length': 229, 'slots_needed': 6}},
+    }
 
     return bw_info
