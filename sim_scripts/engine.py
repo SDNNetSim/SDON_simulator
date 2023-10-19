@@ -159,7 +159,7 @@ class Engine(SDNController):
             'hops': list(self.hops),
             'route_times': np.mean(self.route_times),
             'path_lengths': list(self.path_lens),
-            'weight_info': list(self.path_weights),
+            'weight_info': self.path_weights,
             'modulation_formats': self.mods_used,
         }
 
