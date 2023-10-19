@@ -34,7 +34,6 @@ YUE_REQUIRED_OPTIONS = {
     'route_method': str,
     'request_distribution': ast.literal_eval,
     'save_snapshots': str_to_bool,
-    'xt_type': str,
 }
 
 ARASH_REQUIRED_OPTIONS = {
