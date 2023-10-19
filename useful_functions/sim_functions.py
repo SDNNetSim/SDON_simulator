@@ -113,6 +113,26 @@ def find_path_len(path: List[str], topology: nx.Graph):
     return path_len
 
 
+def find_path_congestion(path: List[str], network_db):
+    # Divide by the total length of that array
+    cong_per_link = list()
+    for src, dest in zip(path, path[1:]):
+        src_dest = (src, dest)
+        cores_matrix = network_db[src_dest]['cores_matrix']
+        cores_per_link = float(len(cores_matrix))
+
+        # Every core will have the same number of spectral slots
+        total_slots = len(cores_matrix[0])
+        slots_taken = 0
+        for curr_core in cores_matrix:
+            slots_taken += float(len(np.where(curr_core != 0.0)[0]))
+
+        cong_per_link.append(slots_taken / (total_slots * cores_per_link))
+
+    average_path_cong = np.mean(cong_per_link)
+    return average_path_cong
+
+
 def get_channel_overlaps(free_channels: dict, free_slots: dict):
     """
     Given the free channels and free slots on a given path, find the number of overlapping and non-overlapping channels
