@@ -163,9 +163,9 @@ class SnrMeasurements:
         :return: The cross-talk normalized by the number of adjacent cores.
         :rtype: float
         """
-        mean_xt = (2 * self.bend_radius * (self.coupling_coeff ** 2)) / (self.prop_const * self.core_pitch)
-        mean_xt = 3.78e-9
-        resp_xt = (1 - math.exp(-2 * mean_xt * link_length * 1e3)) / (1 + math.exp(-2 * mean_xt * link_length * 1e3))
+        h = (2 * self.bend_radius * (self.coupling_coeff ** 2)) / (self.prop_const * self.core_pitch)
+        h = 1e-9 #3.78e-9
+        resp_xt = (1 - math.exp(-2 * h * link_length * 1e3)) / (1 + math.exp(-2 * h * link_length * 1e3))
 
         return resp_xt * adjacent_cores
 
