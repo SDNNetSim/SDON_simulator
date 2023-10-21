@@ -76,12 +76,21 @@ def create_bw_info(sim_type: str = None):
         })
     elif sim_type == 'arash':
         bw_info.update({
-            '100': {'QPSK': {'slots_needed': 3, 'max_length': 1700},
-                    '16-QAM': {'slots_needed': 2, 'max_length': 500}, '64-QAM': {'slots_needed': 1, 'max_length': 100}},
-            '200': {'QPSK': {'slots_needed': 5, 'max_length': 0},
-                    '16-QAM': {'slots_needed': 3, 'max_length': 0}, '64-QAM': {'slots_needed': 2, 'max_length': 0}},
-            '400': {'QPSK': {'slots_needed': 10, 'max_length': 400},
-                    '16-QAM': {'slots_needed': 5, 'max_length': 100}, '64-QAM': {'slots_needed': 4, 'max_length': 0}},
+            '100': {'QPSK': {'slots_needed': 3, 'max_length': 3500},
+                    '8-QAM': {'slots_needed': 2, 'max_length': 1200}, 
+                    '16-QAM': {'slots_needed': 2, 'max_length': 600},  
+                    '32-QAM': {'slots_needed': 1, 'max_length': 300}, 
+                    '64-QAM': {'slots_needed': 1, 'max_length': 150}},
+            '200': {'QPSK': {'slots_needed': 5, 'max_length': 3500}, 
+                    '8-QAM': {'slots_needed': 3, 'max_length': 1200}, 
+                    '16-QAM': {'slots_needed': 3, 'max_length': 600}, 
+                    '32-QAM': {'slots_needed': 2, 'max_length': 300}, 
+                    '64-QAM': {'slots_needed': 2, 'max_length': 150}},
+            '400': {'QPSK': {'slots_needed': 10, 'max_length': 3500}, 
+                    '8-QAM': {'slots_needed': 6, 'max_length': 1200},
+                    '16-QAM': {'slots_needed': 5, 'max_length': 600}, 
+                    '32-QAM': {'slots_needed': 4, 'max_length': 300}, 
+                    '64-QAM': {'slots_needed': 4, 'max_length': 150}},
         })
 
     return bw_info
