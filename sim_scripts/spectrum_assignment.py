@@ -250,6 +250,42 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             if resp:
                 return
 
+    def _handle_prioritized_first_last(self, flag: str = None, des_core: int = None):
+        """
+        Handles either first-fit or last-fit spectrum allocation.
+
+        :param flag: A flag to determine which allocation method we'd like to use.
+        :type flag: str
+
+        :param des_core: Determine if we'd like to force allocation onto a certain core.
+        :type des_core: int
+        """
+        if des_core is not None:
+            matrix = [self.cores_matrix[des_core]]
+        else:
+            matrix = self.cores_matrix
+        prioritized_core = [ 0, 2, 4, 1, 3, 5, 6 ]
+        for core_num in prioritized_core:
+            # To account for ONLY single core light segment slicing
+            if core_num > 0 and self.single_core and self.is_sliced:
+                break
+            open_slots_arr = np.where(matrix[core_num] == 0)[0]
+
+            # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
+            if flag == 'prioritized_last_fit':
+                open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
+                                     itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+            else:
+                open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
+                                     itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+
+            resp = self._check_open_slots(open_slots_matrix=open_slots_matrix, flag=flag, core_num=core_num,
+                                          des_core=des_core)
+            # We successfully found allocation on this core, no need to check the others
+            if resp:
+                return
+            
+            
     def _check_cores_channels(self):
         """
         For a given path, find the free channel intersections (between cores on that path) and the free slots for
@@ -342,6 +378,8 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             self._handle_first_last(flag=self.alloc_method)
         elif self.alloc_method == 'cross_talk_aware':
             self._xt_aware_allocation()
+        elif self.alloc_method in ('prioritized_first_fit', 'prioritized_last_fit'):
+            self._handle_prioritized_first_last(flag=self.alloc_method)
         else:
             raise NotImplementedError(f'Expected first_fit or best_fit, got: {self.alloc_method}')
 
