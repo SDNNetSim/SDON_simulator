@@ -28,7 +28,8 @@ class QLearning:
         else:
             self.sim_type = 'test'
         # Contains all state and action value pairs
-        self.q_table = None
+        self.q_routes = None
+        self.q_cores = None
         # Statistics to evaluate our reward function
         self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': {}}
 
@@ -48,12 +49,6 @@ class QLearning:
             'policy_one': self._get_policy_one,
             'policy_two': self._get_policy_two,
             'policy_three': self._get_policy_three,
-            'policy_four': self._get_policy_four,
-            'policy_five': self._get_policy_five,
-            'policy_six': self._get_policy_six,
-            'policy_seven': self._get_policy_seven,
-            'policy_eight': self._get_policy_eight,
-            'policy_nine': self._get_policy_nine,
         }
         # Simulation methods related to routing
         self.routing_obj = Routing(beta=properties['beta'], topology=properties['topology'],
@@ -121,7 +116,7 @@ class QLearning:
         create_dir(f"ai/models/q_tables/{self.ai_arguments['table_path']}")
         file_path = f"{os.getcwd()}/ai/models/q_tables/{self.ai_arguments['table_path']}/"
         file_name = f"{self.properties['erlang']}_table_c{self.properties['cores_per_link']}.npy"
-        np.save(file_path + file_name, self.q_table)
+        np.save(file_path + file_name, self.q_routes)
 
         properties_dict = {
             'epsilon': self.ai_arguments['epsilon'],
@@ -141,7 +136,7 @@ class QLearning:
         file_path = f"{os.getcwd()}/ai/models/q_tables/{self.ai_arguments['table_path']}/"
         file_name = f"{self.sim_type}_table_c{self.ai_arguments['cores_per_link']}.npy"
         try:
-            self.q_table = np.load(file_path + file_name)
+            self.q_routes = np.load(file_path + file_name)
         except FileNotFoundError:
             print('File not found, please ensure if you are testing, an already trained file exists and has been '
                   'specified correctly.')
@@ -186,65 +181,6 @@ class QLearning:
 
         return -50.0
 
-    def _get_policy_four(self, routed: bool, path_mod: str):
-        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
-
-        if routed:
-            reward = 100.0 / path_len
-            return reward
-
-        return path_len * -1.0
-
-    def _get_policy_five(self, routed: bool, path_mod: str):
-        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
-
-        if routed:
-            reward = 1.0 / path_len
-            return reward
-
-        return -100.0
-
-    def _get_policy_six(self, routed: bool, path_mod: str):
-        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
-
-        if routed:
-            reward = 3000.0 / path_len
-            return reward
-
-        return -1000.0
-
-    def _get_policy_seven(self, routed: bool, path_mod: str):
-        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
-        congestion = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
-
-        if routed:
-            reward = (3000.0 / path_len) + (1 / congestion)
-            return reward
-
-        return -100.0
-
-    def _get_policy_eight(self, routed: bool, path_mod: str):
-        erlang = float(self.properties['erlang'])
-        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
-        congestion = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
-
-        if routed:
-            reward = (3000.0 / path_len) + (1 / congestion) * 10.0
-            return reward
-
-        return -10.0
-
-    def _get_policy_nine(self, routed: bool, path_mod: str):
-        erlang = float(self.properties['erlang'])
-        path_len = find_path_len(path=self.chosen_path, topology=self.properties['topology'])
-        congestion = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
-
-        if routed:
-            reward = (3000.0 / path_len) + (1 / congestion) * 100.0
-            return reward
-
-        return -50.0
-
     def update_environment(self, routed: bool, spectrum: dict, path_mod: str):  # pylint: disable=unused-argument
         """
         Updates the Q-learning environment.
@@ -267,7 +203,7 @@ class QLearning:
         path_index = None
         source = int(self.chosen_path[0])
         destination = int(self.chosen_path[-1])
-        for index, matrix in enumerate(self.q_table[source][destination]):
+        for index, matrix in enumerate(self.q_routes[source][destination]):
             path = matrix[0]
             curr_value = matrix[1]
 
@@ -281,7 +217,7 @@ class QLearning:
         new_q = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + (
                 self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q)))
 
-        self.q_table[source][destination][path_index][1] = new_q
+        self.q_routes[source][destination][path_index][1] = new_q
 
     def setup_environment(self):
         """
@@ -289,7 +225,8 @@ class QLearning:
         """
         num_nodes = len(list(self.properties['topology'].nodes()))
         self.k_paths = self.properties['k_paths']
-        self.q_table = [[[] for _ in range(num_nodes)] for _ in range(num_nodes)]
+        self.q_routes = [[[] for _ in range(num_nodes)] for _ in range(num_nodes)]
+        self.q_cores = []
 
         for source in range(0, num_nodes):
             for destination in range(0, num_nodes):
@@ -303,7 +240,7 @@ class QLearning:
                     if k >= self.k_paths:
                         break
                     # Initial Q-values set to zero
-                    self.q_table[source][destination].append([curr_path, 0])
+                    self.q_routes[source][destination].append([curr_path, 0])
 
     def route(self):
         """
@@ -313,11 +250,11 @@ class QLearning:
         if random_float < self.ai_arguments['epsilon']:
             random_path = np.random.choice(self.k_paths)
             # Always zero indexes because the next index is the corresponding q-value for that path
-            self.chosen_path = self.q_table[self.source][self.destination][random_path][0]
+            self.chosen_path = self.q_routes[self.source][self.destination][random_path][0]
         else:
             max_value = float('-inf')
             # Navigate the nested list
-            for outer_list in self.q_table[self.source][self.destination]:
+            for outer_list in self.q_routes[self.source][self.destination]:
                 if outer_list[1] > max_value:
                     max_value = outer_list[1]
                     self.chosen_path = outer_list[0]
@@ -326,3 +263,12 @@ class QLearning:
             raise ValueError('The chosen path can not be None')
 
         return self.chosen_path
+
+    def core_assignment(self):
+        random_float = np.round(np.random.uniform(0, 1), decimals=1)
+        if random_float < self.ai_arguments['epsilon']:
+            chosen_core = np.random.randint(0, self.properties['cores_per_link'])
+        else:
+            pass
+
+        return chosen_core

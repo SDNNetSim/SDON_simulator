@@ -42,13 +42,13 @@ class PlotStats:
         self.colors = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
         self.markers = ['o', '^', 's', 'x']
-        self.x_ticks = list(range(10, 720, 50))
+        self.x_ticks = list(range(100, 700, 35))
 
         self._get_data()
 
     def _get_file_info(self):
         resp = dict()
-        for networks, dates, times in zip(self.net_names, self.dates, self.times):
+        for lst_idx, (networks, dates, times) in enumerate(zip(self.net_names, self.dates, self.times)):
             for sim_index, curr_time in enumerate(times):
                 resp[curr_time] = {'network': networks[sim_index], 'date': dates[sim_index], 'sims': dict()}
                 curr_dir = f'{self.base_dir}/{networks[sim_index]}/{dates[sim_index]}/{curr_time}'
@@ -59,7 +59,7 @@ class PlotStats:
 
                 for curr_sim in sim_dirs:
                     # User selected to not run this simulation
-                    if curr_sim not in self.sims[sim_index]:
+                    if curr_sim not in self.sims[lst_idx]:
                         continue
                     curr_fp = os.path.join(curr_dir, curr_sim)
                     resp[curr_time]['sims'][curr_sim] = list()
@@ -117,23 +117,45 @@ class PlotStats:
 
         return np.array(extracted_values)
 
+    @staticmethod
+    def _policy_to_short_form(policy_str):
+        word_to_number = {
+            'one': '1',
+            'two': '2',
+            'three': '3',
+            'four': '4',
+            'five': '5',
+            'six': '6',
+            'seven': '7',
+            'eight': '8',
+            'nine': '9',
+        }
+        last_word = policy_str.split('_')[-1]
+        number = word_to_number.get(last_word)
+        if number is None:
+            return 'Baseline'
+
+        return f"P{number}"
+
     def _find_algorithm(self):
-        num_requests = str(self.erlang_dict['sim_params']['num_requests'])[:2]
+        # num_requests = str(self.erlang_dict['sim_params']['num_requests'])[:2]
         route_method = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['route_method'])
         # alloc_method = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['allocation_method'])
 
         if route_method == 'Ai':
-            policy = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['ai_arguments']['policy'])
-            param = f"Policy={policy}"
+            # policy = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['ai_arguments']['policy'])
+            # param = f"Policy={policy}"
+            learn_rate = self.erlang_dict['sim_params']['ai_arguments']['learn_rate']
+            discount = self.erlang_dict['sim_params']['ai_arguments']['discount']
+            policy = self.erlang_dict['sim_params']['ai_arguments']['policy']
+            policy = self._policy_to_short_form(policy_str=policy)
+            param = rf"{policy} $\alpha$={learn_rate} | $\gamma$={discount}"
         elif route_method == 'Xt Aware':
             xt_type = self.erlang_dict['sim_params']['xt_type']
             if xt_type == 'with_length':
                 param = f"$\\beta$={self.erlang_dict['sim_params']['beta']}"
             else:
-                param = f"Span * XT"
-        elif self.erlang_dict['sim_params']['sim_type'] == 'yue':
-            cores_used = self.erlang_dict['sim_params']['cores_per_link']
-            param = f"C={cores_used}"
+                param = "Span * XT"
         else:
             param = f"k={self.erlang_dict['sim_params']['k_paths']}"
 
@@ -308,7 +330,7 @@ class PlotStats:
 
         if y_ticks:
             plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
-            plt.ylim(10 ** -5, 1)
+            plt.ylim(10 ** -3, 1)
             plt.yscale('log')
 
         if y_lim:
@@ -363,9 +385,6 @@ class PlotStats:
                 policy = sim_obj['algorithm']
 
                 for bandwidth, mod_objs in sim_obj['modulations'].items():
-                    # TODO: Change
-                    if bandwidth == '100':
-                        continue
                     data[bandwidth] = list()
                     for _, usages in mod_objs.items():
                         data[bandwidth].append(usages)
@@ -400,7 +419,7 @@ class PlotStats:
             for _, sim_obj in objs.items():
                 if sim_obj['algorithm'][0] == 'k':
                     style = 'dashed'
-                elif sim_obj['algorithm'] == 'Span * XT':
+                elif sim_obj['algorithm'][0:2] == 'Ba':
                     style = 'dashdot'
                 else:
                     style = 'solid'
@@ -490,10 +509,6 @@ class PlotStats:
             # self._plot_helper_one(x_vals='erlang_vals', y_vals=['max'], file_name=f'max_xt_{curr_format}',
             #                       xt_flag=curr_format)
 
-    def plot_bandwidth_blocking(self):
-        self._setup_plot("Weighted Blocking. vs. Erlang", 'Weighted BP', 'Erlang', y_ticks=True)
-        self._plot_helper_one(x_vals='erlang_vals', y_vals=['band_blocking'], file_name='weighted_bp')
-
     def plot_blocking(self):
         """
         Plots the average blocking probability for each Erlang value.
@@ -502,7 +517,38 @@ class PlotStats:
         self._plot_helper_one(x_vals='erlang_vals', y_vals=['blocking_vals'], file_name='average_bp')
 
 
-# TODO: Break into smaller functions
+def _check_filters(file_content, filters):
+    keep_config = True
+    check_content = file_content.get('sim_params')
+    for check_flags in filters['and_filters']:
+        search_keys = check_flags[0:-1]
+        check_value = check_flags[-1]
+
+        for curr_key in search_keys:
+            check_content = check_content.get(curr_key)
+
+        if check_content != check_value:
+            keep_config = False
+            break
+
+    if keep_config:
+        for sub_flags in filters['or_filters']:
+            check_content = file_content.get('sim_params')
+            search_keys = sub_flags[0:-1]
+            check_value = sub_flags[-1]
+
+            for curr_key in search_keys:
+                check_content = check_content.get(curr_key)
+
+            if check_content == check_value:
+                keep_config = True
+                break
+            else:
+                keep_config = False
+
+    return keep_config
+
+
 def find_times(dates_networks: dict, filters: dict):
     """
     Given a list of dates, find simulations based on given parameters being the same. For example, each simulation
@@ -538,24 +584,7 @@ def find_times(dates_networks: dict, filters: dict):
                 with open(f'{files_path}/{des_file}', 'r', encoding='utf-8') as file_obj:
                     file_content = json.load(file_obj)
 
-                keep_config = True
-                for name, lst in filters['not_filters'].items():
-                    # TODO: Generalize
-                    if file_content['sim_params'][name] not in lst:
-                        keep_config = False
-                        break
-                    else:
-                        if file_content['sim_params']['route_method'] == 'k_shortest_path':
-                            k = file_content['sim_params']['k_paths']
-                            if k != 1 and k != 5:
-                                keep_config = False
-                                break
-                        elif file_content['sim_params']['route_method'] == 'xt_aware':
-                            beta = file_content['sim_params']['beta']
-                            if beta != 0.4 and beta != 0.8:
-                                keep_config = False
-                                break
-
+                keep_config = _check_filters(file_content=file_content, filters=filters)
                 if keep_config:
                     if curr_time not in info_dict:
                         info_dict[curr_time] = {'sim_nums': list(), 'networks': list(), 'dates': list()}
@@ -577,18 +606,19 @@ def main():
     Controls this script.
     """
     filters = {
-        'not_filters': {
-            # 'num_requests': [50000],
-            # 'max_iters': [100],
-            # 'spectral_slots': [256]
-        },
-        'in_filters': {
-            # 'k_paths': [1, 5],
-            # 'beta': [0.4, 0.8]
-        }
+        'and_filters': [
+            # ['ai_arguments', 'policy', 'policy_nine']
+        ],
+        'or_filters': [
+            ['ai_arguments', 'policy', 'policy_seven'],
+            ['route_method', 'k_shortest_path'],
+            ['ai_arguments', 'policy', 'baseline'],
+        ],
+        # 'not_filters': [
+        #     ['route_method', 'k_shortest_path']
+        # ]
     }
-    sim_times, sim_nums, networks, dates = find_times(
-        dates_networks={'1019': 'USNet'}, filters=filters)
+    sim_times, sim_nums, networks, dates = find_times(dates_networks={'1020': 'NSFNet'}, filters=filters)
     plot_obj = PlotStats(net_names=networks, dates=dates, times=sim_times, sims=sim_nums)
 
     plot_obj.plot_blocking()

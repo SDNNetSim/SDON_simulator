@@ -323,6 +323,7 @@ class SDNController:
                 if self.sdn_props['check_snr'] != 'None' and self.sdn_props['check_snr'] is not None:
                     raise ValueError('You must check that max lengths are not zero before running this.')
                 if path_mod is not False:
+                    # TODO: Fix this bug
                     mod_options = path_mod
                 else:
                     self.block_reason = 'distance'

@@ -45,7 +45,7 @@ config_twentyfour="{'is_training': 'True', 'table_path': 'None', 'epsilon': 0.05
 
 config_twentyfive="{'is_training': 'True', 'table_path': 'None', 'epsilon': 0.05, 'epsilon_target': 0.01, 'policy': 'policy_nine', 'learn_rate': 0.1, 'discount': 0.9}"
 config_twentysix="{'is_training': 'True', 'table_path': 'None', 'epsilon': 0.05, 'epsilon_target': 0.01, 'policy': 'policy_nine', 'learn_rate': 0.5, 'discount': 0.5}"
-config_twentyseven="{'is_training': 'True', 'table_path': 'None', 'epsilon': 0.05, 'epsilon_target': 0.01, 'policy': 'policy_nine', 'learn_rate': 0.9, 'discount': 0.1}"
+config_twentyseven="{'is_training': 'True', 'table_path': 'None', 'epsilon': '0.05', 'epsilon_target': '0.01', 'policy': 'policy_nine', 'learn_rate': '0.9', 'discount': '0.1'}"
 
 ai_array=("$config_one" "$config_two" "$config_three" "$config_four" "$config_five" "$config_six" "$config_seven" "$config_eight" "$config_nine" "$config_ten" "$config_eleven" "$config_twelve" "$config_thirteen" "$config_fourteen" "$config_fifteen" "$config_sixteen" "$config_seventeen" "$config_eighteen" "$config_nineteen" "$config_twenty" "$config_twentyone" "$config_twentytwo" "$config_twentythree" "$config_twentyfour" "$config_twentyfive" "$config_twentysix" "$config_twentyseven")
 
