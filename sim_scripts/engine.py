@@ -157,6 +157,8 @@ class Engine(SDNController):
                         else:
                             min_max_lst.append(10.0 ** (curr_value / 10.0))
                             average_list.append(10.0 ** (curr_value / 10.0))
+                    # TODO: should be changed for empty list 
+                    if len(min_max_lst) == 0: min_max_lst = average_list
                     mod_obj[modulation] = {'mean': np.mean(average_list), 'std': np.std(average_list),
                                            'min': np.min(min_max_lst), 'max': np.max(min_max_lst),
                                            'min_0': np.min(average_list)}
