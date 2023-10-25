@@ -46,6 +46,7 @@ class QLearning:
         self.xt_worst = None
         self.k_paths = None
         self.num_cores = None
+        self.core_cong = None
         self.q_routes = None
         self.path_index = None
         self.cong_index = None
@@ -213,7 +214,7 @@ class QLearning:
 
     def _get_max_q(self, paths):
         q_values = list()
-        for path_index, _, cong_index in paths:
+        for path_index, _, cong_index, _ in paths:
             curr_q = self.q_routes[self.source][self.destination][path_index][cong_index]['q_value']
             q_values.append(curr_q)
 
@@ -224,7 +225,7 @@ class QLearning:
     def _assign_congestion(self, paths):
         resp = list()
         for path_index, curr_path in enumerate(paths):
-            curr_cong = find_path_congestion(path=curr_path, network_db=self.net_spec_db)
+            curr_cong, core_cong = find_path_congestion(path=curr_path, network_db=self.net_spec_db)
             if curr_cong < 0.3:
                 cong_index = 0
             elif 0.3 <= curr_cong < 0.7:
@@ -234,7 +235,7 @@ class QLearning:
             else:
                 raise ValueError('Congestion value not recognized.')
 
-            resp.append((path_index, curr_path, cong_index))
+            resp.append((path_index, curr_path, cong_index, core_cong))
 
         return resp
 
@@ -246,10 +247,11 @@ class QLearning:
         if random_float < self.ai_arguments['epsilon']:
             self.path_index = np.random.choice(self.k_paths)
             self.cong_index = np.random.choice(len(self.cong_types))
+            self.core_cong = paths[self.path_index][-1]
             self.chosen_path = self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['path']
         else:
             best_path = self._get_max_q(paths=paths)
-            self.path_index, self.chosen_path, self.cong_index = best_path
+            self.path_index, self.chosen_path, self.cong_index, self.core_cong = best_path
 
         if len(self.chosen_path) == 0:
             raise ValueError('The chosen path can not be None')
@@ -257,8 +259,6 @@ class QLearning:
         return self.chosen_path
 
     def core_assignment(self):
-        # TODO: You are not flagging for low, medium, and high (select based on those indexes only!)
-        #   - Calculate congestion for each core :(
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         random_float = 111111
 
