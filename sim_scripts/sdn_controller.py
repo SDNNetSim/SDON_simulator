@@ -314,7 +314,9 @@ class SDNController:
         start_time = time.time()
         paths, path_mods, path_weights = self._handle_routing()
         route_time = time.time() - start_time
-
+        if path_mods == [False]:
+            self.block_reason = 'distance'
+            return False, self.block_reason, self.path
         for path, path_mod, path_weight in zip(paths, path_mods, path_weights):
             self.path = path
 
@@ -324,11 +326,12 @@ class SDNController:
                     mod_options = sort_nested_dict_vals(self.sdn_props['mod_per_bw'][self.chosen_bw],
                                                         nested_key='max_length')
                     # TODO: Change
-                    mod_options = {
-                        '64-QAM': self.sdn_props['mod_per_bw'][self.chosen_bw]['64-QAM'],
-                        '16-QAM': self.sdn_props['mod_per_bw'][self.chosen_bw]['16-QAM'],
-                        'QPSK': self.sdn_props['mod_per_bw'][self.chosen_bw]['QPSK'],
-                    }
+                    for mod_ch in list(mod_options.keys()):
+                        if mod_ch not in path_mod:
+                            mod_options.pop(mod_ch)
+                    if len(mod_options) == 0 and path == paths[-1]:
+                        self.block_reason = 'distance'
+                        return False, self.block_reason, self.path
                 else:
                     if path_mod is not False:
                         mod_options = [path_mod]
