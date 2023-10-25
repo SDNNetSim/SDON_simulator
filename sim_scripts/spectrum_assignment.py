@@ -211,7 +211,6 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         return False
 
-    # TODO: Write tests for this method
     def _handle_first_last(self, flag: str = None):
         """
         Handles either first-fit or last-fit spectrum allocation.
@@ -308,10 +307,11 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                           'spectrum_assignment that only supports 7 cores per fiber.')
         core = self._find_best_core()
         # Graph coloring for cores
+        # TODO: Update des_core
         if core in [0, 2, 4, 6]:
-            return self._handle_first_last(des_core=core, flag='first_fit')
+            return self._handle_first_last(flag='first_fit')
 
-        return self._handle_first_last(des_core=core, flag='last_fit')
+        return self._handle_first_last(flag='last_fit')
 
     def find_free_spectrum(self):
         """
