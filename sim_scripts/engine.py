@@ -14,9 +14,6 @@ from useful_functions.ai_functions import *  # pylint: disable=unused-wildcard-i
 from useful_functions.sim_functions import *  # pylint: disable=unused-wildcard-import
 
 
-# TODO: Flags to determine what we want and don't want to save
-
-
 class Engine(SDNController):
     """
     Controls the simulation.
@@ -71,6 +68,7 @@ class Engine(SDNController):
         # TODO: Since we use super, we can move some of these to SDN controller if we want and have access
         # The number of hops for each route found
         self.hops = np.array([])
+        self.cores_chosen = dict()
         # The route length (in m) for every route chosen
         self.path_lens = np.array([])
         # The time taken to route each request
@@ -170,6 +168,7 @@ class Engine(SDNController):
             'route_times': np.mean(self.route_times),
             'path_lengths': {'mean': np.mean(self.path_lens), 'min': np.min(self.path_lens),
                              'max': np.max(self.path_lens)},
+            'cores_chosen': self.cores_chosen,
             'weight_info': self.path_weights,
             'modulation_formats': self.mods_used,
         }
@@ -284,6 +283,7 @@ class Engine(SDNController):
 
         self.hops = np.append(self.hops, len(response_data['path']) - 1)
         self.path_lens = np.append(self.path_lens, find_path_len(path=response_data['path'], topology=self.topology))
+        self.cores_chosen[response_data['spectrum']['core_num']] += 1
         self.route_times = np.append(self.route_times, response_data['route_time'])
         path_mod = resp[0]['mod_format']
         self.mods_used[self.chosen_bw][path_mod] += 1
@@ -457,11 +457,16 @@ class Engine(SDNController):
         # Initialize variables for this iteration of the simulation
         self.block_reasons = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
         self.num_trans = 0
+        self.hops = np.array([])
+        self.route_times = np.array([])
+        self.path_lens = np.array([])
         self.num_blocked_reqs = 0
         self.reqs_status = dict()
+        cores_range = range(self.properties['cores_per_link'])
+        self.cores_chosen = {key: 0 for key in cores_range}
 
         if self.properties['save_snapshots']:
-            for request_number in range(0, self.properties['num_requests'] + 1, 5):
+            for request_number in range(0, self.properties['num_requests'] + 1, 10):
                 self.request_snapshots[request_number] = {
                     'occ_slots': [],
                     'guard_bands': [],
@@ -512,7 +517,7 @@ class Engine(SDNController):
                     self.ai_obj.req_id = request_number
                     num_transponders = self._handle_arrival(curr_time)
 
-                    if request_number % 5 == 0 and self.properties['save_snapshots']:
+                    if request_number % 10 == 0 and self.properties['save_snapshots']:
                         self._update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1
