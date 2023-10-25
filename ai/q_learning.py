@@ -306,7 +306,7 @@ class QLearning:
 
         if random_float < self.ai_arguments['epsilon']:
             self.path_index = np.random.choice(self.k_paths)
-            self.cong_index = np.random.choice(len(self.cong_types))
+            self.cong_index = self.paths_info[self.path_index][-1]
             self.chosen_path = self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['path']
         else:
             best_path = self._get_max_q(paths=self.paths_info)
