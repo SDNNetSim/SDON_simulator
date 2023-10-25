@@ -65,9 +65,21 @@ class QLearning:
 
     @staticmethod
     def set_seed(seed: int):
+        """
+        Sets the seed for random generation in the simulation.
+
+        :param seed: The seed to set.
+        :type seed: int
+        """
         np.random.seed(seed)
 
     def decay_epsilon(self, amount: float):
+        """
+        Decays the amount of randomness the agent may experience in its actions.
+
+        :param amount: The amount to decay epsilon by.
+        :type amount: float
+        """
         self.ai_arguments['epsilon'] -= amount
         if self.ai_arguments['epsilon'] < 0.0:
             raise ValueError(f"Epsilon should be greater than 0 but it is {self.ai_arguments['epsilon']}")
@@ -94,6 +106,9 @@ class QLearning:
             self.rewards_dict[reward_flag].pop('rewards')
 
     def save_tables(self):
+        """
+        Saves trained q-tables.
+        """
         if self.sim_type == 'test':
             raise NotImplementedError
 
@@ -121,6 +136,9 @@ class QLearning:
             json.dump(properties_dict, file)
 
     def load_tables(self):
+        """
+        Loads desired previously trained q-tables.
+        """
         file_path = f"{os.getcwd()}/ai/models/q_tables/{self.ai_arguments['table_path']}/"
         file_name_one = f"{self.sim_type}_routes_table_c{self.ai_arguments['cores_per_link']}.npy"
         file_name_two = f"{self.sim_type}_cores_table_c{self.ai_arguments['cores_per_link']}.npy"
@@ -149,10 +167,10 @@ class QLearning:
 
         return resp
 
-    def _get_max_future_q(self, new_cong):
+    def _get_max_future_q(self, new_cong: float):
         q_values = list()
         self.new_cong_index = self._classify_cong(curr_cong=new_cong)
-        path_index, path, old_cong_index = self.paths_info[self.path_index]
+        path_index, path, _ = self.paths_info[self.path_index]
         self.paths_info[self.path_index] = (path_index, path, self.new_cong_index)
 
         for path_index, _, cong_index in self.paths_info:
@@ -161,11 +179,17 @@ class QLearning:
 
         return np.max(q_values)
 
-    def update_env(self, routed: bool, spectrum: dict):
-        self.update_routes_q_values(routed)
-        self.update_cores_q_values(routed)
+    def update_env(self, routed: bool):
+        """
+        Controls the updating of routing and core assignment q-tables.
 
-    def update_routes_q_values(self, routed: bool):
+        :param routed: Whether the request was routed or not.
+        :type routed: bool
+        """
+        self._update_routes_q_values(routed)
+        self._update_cores_q_values(routed)
+
+    def _update_routes_q_values(self, routed: bool):
         policy = self.ai_arguments.get('policy')
         if policy not in self.reward_policies:
             raise NotImplementedError('Reward policy not recognized.')
@@ -181,7 +205,7 @@ class QLearning:
                 (self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q)))
         self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['q_value'] = new_q
 
-    def update_cores_q_values(self, routed: bool):
+    def _update_cores_q_values(self, routed: bool):
         policy = self.ai_arguments.get('policy')
         if policy not in self.reward_policies:
             raise NotImplementedError('Reward policy not recognized.')
@@ -211,13 +235,16 @@ class QLearning:
                     if k >= self.k_paths:
                         break
 
-                    for c_index, congestion in enumerate(self.cong_types):
+                    for c_index, _ in enumerate(self.cong_types):
                         self.q_routes[source, destination, k, c_index] = (curr_path, 0.0)
 
                         for core_action in range(self.num_cores):
                             self.q_cores[source, destination, k, c_index, core_action] = (curr_path, core_action, 0.0)
 
     def setup_env(self):
+        """
+        Sets up the environment (q-tables) for the q-learning algorithm.
+        """
         self.num_nodes = len(list(self.properties['topology'].nodes()))
         self.k_paths = self.properties['k_paths']
 
@@ -267,6 +294,12 @@ class QLearning:
         return resp
 
     def route(self):
+        """
+        Provide a route for a given request based on the q-learning algorithm.
+
+        :return: A route for the request.
+        :rtype: List
+        """
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         paths = self.q_routes[self.source][self.destination]['path'][:, 0]
         self.paths_info = self._assign_congestion(paths=paths)
@@ -285,6 +318,12 @@ class QLearning:
         return self.chosen_path
 
     def core_assignment(self):
+        """
+        Find the appropriate core assignment for a given request.
+
+        :return: A core index
+        :rtype: int
+        """
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
 
         if random_float < self.ai_arguments['epsilon']:
