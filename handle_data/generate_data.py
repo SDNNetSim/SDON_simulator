@@ -76,21 +76,63 @@ def create_bw_info(sim_type: str = None):
         })
     elif sim_type == 'arash':
         bw_info.update({
-            '100': {'QPSK': {'slots_needed': 3, 'max_length': 3500},
-                    '8-QAM': {'slots_needed': 2, 'max_length': 1200}, 
-                    '16-QAM': {'slots_needed': 2, 'max_length': 600},  
-                    '32-QAM': {'slots_needed': 1, 'max_length': 300}, 
-                    '64-QAM': {'slots_needed': 1, 'max_length': 150}},
-            '200': {'QPSK': {'slots_needed': 5, 'max_length': 3500}, 
-                    '8-QAM': {'slots_needed': 3, 'max_length': 1200}, 
-                    '16-QAM': {'slots_needed': 3, 'max_length': 600}, 
-                    '32-QAM': {'slots_needed': 2, 'max_length': 300}, 
-                    '64-QAM': {'slots_needed': 2, 'max_length': 150}},
-            '400': {'QPSK': {'slots_needed': 10, 'max_length': 3500}, 
-                    '8-QAM': {'slots_needed': 6, 'max_length': 1200},
-                    '16-QAM': {'slots_needed': 5, 'max_length': 600}, 
-                    '32-QAM': {'slots_needed': 4, 'max_length': 300}, 
-                    '64-QAM': {'slots_needed': 4, 'max_length': 150}},
+            # '100': {'QPSK': {'slots_needed': 3, 'max_length': 3500},
+            #         '8-QAM': {'slots_needed': 2, 'max_length': 1200}, 
+            #         '16-QAM': {'slots_needed': 2, 'max_length': 600},  
+            #         '32-QAM': {'slots_needed': 1, 'max_length': 300}, 
+            #         '64-QAM': {'slots_needed': 1, 'max_length': 150}},
+            # '200': {'QPSK': {'slots_needed': 5, 'max_length': 3500}, 
+            #         '8-QAM': {'slots_needed': 3, 'max_length': 1200}, 
+            #         '16-QAM': {'slots_needed': 3, 'max_length': 600}, 
+            #         '32-QAM': {'slots_needed': 2, 'max_length': 300}, 
+            #         '64-QAM': {'slots_needed': 2, 'max_length': 150}},
+            # '400': {'QPSK': {'slots_needed': 10, 'max_length': 3500}, 
+            #         '8-QAM': {'slots_needed': 6, 'max_length': 1200},
+            #         '16-QAM': {'slots_needed': 5, 'max_length': 600}, 
+            #         '32-QAM': {'slots_needed': 4, 'max_length': 300}, 
+            #         '64-QAM': {'slots_needed': 4, 'max_length': 150}},
+            "100": {
+                "QPSK": {
+                    "slots_needed": 3,
+                    "max_length": 5187
+                },
+                "16-QAM": {
+                    "slots_needed": 2,
+                    "max_length": 2323
+                },
+                "64-QAM": {
+                    "slots_needed": 1,
+                    "max_length": 875
+                }
+            },
+            "200": {
+                "QPSK": {
+                    "slots_needed": 5,
+                    "max_length": 2594
+                },
+                "16-QAM": {
+                    "slots_needed": 3,
+                    "max_length": 1162
+                },
+                "64-QAM": {
+                    "slots_needed": 2,
+                    "max_length": 438
+                }
+            },
+            "400": {
+                "QPSK": {
+                    "slots_needed": 10,
+                    "max_length": 1297
+                },
+                "16-QAM": {
+                    "slots_needed": 5,
+                    "max_length": 581
+                },
+                "64-QAM": {
+                    "slots_needed": 4,
+                    "max_length": 219
+                }
+            }
         })
 
     return bw_info
