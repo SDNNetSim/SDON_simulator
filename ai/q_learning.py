@@ -31,7 +31,10 @@ class QLearning:
         self.q_routes = None
         self.q_cores = None
         # Statistics to evaluate our reward function
-        self.rewards_dict = {'average': [], 'min': [], 'max': [], 'rewards': {}}
+        self.rewards_dict = {
+            'routes': {'average': [], 'min': [], 'max': [], 'rewards': {}},
+            'cores': {'average': [], 'min': [], 'max': [], 'rewards': {}}
+        }
 
         self.curr_episode = None
         self.num_nodes = None
@@ -42,6 +45,8 @@ class QLearning:
         # The chosen bandwidth for the current request
         self.chosen_bw = None
         self.core_index = None
+        self.paths_info = None
+        self.new_cong_index = None
         # The latest up-to-date network spectrum database
         self.net_spec_db = None
         self.xt_worst = None
@@ -53,7 +58,7 @@ class QLearning:
         self.cong_types = None
         self.q_cores = None
         self.reward_policies = {
-            'baseline': None,
+            'policy_one': self._get_policy_one,
         }
         # Simulation methods related to routing
         self.routing_obj = Routing(beta=properties['beta'], topology=properties['topology'],
@@ -68,26 +73,26 @@ class QLearning:
         if self.ai_arguments['epsilon'] < 0.0:
             raise ValueError(f"Epsilon should be greater than 0 but it is {self.ai_arguments['epsilon']}")
 
-    def _update_rewards_dict(self, reward: float = None):
+    def _update_rewards(self, reward: float, reward_flag: str):
         episode = str(self.curr_episode)
-        if episode not in self.rewards_dict['rewards'].keys():
-            self.rewards_dict['rewards'][episode] = [reward]
+        if episode not in self.rewards_dict[reward_flag]['rewards'].keys():
+            self.rewards_dict[reward_flag]['rewards'][episode] = [reward]
         else:
-            self.rewards_dict['rewards'][episode].append(reward)
+            self.rewards_dict[reward_flag]['rewards'][episode].append(reward)
 
         if self.curr_episode == self.properties['max_iters'] - 1 and \
-                len(self.rewards_dict['rewards'][episode]) == self.properties['num_requests']:
+                len(self.rewards_dict[reward_flag]['rewards'][episode]) == self.properties['num_requests']:
             matrix = np.array([])
-            for episode, curr_list in self.rewards_dict['rewards'].items():
+            for episode, curr_list in self.rewards_dict[reward_flag]['rewards'].items():
                 if episode == '0':
                     matrix = np.array([curr_list])
                 else:
                     matrix = np.vstack((matrix, curr_list))
 
-            self.rewards_dict['min'] = matrix.min(axis=0, initial=np.inf).tolist()
-            self.rewards_dict['max'] = matrix.max(axis=0, initial=np.inf * -1.0).tolist()
-            self.rewards_dict['average'] = matrix.mean(axis=0).tolist()
-            self.rewards_dict.pop('rewards')
+            self.rewards_dict[reward_flag]['min'] = matrix.min(axis=0, initial=np.inf).tolist()
+            self.rewards_dict[reward_flag]['max'] = matrix.max(axis=0, initial=np.inf * -1.0).tolist()
+            self.rewards_dict[reward_flag]['average'] = matrix.mean(axis=0).tolist()
+            self.rewards_dict[reward_flag].pop('rewards')
 
     def save_table(self):
         if self.sim_type == 'test':
@@ -131,54 +136,63 @@ class QLearning:
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
 
-    # TODO: Here is the next modification
+    @staticmethod
+    def _get_policy_one(routed: bool):
+        if routed:
+            resp = 1.0
+        else:
+            resp = -1.0
+
+        return resp
+
+    def _get_max_future_q(self, new_cong):
+        q_values = list()
+        self.new_cong_index = self._classify_cong(curr_cong=new_cong)
+        path_index, path, old_cong_index = self.paths_info[self.path_index]
+        self.paths_info[self.path_index] = (path_index, path, self.new_cong_index)
+
+        for path_index, _, cong_index in self.paths_info:
+            curr_q = self.q_routes[self.source][self.destination][path_index][cong_index]['q_value']
+            q_values.append(curr_q)
+
+        return np.max(q_values)
+
     def update_env(self, routed: bool, spectrum: dict):
         self.update_routes_q_values(routed)
-        self.update_cores_q_values(spectrum, routed)
+        self.update_cores_q_values(routed)
 
-    # TODO: Here is the next modification
     def update_routes_q_values(self, routed: bool):
         policy = self.ai_arguments.get('policy')
-        # if policy not in self.reward_policies:
-        #     raise NotImplementedError('Reward policy not recognized.')
-        #
-        # reward = self.reward_policies[policy](routed=routed)
-        # self._update_rewards_dict(reward=reward)
-        #
-        # source = int(self.chosen_path[0])
-        # destination = int(self.chosen_path[-1])
-        # path_index = np.where(self.q_routes['path'] == self.chosen_path)[0][0]
-        #
-        # current_q = self.q_routes[source][destination][path_index]['q_value']
-        # max_future_q_routes = np.max(self.q_routes[source][destination]['q_value'])
-        #
-        # new_q_routes = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + \
-        #                (self.ai_arguments['learn_rate'] * (
-        #                        reward + (self.ai_arguments['discount'] * max_future_q_routes)))
-        #
-        # self.q_routes[source][destination][path_index]['q_value'] = new_q_routes
+        if policy not in self.reward_policies:
+            raise NotImplementedError('Reward policy not recognized.')
 
-    # TODO: Here is the next modification
+        reward = self.reward_policies[policy](routed=routed)
+        self._update_rewards(reward=reward, reward_flag='routes')
+
+        new_path_cong = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
+        current_q = self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['q_value']
+        max_future_q = self._get_max_future_q(new_cong=new_path_cong)
+
+        new_q = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + \
+                (self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q)))
+        self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['q_value'] = new_q
+
     def update_cores_q_values(self, routed: bool):
         policy = self.ai_arguments.get('policy')
-        # if policy not in self.reward_policies:
-        #     raise NotImplementedError('Reward policy not recognized.')
-        #
-        # reward = self.reward_policies[policy](routed=routed)
-        # self._update_rewards_dict(reward=reward)
-        #
-        # source = int(self.chosen_path[0])
-        # destination = int(self.chosen_path[-1])
-        # path_index = np.where(self.q_routes['path'] == self.chosen_path)[0][0]
-        # # core_index = np.where(self.q_cores['core_action'] == spectrum['core'])[0][0]
-        #
-        # current_q_core = self.q_cores[source][destination][path_index][core_index]['q_value']
-        # max_future_q_core = np.max(self.q_cores[source][destination][path_index]['q_value'])
-        #
-        # new_q_core = ((1.0 - self.ai_arguments['learn_rate']) * current_q_core) + \
-        #              (self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q_core)))
-        #
-        # self.q_cores[source][destination][path_index][core_index]['q_value'] = new_q_core
+        if policy not in self.reward_policies:
+            raise NotImplementedError('Reward policy not recognized.')
+
+        reward = self.reward_policies[policy](routed=routed)
+        self._update_rewards(reward=reward, reward_flag='cores')
+
+        q_cores_matrix = self.q_cores[self.source][self.destination][self.path_index]
+        current_q = q_cores_matrix[self.cong_index][self.core_index]['q_value']
+        max_future_q = np.max(q_cores_matrix[self.new_cong_index]['q_value'])
+
+        new_q_core = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + \
+                     (self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q)))
+        self.q_cores[self.source][self.destination][self.path_index][self.cong_index][self.core_index][
+            'q_value'] = new_q_core
 
     def _init_q_tables(self):
         for source in range(0, self.num_nodes):
@@ -225,18 +239,24 @@ class QLearning:
         max_path = paths[max_index]
         return max_path
 
+    @staticmethod
+    def _classify_cong(curr_cong):
+        if curr_cong < 0.3:
+            cong_index = 0
+        elif 0.3 <= curr_cong < 0.7:
+            cong_index = 1
+        elif curr_cong >= 0.7:
+            cong_index = 2
+        else:
+            raise ValueError('Congestion value not recognized.')
+
+        return cong_index
+
     def _assign_congestion(self, paths):
         resp = list()
         for path_index, curr_path in enumerate(paths):
             curr_cong = find_path_congestion(path=curr_path, network_db=self.net_spec_db)
-            if curr_cong < 0.3:
-                cong_index = 0
-            elif 0.3 <= curr_cong < 0.7:
-                cong_index = 1
-            elif curr_cong >= 0.7:
-                cong_index = 2
-            else:
-                raise ValueError('Congestion value not recognized.')
+            cong_index = self._classify_cong(curr_cong=curr_cong)
 
             resp.append((path_index, curr_path, cong_index))
 
@@ -245,14 +265,14 @@ class QLearning:
     def route(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         paths = self.q_routes[self.source][self.destination]['path'][:, 0]
-        paths = self._assign_congestion(paths=paths)
+        self.paths_info = self._assign_congestion(paths=paths)
 
         if random_float < self.ai_arguments['epsilon']:
             self.path_index = np.random.choice(self.k_paths)
             self.cong_index = np.random.choice(len(self.cong_types))
             self.chosen_path = self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['path']
         else:
-            best_path = self._get_max_q(paths=paths)
+            best_path = self._get_max_q(paths=self.paths_info)
             self.path_index, self.chosen_path, self.cong_index = best_path
 
         if len(self.chosen_path) == 0:

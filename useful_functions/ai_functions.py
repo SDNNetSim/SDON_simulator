@@ -38,7 +38,7 @@ class AIMethods:
         :type spectrum: dict
         """
         self.ai_obj.curr_episode = self.episode
-        self.ai_obj.update_environment(routed=routed, spectrum=spectrum, path_mod=path_mod)
+        self.ai_obj.update_env(routed=routed, spectrum=spectrum)
         # Decay epsilon
         if self.ai_obj.sim_type == 'train':
             numerator = self.ai_obj.ai_arguments['epsilon'] - self.ai_obj.ai_arguments['epsilon_target']

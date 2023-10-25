@@ -127,7 +127,7 @@ def find_path_congestion(path: List[str], network_db):
 
         for curr_core in cores_matrix:
             core_slots_taken = float(len(np.where(curr_core != 0.0)[0]))
-            slots_taken += slots_taken
+            slots_taken += core_slots_taken
 
         cong_per_link.append(slots_taken / (total_slots * cores_per_link))
 
