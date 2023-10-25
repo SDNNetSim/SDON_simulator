@@ -321,13 +321,13 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
                               guard_slots=properties['guard_slots'])
 
     # TODO: Change constant QPSK modulation formats
+    # TODO: All other routing methods will break, return None for cores
     if properties['route_method'] == 'nli_aware':
         slots_needed = properties['mod_per_bw'][chosen_bw]['QPSK']['slots_needed']
         routing_obj.slots_needed = slots_needed
         routing_obj.beta = properties['beta']
         resp = routing_obj.nli_aware()
     elif properties['route_method'] == 'xt_aware':
-        # TODO: Add xt_type to the configuration file
         resp = routing_obj.xt_aware(beta=properties['beta'], xt_type=properties['xt_type'])
     elif properties['route_method'] == 'least_congested':
         resp = routing_obj.least_congested_path()
@@ -337,17 +337,17 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
         resp = routing_obj.k_shortest_path(k_paths=properties['k_paths'])
     elif properties['route_method'] == 'ai':
         # Used for routing related to artificial intelligence
-        selected_path = ai_obj.route(source=int(source), destination=int(destination),
-                                     net_spec_db=net_spec_db, chosen_bw=chosen_bw,
-                                     guard_slots=properties['guard_slots'])
+        selected_path, selected_core = ai_obj.route(source=int(source), destination=int(destination),
+                                                    net_spec_db=net_spec_db, chosen_bw=chosen_bw,
+                                                    guard_slots=properties['guard_slots'])
 
         # A path could not be found, assign None to path modulation
         if not selected_path:
-            resp = [selected_path], [False], [False]
+            resp = [selected_path], [False], [False], [False]
         else:
             path_len = find_path_len(path=selected_path, topology=topology)
             path_mod = [get_path_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)]
-            resp = [selected_path], [path_mod], [path_len]
+            resp = [selected_path], [selected_core], [path_mod], [path_len]
     else:
         raise NotImplementedError(f"Routing method not recognized, got: {properties['route_method']}.")
 
@@ -355,7 +355,7 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
 
 
 def get_spectrum(properties: dict, chosen_bw: str, path: list, net_spec_db: dict, modulation: str, snr_obj: object,
-                 path_mod: str):
+                 path_mod: str, core: int):
     """
     Given relevant request information, find a given spectrum for various allocation methods.
 
@@ -386,7 +386,7 @@ def get_spectrum(properties: dict, chosen_bw: str, path: list, net_spec_db: dict
     slots_needed = properties['mod_per_bw'][chosen_bw][modulation]['slots_needed']
     spectrum_assignment = sim_scripts.spectrum_assignment.SpectrumAssignment(print_warn=properties['warnings'],
                                                                              path=path, slots_needed=slots_needed,
-                                                                             net_spec_db=net_spec_db,
+                                                                             net_spec_db=net_spec_db, core=core,
                                                                              guard_slots=properties['guard_slots'],
                                                                              is_sliced=False,
                                                                              alloc_method=properties[

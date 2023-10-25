@@ -33,6 +33,7 @@ class SDNController:
         self.destination = None
         # The current path
         self.path = None
+        self.core = None
         # The chosen bandwidth for the current request
         self.chosen_bw = None
         # Determines if light slicing is limited to a single core or not
@@ -254,7 +255,7 @@ class SDNController:
         raise NotImplementedError(
             'Light path slicing is not supported at this point in time, but will be in the future.')
 
-    def _handle_spectrum(self, mod_options: dict):
+    def _handle_spectrum(self, mod_options: dict, core: int):
         """
         Given modulation options, iterate through them and attempt to allocate a request with one.
 
@@ -278,7 +279,7 @@ class SDNController:
                                                                 path=self.path,
                                                                 net_spec_db=self.net_spec_db, modulation=modulation,
                                                                 snr_obj=self.snr_obj,
-                                                                path_mod=modulation)
+                                                                path_mod=modulation, core=core)
 
             # We found a spectrum, no need to check other modulation formats
             if spectrum is not False:
@@ -312,11 +313,12 @@ class SDNController:
             return self.net_spec_db
 
         start_time = time.time()
-        paths, path_mods, path_weights = self._handle_routing()
+        paths, cores, path_mods, path_weights = self._handle_routing()
         route_time = time.time() - start_time
 
-        for path, path_mod, path_weight in zip(paths, path_mods, path_weights):
+        for path, core, path_mod, path_weight in zip(paths, cores, path_mods, path_weights):
             self.path = path
+            self.core = core
 
             # TODO: Spectrum assignment always overrides modulation format chosen when using check snr
             if path is not False:
@@ -329,7 +331,7 @@ class SDNController:
                     self.block_reason = 'distance'
                     return False, self.block_reason, self.path
 
-                spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options)
+                spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options, core=core)
                 # Request was blocked for this path
                 if spectrum is False or spectrum is None:
                     self.block_reason = 'congestion'

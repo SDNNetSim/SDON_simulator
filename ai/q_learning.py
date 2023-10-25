@@ -131,51 +131,54 @@ class QLearning:
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
 
-    def update_q_values(self, routed: bool, spectrum: dict, path_mod: str):
-        self.update_routes_q_values(routed, path_mod)
-        self.update_cores_q_values(spectrum, routed, path_mod)
+    # TODO: Here is the next modification
+    def update_env(self, routed: bool, spectrum: dict):
+        self.update_routes_q_values(routed)
+        self.update_cores_q_values(spectrum, routed)
 
-    def update_routes_q_values(self, routed: bool, path_mod: str):
+    # TODO: Here is the next modification
+    def update_routes_q_values(self, routed: bool):
         policy = self.ai_arguments.get('policy')
-        if policy not in self.reward_policies:
-            raise NotImplementedError('Reward policy not recognized.')
+        # if policy not in self.reward_policies:
+        #     raise NotImplementedError('Reward policy not recognized.')
+        #
+        # reward = self.reward_policies[policy](routed=routed)
+        # self._update_rewards_dict(reward=reward)
+        #
+        # source = int(self.chosen_path[0])
+        # destination = int(self.chosen_path[-1])
+        # path_index = np.where(self.q_routes['path'] == self.chosen_path)[0][0]
+        #
+        # current_q = self.q_routes[source][destination][path_index]['q_value']
+        # max_future_q_routes = np.max(self.q_routes[source][destination]['q_value'])
+        #
+        # new_q_routes = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + \
+        #                (self.ai_arguments['learn_rate'] * (
+        #                        reward + (self.ai_arguments['discount'] * max_future_q_routes)))
+        #
+        # self.q_routes[source][destination][path_index]['q_value'] = new_q_routes
 
-        reward = self.reward_policies[policy](routed=routed, path_mod=path_mod)
-        self._update_rewards_dict(reward=reward)
-
-        source = int(self.chosen_path[0])
-        destination = int(self.chosen_path[-1])
-        path_index = np.where(self.q_routes['path'] == self.chosen_path)[0][0]
-
-        current_q = self.q_routes[source][destination][path_index]['q_value']
-        max_future_q_routes = np.max(self.q_routes[source][destination]['q_value'])
-
-        new_q_routes = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + \
-                       (self.ai_arguments['learn_rate'] * (
-                               reward + (self.ai_arguments['discount'] * max_future_q_routes)))
-
-        self.q_routes[source][destination][path_index]['q_value'] = new_q_routes
-
-    def update_cores_q_values(self, spectrum: dict, routed: bool, path_mod: str):
+    # TODO: Here is the next modification
+    def update_cores_q_values(self, routed: bool):
         policy = self.ai_arguments.get('policy')
-        if policy not in self.reward_policies:
-            raise NotImplementedError('Reward policy not recognized.')
-
-        reward = self.reward_policies[policy](routed=routed, path_mod=path_mod)
-        self._update_rewards_dict(reward=reward)
-
-        source = int(self.chosen_path[0])
-        destination = int(self.chosen_path[-1])
-        path_index = np.where(self.q_routes['path'] == self.chosen_path)[0][0]
-        core_index = np.where(self.q_cores['core_action'] == spectrum['core'])[0][0]
-
-        current_q_core = self.q_cores[source][destination][path_index][core_index]['q_value']
-        max_future_q_core = np.max(self.q_cores[source][destination][path_index]['q_value'])
-
-        new_q_core = ((1.0 - self.ai_arguments['learn_rate']) * current_q_core) + \
-                     (self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q_core)))
-
-        self.q_cores[source][destination][path_index][core_index]['q_value'] = new_q_core
+        # if policy not in self.reward_policies:
+        #     raise NotImplementedError('Reward policy not recognized.')
+        #
+        # reward = self.reward_policies[policy](routed=routed)
+        # self._update_rewards_dict(reward=reward)
+        #
+        # source = int(self.chosen_path[0])
+        # destination = int(self.chosen_path[-1])
+        # path_index = np.where(self.q_routes['path'] == self.chosen_path)[0][0]
+        # # core_index = np.where(self.q_cores['core_action'] == spectrum['core'])[0][0]
+        #
+        # current_q_core = self.q_cores[source][destination][path_index][core_index]['q_value']
+        # max_future_q_core = np.max(self.q_cores[source][destination][path_index]['q_value'])
+        #
+        # new_q_core = ((1.0 - self.ai_arguments['learn_rate']) * current_q_core) + \
+        #              (self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q_core)))
+        #
+        # self.q_cores[source][destination][path_index][core_index]['q_value'] = new_q_core
 
     def _init_q_tables(self):
         for source in range(0, self.num_nodes):
@@ -264,7 +267,6 @@ class QLearning:
             self.core_index = np.random.randint(0, self.properties['cores_per_link'])
         else:
             q_values = self.q_cores[self.source][self.destination][self.path_index][self.cong_index]['q_value']
-            q_values[-1] = 1000
             self.core_index = np.argmax(q_values)
 
         return self.core_index

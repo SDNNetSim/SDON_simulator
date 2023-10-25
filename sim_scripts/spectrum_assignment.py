@@ -17,7 +17,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
     def __init__(self, print_warn: bool = None, path: List[int] = None, slots_needed: int = None,
                  net_spec_db: dict = None, guard_slots: int = None, single_core: bool = False,
-                 is_sliced: bool = False, alloc_method: str = None):
+                 is_sliced: bool = False, alloc_method: str = None, core: int = None):
         """
         Initializes the SpectrumAssignment class.
 
@@ -47,6 +47,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         """
         self.print_warn = print_warn
         self.path = path
+        self.core = core
         self.single_core = single_core
         self.is_sliced = is_sliced
         self.alloc_method = alloc_method
@@ -160,7 +161,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                                      'end_slot': end_index + self.guard_slots}
                     return
 
-    def _check_open_slots(self, open_slots_matrix: list, flag: bool, core_num: int, des_core: int):
+    def _check_open_slots(self, open_slots_matrix: list, flag: bool, core_num: int):
         """
         Given a matrix of unallocated spectral slots, attempt to find a channel for the request.
 
@@ -172,9 +173,6 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         :param core_num: The core number in which to check other links for a potential allocation.
         :type core_num: int
-
-        :param des_core: Tell us if we'd like to force allocation to a certain core.
-        :type des_core: int
 
         :return: If we were able to successfully allocate or not.
         :rtype: bool
@@ -200,8 +198,8 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                     if self.is_free is not False or len(self.path) <= 2:
                         # Since we use enumeration prior and set the matrix equal to one core, the "core_num" will
                         # always be zero even if our desired core index is different, is this lazy coding? Idek
-                        if des_core is not None:
-                            core_num = des_core
+                        if self.core is not None:
+                            core_num = self.core
 
                         if flag == 'last_fit':
                             self.response = {'core_num': core_num, 'start_slot': end_index,
@@ -214,22 +212,21 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         return False
 
     # TODO: Write tests for this method
-    def _handle_first_last(self, flag: str = None, des_core: int = None):
+    def _handle_first_last(self, flag: str = None):
         """
         Handles either first-fit or last-fit spectrum allocation.
 
         :param flag: A flag to determine which allocation method we'd like to use.
         :type flag: str
-
-        :param des_core: Determine if we'd like to force allocation onto a certain core.
-        :type des_core: int
         """
-        if des_core is not None:
-            matrix = [self.cores_matrix[des_core]]
+        if self.core is not None:
+            matrix = [self.cores_matrix[self.core]]
+            start = self.core
         else:
             matrix = self.cores_matrix
+            start = 0
 
-        for core_num, core_arr in enumerate(matrix):
+        for core_num, core_arr in enumerate(matrix, start=start):
             # To account for ONLY single core light segment slicing
             if core_num > 0 and self.single_core and self.is_sliced:
                 break
@@ -244,8 +241,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                 open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
                                      itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
 
-            resp = self._check_open_slots(open_slots_matrix=open_slots_matrix, flag=flag, core_num=core_num,
-                                          des_core=des_core)
+            resp = self._check_open_slots(open_slots_matrix=open_slots_matrix, flag=flag, core_num=core_num)
             # We successfully found allocation on this core, no need to check the others
             if resp:
                 return
@@ -335,7 +331,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         self.slots_per_core = len(self.cores_matrix[0])
         self.cores_per_link = len(self.cores_matrix)
 
-        # TODO: Add core num here!
+        # TODO: Only first and last fit supported for the moment
         if self.alloc_method == 'best_fit':
             self._best_fit_allocation()
         elif self.alloc_method in ('first_fit', 'last_fit'):
