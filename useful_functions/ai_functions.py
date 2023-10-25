@@ -27,7 +27,7 @@ class AIMethods:
         """
         self.ai_obj.save_tables()
 
-    def _q_update_env(self, routed: bool, spectrum: dict, path_mod: str):
+    def _q_update_env(self, routed: bool):
         """
         Updates the Q-learning environment.
 
@@ -38,7 +38,7 @@ class AIMethods:
         :type spectrum: dict
         """
         self.ai_obj.curr_episode = self.episode
-        self.ai_obj.update_env(routed=routed, spectrum=spectrum)
+        self.ai_obj.update_env(routed=routed)
         # Decay epsilon
         if self.ai_obj.sim_type == 'train':
             numerator = self.ai_obj.ai_arguments['epsilon'] - self.ai_obj.ai_arguments['epsilon_target']
@@ -87,7 +87,7 @@ class AIMethods:
         if self.ai_obj.sim_type == 'train':
             self.ai_obj.save_tables()
         else:
-            self.ai_obj.load_table()
+            self.ai_obj.load_tables()
 
         self.ai_obj.set_seed(self.seed)
 
@@ -114,7 +114,7 @@ class AIMethods:
         Responsible for updating environment information.
         """
         if self.algorithm == 'q_learning':
-            self._q_update_env(routed=kwargs['routed'], spectrum=kwargs['spectrum'], path_mod=kwargs['path_mod'])
+            self._q_update_env(routed=kwargs['routed'])
 
     def _setup(self):
         """

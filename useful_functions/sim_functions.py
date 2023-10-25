@@ -1,6 +1,5 @@
 # Standard library imports
 import copy
-from collections import OrderedDict
 from typing import List
 
 # Third-party library imports
@@ -114,6 +113,18 @@ def find_path_len(path: List[str], topology: nx.Graph):
 
 
 def find_path_congestion(path: List[str], network_db):
+    """
+    Finds the average percentage of congestion for a given path.
+
+    :param path: The path to be analyzed.
+    :type path: list
+
+    :param network_db: The current up-to-date network spectrum databse.
+    :type network_db: dict
+
+    :return: The average congestion as a decimal.
+    :rtype: float
+    """
     # Divide by the total length of that array
     cong_per_link = list()
     for src, dest in zip(path, path[1:]):
