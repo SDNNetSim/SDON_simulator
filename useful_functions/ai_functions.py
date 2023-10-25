@@ -73,14 +73,15 @@ class AIMethods:
         self.ai_obj.destination = destination
         self.ai_obj.chosen_bw = chosen_bw
         path = self.ai_obj.route()
-        return path
+        core = self.ai_obj.core_assignment()
+        return path, core
 
     def _init_q_learning(self):
         """
         Initializes a QLearning class and sets up the initial environment and Q-table.
         """
         self.ai_obj.curr_episode = self.episode
-        self.ai_obj.setup_environment()
+        self.ai_obj.setup_env()
 
         # Load a pre-trained table or start a new one
         if self.ai_obj.sim_type == 'train':

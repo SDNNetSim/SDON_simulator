@@ -113,6 +113,7 @@ def find_path_len(path: List[str], topology: nx.Graph):
     return path_len
 
 
+# TODO: Modify this function to also return the amount of congestion per core, don't do it again
 def find_path_congestion(path: List[str], network_db):
     # Divide by the total length of that array
     cong_per_link = list()
