@@ -113,7 +113,6 @@ def find_path_len(path: List[str], topology: nx.Graph):
     return path_len
 
 
-# TODO: Modify this function to also return the amount of congestion per core, don't do it again
 def find_path_congestion(path: List[str], network_db):
     # Divide by the total length of that array
     cong_per_link = list()
@@ -125,8 +124,10 @@ def find_path_congestion(path: List[str], network_db):
         # Every core will have the same number of spectral slots
         total_slots = len(cores_matrix[0])
         slots_taken = 0
+
         for curr_core in cores_matrix:
-            slots_taken += float(len(np.where(curr_core != 0.0)[0]))
+            core_slots_taken = float(len(np.where(curr_core != 0.0)[0]))
+            slots_taken += slots_taken
 
         cong_per_link.append(slots_taken / (total_slots * cores_per_link))
 
