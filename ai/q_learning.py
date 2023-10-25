@@ -27,9 +27,6 @@ class QLearning:
             self.sim_type = 'train'
         else:
             self.sim_type = 'test'
-        # Contains all state and action value pairs
-        self.q_routes = None
-        self.q_cores = None
         # Statistics to evaluate our reward function
         self.rewards_dict = {
             'routes': {'average': [], 'min': [], 'max': [], 'rewards': {}},
@@ -38,25 +35,27 @@ class QLearning:
 
         self.curr_episode = None
         self.num_nodes = None
+        self.k_paths = None
+        self.num_cores = None
+        # The latest up-to-date network spectrum database
+        self.net_spec_db = None
+
+        self.q_routes = None
+        self.q_cores = None
+
         # Source node, destination node, and the resulting path
         self.source = None
         self.destination = None
+        # Contains all state and action value pairs
         self.chosen_path = None
         # The chosen bandwidth for the current request
         self.chosen_bw = None
         self.core_index = None
         self.paths_info = None
         self.new_cong_index = None
-        # The latest up-to-date network spectrum database
-        self.net_spec_db = None
-        self.xt_worst = None
-        self.k_paths = None
-        self.num_cores = None
-        self.q_routes = None
         self.path_index = None
         self.cong_index = None
         self.cong_types = None
-        self.q_cores = None
         self.reward_policies = {
             'policy_one': self._get_policy_one,
         }
@@ -80,8 +79,8 @@ class QLearning:
         else:
             self.rewards_dict[reward_flag]['rewards'][episode].append(reward)
 
-        if self.curr_episode == self.properties['max_iters'] - 1 and \
-                len(self.rewards_dict[reward_flag]['rewards'][episode]) == self.properties['num_requests']:
+        len_rewards = len(self.rewards_dict[reward_flag]['rewards'][episode])
+        if self.curr_episode == self.properties['max_iters'] - 1 and len_rewards == self.properties['num_requests']:
             matrix = np.array([])
             for episode, curr_list in self.rewards_dict[reward_flag]['rewards'].items():
                 if episode == '0':
