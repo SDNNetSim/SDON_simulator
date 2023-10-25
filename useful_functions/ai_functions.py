@@ -25,7 +25,7 @@ class AIMethods:
         """
         Saves the current state of the Q-table.
         """
-        self.ai_obj.save_table()
+        self.ai_obj.save_tables()
 
     def _q_update_env(self, routed: bool, spectrum: dict, path_mod: str):
         """
@@ -85,7 +85,7 @@ class AIMethods:
 
         # Load a pre-trained table or start a new one
         if self.ai_obj.sim_type == 'train':
-            self.ai_obj.save_table()
+            self.ai_obj.save_tables()
         else:
             self.ai_obj.load_table()
 

@@ -94,7 +94,7 @@ class QLearning:
             self.rewards_dict[reward_flag]['average'] = matrix.mean(axis=0).tolist()
             self.rewards_dict[reward_flag].pop('rewards')
 
-    def save_table(self):
+    def save_tables(self):
         if self.sim_type == 'test':
             raise NotImplementedError
 
@@ -104,8 +104,11 @@ class QLearning:
 
         create_dir(f"ai/models/q_tables/{self.ai_arguments['table_path']}")
         file_path = f"{os.getcwd()}/ai/models/q_tables/{self.ai_arguments['table_path']}/"
-        file_name = f"{self.properties['erlang']}_table_c{self.properties['cores_per_link']}.npy"
+        file_name = f"{self.properties['erlang']}_routes_table_c{self.properties['cores_per_link']}.npy"
         np.save(file_path + file_name, self.q_routes)
+
+        file_name = f"{self.properties['erlang']}_cores_table_c{self.properties['cores_per_link']}.npy"
+        np.save(file_path + file_name, self.q_cores)
 
         properties_dict = {
             'epsilon': self.ai_arguments['epsilon'],
@@ -114,20 +117,22 @@ class QLearning:
             'discount_factor': self.ai_arguments['discount'],
             'reward_info': self.rewards_dict
         }
-        file_name = f"{self.properties['erlang']}_params.json"
+        file_name = f"{self.properties['erlang']}_params_c{self.properties['cores_per_link']}.json"
         with open(f"{file_path}/{file_name}", 'w', encoding='utf-8') as file:
             json.dump(properties_dict, file)
 
-    def load_table(self):
+    def load_tables(self):
         file_path = f"{os.getcwd()}/ai/models/q_tables/{self.ai_arguments['table_path']}/"
-        file_name = f"{self.sim_type}_table_c{self.ai_arguments['cores_per_link']}.npy"
+        file_name_one = f"{self.sim_type}_routes_table_c{self.ai_arguments['cores_per_link']}.npy"
+        file_name_two = f"{self.sim_type}_cores_table_c{self.ai_arguments['cores_per_link']}.npy"
         try:
-            self.q_routes = np.load(file_path + file_name)
+            self.q_routes = np.load(file_path + file_name_one)
+            self.q_cores = np.load(file_path + file_name_two)
         except FileNotFoundError:
             print('File not found, please ensure if you are testing, an already trained file exists and has been '
                   'specified correctly.')
 
-        file_name = f"hyper_properties_c{self.ai_arguments['cores_per_link']}.json"
+        file_name = f"{self.properties['erlang']}_params_c{self.properties['cores_per_link']}.json"
         with open(f"{file_path}{file_name}", encoding='utf-8') as file:
             properties_obj = json.load(file)
 

@@ -199,6 +199,7 @@ class Routing:
         paths = list()
         mod_formats = list()
         path_lens = list()
+        cores = list()
         # This networkx function will always return the shortest paths in order
         paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
                                              weight='length')
@@ -210,10 +211,11 @@ class Routing:
             mod_format = self.get_path_mod(self.mod_formats, path_len)
 
             paths.append(path)
+            cores.append(None)
             mod_formats.append([mod_format])
             path_lens.append(path_len)
 
-        return paths, mod_formats, path_lens
+        return paths, cores, mod_formats, path_lens
 
     # TODO: Move these functions to useful functions eventually, also check the entire simulator for things like this
     def _setup_simulated_link(self, slots_per_core: int):
