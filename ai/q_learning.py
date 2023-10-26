@@ -23,6 +23,7 @@ class QLearning:
         """
         self.properties = properties
         self.ai_arguments = properties['ai_arguments']
+        self.epsilon = self.ai_arguments['epsilon']
         if self.ai_arguments['is_training']:
             self.sim_type = 'train'
         else:
@@ -32,6 +33,11 @@ class QLearning:
             'routes': {'average': [], 'min': [], 'max': [], 'rewards': {}},
             'cores': {'average': [], 'min': [], 'max': [], 'rewards': {}}
         }
+        self.td_errors = {
+            'routes': {'average': [], 'min': [], 'max': [], 'rewards': {}},
+            'cores': {'average': [], 'min': [], 'max': [], 'rewards': {}}
+        }
+        self.epsilon_stats = [self.epsilon]
 
         self.curr_episode = None
         self.num_nodes = None
@@ -82,30 +88,51 @@ class QLearning:
         :param amount: The amount to decay epsilon by.
         :type amount: float
         """
-        self.ai_arguments['epsilon'] -= amount
-        if self.ai_arguments['epsilon'] < 0.0:
-            raise ValueError(f"Epsilon should be greater than 0 but it is {self.ai_arguments['epsilon']}")
+        self.epsilon -= amount
+        if self.epsilon < 0.0:
+            raise ValueError(f"Epsilon should be greater than 0 but it is {self.epsilon}")
 
-    def _update_rewards(self, reward: float, reward_flag: str):
+    def _calc_td_averages(self, reward_flag):
+        matrix = np.array([])
+        for episode, curr_list in self.td_errors[reward_flag].items():
+            if episode == '0':
+                matrix = np.array([curr_list])
+            else:
+                matrix = np.vstack((matrix, curr_list))
+
+        self.td_errors[reward_flag]['min'] = matrix.min(axis=0, initial=np.inf).tolist()
+        self.td_errors[reward_flag]['max'] = matrix.max(axis=0, initial=np.inf * -1.0).tolist()
+        self.td_errors[reward_flag]['average'] = matrix.mean(axis=0).tolist()
+
+    def _calc_reward_averages(self, reward_flag):
+        matrix = np.array([])
+        for episode, curr_list in self.rewards_dict[reward_flag]['rewards'].items():
+            if episode == '0':
+                matrix = np.array([curr_list])
+            else:
+                matrix = np.vstack((matrix, curr_list))
+
+        self.rewards_dict[reward_flag]['min'] = matrix.min(axis=0, initial=np.inf).tolist()
+        self.rewards_dict[reward_flag]['max'] = matrix.max(axis=0, initial=np.inf * -1.0).tolist()
+        self.rewards_dict[reward_flag]['average'] = matrix.mean(axis=0).tolist()
+        self.rewards_dict[reward_flag].pop('rewards')
+
+    def _update_stats(self, reward: float, reward_flag: str, td_error: float):
         episode = str(self.curr_episode)
+        if episode == 0:
+            self.epsilon_stats.append(self.epsilon)
+
         if episode not in self.rewards_dict[reward_flag]['rewards'].keys():
             self.rewards_dict[reward_flag]['rewards'][episode] = [reward]
+            self.td_errors[reward_flag][episode] = [td_error]
         else:
+            self.td_errors[reward_flag][episode].append(td_error)
             self.rewards_dict[reward_flag]['rewards'][episode].append(reward)
 
         len_rewards = len(self.rewards_dict[reward_flag]['rewards'][episode])
         if self.curr_episode == self.properties['max_iters'] - 1 and len_rewards == self.properties['num_requests']:
-            matrix = np.array([])
-            for episode, curr_list in self.rewards_dict[reward_flag]['rewards'].items():
-                if episode == '0':
-                    matrix = np.array([curr_list])
-                else:
-                    matrix = np.vstack((matrix, curr_list))
-
-            self.rewards_dict[reward_flag]['min'] = matrix.min(axis=0, initial=np.inf).tolist()
-            self.rewards_dict[reward_flag]['max'] = matrix.max(axis=0, initial=np.inf * -1.0).tolist()
-            self.rewards_dict[reward_flag]['average'] = matrix.mean(axis=0).tolist()
-            self.rewards_dict[reward_flag].pop('rewards')
+            self._calc_reward_averages(reward_flag=reward_flag)
+            self._calc_td_averages(reward_flag=reward_flag)
 
     def save_tables(self):
         """
@@ -131,7 +158,9 @@ class QLearning:
             'episodes': self.properties['max_iters'],
             'learn_rate': self.ai_arguments['learn_rate'],
             'discount_factor': self.ai_arguments['discount'],
-            'reward_info': self.rewards_dict
+            'reward_info': self.rewards_dict,
+            'td_info': self.td_errors,
+            'epsilon_decay': self.epsilon_stats,
         }
         file_name = f"{self.properties['erlang']}_params_c{self.properties['cores_per_link']}.json"
         with open(f"{file_path}/{file_name}", 'w', encoding='utf-8') as file:
@@ -155,7 +184,7 @@ class QLearning:
         with open(f"{file_path}{file_name}", encoding='utf-8') as file:
             properties_obj = json.load(file)
 
-        self.ai_arguments['epsilon'] = properties_obj['epsilon']
+        self.epsilon = properties_obj['epsilon']
         self.ai_arguments['learn_rate'] = properties_obj['learn_rate']
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
@@ -214,15 +243,15 @@ class QLearning:
         if policy not in self.reward_policies:
             raise NotImplementedError('Reward policy not recognized.')
 
-        reward = self.reward_policies[policy](routed=routed)
-        self._update_rewards(reward=reward, reward_flag='routes')
-
         new_path_cong = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
         current_q = self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['q_value']
         max_future_q = self._get_max_future_q(new_cong=new_path_cong)
 
-        new_q = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + \
-                (self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q)))
+        reward = self.reward_policies[policy](routed=routed)
+        delta = reward + self.ai_arguments['discount'] * max_future_q
+        self._update_stats(reward=reward, reward_flag='routes', td_error=delta)
+
+        new_q = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + (self.ai_arguments['learn_rate'] * delta)
         self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['q_value'] = new_q
 
     def _update_cores_q_values(self, routed: bool):
@@ -230,15 +259,15 @@ class QLearning:
         if policy not in self.reward_policies:
             raise NotImplementedError('Reward policy not recognized.')
 
-        reward = self.reward_policies[policy](routed=routed)
-        self._update_rewards(reward=reward, reward_flag='cores')
-
         q_cores_matrix = self.q_cores[self.source][self.destination][self.path_index]
         current_q = q_cores_matrix[self.cong_index][self.core_index]['q_value']
         max_future_q = np.max(q_cores_matrix[self.new_cong_index]['q_value'])
 
-        new_q_core = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + \
-                     (self.ai_arguments['learn_rate'] * (reward + (self.ai_arguments['discount'] * max_future_q)))
+        reward = self.reward_policies[policy](routed=routed)
+        delta = reward + self.ai_arguments['discount'] * max_future_q
+        self._update_stats(reward=reward, reward_flag='cores', td_error=delta)
+
+        new_q_core = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + (self.ai_arguments['learn_rate'] * delta)
         self.q_cores[self.source][self.destination][self.path_index][self.cong_index][self.core_index][
             'q_value'] = new_q_core
 
@@ -265,6 +294,7 @@ class QLearning:
         """
         Sets up the environment (q-tables) for the q-learning algorithm.
         """
+        self.epsilon = self.ai_arguments['epsilon']
         self.num_nodes = len(list(self.properties['topology'].nodes()))
         self.k_paths = self.properties['k_paths']
 
@@ -324,7 +354,7 @@ class QLearning:
         paths = self.q_routes[self.source][self.destination]['path'][:, 0]
         self.paths_info = self._assign_congestion(paths=paths)
 
-        if random_float < self.ai_arguments['epsilon']:
+        if random_float < self.epsilon:
             self.path_index = np.random.choice(self.k_paths)
             self.cong_index = self.paths_info[self.path_index][-1]
             self.chosen_path = self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['path']
@@ -346,7 +376,7 @@ class QLearning:
         """
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
 
-        if random_float < self.ai_arguments['epsilon']:
+        if random_float < self.epsilon:
             self.core_index = np.random.randint(0, self.properties['cores_per_link'])
         else:
             q_values = self.q_cores[self.source][self.destination][self.path_index][self.cong_index]['q_value']
