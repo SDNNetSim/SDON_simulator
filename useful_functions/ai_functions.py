@@ -33,15 +33,12 @@ class AIMethods:
 
         :param routed: A flag to determine if a request was routed or not.
         :type routed: bool
-
-        :param spectrum: Relevant information related to the spectrum assignment.
-        :type spectrum: dict
         """
         self.ai_obj.curr_episode = self.episode
         self.ai_obj.update_env(routed=routed)
         # Decay epsilon
         if self.ai_obj.sim_type == 'train':
-            numerator = self.ai_obj.ai_arguments['epsilon'] - self.ai_obj.ai_arguments['epsilon_target']
+            numerator = self.ai_obj.epsilon - self.ai_obj.ai_arguments['epsilon_target']
             denominator = float(self.properties['max_iters'])
             decay_amount = numerator / denominator
             self.ai_obj.decay_epsilon(amount=decay_amount)
