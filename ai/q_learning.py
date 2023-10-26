@@ -34,8 +34,8 @@ class QLearning:
             'cores': {'average': [], 'min': [], 'max': [], 'rewards': {}}
         }
         self.td_errors = {
-            'routes': {'average': [], 'min': [], 'max': [], 'rewards': {}},
-            'cores': {'average': [], 'min': [], 'max': [], 'rewards': {}}
+            'routes': {'average': [], 'min': [], 'max': [], 'errors': {}},
+            'cores': {'average': [], 'min': [], 'max': [], 'errors': {}}
         }
         self.epsilon_stats = [self.epsilon]
 
@@ -89,20 +89,23 @@ class QLearning:
         :type amount: float
         """
         self.epsilon -= amount
+        if self.curr_episode == 0:
+            self.epsilon_stats.append(self.epsilon)
         if self.epsilon < 0.0:
             raise ValueError(f"Epsilon should be greater than 0 but it is {self.epsilon}")
 
-    def _calc_td_averages(self, reward_flag):
+    def _calc_td_averages(self, error_flag):
         matrix = np.array([])
-        for episode, curr_list in self.td_errors[reward_flag].items():
+        for episode, curr_list in self.td_errors[error_flag]['errors'].items():
             if episode == '0':
                 matrix = np.array([curr_list])
             else:
                 matrix = np.vstack((matrix, curr_list))
 
-        self.td_errors[reward_flag]['min'] = matrix.min(axis=0, initial=np.inf).tolist()
-        self.td_errors[reward_flag]['max'] = matrix.max(axis=0, initial=np.inf * -1.0).tolist()
-        self.td_errors[reward_flag]['average'] = matrix.mean(axis=0).tolist()
+        self.td_errors[error_flag]['min'] = matrix.min(axis=0, initial=np.inf).tolist()
+        self.td_errors[error_flag]['max'] = matrix.max(axis=0, initial=np.inf * -1.0).tolist()
+        self.td_errors[error_flag]['average'] = matrix.mean(axis=0).tolist()
+        self.td_errors[error_flag].pop('errors')
 
     def _calc_reward_averages(self, reward_flag):
         matrix = np.array([])
@@ -119,20 +122,18 @@ class QLearning:
 
     def _update_stats(self, reward: float, reward_flag: str, td_error: float):
         episode = str(self.curr_episode)
-        if episode == 0:
-            self.epsilon_stats.append(self.epsilon)
 
         if episode not in self.rewards_dict[reward_flag]['rewards'].keys():
             self.rewards_dict[reward_flag]['rewards'][episode] = [reward]
-            self.td_errors[reward_flag][episode] = [td_error]
+            self.td_errors[reward_flag]['errors'][episode] = [td_error]
         else:
-            self.td_errors[reward_flag][episode].append(td_error)
+            self.td_errors[reward_flag]['errors'][episode].append(td_error)
             self.rewards_dict[reward_flag]['rewards'][episode].append(reward)
 
         len_rewards = len(self.rewards_dict[reward_flag]['rewards'][episode])
         if self.curr_episode == self.properties['max_iters'] - 1 and len_rewards == self.properties['num_requests']:
             self._calc_reward_averages(reward_flag=reward_flag)
-            self._calc_td_averages(reward_flag=reward_flag)
+            self._calc_td_averages(error_flag=reward_flag)
 
     def save_tables(self):
         """
