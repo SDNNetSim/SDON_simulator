@@ -58,6 +58,8 @@ class QLearning:
         self.cong_types = None
         self.reward_policies = {
             'policy_one': self._get_policy_one,
+            'policy_two': self._get_policy_two,
+            'policy_three': self._get_policy_three,
         }
         # Simulation methods related to routing
         self.routing_obj = Routing(beta=properties['beta'], topology=properties['topology'],
@@ -157,6 +159,24 @@ class QLearning:
         self.ai_arguments['learn_rate'] = properties_obj['learn_rate']
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
+
+    @staticmethod
+    def _get_policy_three(routed: bool):
+        if routed:
+            resp = 1.0
+        else:
+            resp = -100.0
+
+        return resp
+
+    @staticmethod
+    def _get_policy_two(routed: bool):
+        if routed:
+            resp = 1.0
+        else:
+            resp = -10.0
+
+        return resp
 
     @staticmethod
     def _get_policy_one(routed: bool):
