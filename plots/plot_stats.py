@@ -1,6 +1,7 @@
 # Standard library imports
 import os
 import json
+import re
 
 # Third-party imports
 import matplotlib.pyplot as plt
@@ -8,6 +9,7 @@ import numpy as np
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
+from interactive_plots import plot_q_table
 
 
 class PlotStats:
@@ -162,6 +164,13 @@ class PlotStats:
         algorithm = f'{param}'
         self.plot_dict[self.time][self.sim_num]['algorithm'] = algorithm
 
+    def _get_tables(self):
+        base_path = f"../ai/models/q_tables/{self.network}/{self.date}"
+        des_path = os.path.join(base_path, f"{self.time}/{self.sim_num}/"
+                                           f"{self.erlang}_routes_table_c{self.num_cores}.npy")
+        q_table = np.load(des_path, allow_pickle=True)
+        return q_table
+
     def _get_rewards(self):
         base_path = f"../ai/models/q_tables/{self.network}/{self.date}"
         des_path = os.path.join(base_path, f"{self.time}/{self.sim_num}/{self.erlang}_params_c{self.num_cores}.json")
@@ -169,19 +178,33 @@ class PlotStats:
         with open(des_path, 'r', encoding='utf-8') as file_obj:
             file_content = json.load(file_obj)
 
+        if len(self.plot_dict[self.time][self.sim_num]['epsilon']) == 0:
+            self.plot_dict[self.time][self.sim_num]['epsilon'] = file_content['epsilon_decay'][0:-1]
+
         reward_info = file_content['reward_info']
         min_rewards = (reward_info['routes']['min'], reward_info['cores']['min'])
         max_rewards = (reward_info['routes']['max'], reward_info['cores']['max'])
         average_rewards = (reward_info['routes']['average'], reward_info['cores']['average'])
 
+        error_info = file_content['td_info']
+        min_error = (error_info['routes']['min'], error_info['cores']['min'])
+        max_error = (error_info['routes']['max'], error_info['cores']['max'])
+        average_error = (error_info['routes']['average'], error_info['cores']['average'])
+
         cumulative_sum = 0
-        cumulative_averages = []
+        cumulative_rewards = []
+        cumulative_errors = []
 
         for i, reward in enumerate(average_rewards[0], 1):
             cumulative_sum += reward
-            cumulative_averages.append(cumulative_sum / i)
+            cumulative_rewards.append(cumulative_sum / i)
 
-        return min_rewards, max_rewards, cumulative_averages
+        cumulative_sum = 0
+        for i, reward in enumerate(average_error[0], 1):
+            cumulative_sum += reward
+            cumulative_errors.append(cumulative_sum / i)
+
+        return min_rewards, max_rewards, cumulative_rewards, min_error, max_error, cumulative_errors
 
     def _find_sim_info(self, network):
         self.plot_dict[self.time][self.sim_num]['holding_time'] = self.erlang_dict['sim_params']['holding_time']
@@ -216,18 +239,6 @@ class PlotStats:
         path_lens = self._dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['path_lengths'])
         hops = self._dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['hops'])
         times = self._dict_to_list(self.erlang_dict['misc_stats'], 'route_times') * 10 ** 3
-        if self.erlang_dict['sim_params']['ai_algorithm'] != 'None':
-            min_rewards, max_rewards, average_rewards = self._get_rewards()
-            self.plot_dict[self.time][self.sim_num]['min_rewards']['routes'].append(min_rewards[0])
-            self.plot_dict[self.time][self.sim_num]['min_rewards']['cores'].append(min_rewards[1])
-
-            self.plot_dict[self.time][self.sim_num]['max_rewards']['routes'].append(max_rewards[0])
-            self.plot_dict[self.time][self.sim_num]['max_rewards']['cores'].append(max_rewards[1])
-
-            self.plot_dict[self.time][self.sim_num]['average_rewards']['routes'].append(average_rewards)
-            self.plot_dict[self.time][self.sim_num]['average_rewards']['cores'].append(average_rewards)
-
-            self.plot_dict[self.time][self.sim_num]['time_steps'].append(np.arange(len(average_rewards)))
 
         cong_block = self._dict_to_list(self.erlang_dict['misc_stats'], 'congestion', ['block_reasons'])
         dist_block = self._dict_to_list(self.erlang_dict['misc_stats'], 'distance', ['block_reasons'])
@@ -252,6 +263,31 @@ class PlotStats:
         except KeyError:
             blocking_mean = np.mean(list(self.erlang_dict['block_per_sim'].values()))
         self.plot_dict[self.time][self.sim_num]['blocking_vals'].append(blocking_mean)
+
+    def _find_ai_stats(self):
+        min_rewards, max_rewards, average_rewards, min_error, max_error, average_error = self._get_rewards()
+        self.plot_dict[self.time][self.sim_num]['min_rewards']['routes'].append(min_rewards[0])
+        self.plot_dict[self.time][self.sim_num]['min_rewards']['cores'].append(min_rewards[1])
+
+        self.plot_dict[self.time][self.sim_num]['max_rewards']['routes'].append(max_rewards[0])
+        self.plot_dict[self.time][self.sim_num]['max_rewards']['cores'].append(max_rewards[1])
+
+        self.plot_dict[self.time][self.sim_num]['average_rewards']['routes'].append(average_rewards)
+        self.plot_dict[self.time][self.sim_num]['average_rewards']['cores'].append(average_rewards)
+
+        self.plot_dict[self.time][self.sim_num]['min_error']['routes'].append(min_error[0])
+        self.plot_dict[self.time][self.sim_num]['min_error']['cores'].append(min_error[1])
+
+        self.plot_dict[self.time][self.sim_num]['max_error']['routes'].append(max_error[0])
+        self.plot_dict[self.time][self.sim_num]['max_error']['cores'].append(max_error[1])
+
+        self.plot_dict[self.time][self.sim_num]['average_error']['routes'].append(average_error)
+        self.plot_dict[self.time][self.sim_num]['average_error']['cores'].append(average_error)
+
+        self.plot_dict[self.time][self.sim_num]['time_steps'].append(np.arange(len(average_rewards)))
+
+        q_table = self._get_tables()
+        self.plot_dict[self.time][self.sim_num]['q_tables'].append(q_table)
 
     def _find_network_usage(self):
         request_nums = []
@@ -290,10 +326,15 @@ class PlotStats:
             'block_per_req': [],
             'req_nums': [],
             'route_times': [],
+            'epsilon': [],
+            'q_tables': [],
             'min_rewards': {'routes': [], 'cores': []},
             'max_rewards': {'routes': [], 'cores': []},
             'modulations': dict(),
             'average_rewards': {'routes': [], 'cores': []},
+            'max_error': {'routes': [], 'cores': []},
+            'min_error': {'routes': [], 'cores': []},
+            'average_error': {'routes': [], 'cores': []},
             'time_steps': [],
             'dist_block': [],
             'cong_block': [],
@@ -326,6 +367,8 @@ class PlotStats:
                     self._find_sim_info(network=obj['network'])
                     self._find_modulation_info()
                     self._find_network_usage()
+                    if self.erlang_dict['sim_params']['ai_algorithm'] != 'None':
+                        self._find_ai_stats()
                     self._find_misc_stats()
 
     def _save_plot(self, file_name: str):
@@ -425,7 +468,10 @@ class PlotStats:
 
             axis.set_ylim(0, 17000)
             plt.tight_layout()
-            self._save_plot(file_name=f"{file_name}_{policy.split('=')[1].lower()}_{erlangs[index]}")
+            values = re.findall(r'(\d+\.\d+)', policy)
+
+            alpha, gamma = values
+            self._save_plot(file_name=f"{file_name}_{alpha}_{gamma}_{erlangs[index]}")
             plt.show()
 
     def _plot_helper_one(self, x_vals: str, y_vals: list, file_name: str, reward_flags=None, per_req_flag=None):
@@ -462,20 +508,35 @@ class PlotStats:
                             legend_list.append(f"{legend_item}")
                         else:
                             legend_list.append(f"{sim_obj['algorithm']}")
-                            plt.plot(sim_obj[x_vals], sim_obj[curr_value], linestyle=style, markersize=2.3)
+                            plt.plot(sim_obj[x_vals][0], sim_obj[curr_value], linestyle=style, markersize=2.3)
 
         plt.legend(legend_list)
         self._save_plot(file_name=file_name)
         plt.show()
 
     def plot_q_tables(self):
-        raise NotImplemented
+        plot_q_table(data=self.plot_dict)
 
     def plot_epsilon(self):
-        raise NotImplemented
+        self._setup_plot("Epsilon Decay vs. Time Steps", 'Epsilon', 'Time Steps (Request Numbers)',
+                         y_ticks=False, x_ticks=False)
+        self._plot_helper_one(x_vals='time_steps', y_vals=['epsilon'], file_name='epsilon_decay')
 
     def plot_td_errors(self):
-        raise NotImplemented
+        self._setup_plot("Average Errors vs. Time Steps", 'Average Error', 'Time Steps (Request Numbers)',
+                         y_ticks=False, x_ticks=False)
+        self._plot_helper_one(x_vals='time_steps', y_vals=['average_error'], file_name='average_errors_50',
+                              reward_flags=[[0], ['routes']])
+
+        self._setup_plot("Average Errors vs. Time Steps", 'Average Error', 'Time Steps (Request Numbers)',
+                         y_ticks=False, x_ticks=False)
+        self._plot_helper_one(x_vals='time_steps', y_vals=['average_error'], file_name='average_errors_300',
+                              reward_flags=[[5], ['routes']])
+
+        self._setup_plot("Average Errors vs. Time Steps", 'Average Error', 'Time Steps (Request Numbers)',
+                         y_ticks=False, x_ticks=False)
+        self._plot_helper_one(x_vals='time_steps', y_vals=['average_error'], file_name='average_errors_700',
+                              reward_flags=[[-1], ['routes']])
 
     def plot_active_requests(self):
         self._setup_plot("Active Requests", 'Active Requests', 'Request Number', y_ticks=False, x_ticks=False)
@@ -683,8 +744,8 @@ def main():
             # ['ai_arguments', 'policy', 'policy_one']
         ],
         'or_filters': [
-            ['ai_arguments', 'policy', 'policy_two'],
-            ['route_method', 'k_shortest_path'],
+            ['ai_arguments', 'policy', 'policy_one'],
+            # ['route_method', 'k_shortest_path'],
         ],
         'not_filters': [
             # ['route_method', 'k_shortest_path']
@@ -696,12 +757,15 @@ def main():
     # plot_obj.plot_blocking()
     # plot_obj.plot_path_length()
     # plot_obj.plot_hops()
-    plot_obj.plot_rewards()
+    # plot_obj.plot_rewards()
     # plot_obj.plot_block_reasons()
     # plot_obj.plot_mod_formats()
     # plot_obj.plot_block_per_req()
     # plot_obj.plot_network_util()
     # plot_obj.plot_active_requests()
+    # plot_obj.plot_td_errors()
+    # plot_obj.plot_epsilon()
+    plot_obj.plot_q_tables()
 
 
 if __name__ == '__main__':
