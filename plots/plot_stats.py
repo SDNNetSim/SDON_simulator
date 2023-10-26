@@ -42,7 +42,7 @@ class PlotStats:
         self.colors = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
         self.markers = ['o', '^', 's', 'x']
-        self.x_ticks = list(range(10, 700, 100))
+        self.x_ticks = list(range(50, 750, 50))
 
         self._get_data()
 
@@ -434,6 +434,8 @@ class PlotStats:
             for _, sim_obj in objs.items():
                 if sim_obj['algorithm'][0] == 'k':
                     style = 'dashed'
+                    if x_vals == 'time_steps':
+                        continue
                 elif sim_obj['algorithm'][0:2] == 'Ba':
                     style = 'dashdot'
                 else:
@@ -442,28 +444,38 @@ class PlotStats:
                 for curr_value in y_vals:
                     if reward_flags is not None:
                         for index in reward_flags[0]:
-                            # TODO: Add erlang to the legend
+                            erlang = sim_obj['erlang_vals'][index]
                             plt.plot(sim_obj[x_vals][index], sim_obj[curr_value][reward_flags[1][0]][index],
                                      linestyle=style,
                                      markersize=2.3)
+                            legend_list.append(f"E={erlang} | {sim_obj['algorithm']}")
                     elif per_req_flag is not None:
                         for index in per_req_flag:
                             erlang = sim_obj['erlang_vals'][index]
                             plt.plot(sim_obj[x_vals], sim_obj[curr_value][index],
                                      linestyle=style,
                                      markersize=2.3)
-                            legend_list.append(erlang)
+                            legend_list.append(f"E={erlang} | {sim_obj['algorithm']}")
                     else:
                         if len(y_vals) > 1:
                             legend_item = self._snake_to_title(curr_value)
                             legend_list.append(f"{legend_item}")
                         else:
                             legend_list.append(f"{sim_obj['algorithm']}")
-                        plt.plot(sim_obj[x_vals], sim_obj[curr_value], linestyle=style, markersize=2.3)
+                            plt.plot(sim_obj[x_vals], sim_obj[curr_value], linestyle=style, markersize=2.3)
 
         plt.legend(legend_list)
         self._save_plot(file_name=file_name)
         plt.show()
+
+    def plot_q_tables(self):
+        raise NotImplemented
+
+    def plot_epsilon(self):
+        raise NotImplemented
+
+    def plot_td_errors(self):
+        raise NotImplemented
 
     def plot_active_requests(self):
         self._setup_plot("Active Requests", 'Active Requests', 'Request Number', y_ticks=False, x_ticks=False)
@@ -501,8 +513,18 @@ class PlotStats:
         """
         self._setup_plot("Average Rewards requests", 'Average Reward', 'Time Steps (Request Numbers)',
                          y_ticks=False, x_ticks=False)
-        self._plot_helper_one(x_vals='time_steps', y_vals=['average_rewards'], file_name='average_rewards',
-                              reward_flags=[[-1], ['routes']])
+        self._plot_helper_one(x_vals='time_steps', y_vals=['average_rewards'], file_name='average_rewards_50',
+                              reward_flags=[[0], ['cores']])
+
+        self._setup_plot("Average Rewards requests", 'Average Reward', 'Time Steps (Request Numbers)',
+                         y_ticks=False, x_ticks=False)
+        self._plot_helper_one(x_vals='time_steps', y_vals=['average_rewards'], file_name='average_rewards_300',
+                              reward_flags=[[5], ['cores']])
+
+        self._setup_plot("Average Rewards requests", 'Average Reward', 'Time Steps (Request Numbers)',
+                         y_ticks=False, x_ticks=False)
+        self._plot_helper_one(x_vals='time_steps', y_vals=['average_rewards'], file_name='average_rewards_700',
+                              reward_flags=[[-1], ['cores']])
 
     def plot_times(self):
         """
@@ -533,34 +555,69 @@ class PlotStats:
         self._plot_helper_one(x_vals='erlang_vals', y_vals=['blocking_vals'], file_name='average_bp')
 
 
-def _check_filters(file_content, filters):
+def _and_filters(filters, content):
     keep_config = True
-    check_content = file_content.get('sim_params')
+    content = content.get('sim_params')
     for check_flags in filters['and_filters']:
         search_keys = check_flags[0:-1]
         check_value = check_flags[-1]
 
         for curr_key in search_keys:
-            check_content = check_content.get(curr_key)
+            content = content.get(curr_key)
 
-        if check_content != check_value:
+        if content != check_value:
             keep_config = False
             break
 
-    if keep_config:
-        for sub_flags in filters['or_filters']:
-            check_content = file_content.get('sim_params')
-            search_keys = sub_flags[0:-1]
-            check_value = sub_flags[-1]
+    return keep_config
 
-            for curr_key in search_keys:
-                check_content = check_content.get(curr_key)
 
-            if check_content == check_value:
-                keep_config = True
-                break
+def _or_filters(filters, content):
+    keep_config = True
+    for sub_flags in filters['or_filters']:
+        check_content = content.get('sim_params')
+        search_keys = sub_flags[0:-1]
+        check_value = sub_flags[-1]
 
+        for curr_key in search_keys:
+            check_content = check_content.get(curr_key)
+
+        if check_content == check_value:
+            keep_config = True
+            break
+
+        keep_config = False
+
+    return keep_config
+
+
+def _not_filters(filters, content):
+    keep_config = True
+    for sub_flags in filters['not_filters']:
+        check_content = content.get('sim_params')
+        search_keys = sub_flags[0:-1]
+        check_value = sub_flags[-1]
+
+        for curr_key in search_keys:
+            check_content = check_content.get(curr_key)
+
+        if check_content == check_value:
             keep_config = False
+            break
+
+        keep_config = True
+
+    return keep_config
+
+
+def _check_filters(file_content, filters):
+    keep_config = _and_filters(filters=filters, content=file_content)
+
+    if keep_config:
+        keep_config = _or_filters(filters=filters, content=file_content)
+
+        if keep_config:
+            keep_config = _not_filters(filters=filters, content=file_content)
 
     return keep_config
 
@@ -623,29 +680,28 @@ def main():
     """
     filters = {
         'and_filters': [
-            # ['ai_arguments', 'policy', 'policy_nine']
+            # ['ai_arguments', 'policy', 'policy_one']
         ],
         'or_filters': [
-            # ['ai_arguments', 'policy', 'policy_seven'],
-            # ['route_method', 'k_shortest_path'],
-            # ['ai_arguments', 'policy', 'baseline'],
+            ['ai_arguments', 'policy', 'policy_two'],
+            ['route_method', 'k_shortest_path'],
         ],
-        # 'not_filters': [
-        #     ['route_method', 'k_shortest_path']
-        # ]
+        'not_filters': [
+            # ['route_method', 'k_shortest_path']
+        ]
     }
-    sim_times, sim_nums, networks, dates = find_times(dates_networks={'1025': 'NSFNet'}, filters=filters)
+    sim_times, sim_nums, networks, dates = find_times(dates_networks={'1026': 'NSFNet'}, filters=filters)
     plot_obj = PlotStats(net_names=networks, dates=dates, times=sim_times, sims=sim_nums)
 
-    plot_obj.plot_blocking()
-    plot_obj.plot_path_length()
-    plot_obj.plot_hops()
+    # plot_obj.plot_blocking()
+    # plot_obj.plot_path_length()
+    # plot_obj.plot_hops()
     plot_obj.plot_rewards()
-    plot_obj.plot_block_reasons()
-    plot_obj.plot_mod_formats()
-    plot_obj.plot_block_per_req()
-    plot_obj.plot_network_util()
-    plot_obj.plot_active_requests()
+    # plot_obj.plot_block_reasons()
+    # plot_obj.plot_mod_formats()
+    # plot_obj.plot_block_per_req()
+    # plot_obj.plot_network_util()
+    # plot_obj.plot_active_requests()
 
 
 if __name__ == '__main__':
