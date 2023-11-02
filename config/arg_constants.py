@@ -33,4 +33,5 @@ PARAMETERS = [
     ['arrival_rate', dict, ''],
     ['save_snapshots', bool, ''],
     ['xt_type', str, ''],
+    ['filter_mods', bool, ''],
 ]
