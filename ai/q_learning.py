@@ -37,6 +37,7 @@ class QLearning:
             'routes': {'average': [], 'min': [], 'max': [], 'errors': {}},
             'cores': {'average': [], 'min': [], 'max': [], 'errors': {}}
         }
+        self.sum_rewards = dict()
         self.epsilon_stats = [self.epsilon]
 
         self.curr_episode = None
@@ -126,7 +127,9 @@ class QLearning:
         if episode not in self.rewards_dict[reward_flag]['rewards'].keys():
             self.rewards_dict[reward_flag]['rewards'][episode] = [reward]
             self.td_errors[reward_flag]['errors'][episode] = [td_error]
+            self.sum_rewards[episode] = reward
         else:
+            self.sum_rewards[episode] += reward
             self.td_errors[reward_flag]['errors'][episode].append(td_error)
             self.rewards_dict[reward_flag]['rewards'][episode].append(reward)
 
@@ -162,6 +165,7 @@ class QLearning:
             'reward_info': self.rewards_dict,
             'td_info': self.td_errors,
             'epsilon_decay': self.epsilon_stats,
+            'sum_rewards': self.sum_rewards,
         }
         file_name = f"{self.properties['erlang']}_params_c{self.properties['cores_per_link']}.json"
         with open(f"{file_path}/{file_name}", 'w', encoding='utf-8') as file:
