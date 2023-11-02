@@ -59,6 +59,7 @@ ARASH_REQUIRED_OPTIONS = {
     'beta': float,
     'save_snapshots': str_to_bool,
     'xt_type': str,
+    'filter_mods': str_to_bool,
 }
 
 OTHER_OPTIONS = {
