@@ -146,7 +146,7 @@ class SDNController:
             for _ in range(num_segments):
                 spectrum, xt_cost, modulation = self._handle_spectrum_lps(mod_options=[tmp_format], lps_bw = bandwidth)
 
-                if spectrum is not False or spectrum is not None:
+                if spectrum is not False and spectrum is not None:
                     self.allocate(start_slot=spectrum['start_slot'], end_slot=spectrum['end_slot'],
                                   core_num=spectrum['core_num'])
                     resp['xt_cost'].append(xt_cost)  
