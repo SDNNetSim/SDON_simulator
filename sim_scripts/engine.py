@@ -463,7 +463,7 @@ class Engine(SDNController):
         :return: None
         """
         # Initialize variables for this iteration of the simulation
-        self.block_reasons = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
+        self.block_reasons = {'distance': 0, 'congestion': 0, 'xt_threshold': 0, 'max_segments': 0}
         self.num_trans = 0
         self.num_blocked_reqs = 0
         self.reqs_status = dict()
