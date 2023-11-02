@@ -324,7 +324,6 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
         # TODO: Add xt_type to the configuration file
         selected_path = routing_obj.xt_aware(beta=properties['beta'], xt_type=properties['xt_type'])
         path_len = find_path_len(path= selected_path[0][0], topology=topology)
-        # mod = filter_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)
         temp_mod = sort_nested_dict_vals(properties['mod_per_bw'][chosen_bw], nested_key='max_length')
         resp = [selected_path[0][0]], [list(temp_mod.keys())], selected_path[2]
     elif properties['route_method'] == 'least_congested':
