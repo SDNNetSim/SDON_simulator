@@ -296,10 +296,10 @@ class Engine(SDNController):
         self.hops = np.append(self.hops, len(response_data['path']) - 1)
         self.path_lens = np.append(self.path_lens, find_path_len(path=response_data['path'], topology=self.topology))
         self.route_times = np.append(self.route_times, response_data['route_time'])
-        path_mod = resp[0]['mod_format']
-        self.mods_used[self.chosen_bw][path_mod] += 1
-        # TODO: This is always xt_cost for now
-        self.path_weights[self.chosen_bw][path_mod].append(response_data['xt_cost'])
+        for path_mod, path_bw, xt_cost in zip(resp[0]['mod_format'], resp[0]['allocated_bw_type'], response_data['xt_cost']):
+            self.mods_used[path_bw][path_mod] += 1
+            # TODO: This is always xt_cost for now
+            self.path_weights[path_bw][path_mod].append(xt_cost)
 
         self.reqs_status.update({self.req_id: {
             "mod_format": response_data['mod_format'],
