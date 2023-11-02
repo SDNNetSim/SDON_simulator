@@ -324,28 +324,18 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
         # TODO: Add xt_type to the configuration file
         selected_path = routing_obj.xt_aware(beta=properties['beta'], xt_type=properties['xt_type'])
         path_len = find_path_len(path= selected_path[0][0], topology=topology)
-        mod = filter_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)
-        resp = [selected_path[0][0]], [mod], [selected_path[2]]
-        if len(mod) == 0:
-            resp = [selected_path], [False], [False]
+        # mod = filter_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)
+        temp_mod = sort_nested_dict_vals(properties['mod_per_bw'][chosen_bw], nested_key='max_length')
+        resp = [selected_path[0][0]], [list(temp_mod.keys())], selected_path[2]
     elif properties['route_method'] == 'least_congested':
         resp = routing_obj.least_congested_path()
     elif properties['route_method'] == 'shortest_path':
         resp = routing_obj.least_weight_path(weight='length')
     elif properties['route_method'] == 'k_shortest_path':
         resp = routing_obj.k_shortest_path(k_paths=properties['k_paths'])
-        paths_len=[]
-        paths_mod = []
-        paths =[]
-        for selectedpath, path_len in zip(resp[0], resp[2]):
-            mod = filter_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)
-            if len(mod)  != 0:
-                paths_mod.append(mod)
-                paths_len.append(path_len)
-                paths.append(selectedpath)
-        resp = paths, paths_mod, paths_len
-        if len(paths_mod) == 0:
-            resp = [resp[0]], [False], [False]
+        temp_mod = sort_nested_dict_vals(properties['mod_per_bw'][chosen_bw], nested_key='max_length')
+        paths_mod = list(temp_mod.keys())
+        resp = resp[0], [paths_mod] * len(resp[0]), resp[2]
     elif properties['route_method'] == 'ai':
         # Used for routing related to artificial intelligence
         selected_path = ai_obj.route(source=int(source), destination=int(destination),
