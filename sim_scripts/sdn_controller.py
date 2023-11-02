@@ -115,7 +115,7 @@ class SDNController:
         """
         Attempts to perform light path slicing (LPS) to allocate a request.
 
-        :return: True if LPS is successfully carried out, False otherwise
+        :return: A dict of allocated bandwith, mod formats and cross talk cost if LPS is successfully carried out, False otherwise
         """
         if self.chosen_bw == '25' or self.sdn_props['max_segments'] == 1:
             return False
@@ -123,7 +123,7 @@ class SDNController:
         path_len = find_path_len(self.path, self.topology)
         # Sort the dictionary in descending order by bandwidth
         modulation_formats = sort_dict_keys(self.sdn_props['mod_per_bw'])
-
+        
         for bandwidth, modulation_dict in modulation_formats.items():
             # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
             if int(bandwidth) >= int(self.chosen_bw):
@@ -131,38 +131,37 @@ class SDNController:
 
             tmp_format = get_path_mod(modulation_dict, path_len)
             if tmp_format is False:
-                self.block_reason = True
+                self.block_reason = 'distance'
                 continue
 
             num_segments = int(int(self.chosen_bw) / int(bandwidth))
             if num_segments > self.sdn_props['max_segments']:
+                self.block_reason = 'max_segments'
                 break
             self.num_transponders = num_segments
 
             is_allocated = True
+            resp = {'mod_format': [], 'bw': [], 'xt_cost': [], 'spectrum': []}
             # Check if all slices can be allocated
             for _ in range(num_segments):
-                spectrum_assignment = SpectrumAssignment(path=self.path,
-                                                         slots_needed=modulation_dict[tmp_format]['slots_needed'],
-                                                         net_spec_db=self.net_spec_db,
-                                                         guard_slots=self.sdn_props['guard_slots'],
-                                                         single_core=self.single_core,
-                                                         is_sliced=True,
-                                                         alloc_method=self.sdn_props['allocation_method'])
-                selected_spectrum = spectrum_assignment.find_free_spectrum()
+                spectrum, xt_cost, modulation = self._handle_spectrum_lps(mod_options=[tmp_format], lps_bw = bandwidth)
 
-                if selected_spectrum is not False:
-                    self.allocate(start_slot=selected_spectrum['start_slot'], end_slot=selected_spectrum['end_slot'],
-                                  core_num=selected_spectrum['core_num'])
+                if spectrum is not False or spectrum is not None:
+                    self.allocate(start_slot=spectrum['start_slot'], end_slot=spectrum['end_slot'],
+                                  core_num=spectrum['core_num'])
+                    resp['xt_cost'].append(xt_cost)  
+                    resp['mod_format'].append(tmp_format)
+                    resp['bw'].append(bandwidth)
+                    resp['spectrum'].append(spectrum)
                 # Clear all previously attempted allocations
                 else:
                     self.release()
                     is_allocated = False
-                    self.block_reason = False
+                    self.block_reason = 'congestion'
                     break
 
             if is_allocated:
-                return {bandwidth: tmp_format}
+                return resp
 
         return False
 
@@ -184,7 +183,7 @@ class SDNController:
 
         remaining_bw = int(self.chosen_bw)
         num_segments = 0
-
+        resp = {'mod_format': [], 'bw': [],'xt_cost': [], 'spectrum': []}
         for bandwidth, modulation_dict in modulation_formats.items():
             # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
             if int(bandwidth) >= int(self.chosen_bw):
@@ -192,34 +191,30 @@ class SDNController:
 
             tmp_format = get_path_mod(modulation_dict, path_len)
             if tmp_format is False:
-                self.block_reason = True
+                self.block_reason = 'distance'
                 continue
 
             while True:
-                spectrum_assignment = SpectrumAssignment(path=self.path,
-                                                         slots_needed=modulation_dict[tmp_format]['slots_needed'],
-                                                         net_spec_db=self.net_spec_db,
-                                                         guard_slots=self.sdn_props['guard_slots'],
-                                                         single_core=self.single_core,
-                                                         is_sliced=True,
-                                                         alloc_method=self.sdn_props['allocation_method'])
-                selected_spectrum = spectrum_assignment.find_free_spectrum()
+                spectrum, xt_cost, modulation = self._handle_spectrum_lps(mod_options=[tmp_format], lps_bw = bandwidth)
 
-                if selected_spectrum is not False:
-                    resp.update({bandwidth: tmp_format})
+                if spectrum is not False:
 
-                    self.allocate(start_slot=selected_spectrum['start_slot'], end_slot=selected_spectrum['end_slot'],
-                                  core_num=selected_spectrum['core_num'])
-
+                    self.allocate(start_slot=spectrum['start_slot'], end_slot=spectrum['end_slot'],
+                                  core_num=spectrum['core_num'])
+                    
+                    resp['xt_cost'].append(xt_cost)  
+                    resp['mod_format'].append(tmp_format)
+                    resp['bw'].append(bandwidth)
+                    resp['spectrum'].append(spectrum)
                     remaining_bw -= int(bandwidth)
                     num_segments += 1
 
                     if num_segments > self.sdn_props['max_segments']:
                         self.release()
-                        self.block_reason = False
+                        self.block_reason = 'max_segments'
                         return False
                 else:
-                    self.block_reason = False
+                    self.block_reason = 'congestion'
                     break
 
                 if remaining_bw == 0:
@@ -229,6 +224,7 @@ class SDNController:
                     break
 
         self.release()
+        self.block_reason = 'congestion'
         return False
 
     def handle_lps(self):
@@ -247,10 +243,10 @@ class SDNController:
             resp = self.allocate_dynamic_lps()
 
         if resp is not False:
-            return {'path': self.path, 'mod_format': resp,
-                    'is_sliced': True}, self.net_spec_db, self.num_transponders, self.path
+            return {'path': self.path, 'mod_format': resp['mod_format'], 'bw': resp['bw'], 'spectrum': resp['spectrum'],
+                    'xt_cost' : resp['xt_cost'], 'is_sliced': True}, self.net_spec_db, self.num_transponders, self.path
 
-        # return False, self.block_reason, self.path
+        return False, self.block_reason, self.path
         raise NotImplementedError(
             'Light path slicing is not supported at this point in time, but will be in the future.')
 
@@ -286,7 +282,43 @@ class SDNController:
                 break
 
         return spectrum, xt_cost, mod_chosen
+    
+    def _handle_spectrum_lps(self, mod_options: dict, lps_bw: str):
+        """
+        Given modulation options, iterate through them and attempt to allocate a request with one.
 
+        :param mod_options: The modulation formats to consider.
+        :type mod_options: dict
+        
+        :param lps_bw: The bandwidth of sliced lightpath.
+        :type lps_bw: str
+
+        :return: The spectrum found for allocation, false if none can be found.
+        :rtype: dict
+        """
+        spectrum = None
+        xt_cost = None
+        mod_chosen = None
+        for modulation in mod_options:
+            if modulation is False:
+                if self.sdn_props['max_segments'] == 1:
+                    raise NotImplementedError
+
+                continue
+
+            spectrum, self.block_reason, xt_cost = get_spectrum(properties=self.sdn_props, chosen_bw=lps_bw,
+                                                                path=self.path,
+                                                                net_spec_db=self.net_spec_db, modulation=modulation,
+                                                                snr_obj=self.snr_obj,
+                                                                path_mod=modulation)
+
+            # We found a spectrum, no need to check other modulation formats
+            if spectrum is not False:
+                mod_chosen = modulation
+                break
+
+        return spectrum, xt_cost, mod_chosen
+    
     def _handle_routing(self):
         resp = get_route(properties=self.sdn_props, source=self.source, destination=self.destination,
                          topology=self.topology, net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw,
@@ -314,10 +346,25 @@ class SDNController:
         start_time = time.time()
         paths, path_mods, path_weights = self._handle_routing()
         route_time = time.time() - start_time
-        if path_mods == [False]:
+        filtered_paths = []
+        filtered_mods = []
+        filtered_weights = []
+        if self.sdn_props['filter_mods'] == True:
+            for selectedpath, pathmod, pathlen in zip(paths, path_mods, path_weights):
+                mod = filter_mod(mod_formats=self.sdn_props['mod_per_bw'][self.chosen_bw], path_len=pathlen)
+                if len(mod)  != 0:
+                    filtered_mods.append(mod)
+                    filtered_weights.append(pathlen)
+                    filtered_paths.append(selectedpath)
+        else:
+            filtered_paths = paths
+            filtered_mods = path_mods
+            filtered_weights = path_weights
+        if filtered_mods == [] and self.sdn_props['max_segments'] == 1 :
             self.block_reason = 'distance'
             return False, self.block_reason, self.path
-        for path, path_mod, path_weight in zip(paths, path_mods, path_weights):
+        self.path = paths[0]       
+        for path, path_mod, path_weight in zip(filtered_paths, filtered_mods, filtered_weights):
             self.path = path
 
             # TODO: Spectrum assignment always overrides modulation format chosen when using check snr
@@ -331,13 +378,15 @@ class SDNController:
                             mod_options.pop(mod_ch)
                     if len(mod_options) == 0 and path == paths[-1]:
                         self.block_reason = 'distance'
-                        return False, self.block_reason, self.path
+                        if self.sdn_props['max_segments'] == 1:
+                            return False, self.block_reason, self.path
                 else:
                     if path_mod is not False:
                         mod_options = [path_mod]
                     else:
                         self.block_reason = 'distance'
-                        return False, self.block_reason, self.path
+                        if self.sdn_props['max_segments'] == 1:
+                            return False, self.block_reason, self.path
 
                 spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options)
                 # Request was blocked for this path
@@ -346,16 +395,35 @@ class SDNController:
 
                 resp = {
                     'path': self.path,
-                    'mod_format': modulation,
+                    'mod_format': [modulation],
+                    'allocated_bw_type': [self.chosen_bw],
                     'route_time': route_time,
                     'path_weight': path_weight,
-                    'xt_cost': xt_cost,
+                    'xt_cost': [xt_cost],
                     'is_sliced': False,
-                    'spectrum': spectrum
+                    'spectrum': [spectrum]
                 }
                 self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
                 return resp, self.net_spec_db, self.num_transponders, self.path
 
             self.block_reason = 'distance'
-
+        if self.sdn_props['max_segments'] > 1:
+            for path, path_weight in zip(paths, path_weights):
+                self.path = path
+                lps_resp = self.handle_lps()
+                if lps_resp[0] != False:
+                    resp = {
+                        'path': lps_resp[0]['path'],
+                        'mod_format': lps_resp[0]['mod_format'],
+                        'allocated_bw_type':lps_resp[0]['bw'],
+                        'route_time': route_time,
+                        'path_weight': path_weight,
+                        'xt_cost': lps_resp[0]['xt_cost'],
+                        'is_sliced': True,
+                        'spectrum': lps_resp[0]['spectrum']
+                    }
+                    return resp, lps_resp[1], lps_resp[2], self.path
+                else:
+                    self.blacblock_reason =  lps_resp[1]
+                
         return False, self.block_reason, self.path
