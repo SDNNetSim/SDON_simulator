@@ -38,7 +38,7 @@ class AIMethods:
         self.ai_obj.update_env(routed=routed)
         # Decay epsilon
         if self.ai_obj.sim_type == 'train':
-            numerator = self.ai_obj.epsilon - self.ai_obj.ai_arguments['epsilon_target']
+            numerator = self.ai_obj.ai_arguments['epsilon'] - self.ai_obj.ai_arguments['epsilon_target']
             denominator = float(self.properties['num_requests'])
             decay_amount = numerator / denominator
             self.ai_obj.decay_epsilon(amount=decay_amount)
