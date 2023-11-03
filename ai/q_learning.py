@@ -126,17 +126,17 @@ class QLearning:
 
         if episode not in self.rewards_dict[reward_flag]['rewards'].keys():
             self.rewards_dict[reward_flag]['rewards'][episode] = [reward]
-            self.td_errors[reward_flag]['errors'][episode] = [td_error]
+            self.td_errors[reward_flag]['errors'][episode] = td_error
             self.sum_rewards[episode] = reward
         else:
             self.sum_rewards[episode] += reward
-            self.td_errors[reward_flag]['errors'][episode].append(td_error)
+            self.td_errors[reward_flag]['errors'][episode] += td_error
             self.rewards_dict[reward_flag]['rewards'][episode].append(reward)
 
         len_rewards = len(self.rewards_dict[reward_flag]['rewards'][episode])
         if self.curr_episode == self.properties['max_iters'] - 1 and len_rewards == self.properties['num_requests']:
             self._calc_reward_averages(reward_flag=reward_flag)
-            self._calc_td_averages(error_flag=reward_flag)
+            # self._calc_td_averages(error_flag=reward_flag)
 
     def save_tables(self):
         """
@@ -254,7 +254,9 @@ class QLearning:
 
         reward = self.reward_policies[policy](routed=routed)
         delta = reward + self.ai_arguments['discount'] * max_future_q
-        self._update_stats(reward=reward, reward_flag='routes', td_error=delta)
+
+        td_error = current_q - (reward + self.ai_arguments['discount'] * max_future_q)
+        self._update_stats(reward=reward, reward_flag='routes', td_error=td_error)
 
         new_q = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + (self.ai_arguments['learn_rate'] * delta)
         self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['q_value'] = new_q
