@@ -106,6 +106,9 @@ class AIMethods:
 
         return resp
 
+    def reset_epsilon(self):
+        self.ai_obj.epsilon = self.properties['ai_arguments']['epsilon']
+
     def update(self, **kwargs):
         """
         Responsible for updating environment information.

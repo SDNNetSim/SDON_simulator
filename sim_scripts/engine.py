@@ -499,6 +499,7 @@ class Engine(SDNController):
             signal.signal(signal.SIGTERM, self._save_sim_results)
 
             if self.properties['route_method'] == 'ai':
+                self.ai_obj.reset_epsilon()
                 self.ai_obj.episode = iteration
                 signal.signal(signal.SIGINT, self.ai_obj.save)
                 signal.signal(signal.SIGTERM, self.ai_obj.save)
