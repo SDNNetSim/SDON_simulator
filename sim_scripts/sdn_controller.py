@@ -351,7 +351,11 @@ class SDNController:
         filtered_weights = []
         if self.sdn_props['filter_mods'] == True:
             for selectedpath, pathmod, pathlen in zip(paths, path_mods, path_weights):
-                mod = filter_mod(mod_formats=self.sdn_props['mod_per_bw'][self.chosen_bw], path_len=pathlen)
+                if self.sdn_props['route_method'] not in ['k_shortest_path', 'shortest_path']:
+                    path_len = find_path_len(path= selectedpath, topology=self.topology)
+                else:
+                    path_len = pathlen
+                mod = filter_mod(mod_formats=self.sdn_props['mod_per_bw'][self.chosen_bw], path_len=path_len)
                 if len(mod)  != 0:
                     filtered_mods.append(mod)
                     filtered_weights.append(pathlen)
@@ -378,17 +382,13 @@ class SDNController:
                             mod_options.pop(mod_ch)
                     if len(mod_options) == 0 and path == paths[-1]:
                         self.block_reason = 'distance'
-                        if self.sdn_props['max_segments'] == 1:
-                            return False, self.block_reason, self.path
                 else:
                     if path_mod is not False:
                         mod_options = [path_mod]
                     else:
                         self.block_reason = 'distance'
-                        if self.sdn_props['max_segments'] == 1:
-                            return False, self.block_reason, self.path
 
-                spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options)
+                spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options[0])
                 # Request was blocked for this path
                 if spectrum is False or spectrum is None:
                     continue
