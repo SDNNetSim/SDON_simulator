@@ -142,26 +142,26 @@ class Engine(SDNController):
         for _, obj in self.request_snapshots.items():
             for key, lst in obj.items():
                 obj[key] = np.mean(lst)
-
-        for _, mod_obj in self.path_weights.items():
-            for modulation, lst in mod_obj.items():
-                # Modulation was never used
-                if len(lst) == 0:
-                    mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
-                else:
-                    min_max_lst = list()
-                    average_list = list()
-                    for curr_value in lst:
-                        if curr_value == 0.0:
-                            average_list.append(curr_value)
-                        else:
-                            min_max_lst.append(10.0 ** (curr_value / 10.0))
-                            average_list.append(10.0 ** (curr_value / 10.0))
-                    # TODO: should be changed for empty list 
-                    if len(min_max_lst) == 0: min_max_lst = average_list
-                    mod_obj[modulation] = {'mean': np.mean(average_list), 'std': np.std(average_list),
-                                           'min': np.min(min_max_lst), 'max': np.max(min_max_lst),
-                                           'min_0': np.min(average_list)}
+        if self.sdn_props['check_snr'] != 'None':
+            for _, mod_obj in self.path_weights.items():
+                for modulation, lst in mod_obj.items():
+                    # Modulation was never used
+                    if len(lst) == 0:
+                        mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
+                    else:
+                        min_max_lst = list()
+                        average_list = list()
+                        for curr_value in lst:
+                            if curr_value == 0.0:
+                                average_list.append(curr_value)
+                            else:
+                                min_max_lst.append(10.0 ** (curr_value / 10.0))
+                                average_list.append(10.0 ** (curr_value / 10.0))
+                        # TODO: should be changed for empty list 
+                        if len(min_max_lst) == 0: min_max_lst = average_list
+                        mod_obj[modulation] = {'mean': np.mean(average_list), 'std': np.std(average_list),
+                                            'min': np.min(min_max_lst), 'max': np.max(min_max_lst),
+                                            'min_0': np.min(average_list)}
 
         self.stats_dict['blocking_mean'] = self.blocking_mean
         self.stats_dict['blocking_variance'] = self.blocking_variance
