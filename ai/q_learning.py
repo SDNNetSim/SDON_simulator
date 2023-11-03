@@ -199,7 +199,7 @@ class QLearning:
     @staticmethod
     def _get_policy_five(routed: bool):
         if routed:
-            resp = 5.0
+            resp = 10.0
         else:
             resp = -10.0
 
