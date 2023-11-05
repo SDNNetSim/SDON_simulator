@@ -388,7 +388,7 @@ class SDNController:
                     else:
                         self.block_reason = 'distance'
 
-                spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options[0])
+                spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options)
                 # Request was blocked for this path
                 if spectrum is False or spectrum is None:
                     continue
