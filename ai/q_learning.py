@@ -8,7 +8,7 @@ import networkx as nx
 
 # Local application imports
 from useful_functions.handle_dirs_files import create_dir
-from useful_functions.sim_functions import find_path_congestion
+from useful_functions.sim_functions import find_path_congestion, find_core_frag_cong
 from sim_scripts.routing import Routing
 
 
@@ -63,12 +63,12 @@ class QLearning:
         self.path_index = None
         self.cong_index = None
         self.cong_types = None
+
         self.reward_policies = {
             'policy_one': self._get_policy_one,
             'policy_two': self._get_policy_two,
             'policy_three': self._get_policy_three,
-            'policy_four': self._get_policy_four,
-            'policy_five': self._get_policy_five,
+
         }
         # Simulation methods related to routing
         self.routing_obj = Routing(beta=properties['beta'], topology=properties['topology'],
@@ -196,50 +196,37 @@ class QLearning:
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
 
-    @staticmethod
-    def _get_policy_five(routed: bool):
-        if routed:
-            resp = 10.0
-        else:
-            resp = -10.0
-
-        return resp
-
-    @staticmethod
-    def _get_policy_four(routed: bool):
-        if routed:
-            resp = 10.0
-        else:
-            resp = -1.0
-
-        return resp
-
+    # TODO: This will be fragmentation and congestion aware
     @staticmethod
     def _get_policy_three(routed: bool):
         if routed:
-            resp = 1.0
+            pass
         else:
-            resp = -100.0
+            pass
 
-        return resp
+        return None
 
+    # TODO: This will be only congestion aware
     @staticmethod
     def _get_policy_two(routed: bool):
         if routed:
-            resp = 1.0
+            pass
         else:
-            resp = -10.0
+            pass
 
-        return resp
+        return None
 
-    @staticmethod
-    def _get_policy_one(routed: bool):
+    def _get_policy_one(self, routed: bool):
+        core_frag, core_cong = find_core_frag_cong(net_spec_db=self.net_spec_db, path=self.chosen_path,
+                                                   core=self.core_index)
         if routed:
-            resp = 1.0
+            cong_reward = 1.0 - core_cong
+            frag_reward = 1.0 - core_frag
+            reward = cong_reward + frag_reward
         else:
-            resp = -1.0
+            reward = -10.0
 
-        return resp
+        return reward
 
     def _get_max_future_q(self, new_cong: float):
         q_values = list()

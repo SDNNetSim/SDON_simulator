@@ -146,6 +146,40 @@ def find_path_congestion(path: List[str], network_db):
     return average_path_cong
 
 
+def find_core_frag_cong(net_spec_db, path: list, core: int):
+    frag_resp = 0.0
+    cong_resp = 0.0
+    for src, dest in zip(path, path[1:]):
+        src_dest = (src, dest)
+        core_arr = net_spec_db[src_dest]['cores_matrix'][core]
+
+        if len(core_arr) < 256:
+            raise NotImplementedError('Only works for 256 spectral slots.')
+
+        cong_resp += len(np.where(core_arr != 0)[0])
+
+        count = 0
+        in_zero_group = False
+
+        for number in core_arr:
+            if number == 0:
+                if not in_zero_group:
+                    in_zero_group = True
+            else:
+                if in_zero_group:
+                    count += 1
+                    in_zero_group = False
+
+        frag_resp += count
+
+    num_links = len(path) - 1
+    # The lowest number of slots a request can take is 2, the max number of times [1, 1, 0, 2, 2, 0, ..., 5, 5, 0]
+    # fragmentation can happen is 85
+    frag_resp = (frag_resp / 85.0 / num_links)
+    cong_resp = (cong_resp / 256.0 / num_links)
+    return frag_resp, cong_resp
+
+
 def get_channel_overlaps(free_channels: dict, free_slots: dict):
     """
     Given the free channels and free slots on a given path, find the number of overlapping and non-overlapping channels
