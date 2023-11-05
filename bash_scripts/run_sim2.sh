@@ -3,7 +3,7 @@
 #SBATCH -p cpu-long
 #SBATCH -c 28
 #SBATCH --mem=48000
-#SBATCH -t 1-12
+#SBATCH -t 10-12
 #SBATCH -o slurm-%j.out
 
 # shellcheck disable=SC2164
