@@ -196,25 +196,25 @@ class QLearning:
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
 
-    # TODO: This will be fragmentation and congestion aware
-    @staticmethod
-    def _get_policy_three(routed: bool):
+    def _get_policy_three(self, routed: bool):
+        core_frag, _ = find_core_frag_cong(net_spec_db=self.net_spec_db, path=self.chosen_path,
+                                           core=self.core_index)
         if routed:
-            pass
+            reward = 1.0 - core_frag
         else:
-            pass
+            reward = -10.0
 
-        return None
+        return reward
 
-    # TODO: This will be only congestion aware
-    @staticmethod
-    def _get_policy_two(routed: bool):
+    def _get_policy_two(self, routed: bool):
+        _, core_cong = find_core_frag_cong(net_spec_db=self.net_spec_db, path=self.chosen_path,
+                                           core=self.core_index)
         if routed:
-            pass
+            reward = 1.0 - core_cong
         else:
-            pass
+            reward = -10.0
 
-        return None
+        return reward
 
     def _get_policy_one(self, routed: bool):
         core_frag, core_cong = find_core_frag_cong(net_spec_db=self.net_spec_db, path=self.chosen_path,
