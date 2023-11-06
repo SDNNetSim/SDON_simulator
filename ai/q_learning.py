@@ -68,7 +68,8 @@ class QLearning:
             'policy_one': self._get_policy_one,
             'policy_two': self._get_policy_two,
             'policy_three': self._get_policy_three,
-
+            'policy_four': self._get_policy_four,
+            'policy_five': self._get_policy_five,
         }
         # Simulation methods related to routing
         self.routing_obj = Routing(beta=properties['beta'], topology=properties['topology'],
@@ -195,6 +196,24 @@ class QLearning:
         self.ai_arguments['learn_rate'] = properties_obj['learn_rate']
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
+
+    def _get_policy_five(self, routed: bool):
+        path_cong = find_path_congestion(network_db=self.net_spec_db, path=self.chosen_path)
+        if routed:
+            reward = 1.0 - path_cong
+        else:
+            reward = -1.0
+
+        return reward
+
+    def _get_policy_four(self, routed: bool):
+        path_cong = find_path_congestion(network_db=self.net_spec_db, path=self.chosen_path)
+        if routed:
+            reward = 1.0 - path_cong
+        else:
+            reward = -10.0
+
+        return reward
 
     def _get_policy_three(self, routed: bool):
         core_frag, _ = find_core_frag_cong(net_spec_db=self.net_spec_db, path=self.chosen_path,
