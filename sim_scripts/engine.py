@@ -218,7 +218,8 @@ class Engine(SDNController):
 
         self.blocking_variance = np.var(block_percent_arr)
         try:
-            self.block_ci_rate = 1.645 * (np.sqrt(self.blocking_variance) / np.sqrt(len(block_percent_arr)))
+            # 1.645 for 90% confidence level and 1.96 for 95% confidence level
+            self.block_ci_rate = 1.96 * (np.sqrt(self.blocking_variance) / np.sqrt(len(block_percent_arr)))
             self.block_ci_percent = ((2 * self.block_ci_rate) / self.blocking_mean) * 100
         except ZeroDivisionError:
             return False
