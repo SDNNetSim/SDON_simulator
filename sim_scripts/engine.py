@@ -1,6 +1,7 @@
 # Standard library imports
 import json
 import signal
+import time
 
 # Third party library imports
 import networkx as nx
@@ -491,7 +492,10 @@ class Engine(SDNController):
 
         :return: None
         """
+        comp_times = []
+
         for iteration in range(self.properties["max_iters"]):
+            start_time = time.time()  # get start time of computational tasks.
             self.iteration = iteration
             self._init_iter_vars()
 
@@ -545,5 +549,15 @@ class Engine(SDNController):
 
             self._save_sim_results()
 
+            end_time = time.time()  # get finish time of computational tasks.
+
+            comp_times.append(end_time - start_time)
+
         print(f"Erlang: {self.properties['erlang']} finished for "
               f"simulation number: {self.properties['thread_num']}.")
+
+        final_time = 0
+        for index in comp_times:
+            final_time += index
+
+        print(f"Erlang {self.properties['erlang']} Comp. Time: {str(round(final_time, 4))}.")
