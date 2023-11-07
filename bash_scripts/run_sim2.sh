@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH -p cpu-long
-#SBATCH -c 20
-#SBATCH --mem=36000
+#SBATCH -c 15
+#SBATCH --mem=12000
 #SBATCH -t 10-12
 #SBATCH -o slurm-%j.out
 
