@@ -76,76 +76,76 @@ def create_bw_info(sim_type: str = None):
         })
     elif sim_type == 'arash':
         bw_info.update({
-            "25": {
-                "QPSK": {
-                    "max_length": 20759,
-                    "slots_needed": 1
-                },
-                "16-QAM": {
-                    "max_length": 9295,
-                    "slots_needed": 1
-                },
-                "64-QAM": {
-                    "max_length": 3503,
-                    "slots_needed": 1
-                }
-            },
-            "50": {
-                "QPSK": {
-                    "max_length": 10380,
-                    "slots_needed": 2
-                },
-                "16-QAM": {
-                    "max_length": 4648,
-                    "slots_needed": 1
-                },
-                "64-QAM": {
-                    "max_length": 1752,
-                    "slots_needed": 1
-                }
-            },
-            "100": {
-                "QPSK": {
-                    "max_length": 5190,
-                    "slots_needed": 4
-                },
-                "16-QAM": {
-                    "max_length": 2324,
-                    "slots_needed": 2
-                },
-                "64-QAM": {
-                    "max_length": 876,
-                    "slots_needed": 2
-                }
-            },
-            "200": {
-                "QPSK": {
-                    "max_length": 2595,
-                    "slots_needed": 8
-                },
-                "16-QAM": {
-                    "max_length": 1162,
-                    "slots_needed": 4
-                },
-                "64-QAM": {
-                    "max_length": 438,
-                    "slots_needed": 3
-                }
-            },
-            "400": {
-                "QPSK": {
-                    "max_length": 1298,
-                    "slots_needed": 16
-                },
-                "16-QAM": {
-                    "max_length": 581,
-                    "slots_needed": 8
-                },
-                "64-QAM": {
-                    "max_length": 219,
-                    "slots_needed": 6
-                }
-            }
-        })
+                        "25": {
+                            "QPSK": {
+                                "max_length": 20759,
+                                "slots_needed": 1
+                            },
+                            "16-QAM": {
+                                "max_length": 9295,
+                                "slots_needed": 1
+                            },
+                            "64-QAM": {
+                                "max_length": 3503,
+                                "slots_needed": 1
+                            }
+                        },
+                        "50": {
+                            "QPSK": {
+                                "max_length": 10380,
+                                "slots_needed": 2
+                            },
+                            "16-QAM": {
+                                "max_length": 4648,
+                                "slots_needed": 1
+                            },
+                            "64-QAM": {
+                                "max_length": 1752,
+                                "slots_needed": 1
+                            }
+                        },
+                        "100": {
+                            "QPSK": {
+                                "max_length": 5190,
+                                "slots_needed": 3
+                            },
+                            "16-QAM": {
+                                "max_length": 2324,
+                                "slots_needed": 2
+                            },
+                            "64-QAM": {
+                                "max_length": 876,
+                                "slots_needed": 1
+                            }
+                        },
+                        "200": {
+                            "QPSK": {
+                                "max_length": 2595,
+                                "slots_needed": 5
+                            },
+                            "16-QAM": {
+                                "max_length": 1162,
+                                "slots_needed": 3
+                            },
+                            "64-QAM": {
+                                "max_length": 438,
+                                "slots_needed": 2
+                            }
+                        },
+                        "400": {
+                            "QPSK": {
+                                "max_length": 1298,
+                                "slots_needed": 10
+                            },
+                            "16-QAM": {
+                                "max_length": 581,
+                                "slots_needed": 5
+                            },
+                            "64-QAM": {
+                                "max_length": 219,
+                                "slots_needed": 4
+                            }
+                        }
+                    })
 
     return bw_info
