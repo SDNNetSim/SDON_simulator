@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #SBATCH -p cpu-long
-#SBATCH -c 50
-#SBATCH --mem=96000
-#SBATCH -t 3-12
+#SBATCH -c 20
+#SBATCH --mem=36000
+#SBATCH -t 10-12
 #SBATCH -o slurm-%j.out
 
 # shellcheck disable=SC2164
