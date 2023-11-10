@@ -70,6 +70,12 @@ class QLearning:
             'policy_three': self._get_policy_three,
             'policy_four': self._get_policy_four,
             'policy_five': self._get_policy_five,
+            'policy_six': self._get_policy_six,
+            'policy_seven': self._get_policy_seven,
+            'policy_eight': self._get_policy_eight,
+            'policy_nine': self._get_policy_nine,
+            'policy_ten': self._get_policy_ten,
+            'policy_eleven': self._get_policy_eleven,
         }
         # Simulation methods related to routing
         self.routing_obj = Routing(beta=properties['beta'], topology=properties['topology'],
@@ -196,6 +202,62 @@ class QLearning:
         self.ai_arguments['learn_rate'] = properties_obj['learn_rate']
         self.ai_arguments['discount'] = properties_obj['discount_factor']
         self.rewards_dict = properties_obj['reward_info']
+
+    def _get_policy_eleven(self, routed: bool):
+        path_cong = find_path_congestion(network_db=self.net_spec_db, path=self.chosen_path)
+        if routed:
+            reward = 10.0
+        else:
+            reward = -100.0 * path_cong
+
+        return reward
+
+    def _get_policy_ten(self, routed: bool):
+        path_cong = find_path_congestion(network_db=self.net_spec_db, path=self.chosen_path)
+        if routed:
+            reward = 1.0
+        else:
+            reward = -100.0 * path_cong
+
+        return reward
+
+    def _get_policy_nine(self, routed: bool):
+        core_frag, _ = find_core_frag_cong(net_spec_db=self.net_spec_db, path=self.chosen_path,
+                                           core=self.core_index)
+        if routed:
+            reward = 10.0
+        else:
+            reward = -100.0 * core_frag
+
+        return reward
+
+    def _get_policy_eight(self, routed: bool):
+        core_frag, _ = find_core_frag_cong(net_spec_db=self.net_spec_db, path=self.chosen_path,
+                                           core=self.core_index)
+        if routed:
+            reward = 1.0
+        else:
+            reward = -100.0 * core_frag
+
+        return reward
+
+    @staticmethod
+    def _get_policy_seven(routed: bool):
+        if routed:
+            reward = 10.0
+        else:
+            reward = -10.0
+
+        return reward
+
+    @staticmethod
+    def _get_policy_six(routed: bool):
+        if routed:
+            reward = 10.0
+        else:
+            reward = -1.0
+
+        return reward
 
     def _get_policy_five(self, routed: bool):
         path_cong = find_path_congestion(network_db=self.net_spec_db, path=self.chosen_path)
