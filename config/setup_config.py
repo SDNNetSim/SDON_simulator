@@ -116,6 +116,48 @@ def read_config(args_obj: dict):
         # Ignoring index zero since we've already handled s1, the first simulation
         resp = _setup_threads(config=config, config_dict=config_dict, sections=config.sections()[1:],
                               option_types=required_options, other_options=other_options, args_obj=args_obj)
+
+        policy = resp['s1']['policy']
+        resp['s1'].pop('policy')
+
+        # New AI arguments structure
+        ai_arguments_base = {
+            "is_training": "True",
+            "table_path": "None",
+            "epsilon": 0.05,
+            "epsilon_target": 0.01,
+            "policy": policy,
+            "learn_rate": 0.01,
+            "discount": 0.1
+        }
+
+        # Define the values for alpha, gamma, and epsilon
+        alpha_values = [0.1, 0.01]
+        gamma_values = [0.1, 0.2, 0.9, 0.8]
+        epsilon_values = [0.1, 0.05]
+
+        config_counter = 1  # Start counter for naming configurations
+
+        for alpha in alpha_values:
+            for gamma in gamma_values:
+                for epsilon in epsilon_values:
+                    # Update the ai_arguments with the new values
+                    ai_arguments = ai_arguments_base.copy()
+                    ai_arguments["learn_rate"] = alpha
+                    ai_arguments["discount"] = gamma
+                    ai_arguments["epsilon"] = epsilon
+
+                    # Create a new configuration
+                    new_config = resp['s1'].copy()
+                    new_config["ai_arguments"] = ai_arguments
+
+                    # Add to the dictionary with a unique key
+                    key = f's{config_counter}'
+                    resp[key] = new_config
+
+                    # Increment the counter for the next key
+                    config_counter += 1
+
         return resp
 
     except configparser.Error as error:

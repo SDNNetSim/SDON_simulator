@@ -1,6 +1,7 @@
 PARAMETERS = [
     ['ai_algorithm', str, ''],
-    ['ai_arguments', dict, ''],
+    # ['ai_arguments', dict, ''],
+    ['policy', str, ''],
     ['seeds', list, ''],
     ['beta', float, ''],
     ['train_file', str, ''],
