@@ -172,7 +172,7 @@ class Engine(SDNController):
             self.stats_dict['sim_params'] = self.properties
 
         self.stats_dict['misc_stats'][self.iteration] = {
-            'trans_mean': np.mean(self.trans_arr),
+            'trans_mean': self.trans_arr[self.iteration],
             'block_reasons': self.block_reasons,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
             'request_snapshots': self.request_snapshots,
