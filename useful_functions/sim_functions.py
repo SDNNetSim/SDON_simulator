@@ -407,6 +407,7 @@ def get_spectrum(properties: dict, chosen_bw: str, path: list, net_spec_db: dict
         # No reason for blocking, return spectrum and None
         return spectrum, None, xt_cost
 
+    # TODO: adding XT cost for blocks due to xt threshold
     return False, 'congestion', xt_cost
 
 
