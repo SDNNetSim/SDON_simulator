@@ -386,7 +386,7 @@ class Routing:
         # TODO: Time complexity here is a problem
         for link in self.net_spec_db:
             source, destination = link[0], link[1]
-            num_spans = self.topology[source][destination]['length'] / self.span_len
+            num_spans = math.ceil(self.topology[source][destination]['length'] / self.span_len)
 
             link_cost = self._get_final_nli_cost(link=link, num_spans=num_spans, source=source,
                                                  destination=destination)
@@ -511,7 +511,7 @@ class Routing:
         # At the moment, we have identical bi-directional links (no need to loop over all links)
         for link in list(self.net_spec_db.keys())[::2]:
             source, destination = link[0], link[1]
-            num_spans = self.topology[source][destination]['length'] / self.span_len
+            num_spans = math.ceil(self.topology[source][destination]['length'] / self.span_len)
 
             free_slots = self.find_free_slots(net_spec_db=self.net_spec_db, des_link=link)
             xt_cost = self._find_xt_link_cost(free_slots=free_slots, link_num=link)
@@ -543,7 +543,7 @@ class Routing:
         """
         final_cost = 0
         for source, destination in zip(path, path[1:]):
-            num_spans = self.topology[source][destination]['length'] / self.span_len
+            num_spans = math.ceil(self.topology[source][destination]['length'] / self.span_len)
             link = (source, destination)
 
             final_cost += self._get_final_nli_cost(link=link, num_spans=num_spans, source=source,
