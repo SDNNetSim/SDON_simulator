@@ -49,11 +49,12 @@ class SDNController:
 
     def release(self):
         """
-        Handles a departure event. Finds where a request was previously allocated and releases it by setting the indexes
-        to all zeros.
+        Handles a departure event by releasing a previously allocated request. It identifies the allocated indexes and guard bands on the path and sets them to zero.
 
-        :return: None
+        Returns:
+            None
         """
+
         for src, dest in zip(self.path, self.path[1:]):
             src_dest = (src, dest)
             dest_src = (dest, src)
@@ -72,20 +73,17 @@ class SDNController:
 
     def allocate(self, start_slot: int, end_slot: int, core_num: int):
         """
-        Handles an arrival event. Sets the allocated spectral slots equal to the request ID, the request ID is negative
-        for the guard band to differentiate which slots are guard bands for future SNR calculations.
+        Handles an arrival event by allocating spectral slots to a request. Sets the allocated slots to the request ID and assigns negative values for guard bands.
 
-        :param start_slot: The starting spectral slot to allocate the request
-        :type start_slot: int
+        Parameters:
+            - start_slot: The starting spectral slot to allocate the request. (type: int)
+            - end_slot: The ending spectral slot to allocate the request. (type: int)
+            - core_num: The desired core to allocate the request. (type: int)
 
-        :param end_slot: The ending spectral slot to allocate the request
-        :type end_slot: int
-
-        :param core_num: The desired core to allocate the request
-        :type core_num: int
-
-        :return: None
+        Returns:
+            None
         """
+
         if self.sdn_props['guard_slots']:
             end_slot = end_slot - 1
         else:
@@ -116,8 +114,10 @@ class SDNController:
         """
         Attempts to perform light path slicing (LPS) to allocate a request.
 
-        :return: True if LPS is successfully carried out, False otherwise
+        Returns:
+            - True if LPS is successfully carried out, False otherwise. (type: bool or dict)
         """
+
         if self.chosen_bw == '25' or self.sdn_props['max_segments'] == 1:
             return False
 
@@ -172,8 +172,10 @@ class SDNController:
         Attempts to perform an improved version of light path slicing (LPS) to allocate a request. An 'improved version'
         refers to allocating multiple different types of bit-rates for slicing, rather than only one.
 
-        :return: True if advanced LPS is successfully carried out, False otherwise
+        Returns:
+            - True if advanced LPS is successfully carried out, False otherwise. (type: bool or dict)
         """
+
         resp = dict()
 
         if self.sdn_props['max_segments'] == 1:
@@ -234,7 +236,7 @@ class SDNController:
 
     def handle_lps(self):
         """
-        This method attempts to perform light path slicing (LPS) or dynamic LPS to allocate a request.
+        Summarize the following text in two sentences: Attempts to perform light path slicing (LPS) or dynamic LPS to allocate a request.
         If successful, it returns a response containing the allocated path, modulation format,
         and the number of transponders used. Otherwise, it returns a tuple of False and the
         value of self.block_reason indicating whether the allocation failed due to congestion or
@@ -257,13 +259,17 @@ class SDNController:
 
     def _handle_spectrum(self, mod_options: dict, core: int):
         """
-        Given modulation options, iterate through them and attempt to allocate a request with one.
+            Given modulation options, iterate through them and attempt to allocate a request with one.
 
-        :param mod_options: The modulation formats to consider.
-        :type mod_options: dict
+            :param mod_options: The modulation formats to consider.
+            :type mod_options: dict
 
-        :return: The spectrum found for allocation, false if none can be found.
-        :rtype: dict
+            :param core: The desired core to allocate the request.
+            :type core: int
+
+            :return: A dictionary containing the allocated spectrum, cross-talk cost, and the chosen modulation format.
+                Returns False if no spectrum can be found.
+            :rtype: dict or False
         """
         spectrum = None
         xt_cost = None
@@ -289,6 +295,13 @@ class SDNController:
         return spectrum, xt_cost, mod_chosen
 
     def _handle_routing(self):
+        """
+        Handles the routing process by retrieving the route from the specified source to destination using the
+        SDN properties, network topology, network spectrum database, chosen bandwidth, and AI object.
+
+        :return: A dictionary containing the allocated route information.
+        :rtype: dict
+        """
         resp = get_route(properties=self.sdn_props, source=self.source, destination=self.destination,
                          topology=self.topology, net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw,
                          ai_obj=self.ai_obj)
@@ -296,13 +309,14 @@ class SDNController:
 
     def handle_event(self, request_type):
         """
-        Handles any event that occurs in the simulation. This is the main method in this class. Returns False if a
-        request has been blocked.
+            Handles any event that occurs in the simulation. This is the main method in this class. Returns False if a
+            request has been blocked.
 
-        :param request_type: Whether the request is an arrival or shall be released
-        :type request_type: str
+            :param request_type: Whether the request is an arrival or shall be released.
+            :type request_type: str
 
-        :return: The response with relevant information, network database, and physical topology
+            :return: A tuple containing the response with relevant information, network database, and physical topology
+            :rtype: tuple[dict or bool, dict or str, int or None, list or None]
         """
         # Even if the request is blocked, we still use one transponder
         self.num_transponders = 1

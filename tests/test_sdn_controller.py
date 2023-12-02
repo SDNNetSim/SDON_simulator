@@ -12,7 +12,7 @@ class TestSDNController(unittest.TestCase):
 
     def setUp(self):
         """
-        Sets up this class.
+        Pulls from configuration file to set up Controller Class.
         """
         self.req_id = 1
         self.net_spec_db = {

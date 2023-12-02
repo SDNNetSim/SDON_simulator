@@ -152,7 +152,7 @@ class SnrMeasurements:
 
     def calculate_xt(self, adjacent_cores: int, link_length: int):
         """
-        Calculates the cross-talk interference based on the number of adjacent cores.
+        Calculates the cross-talk interference based on the number of adjacent cores & and the length of the link.
 
         :param adjacent_cores: The number of adjacent cores to the channel.
         :type adjacent_cores: int
@@ -249,7 +249,7 @@ class SnrMeasurements:
 
     def check_snr(self):
         """
-        Determines whether the SNR threshold can be met for a single request.
+        Determines whether the Signal-to-Noise Ratio (SNR) threshold can be met for a single request.
 
         :return: Whether the SNR threshold can be met.
         :rtype: bool
@@ -280,7 +280,7 @@ class SnrMeasurements:
 
     def check_snr_xt(self):
         """
-        Determines whether the SNR threshold can be met for a single request.
+        Determines whether the Signal-to-Noise (SNR) threshold can be met for a single request under applied cross-talk (xt).
 
         :return: Whether the SNR threshold can be met.
         :rtype: bool
@@ -309,7 +309,7 @@ class SnrMeasurements:
 
     def check_adjacent_cores(self, link_nodes: tuple):
         """
-        Given a link, finds the number of cores which have overlapping channels on a fiber.
+        Given a link, finds the number of cores which have overlapping channels (adjacency) on a fiber.
 
         :param link_nodes: The source and destination nodes.
         :type link_nodes: tuple

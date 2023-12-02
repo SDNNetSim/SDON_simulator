@@ -10,7 +10,7 @@ class TestSpectrumAssignment(unittest.TestCase):
 
     def setUp(self):
         """
-        Sets up this class.
+        Configures the spectrum assignment class.
         """
         self.net_spec_db = {(0, 1): {'cores_matrix': np.array([[0, 1, 0, 0, 0],
                                                                [1, 0, 1, 0, 0],

@@ -135,7 +135,7 @@ class Routing:
 
     def least_congested_path(self):
         """
-        Implementation of the least congested pathway algorithm, based on Arash Rezaee's research paper's assumptions.
+        This method implements the least congested pathway algorithm, leveraging NetworkX to find simple paths between source and destination nodes. It iterates through the paths to identify the least congested one and returns the result; in case of failure, it returns a tuple indicating the inability to find a valid path.
 
         :return: The least congested path, or a tuple indicating that the algorithm failed to find a valid path
         :rtype: list or tuple[bool, bool, bool]
@@ -254,10 +254,10 @@ class Routing:
 
     def find_worst_nli(self):
         """
-        Finds the maximum possible NLI for a link in the network.
+        Finds the maximum possible NLI (Nonlinear Interference) for a link in the network.
 
-        :return: The maximum NLI possible for a single link
-        :rtype: float
+        Returns:
+            The maximum NLI possible for a single link. (type: float)
         """
         links = list(self.net_spec_db.keys())
         slots_per_core = len(self.net_spec_db[links[0]]['cores_matrix'][0])

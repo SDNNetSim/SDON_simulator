@@ -7,7 +7,7 @@ from useful_functions.random_generation import set_seed, uniform_rv, exponential
 def generate(sim_type: str, seed: int, nodes: list, hold_time_mean: float, arr_rate_mean: float,
              num_reqs: int, mod_per_bw: dict, req_dist: dict):
     """
-    Generates requests for a simulation.
+    Generates a dictionary of requests for a simulation, utilizing random number generation for arrival and departure times, source and destination nodes, and bandwidth selection. The resulting dictionary includes details such as ID, source, destination, arrival and departure times, request type, bandwidth, and modulation formats.
 
     :param sim_type: The simulation type.
     :type sim_type: str
