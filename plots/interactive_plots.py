@@ -8,6 +8,16 @@ import ast
 
 
 def _filter_data(data, erlang):
+    """
+    This function takes a dictionary of Erlang-related data and a specific key representing Erlang values. It filters and organizes the data to create a new dictionary with source-destination pairs as keys. The values associated with each pair include information about congestion levels on different paths.
+    The function iterates through the provided data, extracting relevant information such as source, destination, and congestion levels. It checks for non-None paths and structures the result accordingly. The congestion levels are categorized as 'Low', 'Medium', and 'High'.
+
+    :param data: A dictionary containing Erlang-related data.
+    "param erlang: The key representing the Erlang data to be processed.
+
+    :return: A filtered and organized dictionary with source-destination pairs as keys and congestion level information.
+    :rtype: dict
+    """
     result = {}
     congestion_levels = ['Low', 'Medium', 'High']  # Assuming based on previous discussions
 
@@ -32,6 +42,12 @@ def _filter_data(data, erlang):
 
 
 def plot_q_table(data):
+    """
+    Generate and display a Dash web application with a dropdown menu and heatmap for Q-values.
+
+    :param-data: A nested dictionary containing simulation data
+    
+    """
     for time, all_sims in data.items():
         for sim_num, sim_obj in all_sims.items():
             erlang_index = -1
@@ -53,6 +69,15 @@ def plot_q_table(data):
         [Input('pair-dropdown', 'value')]
     )
     def update_heatmap(pair_str):
+        """
+        This function takes a string representation of a tuple containing source and destination information (`pair_str`) and generates a heatmap of Q-values for the corresponding source-destination pair.
+
+        :param pair_str: A string representation of a tuple containing source and destination information.
+
+        Returns: A Plotly figure representing a heatmap of Q-values for the specified source-destination pair.
+
+        :rtype: plot
+        """
         s, d = ast.literal_eval(pair_str)
         df = pd.DataFrame(filtered_data[(s, d)])
         fig = go.Figure(data=go.Heatmap(z=df, x=df.columns, y=df.index, colorscale="YlGnBu"))

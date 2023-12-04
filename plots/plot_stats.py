@@ -49,6 +49,12 @@ class PlotStats:
         self._get_data()
 
     def _get_file_info(self):
+        """
+        Retrieve information regarding simulation files.
+
+        :return: A dictionary containing information about simulation files organized by timestamp, network, date, simulation number, and associated Erlang files.
+        :rtype: dict
+        """
         resp = dict()
         for lst_idx, (networks, dates, times) in enumerate(zip(self.net_names, self.dates, self.times)):
             for sim_index, curr_time in enumerate(times):
@@ -81,6 +87,15 @@ class PlotStats:
 
     @staticmethod
     def _list_to_title(input_list: list):
+        """
+        Parse a list, removing duplicates, and format it into a title string.
+
+        :param-input_list: list to be parsed and reformatted into a title string
+
+        :return: A formatted title string based on the unique elements of the input list
+        :rtype: str
+
+        """
         if not input_list:  # handle the case for an empty list
             return ""
 
@@ -103,6 +118,15 @@ class PlotStats:
 
     @staticmethod
     def _dict_to_list(data_dict, nested_key, path=None, find_mean=False):
+        """
+        Using a provided dictionary, format the dictionaru into a list.
+
+        :param-data_dict: Dictionary of data to be formatted into a list
+        :param-nested_key: Key value that correlates to an entry within the dictionary
+
+        :return: Formatted list from the source dictionary
+        :rtype: list
+        """
         if path is None:
             path = []
 
@@ -140,6 +164,9 @@ class PlotStats:
         return f"P{number}"
 
     def _find_algorithm(self):
+        """
+        This private method analyzes simulation parameters to determine and format algorithm details. The function processes specific parameters related to routing methods and AI arguments, generating a formatted algorithm description.
+        """
         # num_requests = str(self.erlang_dict['sim_params']['num_requests'])[:2]
         route_method = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['route_method'])
         # alloc_method = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['allocation_method'])
@@ -165,6 +192,12 @@ class PlotStats:
         self.plot_dict[self.time][self.sim_num]['algorithm'] = algorithm
 
     def _get_tables(self):
+        """
+        Get tables from a designated file path
+
+        :return: Table found within the designated file path.
+        :rtype: Table
+        """
         base_path = f"../ai/models/q_tables/{self.network}/{self.date}"
         des_path = os.path.join(base_path, f"{self.time}/{self.sim_num}/"
                                            f"{self.erlang}_routes_table_c{self.num_cores}.npy")
@@ -172,6 +205,13 @@ class PlotStats:
         return q_table
 
     def _get_rewards(self):
+        """
+        Load and process Q-table data from a JSON file, extracting reward and error information.
+
+        :return: A tuple containing minimum rewards, maximum rewards, cumulative rewards, minimum errors, maximum errors, and cumulative errors.
+        :rtype: tuple
+
+        """
         base_path = f"../ai/models/q_tables/{self.network}/{self.date}"
         des_path = os.path.join(base_path, f"{self.time}/{self.sim_num}/{self.erlang}_params_c{self.num_cores}.json")
 
@@ -207,6 +247,9 @@ class PlotStats:
         return min_rewards, max_rewards, cumulative_rewards, min_error, max_error, cumulative_errors
 
     def _find_sim_info(self, network):
+        """
+        Gets pre-configured simulation info.
+        """
         self.plot_dict[self.time][self.sim_num]['holding_time'] = self.erlang_dict['sim_params']['holding_time']
         self.plot_dict[self.time][self.sim_num]['cores_per_link'] = self.erlang_dict['sim_params']['cores_per_link']
         self.plot_dict[self.time][self.sim_num]['spectral_slots'] = self.erlang_dict['sim_params']['spectral_slots']
@@ -216,6 +259,9 @@ class PlotStats:
         self.num_cores = self.erlang_dict['sim_params']['cores_per_link']
 
     def _find_modulation_info(self):
+        """
+        Gets pre-configured modulation info.
+        """
         mod_usage = self.erlang_dict['misc_stats']['0']['modulation_formats']
         for bandwidth, mod_obj in mod_usage.items():
             for modulation in mod_obj.keys():
@@ -236,6 +282,9 @@ class PlotStats:
                         modulation_info[bandwidth][modulation].append(np.mean(mod_usages))
 
     def _find_misc_stats(self):
+        """
+        Gets miscellaneous stats for presentation.
+        """
         path_lens = self._dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['path_lengths'])
         hops = self._dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['hops'])
         times = self._dict_to_list(self.erlang_dict['misc_stats'], 'route_times') * 10 ** 3
@@ -256,6 +305,9 @@ class PlotStats:
         self.plot_dict[self.time][self.sim_num]['dist_block'].append(average_dist_block)
 
     def _find_blocking(self):
+        """
+        Calculates the blocking mean, the amount of blocking per simulation, and the blocking values.
+        """
         try:
             blocking_mean = self.erlang_dict['blocking_mean']
             if blocking_mean is None:
@@ -265,6 +317,9 @@ class PlotStats:
         self.plot_dict[self.time][self.sim_num]['blocking_vals'].append(blocking_mean)
 
     def _find_ai_stats(self):
+        """
+        Uses "_get_rewards()" method to find AI stats.
+        """
         min_rewards, max_rewards, average_rewards, min_error, max_error, average_error = self._get_rewards()
         self.plot_dict[self.time][self.sim_num]['min_rewards']['routes'].append(min_rewards[0])
         self.plot_dict[self.time][self.sim_num]['min_rewards']['cores'].append(min_rewards[1])
@@ -290,6 +345,9 @@ class PlotStats:
         self.plot_dict[self.time][self.sim_num]['q_tables'].append(q_table)
 
     def _find_network_usage(self):
+        """
+        Calculates network usage statistics for presentation in post-execution.
+        """
         request_nums = []
         active_reqs = []
         block_per_req = []
@@ -311,6 +369,9 @@ class PlotStats:
         self.plot_dict[self.time][self.sim_num]['network_util'].append(np.mean(occ_slots, axis=0))
 
     def _update_plot_dict(self):
+        """
+        Updates the plotting dictionary
+        """
         if self.plot_dict is None:
             self.plot_dict = {self.time: {}}
         elif self.time not in self.plot_dict:
@@ -344,6 +405,9 @@ class PlotStats:
         }
 
     def _get_data(self):
+        """
+        Major method that utilizes previously established methods to calculate data that will in turn be displayed in plots.
+        """
         for time, obj in self.file_info.items():
             self.time = time
             for curr_sim, erlang_vals in obj['sims'].items():
@@ -372,11 +436,17 @@ class PlotStats:
                     self._find_misc_stats()
 
     def _save_plot(self, file_name: str):
+        """
+        Saves the produced plot.
+        """
         file_path = f'./output/{self.net_names[0][-1]}/{self.dates[0][-1]}/{self.times[0][-1]}'
         create_dir(file_path)
         plt.savefig(f'{file_path}/{file_name}_core{self.num_cores}.png')
 
     def _setup_plot(self, title, y_label, x_label, grid=True, y_ticks=True, y_lim=False, x_ticks=True):
+        """
+        Setup up process for the plot, executed prior to registering any information.
+        """
         plt.figure(figsize=(7, 5), dpi=300)
         plt.title(f"{self.title_names} {title} R={self.num_requests}")
         plt.ylabel(y_label)
@@ -398,6 +468,17 @@ class PlotStats:
             plt.grid()
 
     def _plot_sub_plots(self, plot_info, title, x_ticks, x_lim, x_label, y_ticks, y_lim, y_label, legend, filename):
+        """
+        With the provided info, plots the subplots on a major plot and saves plot data once finished.
+        :param-plot_info: plot information
+        :param-title: Title of the plot
+        :param-x_ticks: number of x ticks within the plot
+        :param-x_lim: upper threshold of x
+        :param-x_label: Label for x
+        :param-y_ticks: number of y ticks within the plot
+        :param-y_lim: upper threshold of y
+        :param-y_label: Label for y
+        """
         _, axes = plt.subplots(2, 2, figsize=(7, 5), dpi=300)
         plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
 
@@ -430,6 +511,12 @@ class PlotStats:
         self._save_plot(file_name=filename)
 
     def _plot_helper_two(self, file_name: str, erlang_indexes: list):
+        """
+        Plot and compare modulation format usage for multiple bandwidths, based on simulation data.
+
+        :param-file_name: Name of the saved plot file.
+        :param-erlang_indexes: A list of indices corresponding to Erlang values for which plots are generated.
+        """
         data = dict()
         policy = None
         erlangs = list()
@@ -475,6 +562,12 @@ class PlotStats:
             plt.show()
 
     def _plot_helper_one(self, x_vals: str, y_vals: list, file_name: str, reward_flags=None, per_req_flag=None):
+        """
+        Plot and compare modulation format usage for multiple bandwidths, based on simulation data.
+
+        :param-file_name: Name of the saved plot file.
+        :param-erlang_indexes: A list of indices corresponding to Erlang values for which plots are generated.
+        """
         legend_list = list()
         for _, objs in self.plot_dict.items():
             for _, sim_obj in objs.items():
@@ -515,14 +608,23 @@ class PlotStats:
         plt.show()
 
     def plot_q_tables(self):
+        """
+        Plots q-tables
+        """
         plot_q_table(data=self.plot_dict)
 
     def plot_epsilon(self):
+        """
+        Plots epsilon
+        """
         self._setup_plot("Epsilon Decay vs. Time Steps", 'Epsilon', 'Time Steps (Request Numbers)',
                          y_ticks=False, x_ticks=False)
         self._plot_helper_one(x_vals='time_steps', y_vals=['epsilon'], file_name='epsilon_decay')
 
     def plot_td_errors(self):
+        """
+        Plots td errors
+        """
         self._setup_plot("Average Errors vs. Time Steps", 'Average Error', 'Time Steps (Request Numbers)',
                          y_ticks=False, x_ticks=False)
         self._plot_helper_one(x_vals='time_steps', y_vals=['average_error'], file_name='average_errors_50',
@@ -539,17 +641,26 @@ class PlotStats:
                               reward_flags=[[-1], ['routes']])
 
     def plot_active_requests(self):
+        """
+        Plots active requests using previously defined methods to create and plot data.
+        """
         self._setup_plot("Active Requests", 'Active Requests', 'Request Number', y_ticks=False, x_ticks=False)
         self._plot_helper_one(x_vals='req_nums', y_vals=['active_reqs'],
                               file_name='active_requests', per_req_flag=[0, 5, -1])
 
     def plot_network_util(self):
+        """
+        Plots network utilization using previously defined methods to create and plot data.
+        """
         self._setup_plot("Network Utilization Per Request", 'Slots Occupied', 'Request Number', y_ticks=False,
                          x_ticks=False)
         self._plot_helper_one(x_vals='req_nums', y_vals=['network_util'],
                               file_name='network_util', per_req_flag=[0, 5, -1])
 
     def plot_block_per_req(self):
+        """
+        Plots number of blocks per request using previously defined methods to create and plot data.
+        """
         self._setup_plot("BP Per Request", 'Blocking Probability', 'Request Number', y_ticks=False, x_ticks=False)
         self._plot_helper_one(x_vals='req_nums', y_vals=['block_per_req'],
                               file_name='blocking_per_req', per_req_flag=[0, 5, -1])
