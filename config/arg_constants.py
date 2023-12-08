@@ -34,4 +34,5 @@ PARAMETERS = [
     ['save_snapshots', bool, ''],
     ['xt_type', str, ''],
     ['filter_mods', bool, ''],
+    ['ci_rate', float, '']
 ]

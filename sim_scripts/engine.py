@@ -26,6 +26,10 @@ class Engine(SDNController):
         """
         Initializes the Engine class.
         """
+        # TODO: Maybe have a properties variable and then a local variable called something that contains all
+        #   relevant information, instead of having so many variables like this (engine_props and engine_info)
+        #   - Also extend to all other classes and functions
+        #   - Maybe move away from class inheritance, have a guideline for sdn_obj, ai_obj, etc...
         self.properties = kwargs['properties']
 
         # Holds statistical information for each iteration in a given simulation.
@@ -100,6 +104,7 @@ class Engine(SDNController):
         occupied_slots = 0
         guard_slots = 0
 
+        # TODO: Efficiency update: bi-directional links but loop through everything
         for _, data in self.net_spec_db.items():
             for core in data['cores_matrix']:
                 requests = set(core[core > 0])
@@ -126,6 +131,7 @@ class Engine(SDNController):
         self.active_requests = set()
         free_slots = 0
 
+        # TODO: Does this need to be divided? (Identical bi-directional links)
         for src, dest in zip(path, path[1:]):
             src_dest = (src, dest)
             for core in self.net_spec_db[src_dest]['cores_matrix']:
@@ -139,6 +145,7 @@ class Engine(SDNController):
 
         :return: None
         """
+        # TODO: Efficiency updates
         for _, obj in self.request_snapshots.items():
             for key, lst in obj.items():
                 obj[key] = np.mean(lst)
@@ -149,19 +156,26 @@ class Engine(SDNController):
                     if len(lst) == 0:
                         mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
                     else:
-                        min_max_lst = list()
-                        average_list = list()
+                        # TODO: This MUST be tested before using
+                        xt_stats = list()
                         for curr_value in lst:
                             if curr_value == 0.0:
-                                average_list.append(curr_value)
+                                xt_stats.append(curr_value)
                             else:
-                                min_max_lst.append(10.0 ** (curr_value / 10.0))
-                                average_list.append(10.0 ** (curr_value / 10.0))
-                        # TODO: should be changed for empty list 
-                        if len(min_max_lst) == 0: min_max_lst = average_list
-                        mod_obj[modulation] = {'mean': np.mean(average_list), 'std': np.std(average_list),
-                                            'min': np.min(min_max_lst), 'max': np.max(min_max_lst),
-                                            'min_0': np.min(average_list)}
+                                # Convert crosstalk from db to a linear scale
+                                xt_stats.append(10.0 ** (curr_value / 10.0))
+
+                        # We do not want to consider zeros for min and max for XT
+                        # If XT is zero, it's technically infinite, but we can't include that in calculations
+                        min_max = [curr_xt for curr_xt in xt_stats if curr_xt != 0.0]
+                        if min_max:
+                            xt_min = np.min(min_max)
+                            xt_max = np.max(min_max)
+                        else:
+                            xt_min = None
+                            xt_max = None
+                        mod_obj[modulation] = {'mean': np.mean(xt_stats), 'std': np.std(xt_stats), 'min': xt_min,
+                                               'max': xt_max, 'min_0': np.min(xt_stats)}
 
         self.stats_dict['blocking_mean'] = self.blocking_mean
         self.stats_dict['blocking_variance'] = self.blocking_variance
@@ -172,7 +186,8 @@ class Engine(SDNController):
             self.stats_dict['sim_params'] = self.properties
 
         self.stats_dict['misc_stats'][self.iteration] = {
-            'trans_mean': np.mean(self.trans_arr),
+            # TODO: Check and update variable name or take the mean here and delete in _update_transponders(self)
+            'trans_mean': self.trans_arr[self.iteration],
             'block_reasons': self.block_reasons,
             'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
             'request_snapshots': self.request_snapshots,
@@ -205,9 +220,6 @@ class Engine(SDNController):
         """
         Checks if the confidence interval is high enough to stop the simulation.
 
-        :param iteration: The current iteration of the simulation
-        :type iteration: int
-
         :return: A boolean indicating whether to end the simulation or not
         """
         block_percent_arr = np.array(list(self.stats_dict['block_per_sim'].values()))
@@ -219,7 +231,14 @@ class Engine(SDNController):
         self.blocking_variance = np.var(block_percent_arr)
         try:
             # 1.645 for 90% confidence level and 1.96 for 95% confidence level
-            self.block_ci_rate = 1.96 * (np.sqrt(self.blocking_variance) / np.sqrt(len(block_percent_arr)))
+            if self.properties['ci_rate'] == 90.0:
+                ci_rate = 1.645
+            elif self.properties['ci_rate'] == 95.0:
+                ci_rate = 1.96
+            else:
+                raise NotImplementedError(f"Expected a CI rate of 90 or 95, got: {self.properties['ci_rate']}")
+
+            self.block_ci_rate = ci_rate * (np.sqrt(self.blocking_variance) / np.sqrt(len(block_percent_arr)))
             self.block_ci_percent = ((2 * self.block_ci_rate) / self.blocking_mean) * 100
         except ZeroDivisionError:
             return False
@@ -297,7 +316,9 @@ class Engine(SDNController):
         self.hops = np.append(self.hops, len(response_data['path']) - 1)
         self.path_lens = np.append(self.path_lens, find_path_len(path=response_data['path'], topology=self.topology))
         self.route_times = np.append(self.route_times, response_data['route_time'])
-        for path_mod, path_bw, xt_cost in zip(resp[0]['mod_format'], resp[0]['allocated_bw_type'], response_data['xt_cost']):
+        # To loop over light path slicing separate segments
+        for path_mod, path_bw, xt_cost in zip(resp[0]['mod_format'], resp[0]['allocated_bw_type'],
+                                              response_data['xt_cost']):
             self.mods_used[path_bw][path_mod] += 1
             # TODO: This is always xt_cost for now
             self.path_weights[path_bw][path_mod].append(xt_cost)

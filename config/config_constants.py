@@ -35,6 +35,7 @@ YUE_REQUIRED_OPTIONS = {
     'request_distribution': ast.literal_eval,
     'save_snapshots': str_to_bool,
     'xt_type': str,
+    'ci_rate': float,
 }
 
 ARASH_REQUIRED_OPTIONS = {
@@ -60,6 +61,7 @@ ARASH_REQUIRED_OPTIONS = {
     'save_snapshots': str_to_bool,
     'xt_type': str,
     'filter_mods': str_to_bool,
+    'ci_rate': float,
 }
 
 OTHER_OPTIONS = {
@@ -77,4 +79,5 @@ OTHER_OPTIONS = {
     'requested_xt': ast.literal_eval,
     'k_paths': int,
     'xt_type': str,
+    'ci_rate': float,
 }
