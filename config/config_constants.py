@@ -8,7 +8,7 @@ def str_to_bool(string):
     :param string: The input string.
     :type string: str
 
-    :return: True or False
+    :return: True or False.
     :rtype: bool
     """
     return string.lower() in ['true', 'yes', '1']

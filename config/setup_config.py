@@ -29,7 +29,7 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
     """
     Checks if multiple threads should be run. If so, structure each sim's params.
 
-    :param config: The configuration object
+    :param config: The configuration object.
     :type config: config.ConfigParser
 
     :param config_dict: A dictionary containing the main thread with key value pairs.
@@ -70,8 +70,11 @@ def read_config(args_obj: dict):
     """
     Reads and structures necessary data from the configuration file in the run_ini directory.
 
-    :param args_obj: Arguments passed via the command line (if any).
+    :param args_obj: Arguments passed via the command line.
     :type args_obj: dict
+
+    :return: All input information necessary to run simulations.
+    :rtype: dict
     """
     config_dict = {'s1': dict()}
     config = configparser.ConfigParser()
