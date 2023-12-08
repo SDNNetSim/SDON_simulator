@@ -35,6 +35,7 @@ def get_path_mod(mod_formats: dict, path_len: int):
 
     return resp
 
+
 def filter_mod(mod_formats: dict, path_len: int):
     """
     Given an object of modulation formats and maximum lengths, choose the one that satisfies the requirements.
@@ -47,11 +48,12 @@ def filter_mod(mod_formats: dict, path_len: int):
 
     :return: The filtered mod formats based on length
     """
+    # TODO: Double check the response to make sure these are returned in the right order
     mod_formats = sort_nested_dict_vals(mod_formats, nested_key='max_length')
-    resp = {key: value for key, value in mod_formats.items() if value['max_length'] >= path_len}
     resp = [key for key, value in mod_formats.items() if value['max_length'] >= path_len]
     return resp
-    
+
+
 def find_max_length(source: int, destination: int, topology: nx.Graph):
     """
     Find the maximum path length possible.
@@ -323,7 +325,7 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
     elif properties['route_method'] == 'xt_aware':
         # TODO: Add xt_type to the configuration file
         selected_path = routing_obj.xt_aware(beta=properties['beta'], xt_type=properties['xt_type'])
-        path_len = find_path_len(path= selected_path[0][0], topology=topology)
+        path_len = find_path_len(path=selected_path[0][0], topology=topology)
         temp_mod = sort_nested_dict_vals(properties['mod_per_bw'][chosen_bw], nested_key='max_length')
         resp = [selected_path[0][0]], [list(temp_mod.keys())], selected_path[2]
     elif properties['route_method'] == 'least_congested':
