@@ -139,6 +139,41 @@ class Engine(SDNController):
 
         return free_slots
 
+    @staticmethod
+    def _check_min_max(xt_stats: list):
+        # We do not want to consider zeros for min and max for XT
+        # If XT is zero, it's technically infinite, but we can't include that in calculations
+        min_max = [curr_xt for curr_xt in xt_stats if curr_xt != 0.0]
+        if min_max:
+            xt_min = np.min(min_max)
+            xt_max = np.max(min_max)
+        else:
+            xt_min = None
+            xt_max = None
+
+        return xt_min, xt_max
+
+    # TODO: TEST!
+    def _handle_xt_stats(self):
+        for _, mod_obj in self.path_weights.items():
+            for modulation, lst in mod_obj.items():
+                # Modulation was never used
+                if len(lst) == 0:
+                    mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
+                else:
+                    # TODO: This MUST be tested before using
+                    xt_stats = list()
+                    for curr_value in lst:
+                        if curr_value == 0.0:
+                            xt_stats.append(curr_value)
+                        else:
+                            # Convert crosstalk from db to a linear scale
+                            xt_stats.append(10.0 ** (curr_value / 10.0))
+
+                    xt_min, xt_max = self._check_min_max(xt_stats=xt_stats)
+                    mod_obj[modulation] = {'mean': np.mean(xt_stats), 'std': np.std(xt_stats), 'min': xt_min,
+                                           'max': xt_max, 'min_0': np.min(xt_stats)}
+
     def _save_sim_results(self):
         """
         Saves the simulation results to a file like #_erlang.json.
@@ -150,32 +185,7 @@ class Engine(SDNController):
             for key, lst in obj.items():
                 obj[key] = np.mean(lst)
         if self.sdn_props['check_snr'] != 'None':
-            for _, mod_obj in self.path_weights.items():
-                for modulation, lst in mod_obj.items():
-                    # Modulation was never used
-                    if len(lst) == 0:
-                        mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
-                    else:
-                        # TODO: This MUST be tested before using
-                        xt_stats = list()
-                        for curr_value in lst:
-                            if curr_value == 0.0:
-                                xt_stats.append(curr_value)
-                            else:
-                                # Convert crosstalk from db to a linear scale
-                                xt_stats.append(10.0 ** (curr_value / 10.0))
-
-                        # We do not want to consider zeros for min and max for XT
-                        # If XT is zero, it's technically infinite, but we can't include that in calculations
-                        min_max = [curr_xt for curr_xt in xt_stats if curr_xt != 0.0]
-                        if min_max:
-                            xt_min = np.min(min_max)
-                            xt_max = np.max(min_max)
-                        else:
-                            xt_min = None
-                            xt_max = None
-                        mod_obj[modulation] = {'mean': np.mean(xt_stats), 'std': np.std(xt_stats), 'min': xt_min,
-                                               'max': xt_max, 'min_0': np.min(xt_stats)}
+            self._handle_xt_stats()
 
         self.stats_dict['blocking_mean'] = self.blocking_mean
         self.stats_dict['blocking_variance'] = self.blocking_variance
