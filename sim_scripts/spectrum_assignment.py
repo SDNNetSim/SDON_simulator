@@ -250,6 +250,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             if resp:
                 return
 
+    # TODO: Combine with other function, essentially the same (prioritized cores variable)
     def _handle_prioritized_first_last(self, flag: str = None, des_core: int = None):
         """
         Handles either first-fit or last-fit spectrum allocation.
@@ -264,7 +265,8 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             matrix = [self.cores_matrix[des_core]]
         else:
             matrix = self.cores_matrix
-        prioritized_core = [ 0, 2, 4, 1, 3, 5, 6 ]
+        # TODO: Move to constructor or something
+        prioritized_core = [0, 2, 4, 1, 3, 5, 6]
         for core_num in prioritized_core:
             # To account for ONLY single core light segment slicing
             if core_num > 0 and self.single_core and self.is_sliced:
@@ -284,8 +286,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             # We successfully found allocation on this core, no need to check the others
             if resp:
                 return
-            
-            
+
     def _check_cores_channels(self):
         """
         For a given path, find the free channel intersections (between cores on that path) and the free slots for
