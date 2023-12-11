@@ -54,5 +54,6 @@ In order to execute the simulation, the tester must run 'run_sim'.
 Upon beginning the simulation, the console will produce messages
 in line with the currently executing simulation, as seen above.
 
-Note: If the tester attempts to execute 'run_sim' without a 'Config.ini' file saved to the 'run_ini' directory,
-they will be reminded to do so. The simulation will be unable to run until that is ammended.
+.. note::
+    If the tester attempts to execute 'run_sim' without a 'Config.ini' file saved to the 'run_ini' directory,
+    they will be reminded to do so. The simulation will be unable to run until that is ammended.
