@@ -26,14 +26,25 @@ class DeepQ:
 
     def _update_rewards_dict(self):
         """
-        Update
+        Raise not implemented error (exception) on call
+
+        :return: None
         """
         raise NotImplementedError
 
     @staticmethod
     def update_environment(model, obs, vec_env):
         """
-        Update
+        Update the reinforcement learning environment using the provided A2C model, observation, and vectorized environment.
+
+        :param model: The A2C model used for reinforcement learning.
+        :type model: Any
+        :param obs: The initial observation state.
+        :type obs: Any
+        :param vec_env: The vectorized environment for training the model.
+        :type vec_env: Any
+
+        :return: None
         """
         for _ in range(1000):
             action, _state = model.predict(obs, deterministic=True)
@@ -44,7 +55,9 @@ class DeepQ:
 
     def setup_environment(self):
         """
-        Update
+        Set up the reinforcement learning environment using the OpenAI Gym's CartPole environment and A2C model.
+
+        :return: None
         """
         env = gym.make('CartPole-v1')
         model = A2C('MlpPolicy', env, verbose=1)

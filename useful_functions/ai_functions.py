@@ -10,6 +10,8 @@ class AIMethods:
     def __init__(self, properties: dict):
         """
         Initializes the AIMethods class.
+
+        :return: None
         """
         self.properties = properties
         self.algorithm = properties['ai_algorithm']
@@ -24,6 +26,8 @@ class AIMethods:
     def _q_save(self):
         """
         Saves the current state of the Q-table.
+
+        :return: None
         """
         self.ai_obj.save_tables()
 
@@ -33,6 +37,8 @@ class AIMethods:
 
         :param routed: A flag to determine if a request was routed or not.
         :type routed: bool
+
+        :return: None
         """
         self.ai_obj.curr_episode = self.episode
         self.ai_obj.update_env(routed=routed)
@@ -44,6 +50,11 @@ class AIMethods:
             self.ai_obj.decay_epsilon(amount=decay_amount)
 
     def _q_spectrum(self):
+        """
+        Raises Non-implementation Error
+
+        :return: None
+        """
         raise NotImplementedError
 
     def _q_routing(self, source: str, destination: str, net_spec_db: dict, chosen_bw: str):
@@ -76,6 +87,8 @@ class AIMethods:
     def _init_q_learning(self):
         """
         Initializes a QLearning class and sets up the initial environment and Q-table.
+
+        :return: None
         """
         self.ai_obj.curr_episode = self.episode
         self.ai_obj.setup_env()
@@ -91,6 +104,8 @@ class AIMethods:
     def save(self):
         """
         Responsible for saving relevant information.
+
+        :return: None
         """
         if self.algorithm == 'q_learning':
             self._q_save()
@@ -98,6 +113,8 @@ class AIMethods:
     def route(self, **kwargs):
         """
         Responsible for routing.
+
+        :return: None
         """
         resp = None
         if self.algorithm == 'q_learning':
@@ -107,11 +124,18 @@ class AIMethods:
         return resp
 
     def reset_epsilon(self):
+        """
+        Resets Epsilon Value
+
+        :reset: None
+        """
         self.ai_obj.epsilon = self.properties['ai_arguments']['epsilon']
 
     def update(self, **kwargs):
         """
         Responsible for updating environment information.
+
+        :return: None
         """
         if self.algorithm == 'q_learning':
             self._q_update_env(routed=kwargs['routed'])
@@ -119,6 +143,8 @@ class AIMethods:
     def _setup(self):
         """
         Responsible for setting up available AI algorithms and their methods.
+
+        :return: None
         """
         # TODO: Didn't pass is_training here
         if self.algorithm == 'q_learning':

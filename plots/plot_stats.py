@@ -81,6 +81,15 @@ class PlotStats:
 
     @staticmethod
     def _snake_to_title(snake_str: str):
+        """
+            Convert a snake_case string to title case.
+
+            :param snake_str: The input snake_case string.
+            :type snake_str: str
+
+            :return: The title case representation of the snake_case string.
+            :rtype: str
+        """
         words = snake_str.split('_')
         title_str = ' '.join(word.capitalize() for word in words)
         return title_str
@@ -145,6 +154,15 @@ class PlotStats:
 
     @staticmethod
     def _policy_to_short_form(policy_str):
+        """
+            Convert a policy string to its short form.
+
+            :param policy_str: The full policy string.
+            :type policy_str: str
+
+            :return: The short form of the policy string, or 'Baseline' if the last word is not a recognized number word.
+            :rtype: str
+        """
         word_to_number = {
             'one': '1',
             'two': '2',
@@ -166,6 +184,8 @@ class PlotStats:
     def _find_algorithm(self):
         """
         This private method analyzes simulation parameters to determine and format algorithm details. The function processes specific parameters related to routing methods and AI arguments, generating a formatted algorithm description.
+
+        :return: None
         """
         # num_requests = str(self.erlang_dict['sim_params']['num_requests'])[:2]
         route_method = self._snake_to_title(snake_str=self.erlang_dict['sim_params']['route_method'])
@@ -249,6 +269,8 @@ class PlotStats:
     def _find_sim_info(self, network):
         """
         Gets pre-configured simulation info.
+
+        :return: None
         """
         self.plot_dict[self.time][self.sim_num]['holding_time'] = self.erlang_dict['sim_params']['holding_time']
         self.plot_dict[self.time][self.sim_num]['cores_per_link'] = self.erlang_dict['sim_params']['cores_per_link']
@@ -261,6 +283,8 @@ class PlotStats:
     def _find_modulation_info(self):
         """
         Gets pre-configured modulation info.
+
+        :return: None
         """
         mod_usage = self.erlang_dict['misc_stats']['0']['modulation_formats']
         for bandwidth, mod_obj in mod_usage.items():
@@ -284,6 +308,8 @@ class PlotStats:
     def _find_misc_stats(self):
         """
         Gets miscellaneous stats for presentation.
+
+        :return: None
         """
         path_lens = self._dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['path_lengths'])
         hops = self._dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['hops'])
@@ -307,6 +333,8 @@ class PlotStats:
     def _find_blocking(self):
         """
         Calculates the blocking mean, the amount of blocking per simulation, and the blocking values.
+
+        :return: None
         """
         try:
             blocking_mean = self.erlang_dict['blocking_mean']
@@ -319,6 +347,8 @@ class PlotStats:
     def _find_ai_stats(self):
         """
         Uses "_get_rewards()" method to find AI stats.
+
+        :return: None
         """
         min_rewards, max_rewards, average_rewards, min_error, max_error, average_error = self._get_rewards()
         self.plot_dict[self.time][self.sim_num]['min_rewards']['routes'].append(min_rewards[0])
@@ -347,6 +377,8 @@ class PlotStats:
     def _find_network_usage(self):
         """
         Calculates network usage statistics for presentation in post-execution.
+
+        :return: None
         """
         request_nums = []
         active_reqs = []
@@ -371,6 +403,8 @@ class PlotStats:
     def _update_plot_dict(self):
         """
         Updates the plotting dictionary
+
+        :return: None
         """
         if self.plot_dict is None:
             self.plot_dict = {self.time: {}}
@@ -407,6 +441,8 @@ class PlotStats:
     def _get_data(self):
         """
         Major method that utilizes previously established methods to calculate data that will in turn be displayed in plots.
+
+        :return: None
         """
         for time, obj in self.file_info.items():
             self.time = time
@@ -438,6 +474,8 @@ class PlotStats:
     def _save_plot(self, file_name: str):
         """
         Saves the produced plot.
+
+        :return: None
         """
         file_path = f'./output/{self.net_names[0][-1]}/{self.dates[0][-1]}/{self.times[0][-1]}'
         create_dir(file_path)
@@ -446,6 +484,8 @@ class PlotStats:
     def _setup_plot(self, title, y_label, x_label, grid=True, y_ticks=True, y_lim=False, x_ticks=True):
         """
         Setup up process for the plot, executed prior to registering any information.
+
+        :return: None
         """
         plt.figure(figsize=(7, 5), dpi=300)
         plt.title(f"{self.title_names} {title} R={self.num_requests}")
@@ -478,6 +518,8 @@ class PlotStats:
         :param-y_ticks: number of y ticks within the plot
         :param-y_lim: upper threshold of y
         :param-y_label: Label for y
+
+        :return: None
         """
         _, axes = plt.subplots(2, 2, figsize=(7, 5), dpi=300)
         plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
@@ -516,6 +558,8 @@ class PlotStats:
 
         :param-file_name: Name of the saved plot file.
         :param-erlang_indexes: A list of indices corresponding to Erlang values for which plots are generated.
+
+        :return: None
         """
         data = dict()
         policy = None
@@ -567,6 +611,8 @@ class PlotStats:
 
         :param-file_name: Name of the saved plot file.
         :param-erlang_indexes: A list of indices corresponding to Erlang values for which plots are generated.
+
+        :return: None
         """
         legend_list = list()
         for _, objs in self.plot_dict.items():
@@ -610,12 +656,16 @@ class PlotStats:
     def plot_q_tables(self):
         """
         Plots q-tables
+
+        :return: None
         """
         plot_q_table(data=self.plot_dict)
 
     def plot_epsilon(self):
         """
         Plots epsilon
+
+        :return: None
         """
         self._setup_plot("Epsilon Decay vs. Time Steps", 'Epsilon', 'Time Steps (Request Numbers)',
                          y_ticks=False, x_ticks=False)
@@ -624,6 +674,8 @@ class PlotStats:
     def plot_td_errors(self):
         """
         Plots td errors
+
+        :return: None
         """
         self._setup_plot("Average Errors vs. Time Steps", 'Average Error', 'Time Steps (Request Numbers)',
                          y_ticks=False, x_ticks=False)
@@ -643,6 +695,8 @@ class PlotStats:
     def plot_active_requests(self):
         """
         Plots active requests using previously defined methods to create and plot data.
+
+        :return: None
         """
         self._setup_plot("Active Requests", 'Active Requests', 'Request Number', y_ticks=False, x_ticks=False)
         self._plot_helper_one(x_vals='req_nums', y_vals=['active_reqs'],
@@ -651,6 +705,8 @@ class PlotStats:
     def plot_network_util(self):
         """
         Plots network utilization using previously defined methods to create and plot data.
+
+        :return: None
         """
         self._setup_plot("Network Utilization Per Request", 'Slots Occupied', 'Request Number', y_ticks=False,
                          x_ticks=False)
@@ -660,6 +716,8 @@ class PlotStats:
     def plot_block_per_req(self):
         """
         Plots number of blocks per request using previously defined methods to create and plot data.
+
+        :return: None
         """
         self._setup_plot("BP Per Request", 'Blocking Probability', 'Request Number', y_ticks=False, x_ticks=False)
         self._plot_helper_one(x_vals='req_nums', y_vals=['block_per_req'],
@@ -668,12 +726,16 @@ class PlotStats:
     def plot_mod_formats(self):
         """
         Plots the modulation format usage per bandwidth.
+
+        :return: None
         """
         self._plot_helper_two(file_name='mods', erlang_indexes=[0, 5, 11])
 
     def plot_block_reasons(self):
         """
         Plots the reasons for blocking as a percentage.
+
+        :return: None
         """
         self._setup_plot("Block Reasons", 'Blocking Percentage', 'Erlang', y_ticks=False, x_ticks=False)
         self._plot_helper_one(x_vals='erlang_vals', y_vals=['cong_block', 'dist_block'],
@@ -682,6 +744,8 @@ class PlotStats:
     def plot_rewards(self):
         """
         Plots the average rewards obtained by the agent.
+
+        :return: None
         """
         self._setup_plot("Average Rewards requests", 'Average Reward', 'Time Steps (Request Numbers)',
                          y_ticks=False, x_ticks=False)
@@ -701,6 +765,8 @@ class PlotStats:
     def plot_times(self):
         """
         Plots the average time of routing in milliseconds.
+
+        :return: None
         """
         self._setup_plot("Average Route Time", 'Average Route Time (milliseconds)', 'Erlang', y_ticks=False)
         self._plot_helper_one(x_vals='erlang_vals', y_vals=['route_times'], file_name='average_times')
@@ -708,6 +774,8 @@ class PlotStats:
     def plot_hops(self):
         """
         Plots the average number of hops.
+
+        :return: None
         """
         self._setup_plot("Average Hop Count", 'Average Hop Count', 'Erlang', y_ticks=False)
         self._plot_helper_one(x_vals='erlang_vals', y_vals=['hops'], file_name='average_hops')
@@ -715,6 +783,8 @@ class PlotStats:
     def plot_path_length(self):
         """
         Plots the average path length.
+
+        :return: None
         """
         self._setup_plot("Average Path Length", 'Average Path Length (KM)', 'Erlang', y_ticks=False)
         self._plot_helper_one(x_vals='erlang_vals', y_vals=['path_lengths'], file_name='average_lengths')
@@ -722,12 +792,25 @@ class PlotStats:
     def plot_blocking(self):
         """
         Plots the average blocking probability for each Erlang value.
+
+        :return: None
         """
         self._setup_plot("Average Blocking Prob. vs. Erlang", 'Average Blocking Probability', 'Erlang', y_ticks=True)
         self._plot_helper_one(x_vals='erlang_vals', y_vals=['blocking_vals'], file_name='average_bp')
 
 
 def _and_filters(filters, content):
+    """
+       Check if the content matches all specified 'and_filters' conditions.
+
+       :param filters: A dictionary containing filter conditions, including 'and_filters'.
+       :type filters: dict
+       :param content: The content to be checked against the filters.
+       :type content: dict
+
+       :return: True if the content matches all 'and_filters' conditions, False otherwise.
+       :rtype: bool
+    """
     keep_config = True
     content = content.get('sim_params')
     for check_flags in filters['and_filters']:
@@ -745,6 +828,17 @@ def _and_filters(filters, content):
 
 
 def _or_filters(filters, content):
+    """
+        Check if the content matches any specified 'or_filters' conditions.
+
+        :param filters: A dictionary containing filter conditions, including 'or_filters'.
+        :type filters: dict
+        :param content:The content to be checked against the filters.
+        :type content: dict
+
+        :return: True if the content matches any 'or_filters' condition, False otherwise.
+        :rtype: bool
+    """
     keep_config = True
     for sub_flags in filters['or_filters']:
         check_content = content.get('sim_params')
@@ -764,6 +858,17 @@ def _or_filters(filters, content):
 
 
 def _not_filters(filters, content):
+    """
+        Check if the content does not match specified filter conditions.
+
+        :param filters: A dictionary containing filter conditions, including 'not_filters'.
+        :type filters: dict
+        :param content: The content to be checked against the filters.
+        :type content: dict
+
+        :return: True if the content does not match any 'not_filters' conditions, False otherwise.
+        :rtype: bool
+    """
     keep_config = True
     for sub_flags in filters['not_filters']:
         check_content = content.get('sim_params')

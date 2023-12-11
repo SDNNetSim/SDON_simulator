@@ -51,8 +51,7 @@ class SDNController:
         """
         Handles a departure event by releasing a previously allocated request. It identifies the allocated indexes and guard bands on the path and sets them to zero.
 
-        Returns:
-            None
+        :return: None
         """
 
         for src, dest in zip(self.path, self.path[1:]):
@@ -75,13 +74,14 @@ class SDNController:
         """
         Handles an arrival event by allocating spectral slots to a request. Sets the allocated slots to the request ID and assigns negative values for guard bands.
 
-        Parameters:
-            - start_slot: The starting spectral slot to allocate the request. (type: int)
-            - end_slot: The ending spectral slot to allocate the request. (type: int)
-            - core_num: The desired core to allocate the request. (type: int)
+        :param start_slot: The starting spectral slot to allocate the request.
+        :type start_slot: int
+        :param end_slot: The ending spectral slot to allocate the request.
+        :type end_slot: int
+        :param core_num: The desired core to allocate the request.
+        :type core_num: int
 
-        Returns:
-            None
+        :return: None
         """
 
         if self.sdn_props['guard_slots']:
@@ -114,8 +114,8 @@ class SDNController:
         """
         Attempts to perform light path slicing (LPS) to allocate a request.
 
-        Returns:
-            - True if LPS is successfully carried out, False otherwise. (type: bool or dict)
+        :return: True if LPS is successfully carried out, False otherwise.
+        :rtype: bool or dict
         """
 
         if self.chosen_bw == '25' or self.sdn_props['max_segments'] == 1:
@@ -172,8 +172,8 @@ class SDNController:
         Attempts to perform an improved version of light path slicing (LPS) to allocate a request. An 'improved version'
         refers to allocating multiple different types of bit-rates for slicing, rather than only one.
 
-        Returns:
-            - True if advanced LPS is successfully carried out, False otherwise. (type: bool or dict)
+        :return: True if advanced LPS is successfully carried out, False otherwise.
+        :rtype: bool or dict
         """
 
         resp = dict()
@@ -267,8 +267,7 @@ class SDNController:
             :param core: The desired core to allocate the request.
             :type core: int
 
-            :return: A dictionary containing the allocated spectrum, cross-talk cost, and the chosen modulation format.
-                Returns False if no spectrum can be found.
+            :return: A dictionary containing the allocated spectrum, cross-talk cost, and the chosen modulation format. Returns False if no spectrum can be found.
             :rtype: dict or False
         """
         spectrum = None

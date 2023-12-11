@@ -98,6 +98,15 @@ class QLearning:
             raise ValueError(f"Epsilon should be greater than 0 but it is {self.epsilon}")
 
     def _calc_td_averages(self, error_flag):
+        """
+            Calculate and update the minimum, maximum, and average values of temporal differences (TD errors)
+            for a specified error flag.
+
+            :param error_flag: A string indicating the error flag for which TD averages are to be calculated.
+            :type error_flag: str
+
+            :return: None
+        """
         matrix = np.array([])
         for episode, curr_list in self.td_errors[error_flag]['errors'].items():
             if episode == '0':
@@ -111,6 +120,15 @@ class QLearning:
         self.td_errors[error_flag].pop('errors')
 
     def _calc_reward_averages(self, reward_flag):
+        """
+        Calculate and update the minimum, maximum, and average values of rewards
+        for a specified reward flag.
+
+        :param reward_flag: A string indicating the reward flag for which statistics are to be calculated.
+        :type reward_flag: str
+
+        :return: None
+        """
         matrix = np.array([])
         for episode, curr_list in self.rewards_dict[reward_flag]['rewards'].items():
             if episode == '0':
@@ -124,6 +142,18 @@ class QLearning:
         self.rewards_dict[reward_flag].pop('rewards')
 
     def _update_stats(self, reward: float, reward_flag: str, td_error: float):
+        """
+           Update episode statistics including rewards and TD errors.
+
+           :param reward: The reward received in the current episode.
+           :type reward: float
+           :param reward_flag: A string indicating the reward flag for tracking statistics.
+           :type reward_flag: str
+           :param td_error: The temporal difference error associated with the current episode.
+           :type td_error: float
+
+           :return: None
+        """
         episode = str(self.curr_episode)
 
         if episode not in self.rewards_dict[reward_flag]['rewards'].keys():
@@ -143,6 +173,8 @@ class QLearning:
     def save_tables(self):
         """
         Saves trained q-tables.
+
+        :return: None
         """
         if self.sim_type == 'test':
             raise NotImplementedError
@@ -176,6 +208,8 @@ class QLearning:
     def load_tables(self):
         """
         Loads desired previously trained q-tables.
+
+        :return: None
         """
         file_path = f"{os.getcwd()}/ai/models/q_tables/{self.ai_arguments['table_path']}/"
         file_name_one = f"{self.sim_type}_routes_table_c{self.ai_arguments['cores_per_link']}.npy"
@@ -198,6 +232,14 @@ class QLearning:
 
     @staticmethod
     def _get_policy_five(routed: bool):
+        """
+            Get the response value based on the routing condition.
+
+            :param routed: A boolean indicating whether routing is true or false.
+            :type routed: bool
+            :return: The response value, 10.0 if routed is True, -10.0 if routed is False.
+            :rtype: float
+        """
         if routed:
             resp = 10.0
         else:
@@ -207,6 +249,14 @@ class QLearning:
 
     @staticmethod
     def _get_policy_four(routed: bool):
+        """
+            Get the response value based on the routing condition.
+
+            :param routed: A boolean indicating whether routing is true or false.
+            :type routed: bool
+            :return: The response value, 10.0 if routed is True, -10.0 if routed is False.
+            :rtype: float
+        """
         if routed:
             resp = 10.0
         else:
@@ -216,6 +266,14 @@ class QLearning:
 
     @staticmethod
     def _get_policy_three(routed: bool):
+        """
+            Get the response value based on the routing condition.
+
+            :param routed: A boolean indicating whether routing is true or false.
+            :type routed: bool
+            :return: The response value, 10.0 if routed is True, -10.0 if routed is False.
+            :rtype: float
+        """
         if routed:
             resp = 1.0
         else:
@@ -225,6 +283,14 @@ class QLearning:
 
     @staticmethod
     def _get_policy_two(routed: bool):
+        """
+            Get the response value based on the routing condition.
+
+            :param routed: A boolean indicating whether routing is true or false.
+            :type routed: bool
+            :return: The response value, 10.0 if routed is True, -10.0 if routed is False.
+            :rtype: float
+        """
         if routed:
             resp = 1.0
         else:
@@ -234,6 +300,14 @@ class QLearning:
 
     @staticmethod
     def _get_policy_one(routed: bool):
+        """
+            Get the response value based on the routing condition.
+
+            :param routed: A boolean indicating whether routing is true or false.
+            :type routed: bool
+            :return: The response value, 10.0 if routed is True, -10.0 if routed is False.
+            :rtype: float
+        """
         if routed:
             resp = 1.0
         else:
@@ -242,6 +316,15 @@ class QLearning:
         return resp
 
     def _get_max_future_q(self, new_cong: float):
+        """
+            Get the maximum Q-value for future steps based on the provided congestion level.
+
+            :param new_cong: The new congestion level for which the maximum Q-value is to be determined.
+            :type new_cong: float
+
+            :return: The maximum Q-value for future steps.
+            :rtype: float
+        """
         q_values = list()
         self.new_cong_index = self._classify_cong(curr_cong=new_cong)
         path_index, path, _ = self.paths_info[self.path_index]
@@ -264,6 +347,14 @@ class QLearning:
         self._update_cores_q_values(routed)
 
     def _update_routes_q_values(self, routed: bool):
+        """
+            Update Q-values for the chosen route based on the reinforcement learning update equation.
+
+            :param routed: A boolean indicating whether the current route is successfully routed.
+            :type routed: bool
+
+            :return: None
+        """
         policy = self.ai_arguments.get('policy')
         if policy not in self.reward_policies:
             raise NotImplementedError('Reward policy not recognized.')
@@ -282,6 +373,14 @@ class QLearning:
         self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['q_value'] = new_q
 
     def _update_cores_q_values(self, routed: bool):
+        """
+            Update Q-values for the chosen core within the selected route based on the reinforcement learning update equation.
+
+            :param routed: A boolean indicating whether the current route is successfully routed.
+            :type routed: bool
+
+            :return: None
+        """
         policy = self.ai_arguments.get('policy')
         if policy not in self.reward_policies:
             raise NotImplementedError('Reward policy not recognized.')
@@ -299,6 +398,11 @@ class QLearning:
             'q_value'] = new_q_core
 
     def _init_q_tables(self):
+        """
+            Initialize Q-tables for route and core selection based on the environment topology and parameters.
+
+            :return: None
+        """
         for source in range(0, self.num_nodes):
             for destination in range(0, self.num_nodes):
                 # A node cannot be attached to itself
@@ -320,6 +424,8 @@ class QLearning:
     def setup_env(self):
         """
         Sets up the environment (q-tables) for the q-learning algorithm.
+
+        :return: None
         """
         self.epsilon = self.ai_arguments['epsilon']
         self.num_nodes = len(list(self.properties['topology'].nodes()))
@@ -338,6 +444,15 @@ class QLearning:
         self._init_q_tables()
 
     def _get_max_q(self, paths):
+        """
+           Get the path with the maximum Q-value from the provided list of paths.
+
+           :param paths: A list of tuples representing paths, each containing path_index, _, and cong_index.
+           :type list:
+           :return: A tuple representing the path with the maximum Q-value, containing path_index, _, and cong_index.
+           :rtype tuple:
+
+        """
         q_values = list()
         for path_index, _, cong_index in paths:
             curr_q = self.q_routes[self.source][self.destination][path_index][cong_index]['q_value']
@@ -349,6 +464,15 @@ class QLearning:
 
     @staticmethod
     def _classify_cong(curr_cong):
+        """
+            Classify congestion level into an index based on the provided congestion value.
+
+            :param curr_cong: The current congestion level to be classified.
+            :type curr_cong: float
+
+            :return: An integer representing the congestion index.
+            :rtype: int
+        """
         if curr_cong < 0.3:
             cong_index = 0
         elif 0.3 <= curr_cong < 0.7:
@@ -361,6 +485,15 @@ class QLearning:
         return cong_index
 
     def _assign_congestion(self, paths):
+        """
+            Assign congestion indices to each path in the provided list of paths.
+
+            :param paths: A list of paths to which congestion indices will be assigned.
+            :type paths: list
+
+            :return: A list of tuples containing path_index, the corresponding path, and the assigned congestion index.
+            :rtype: list
+        """
         resp = list()
         for path_index, curr_path in enumerate(paths):
             curr_cong = find_path_congestion(path=curr_path, network_db=self.net_spec_db)

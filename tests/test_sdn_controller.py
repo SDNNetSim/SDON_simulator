@@ -84,6 +84,8 @@ class TestSDNController(unittest.TestCase):
     def test_release(self):
         """
         Tests the release method.
+
+        :return: None
         """
         # Allocate the link in both directions
         self.net_spec_db[(1, 2)]['cores_matrix'][0][0] = self.req_id
@@ -108,6 +110,8 @@ class TestSDNController(unittest.TestCase):
     def test_allocate_with_guard_band(self):
         """
         Test the allocate method with a guard band.
+
+        :return: None
         """
         self.sdn_controller.sdn_props['guard_slots'] = 1
         # Allocate five slots, guard band included
@@ -124,6 +128,8 @@ class TestSDNController(unittest.TestCase):
     def test_allocate_without_guard_band(self):
         """
         Test allocate without a guard band.
+
+        :return: None
         """
         self.sdn_controller.guard_slots = 0
         self.sdn_controller.allocate(0, 5, 0)
@@ -137,6 +143,8 @@ class TestSDNController(unittest.TestCase):
     def test_allocate_conflict(self):
         """
         Test allocate when there is a spectrum utilization conflict.
+
+        :return: None
         """
         self.net_spec_db[(1, 2)]['cores_matrix'][0][:6] = np.ones(6, dtype=np.float64)
         self.assertRaises(BufferError, self.sdn_controller.allocate, 0, 5, 0)
@@ -144,6 +152,8 @@ class TestSDNController(unittest.TestCase):
     def test_allocate_lps_with_unsuccessful_lps(self):
         """
         Test the allocate_lps method when we have a bandwidth of 25 or maximum allowed slicing equal to one.
+
+        :return: None
         """
         self.sdn_controller.chosen_bw = '25'
         self.sdn_controller.max_slices = 2
@@ -158,6 +168,8 @@ class TestSDNController(unittest.TestCase):
     def test_unsuccessful_dynamic_lps(self):
         """
         Test allocate_dynamic_lps to check for an unsuccessful light path slice.
+
+        :return: None
         """
         self.sdn_controller.chosen_bw = '100'
         self.sdn_controller.max_slices = 10

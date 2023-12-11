@@ -33,6 +33,8 @@ class TestSpectrumAssignment(unittest.TestCase):
     def test_best_fit_allocation(self):
         """
         Tests the best_fit_allocation method.
+
+        :return: None
         """
         spectrum_assignment = SpectrumAssignment(False, [0, 1], 1, self.net_spec_db, 1)
         spectrum_assignment.cores_per_link = 4
@@ -43,6 +45,8 @@ class TestSpectrumAssignment(unittest.TestCase):
     def test_check_other_links(self):
         """
         Tests the check_other_links method.
+
+        :return: None
         """
         spectrum_assignment = SpectrumAssignment(False, [0, 1, 2], 1, self.net_spec_db, 1)
         spectrum_assignment.cores_per_link = 4
@@ -53,6 +57,8 @@ class TestSpectrumAssignment(unittest.TestCase):
     def test_first_fit_allocation(self):
         """
         Tests the first_fit_allocation method.
+
+        :return: None
         """
         spectrum_assignment = SpectrumAssignment(False, [0, 1], 1, self.net_spec_db, 1)
         spectrum_assignment.cores_per_link = 4

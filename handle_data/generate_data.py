@@ -7,8 +7,7 @@ def create_pt(cores_per_link: int, network_data: dict):
 
     :param cores_per_link: The number of cores in each fiber link
     :type cores_per_link: int
-    :param network_data: A dictionary mapping tuples of source and destination nodes to the length of the corresponding
-                        link
+    :param network_data: A dictionary mapping tuples of source and destination nodes to the length of the corresponding link
     :type network_data: dict
 
     :return: A dictionary containing information for the physical topology of the network

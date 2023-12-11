@@ -13,7 +13,7 @@ def _filter_data(data, erlang):
     The function iterates through the provided data, extracting relevant information such as source, destination, and congestion levels. It checks for non-None paths and structures the result accordingly. The congestion levels are categorized as 'Low', 'Medium', and 'High'.
 
     :param data: A dictionary containing Erlang-related data.
-    "param erlang: The key representing the Erlang data to be processed.
+    :param erlang: The key representing the Erlang data to be processed.
 
     :return: A filtered and organized dictionary with source-destination pairs as keys and congestion level information.
     :rtype: dict
@@ -73,8 +73,9 @@ def plot_q_table(data):
         This function takes a string representation of a tuple containing source and destination information (`pair_str`) and generates a heatmap of Q-values for the corresponding source-destination pair.
 
         :param pair_str: A string representation of a tuple containing source and destination information.
+        :type pair_str: str
 
-        Returns: A Plotly figure representing a heatmap of Q-values for the specified source-destination pair.
+        :return: A Plotly figure representing a heatmap of Q-values for the specified source-destination pair.
 
         :rtype: plot
         """

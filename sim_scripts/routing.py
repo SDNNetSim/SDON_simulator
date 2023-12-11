@@ -256,8 +256,8 @@ class Routing:
         """
         Finds the maximum possible NLI (Nonlinear Interference) for a link in the network.
 
-        Returns:
-            The maximum NLI possible for a single link. (type: float)
+        :return: The maximum NLI possible for a single link.
+        :rtype: float
         """
         links = list(self.net_spec_db.keys())
         slots_per_core = len(self.net_spec_db[links[0]]['cores_matrix'][0])
@@ -474,7 +474,7 @@ class Routing:
         :type link_num: int
 
         :return: The total cross-talk value for the given link.
-        :rtype float
+        :rtype: float
         """
         if self.print_warn:
             warnings.warn('Method: find_xt_link_cost in routing used that only supports 7 cores per fiber.')

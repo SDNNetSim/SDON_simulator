@@ -300,7 +300,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         interference on neighboring cores.
 
         :return: The information of the request if allocated, false otherwise.
-        :rtype dict
+        :rtype: dict
         """
         if self.print_warn:
             warnings.warn('Method: xt_aware_allocation used in '

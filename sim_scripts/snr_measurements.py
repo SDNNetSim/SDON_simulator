@@ -197,7 +197,7 @@ class SnrMeasurements:
         Calculates the power spectral density non-linear interference for a link.
 
         :return: The total power spectral density non-linear interference
-        :rtype float
+        :rtype: float
         """
         # Determine if we're using the GN or EGN model
         if self.snr_props['egn_model']:
@@ -229,6 +229,8 @@ class SnrMeasurements:
     def update_link_constants(self):
         """
         Updates non-linear impairment parameters that will remain constant for future calculations.
+
+        :return: None
         """
         self.link = self.snr_props['topology_info']['links'][self.link_id]['fiber']
         self.attenuation = self.link['attenuation']
@@ -241,6 +243,8 @@ class SnrMeasurements:
     def _init_center_vars(self):
         """
         Updates variables for the center frequency, bandwidth, and PSD for the current request.
+
+        :return: None
         """
         self.center_freq = ((self.spectrum['start_slot'] * self.snr_props['bw_per_slot']) + (
                 (self.assigned_slots * self.snr_props['bw_per_slot']) / 2)) * 10 ** 9

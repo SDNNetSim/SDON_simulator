@@ -32,6 +32,8 @@ class TestRouting(unittest.TestCase):
     def test_find_least_cong_path(self):
         """
         Tests the results of the "find_least_cong_path()" method.
+
+        :return: None
         """
         self.routing.paths_list = [
             {'path': [0, 1, 2, 3, 4], 'link_info': {'free_slots': 3}},
@@ -46,6 +48,8 @@ class TestRouting(unittest.TestCase):
         """
         Tests the results of the "find_most_cong_link()" method. This method returns the number of free slots on the most occupied core,
         checking all links within the network.
+
+        :return: None
         """
         # Test case 1: One link fully congested
         path = [0, 1, 2]
@@ -62,6 +66,8 @@ class TestRouting(unittest.TestCase):
     def test_shortest_path(self):
         """
         Tests the results of the "shortest_path()" routing method
+
+        :return: None
         """
         expected_path = [0, 1, 2, 3, 4]
         expected_mod_format = '16-QAM'

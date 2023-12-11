@@ -38,10 +38,8 @@ class Engine(SDNController):
             - self.trans_arr: An array used to take an average of the total transponders for multiple iterations.
             - self.reqs_dict: Dictionary containing generated requests in a simulation.
             - self.reqs_status: Dictionary holding information about allocated requests in a simulation.
-            - ... (Other attributes related to simulation metrics and settings)
 
-        Returns:
-            None
+        :return: None
         """
 
         self.properties = kwargs['properties']
@@ -156,11 +154,9 @@ class Engine(SDNController):
         """
         This method aggregates and saves simulation results to a JSON file, recording statistics like mean, standard deviation, and min/max values for blocking reasons, transponder usage, and path weights. The organized dictionary is saved with the Erlang value and thread number as the file name.
 
-        Parameters:
-            - self: The instance of the SDN simulation.
+        :param self: This instance of the simulation
 
-        Returns:
-            None
+        :return: None
         """
         for _, obj in self.request_snapshots.items():
             for key, lst in obj.items():
@@ -267,14 +263,11 @@ class Engine(SDNController):
         """
         This method handles the arrival of a request in the SDN simulation, updating the controller, triggering arrival events, and calculating related statistics. If AI is involved in routing, it updates the AI object with the routing outcome information.
 
-        Parameters:
-            - self: The instance of the SDN simulation.
-            - curr_time: The arrival time of the request.
-            (type: float)
+        :param self: This instance of the SDN Simulation
+        :param curr_time: The arrival time of the request.
 
-        Returns:
-            The number of transponders used for the request.
-            (type: int)
+        :return: The number of transponders used for the request.
+        :rtype: int
         """
         request = self.reqs_dict[curr_time]
         self.req_id = request['id']
@@ -335,13 +328,10 @@ class Engine(SDNController):
         """
         This method is responsible for updating the SDN controller when a request is released. It extracts information about the released request, including its ID, source, destination, and chosen bandwidth. If the request was previously allocated and is present in the requests' status, it retrieves the path and triggers the release event. If the request was blocked, no action is taken.
 
-        Parameters:
-            - self: The instance of the SDN simulation.
-            - curr_time: The arrival time of the request.
-            (type: float)
+        :param self: This instance of the SDN Simulation
+        :param curr_time: The arrival time of the request.
 
-        Returns:
-            None
+        :return: None
         """
         request = self.reqs_dict[curr_time]
         self.req_id = request['id']
@@ -405,11 +395,9 @@ class Engine(SDNController):
         """
         This method prints statistics for the current simulation iteration, showing the iteration number, total iterations, and Erlang value. It also displays the mean blocking percentage calculated from the current iteration's blocking statistics.
 
-        Parameters:
-            - self: The instance of the SDN simulation.
+        :param self: This instance of the simulation
 
-        Returns:
-            None
+        :return: None
         """
         print(f"Iteration {self.iteration + 1} out of {self.properties['max_iters']} "
               f"completed for Erlang: {self.properties['erlang']}")
@@ -420,13 +408,11 @@ class Engine(SDNController):
         """
         This method generates requests for a simulation iteration, utilizing a random number generator with the provided seed to create a dictionary with details such as arrival times and request types. The resulting requests are sorted based on their arrival times for further simulation processing.
 
-        Parameters:
-            - self: The instance of the SDN simulation.
-            - seed: The seed to use for the random number generator.
-            (type: int)
+        :param self: This instance of the SDN Simulation.
+        :param seed: The seed to use for the random number generator.
+        :type seed: int
 
-        Returns:
-            None
+        :returns: None
         """
         self.reqs_dict = generate(seed=seed,
                                   nodes=list(self.properties['topology_info']['nodes'].keys()),
@@ -443,11 +429,9 @@ class Engine(SDNController):
         """
         This method updates the transponder usage array in the SDN simulation, appending 0 if all requests are blocked. Otherwise, it calculates and appends the ratio of used transponders to the total available, excluding blocked requests.
 
-        Parameters:
-            - self: The instance of the SDN simulation.
+        :param self: This instance of the simulation
 
-        Returns:
-            None
+        :return: None
         """
         if self.properties['num_requests'] == self.num_blocked_reqs:
             self.trans_arr = np.append(self.trans_arr, 0)
@@ -459,11 +443,9 @@ class Engine(SDNController):
         """
         This method updates the blocking distribution arrays in the SDN simulation, calculating the percentage of each blocking type if there are blocked requests. The resulting information is then stored in the respective arrays for further analysis.
 
-        Parameters:
-            - self: The instance of the SDN simulation.
+        :param self: This instance of the simulation
 
-        Returns:
-            None
+        :return: None
         """
         if self.num_blocked_reqs > 0:
             for block_type, num_times in self.block_reasons.items():
@@ -473,15 +455,13 @@ class Engine(SDNController):
         """
         This method updates the request snapshot dictionary with information for the current request, recording details like occupied slots, guard bands, active requests, and blocking probability. It also logs the number of segments (transponders) utilized by the request.
 
-        Parameters:
-            - self: The instance of the SDN simulation.
-            - request_number: Represents the request number about to be allocated.
-            (type: int)
-            - num_transponders: The number of transponders the request used.
-            (type: int)
+        :param self: This instance of the simulation
+        :param request_number: Represents the request number about to be allocated.
+        :param num_transponders: The number of transponders the request used.
+        :type request_number: int
+        :type num_transponders: int
 
-        Returns:
-            None
+        :return: None
         """
         occupied_slots, guard_bands = self._get_total_occupied_slots()
 
@@ -498,11 +478,9 @@ class Engine(SDNController):
         """
         This method initializes essential variables at the beginning of each simulation iteration, setting up counters, data structures, and dictionaries to track simulation-related information such as blocking reasons, transponder count, and route details.
 
-        Parameters:
-            - self: The instance of the SDN simulation.
+        :param self: This instance of the simulation
 
-        Returns:
-            None
+        :return: None
         """
         # Initialize variables for this iteration of the simulation
         self.block_reasons = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
@@ -539,11 +517,9 @@ class Engine(SDNController):
         """
         This method runs the SDN simulation, managing arrival and release of requests, updating statistics, and optionally using ML/RL algorithms for routing. It prints periodic progress and statistics during the simulation.
 
-        Parameters:
-            - self: The instance of the SDN simulation.
+        :param self: This instance of the simulation
 
-        Returns:
-            None
+        :return: None
         """
 
         comp_times = []
