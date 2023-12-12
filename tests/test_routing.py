@@ -13,6 +13,8 @@ class TestRouting(unittest.TestCase):
         This method initializes the necessary attributes and objects for testing. It creates a network topology using
         NetworkX, defines edge properties such as free slots and length, and populates the network specification database
         with cores matrices for each link.
+
+        :return: None
         """
         self.topology = nx.Graph()
         self.topology.add_edge(0, 1, free_slots=10, length=10)

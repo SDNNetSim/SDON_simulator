@@ -99,7 +99,7 @@ def assign_link_lengths(node_pairings: dict = None, constant_weight: bool = Fals
 
 def create_network(const_weight: bool = False, net_name: str = None):
     """
-    The main structure data function.
+    Creates a Network based on the provided properties & their requirements.
 
     :param const_weight: Determines if we want to set all link lengths to one or not
     :type const_weight: bool

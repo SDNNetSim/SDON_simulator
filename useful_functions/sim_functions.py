@@ -22,6 +22,7 @@ def get_path_mod(mod_formats: dict, path_len: int):
     :type path_len: int
 
     :return: The chosen modulation format, or false
+    :rtype: dict or bool
     """
     if mod_formats['QPSK']['max_length'] >= path_len > mod_formats['16-QAM']['max_length']:
         resp = 'QPSK'
@@ -104,6 +105,7 @@ def find_path_len(path: List[str], topology: nx.Graph):
     :type topology: networkx.Graph
 
     :return: The length of the path.
+    :rtype: int
     """
     path_len = 0
     for i in range(len(path) - 1):

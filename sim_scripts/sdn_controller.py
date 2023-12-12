@@ -236,13 +236,14 @@ class SDNController:
 
     def handle_lps(self):
         """
-        Summarize the following text in two sentences: Attempts to perform light path slicing (LPS) or dynamic LPS to allocate a request.
+        Attempts to perform light path slicing (LPS) or dynamic LPS to allocate a request.
         If successful, it returns a response containing the allocated path, modulation format,
         and the number of transponders used. Otherwise, it returns a tuple of False and the
         value of self.block_reason indicating whether the allocation failed due to congestion or
         a length constraint.
 
-        :return: A tuple containing the response and the updated network database or False and self.block_reason
+        :return: If True: A tuple containing the response and the updated network database. If False: raises a self.block_reason
+        :rtype: Tuple or block_reason
         """
         if not self.sdn_props['dynamic_lps']:
             resp = self.allocate_lps()

@@ -218,6 +218,7 @@ class Engine(SDNController):
         :type iteration: int
 
         :return: A boolean indicating whether to end the simulation or not
+        :rtype: bool
         """
         block_percent_arr = np.array(list(self.stats_dict['block_per_sim'].values()))
         self.blocking_mean = np.mean(block_percent_arr)
@@ -348,12 +349,7 @@ class Engine(SDNController):
 
     def _create_topology(self):
         """
-        Create the physical topology of the simulation.
-
-        This method initializes the network topology and creates nodes and links based on the
-        input data provided in the `sim_data` dictionary. The method also creates the cores matrix
-        for each link, adds the links to the network spectrum database, and sets their length
-        attribute in the physical topology.
+        Create the physical topology of the simulation based on input data provided in the 'sim_data' dictionary.
 
         :return: None
         """
@@ -388,6 +384,7 @@ class Engine(SDNController):
         :type num_cores: int
 
         :return: A 2D NumPy array representing the cores matrix.
+        :rtype: ndarray
         """
         return np.zeros((num_cores, self.properties['spectral_slots']))
 
@@ -406,7 +403,8 @@ class Engine(SDNController):
 
     def _generate_requests(self, seed):
         """
-        This method generates requests for a simulation iteration, utilizing a random number generator with the provided seed to create a dictionary with details such as arrival times and request types. The resulting requests are sorted based on their arrival times for further simulation processing.
+        This method generates requests for a simulation iteration, utilizing a random number generator with the provided seed to create a dictionary of arrival times and request types.
+        Requests are then sorted based on their arrival times.
 
         :param self: This instance of the SDN Simulation.
         :param seed: The seed to use for the random number generator.

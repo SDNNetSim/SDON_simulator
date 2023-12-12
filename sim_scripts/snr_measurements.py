@@ -173,6 +173,7 @@ class SnrMeasurements:
         Calculates the power spectral density correction based on the EGN model.
 
         :return: The total power spectral density correction
+        :rtype: Union[float,int]
         """
         # The harmonic number series
         hn_series = 0
@@ -214,6 +215,8 @@ class SnrMeasurements:
 
         :param link: The current link number of the path we are on.
         :type link: int
+
+        :return: None
         """
         self.mu_param = (3 * (
                 self.snr_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2)) / (
@@ -286,7 +289,7 @@ class SnrMeasurements:
         """
         Determines whether the Signal-to-Noise (SNR) threshold can be met for a single request under applied cross-talk (xt).
 
-        :return: Whether the SNR threshold can be met.
+        :return: Whether the SNR threshold can be met under applied crosstalk.
         :rtype: bool
         """
         snr = 0
@@ -319,6 +322,7 @@ class SnrMeasurements:
         :type link_nodes: tuple
 
         :return: The number of adjacent cores that have overlapping channels.
+        :rtype: int
         """
         resp = 0
         if self.spectrum['core_num'] != 6:

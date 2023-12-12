@@ -21,6 +21,8 @@ class DeepQ:
 
         :param seed: The seed to be set for numpy random generation.
         :type seed: int
+
+        :return: None
         """
         np.random.seed(seed)
 

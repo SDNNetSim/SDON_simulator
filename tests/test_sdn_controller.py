@@ -13,6 +13,8 @@ class TestSDNController(unittest.TestCase):
     def setUp(self):
         """
         Pulls from configuration file to set up Controller Class.
+
+        :return: None
         """
         self.req_id = 1
         self.net_spec_db = {

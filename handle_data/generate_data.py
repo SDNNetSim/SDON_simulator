@@ -52,6 +52,7 @@ def create_bw_info(sim_type: str = None):
     :type sim_type: str or None
 
     :return: The number of spectral slots needed for each bandwidth and modulation format pair.
+    :rtype: int
     """
     # Check if sim_type is valid
     if sim_type not in ['yue', 'arash', None]:

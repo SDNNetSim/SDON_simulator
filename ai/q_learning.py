@@ -81,6 +81,8 @@ class QLearning:
 
         :param seed: The seed to set.
         :type seed: int
+
+        :return: None
         """
         np.random.seed(seed)
 
@@ -90,6 +92,8 @@ class QLearning:
 
         :param amount: The amount to decay epsilon by.
         :type amount: float
+
+        :return: None
         """
         self.epsilon -= amount
         if self.curr_episode == 0:
@@ -254,7 +258,7 @@ class QLearning:
 
             :param routed: A boolean indicating whether routing is true or false.
             :type routed: bool
-            :return: The response value, 10.0 if routed is True, -10.0 if routed is False.
+            :return: The response value, 10.0 if routed is True, -1.0 if routed is False.
             :rtype: float
         """
         if routed:
@@ -271,7 +275,7 @@ class QLearning:
 
             :param routed: A boolean indicating whether routing is true or false.
             :type routed: bool
-            :return: The response value, 10.0 if routed is True, -10.0 if routed is False.
+            :return: The response value, 1.0 if routed is True, -100.0 if routed is False.
             :rtype: float
         """
         if routed:
@@ -288,7 +292,7 @@ class QLearning:
 
             :param routed: A boolean indicating whether routing is true or false.
             :type routed: bool
-            :return: The response value, 10.0 if routed is True, -10.0 if routed is False.
+            :return: The response value, 1.0 if routed is True, -10.0 if routed is False.
             :rtype: float
         """
         if routed:
@@ -305,7 +309,7 @@ class QLearning:
 
             :param routed: A boolean indicating whether routing is true or false.
             :type routed: bool
-            :return: The response value, 10.0 if routed is True, -10.0 if routed is False.
+            :return: The response value, 1.0 if routed is True, -1.0 if routed is False.
             :rtype: float
         """
         if routed:
@@ -342,6 +346,8 @@ class QLearning:
 
         :param routed: Whether the request was routed or not.
         :type routed: bool
+
+        :return: None
         """
         self._update_routes_q_values(routed)
         self._update_cores_q_values(routed)
@@ -450,7 +456,7 @@ class QLearning:
            :param paths: A list of tuples representing paths, each containing path_index, _, and cong_index.
            :type list:
            :return: A tuple representing the path with the maximum Q-value, containing path_index, _, and cong_index.
-           :rtype tuple:
+           :rtype: tuple
 
         """
         q_values = list()

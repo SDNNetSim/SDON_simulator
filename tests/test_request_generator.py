@@ -12,7 +12,7 @@ class TestGenerateFunction(unittest.TestCase):
         Test that the `generate` function returns a dictionary with the correct keys, lengths, and
         number of requests for each bandwidth.
 
-        :raises AssertionError: If any of the test conditions are not met.
+        :return: Raises Assertion Error If any of the test conditions are not met.
         """
         # Define inputs for generate function
         sim_type = 'yue'

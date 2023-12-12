@@ -120,6 +120,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         :type end_slot: int
 
         :return: True if the spectrum is free and assigned to the given core, False otherwise
+        :rtype: bool
         """
         link = self.net_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot]
         return set(link) == {0.0}
@@ -217,6 +218,9 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         :param flag: A flag to determine which allocation method we'd like to use.
         :type flag: str
+
+        :return: Boolean value indicating whether we successfully found allocation on this core.
+        :rtype: bool
         """
         if self.core is not None:
             matrix = [self.cores_matrix[self.core]]

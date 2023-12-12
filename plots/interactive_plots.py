@@ -33,7 +33,7 @@ def _filter_data(data, erlang):
             for i, row in enumerate(dest_array):
                 for j, (path, value) in enumerate(row):
                     if path is not None:  # Check if the path is not None
-                        path_name = f"Path {i+1}"
+                        path_name = f"Path {i + 1}"
                         if path_name not in result[source_dest_pair]:
                             result[source_dest_pair][path_name] = {}
                         result[source_dest_pair][path_name][congestion_levels[j]] = value

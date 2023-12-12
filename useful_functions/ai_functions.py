@@ -112,7 +112,7 @@ class AIMethods:
 
     def route(self, **kwargs):
         """
-        Responsible for routing.
+        If q_learning is the configured algorithm, set up routing within q_routing.
 
         :return: None
         """
@@ -127,13 +127,13 @@ class AIMethods:
         """
         Resets Epsilon Value
 
-        :reset: None
+        :return: None
         """
         self.ai_obj.epsilon = self.properties['ai_arguments']['epsilon']
 
     def update(self, **kwargs):
         """
-        Responsible for updating environment information.
+        Updates environment information if the configured algorithm is set to 'q_learning'
 
         :return: None
         """
@@ -142,7 +142,7 @@ class AIMethods:
 
     def _setup(self):
         """
-        Responsible for setting up available AI algorithms and their methods.
+        If the configured algorithm is set to 'q_learning', this function we begin the setup process required to execute said algorithm
 
         :return: None
         """
