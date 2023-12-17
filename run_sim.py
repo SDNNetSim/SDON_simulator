@@ -1,8 +1,9 @@
 # Standard library imports
 import json
 import time
-from datetime import datetime
 import copy
+import os
+from datetime import datetime
 
 # Third-party library imports
 import concurrent.futures
@@ -16,11 +17,6 @@ from config.setup_config import read_config
 from config.parse_args import parse_args
 
 
-# TODO: Structure this so objects are not re-created every time :D
-# TODO: Update tests
-# TODO: Update docs
-
-
 class NetworkSimulator:
     """
     Controls all simulations for this project.
@@ -30,13 +26,12 @@ class NetworkSimulator:
         """
         Initializes the NetworkSimulator class.
         """
-        # Contains all the desired network simulator parameters for every thread
+        # Contains all the desired network simulator parameters for every simulation
         self.properties = None
 
-    def save_input(self, file_name: str = None, data: dict = None):
+    def save_input(self, file_name: str, data: dict):
         """
-        Saves simulation input data. Does not save bandwidth data, as that is intended to be a constant and unchanged
-        file.
+        Saves simulation input data.
 
         :param file_name: The name of the file to save the input data to.
         :type file_name: str
@@ -46,31 +41,29 @@ class NetworkSimulator:
 
         :return: None
         """
-        path = f"data/input/{self.properties['network']}/{self.properties['date']}/{self.properties['sim_start']}"
-
+        path = os.path.join('data', 'input', self.properties['network'], self.properties['date'],
+                            self.properties['sim_start'])
         create_dir(path)
         create_dir('data/output')
 
-        with open(f"{path}/{file_name}", 'w', encoding='utf-8') as file:
+        save_path = os.path.join(path, file_name)
+        with open(save_path, 'w', encoding='utf-8') as file:
             json.dump(data, file, indent=4)
 
-    def create_input(self, local_props):
+    def create_input(self, local_props: dict):
         """
-        Create the input data for the simulation.
-
-        The method generates bandwidth information, creates the physical topology of the network,
-        and creates a dictionary containing all the necessary simulation parameters.
+        Create the input data for the simulation. The method generates bandwidth information, creates the physical
+        topology of the network, and creates a dictionary containing all the necessary simulation parameters.
 
         :return: None
         """
         bw_info = create_bw_info(sim_type=local_props['sim_type'])
         bw_file = f"bw_info_{local_props['thread_num']}.json"
-
         self.save_input(file_name=bw_file, data=bw_info)
 
-        path = f"./data/input/{local_props['network']}/{local_props['date']}/" \
-               f"{local_props['sim_start']}/{bw_file}"
-        with open(path, 'r', encoding='utf-8') as file_object:
+        save_path = os.path.join('data', 'input', local_props['network'], local_props['date'],
+                                 local_props['sim_start'], bw_file)
+        with open(save_path, 'r', encoding='utf-8') as file_object:
             local_props['mod_per_bw'] = json.load(file_object)
 
         network_data = create_network(const_weight=local_props['const_link_weight'],
@@ -80,10 +73,9 @@ class NetworkSimulator:
 
         return local_props
 
-    def _run_yue(self, arr_rate_mean, start):
+    def _run_yue(self, arr_rate_mean: int, start: int):
         arr_rate_mean = float(arr_rate_mean)
         local_props = copy.deepcopy(self.properties)
-
         local_props['erlang'] = arr_rate_mean / local_props['holding_time']
         arr_rate_mean *= float(local_props['cores_per_link'])
         local_props['arrival_rate'] = arr_rate_mean
@@ -120,11 +112,10 @@ class NetworkSimulator:
             for arr_rate_mean in range(start, stop, step):
                 self._run_yue(arr_rate_mean=arr_rate_mean, start=start)
 
-    def _run_arash(self, erlang, first_erlang):
+    def _run_arash(self, erlang: float, first_erlang: float):
         local_props = copy.deepcopy(self.properties)
         local_props['arrival_rate'] = (local_props['cores_per_link'] * erlang) / local_props['holding_time']
         local_props['erlang'] = erlang
-
         local_props = self.create_input(local_props=local_props)
 
         if first_erlang:
@@ -162,7 +153,7 @@ class NetworkSimulator:
 
     def run_sim(self, **kwargs):
         """
-        Controls the networking simulator class.
+        Runs all simulations.
 
         :return: None
         """
@@ -183,12 +174,12 @@ class NetworkSimulator:
             self.run_arash()
 
 
-def run(threads_obj: dict):
+def run(sims_obj: dict):
     """
-    Runs multiple simulations concurrently using threads.
+    Runs multiple simulations concurrently or a single simulation.
 
-    :param threads_obj: Dictionaries, where each contains the parameters for a single thread.
-    :type threads_obj: dict
+    :param sims_obj: Contains the parameters for each simulation.
+    :type sims_obj: dict
 
     :return: None
     """
@@ -196,9 +187,9 @@ def run(threads_obj: dict):
         futures = []
 
         sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
-        for thread_num, thread_params in threads_obj.items():
-            sim_obj = NetworkSimulator()
-            class_inst = sim_obj.run_sim
+        for thread_num, thread_params in sims_obj.items():
+            curr_sim = NetworkSimulator()
+            class_inst = curr_sim.run_sim
 
             time.sleep(1.0)
             future = executor.submit(class_inst, thread_num=thread_num, thread_params=thread_params,
@@ -212,5 +203,5 @@ def run(threads_obj: dict):
 
 if __name__ == '__main__':
     args_obj = parse_args()
-    threads_obj = read_config(args_obj=args_obj)
-    run(threads_obj=threads_obj)
+    all_sims = read_config(args_obj=args_obj)
+    run(sims_obj=all_sims)
