@@ -4,8 +4,9 @@ Software-Defined Networking simulator.
 
 ## Getting Started
 ### Supported Operating Systems
-- Ubuntu version 20.04 or greater
-- Fedora 37
+- Ubuntu version 20.04+
+- Fedora 37+
+- Windows 11
 
 To get to the sphinx documentation of this project, please run the following commands in your terminal:
 
