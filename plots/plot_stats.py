@@ -44,7 +44,8 @@ class PlotStats:
         self.colors = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
         self.markers = ['o', '^', 's', 'x']
-        self.x_ticks = list(range(50, 750, 50))
+        # self.x_ticks = list(range(10, 450, 50))
+        self.x_ticks = [10, 50, 100, 150, 200, 250, 300, 350, 400]
 
         self._get_data()
 
@@ -508,7 +509,7 @@ class PlotStats:
                             legend_list.append(f"{legend_item}")
                         else:
                             legend_list.append(f"{sim_obj['algorithm']}")
-                            plt.plot(sim_obj[x_vals][0], sim_obj[curr_value], linestyle=style, markersize=2.3)
+                            plt.plot(sim_obj[x_vals], sim_obj[curr_value], linestyle=style, markersize=2.3)
 
         plt.legend(legend_list)
         self._save_plot(file_name=file_name)
@@ -744,17 +745,17 @@ def main():
             # ['ai_arguments', 'policy', 'policy_one']
         ],
         'or_filters': [
-            ['ai_arguments', 'policy', 'policy_one'],
+            # ['ai_arguments', 'policy', 'policy_one'],
             # ['route_method', 'k_shortest_path'],
         ],
         'not_filters': [
             # ['route_method', 'k_shortest_path']
         ]
     }
-    sim_times, sim_nums, networks, dates = find_times(dates_networks={'1026': 'NSFNet'}, filters=filters)
+    sim_times, sim_nums, networks, dates = find_times(dates_networks={'1217': 'USNet'}, filters=filters)
     plot_obj = PlotStats(net_names=networks, dates=dates, times=sim_times, sims=sim_nums)
 
-    # plot_obj.plot_blocking()
+    plot_obj.plot_blocking()
     # plot_obj.plot_path_length()
     # plot_obj.plot_hops()
     # plot_obj.plot_rewards()
@@ -765,7 +766,7 @@ def main():
     # plot_obj.plot_active_requests()
     # plot_obj.plot_td_errors()
     # plot_obj.plot_epsilon()
-    plot_obj.plot_q_tables()
+    # plot_obj.plot_q_tables()
 
 
 if __name__ == '__main__':
