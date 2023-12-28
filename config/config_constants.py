@@ -62,6 +62,7 @@ ARASH_REQUIRED_OPTIONS = {
 
 OTHER_OPTIONS = {
     'ai_algorithm': str,
+    # TODO: Correct this
     # 'ai_arguments': ast.literal_eval,
     'policy': str,
     'seeds': list,
