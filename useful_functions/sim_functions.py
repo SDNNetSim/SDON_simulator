@@ -325,7 +325,21 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
         selected_path = routing_obj.xt_aware(beta=properties['beta'], xt_type=properties['xt_type'])
         path_len = find_path_len(path= selected_path[0][0], topology=topology)
         temp_mod = sort_nested_dict_vals(properties['mod_per_bw'][chosen_bw], nested_key='max_length')
-        resp = [selected_path[0][0]], [list(temp_mod.keys())], selected_path[2]
+        
+    elif properties['route_method'] == 'xt_load_aware':
+        # TODO: Add xt_type to the configuration file
+        # TODO: Add checking modulation format and set slots_needed
+        temp_mod = sort_nested_dict_vals(properties['mod_per_bw'][chosen_bw], nested_key='max_length')
+        selected_paths = []
+        weights = []
+        mods_selected = []
+        for mod in temp_mod:
+            routing_obj.slots_needed = routing_obj.mod_formats[mod]['slots_needed']
+            selected_path = routing_obj.xt_load_aware(beta=properties['beta'], xt_type=properties['xt_type'])
+            selected_paths.append(selected_path[0][0])
+            weights.append(selected_path[2])
+            mods_selected.append(selected_path[1])
+        resp = selected_paths, mods_selected, weights
     elif properties['route_method'] == 'least_congested':
         resp = routing_obj.least_congested_path()
     elif properties['route_method'] == 'shortest_path':
