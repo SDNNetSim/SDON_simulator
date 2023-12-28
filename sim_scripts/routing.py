@@ -494,6 +494,139 @@ class Routing:
         link_cost = xt_cost / num_free_slots
         return link_cost
 
+
+    def _find_num_overlapped_channel(self, channel: list, core_num: int, link_num: int):
+        """
+        Finds the number of overlapped channels for a single core on a link.
+
+        :param channel: The current channel index.
+        :type channel: list
+
+        :param core_num: The current core number in the link fiber.
+        :type core_num: int
+
+        :param link_num: The current link.
+        :type link_num: int
+
+        :return: The total number of overlapped channels normalized by the number of cores.
+        :rtype: float
+        """
+        if self.print_warn:
+            warnings.warn('Method: fund_num_overlapped in routing used that only supports 7 cores per fiber.')
+        # The number of overlapped channels
+        worst = 0.0
+        norm_worst = 0.0
+        if core_num != 6:
+            adjacent_cores = self._find_adjacent_cores(core_num=core_num)
+            for slot in channel:
+                num_overlapped = 0.0
+                if self.net_spec_db[link_num]['cores_matrix'][adjacent_cores[0]][slot] > 0:
+                    num_overlapped += 1
+                if self.net_spec_db[link_num]['cores_matrix'][adjacent_cores[1]][slot] > 0:
+                    num_overlapped += 1
+                if self.net_spec_db[link_num]['cores_matrix'][6][slot] > 0:
+                    num_overlapped += 1
+                if worst < num_overlapped:
+                    worst = num_overlapped
+                    norm_worst = worst / 3
+        # The number of overlapped cores for core six will be different (it's the center core)
+        else:
+            for slot in channel:
+                num_overlapped = 0.0
+                for sub_core_num in range(6):
+                    if self.net_spec_db[link_num]['cores_matrix'][sub_core_num][slot] > 0:
+                        num_overlapped += 1
+                if worst < num_overlapped:
+                    worst = num_overlapped
+                    norm_worst = worst / 6
+
+        return worst, norm_worst
+
+
+
+    def _find_xt_load_link_cost(self, free_channels: dict, link_num: int):
+        """
+        Finds the cross-talk cost for a single link.
+
+        :param free_slots: A matrix identifying the indexes of spectral slots that are free.
+        :type free_slots: dict
+
+        :param link_num: The link number to check the cross-talk on.
+        :type link_num: int
+
+        :return: The total cross-talk value for the given link.
+        :rtype float
+        """
+        if self.print_warn:
+            warnings.warn('Method: find_xt_link_cost in routing used that only supports 7 cores per fiber.')
+        # Non-linear impairment cost calculation
+        xt_cost = 0
+        xt_cost_norm = 0
+        # Update MCI for available channel
+        num_free_channels = 0
+        for core_num in free_channels:
+            num_free_channels += len(free_channels[core_num])
+            for channel in free_channels[core_num]:
+                # The number of overlapped channels
+                num_overlapped_channel, norm_overlapped_channel = self._find_num_overlapped_channel(channel=channel, core_num=core_num, link_num=link_num)
+                if num_overlapped_channel != 0:  
+                    xt_cost += 1 
+                xt_cost_norm += norm_overlapped_channel
+
+
+        link_cost = xt_cost / num_free_channels
+        link_cost_norm = xt_cost_norm / num_free_channels
+        return link_cost, link_cost_norm
+    
+    
+    
+    def xt_load_aware(self, beta: float, xt_type: str):
+        """
+        Calculates all path's costs with respect to intra-core cross-talk values and returns the path with the least
+        amount of cross-talk interference.
+
+        :param beta: A parameter used to determine the tradeoff between length and cross-talk value.
+        :type beta: float
+
+        :param xt_type: Whether we would like to consider length in the final calculation or not.
+        :type xt_type: str
+
+        :return: The path with the least amount of interference.
+        :rtype: list
+        """
+        # At the moment, we have identical bi-directional links (no need to loop over all links)
+        for link in list(self.net_spec_db.keys())[::2]:
+            source, destination = link[0], link[1]
+            num_spans = self.topology[source][destination]['length'] / self.span_len
+
+            #free_slots = self.find_free_slots(net_spec_db=self.net_spec_db, des_link=link)
+            free_channels = self.find_free_channels(net_spec_db=self.net_spec_db, slots_needed=self.slots_needed + self.guard_slots,
+                                    des_link=link)
+            if sum(len(matrix) for matrix in free_channels.values()) == 0: 
+                link_cost = 1000
+            else:
+                xt_cost, xt_cost_norm = self._find_xt_load_link_cost(free_channels=free_channels, link_num=link)
+                # Tradeoff between link length and the non-linear impairment cost
+                # TODO: Add to configuration file
+                if xt_type == 'with_length':
+                    link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
+                                ((1 - beta) * xt_cost)
+                elif xt_type == 'with_length_norm':
+                    link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
+                                ((1 - beta) * xt_cost_norm)
+                elif xt_type == 'with_out_length':
+                    link_cost = num_spans * xt_cost
+                elif xt_type == 'with_out_length_norm':
+                    link_cost = num_spans * xt_cost_norm
+
+            # At the moment, we have identical bi-directional links
+            self.topology[source][destination]['xt_cost'] = link_cost
+            self.topology[destination][source]['xt_cost'] = link_cost
+
+        resp = self.least_weight_path(weight='xt_cost')
+        return resp
+
+
     def xt_aware(self, beta: float, xt_type: str):
         """
         Calculates all path's costs with respect to intra-core cross-talk values and returns the path with the least
