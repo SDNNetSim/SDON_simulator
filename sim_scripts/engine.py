@@ -19,6 +19,7 @@ from useful_functions.stats_helpers import SimStats
 
 # TODO: Keep super for now, but change to sdn_obj and make it a standard (last)
 # TODO: All changes, keep in mind: integration, integration, integration!
+# TODO: Check to see if all constructor vars are used
 class Engine(SDNController):
     """
     Controls the simulation.
@@ -171,54 +172,6 @@ class Engine(SDNController):
 
         self.engine_props['topology'] = tmp_topology
 
-    # TODO: Should not be in engine
-    def _check_confidence_interval(self):
-        """
-        Checks if the confidence interval is high enough to stop the simulation.
-
-        :return: A boolean indicating whether to end the simulation or not
-        """
-        block_percent_arr = np.array(list(self.stats_dict['block_per_sim'].values()))
-        self.blocking_mean = np.mean(block_percent_arr)
-        # Cannot calculate a confidence interval when given zero or only one iteration
-        if self.blocking_mean == 0.0 or len(block_percent_arr) <= 1:
-            return False
-
-        self.blocking_variance = np.var(block_percent_arr)
-        try:
-            self.block_ci_rate = 1.645 * (np.sqrt(self.blocking_variance) / np.sqrt(len(block_percent_arr)))
-            self.block_ci_percent = ((2 * self.block_ci_rate) / self.blocking_mean) * 100
-        except ZeroDivisionError:
-            return False
-
-        if self.block_ci_percent <= 5:
-            print(f"Confidence interval of {round(self.block_ci_percent, 2)}% reached on simulation "
-                  f"{self.iteration + 1}, ending and saving results for Erlang: {self.engine_props['erlang']}")
-            self._save_sim_results()
-            return True
-
-        return False
-
-    # TODO: Should not be in engine
-    def _calculate_block_percent(self):
-        """
-        Calculates the percentage of blocked requests for the current iteration and updates the blocking in the
-        statistics dictionary.
-
-        :param iteration: The iteration number completed
-        :type iteration: int
-
-        :return: None
-        """
-        num_requests = self.engine_props['num_requests']
-
-        if num_requests == 0:
-            block_percentage = 0
-        else:
-            block_percentage = self.num_blocked_reqs / self.engine_props['num_requests']
-
-        self.stats_dict['block_per_sim'][self.iteration] = block_percentage
-
     def _handle_arrival(self, curr_time):
         """
         Updates the SDN controller to handle an arrival request. Also retrieves and calculates relevant request
@@ -229,6 +182,7 @@ class Engine(SDNController):
 
         :return: The number of transponders used for the request
         """
+        # TODO: This is the class inheritance, might want to get rid of this
         request = self.reqs_dict[curr_time]
         self.req_id = request['id']
         self.source = request['source']
@@ -238,6 +192,7 @@ class Engine(SDNController):
 
         resp = self.handle_event(request_type='arrival')
 
+        # TODO: Make this better, it's not good enough
         if self.engine_props['route_method'] == 'ai':
             if not resp[0]:
                 routed = False
@@ -249,45 +204,51 @@ class Engine(SDNController):
                 path_mod = resp[0]['mod_format']
             self.ai_obj.update(routed=routed, spectrum=spectrum, path_mod=path_mod)
 
+        # TODO: Why not just pass response data to stats helpers instead with blocked as true or false?
         # Request was blocked
         if not resp[0]:
-            # TODO: Here
-            self.stats_obj.blocked_reqs += 1
+            # TODO: Here, also update to something better than just resp or request
+            self.stats_obj.get_iter_data(blocked=True, req_data=request, sdn_data=resp)
+            # self.stats_obj.blocked_reqs += 1
             # self.num_blocked_reqs += 1
             # Update the reason for blocking
-            self.block_reasons[resp[1]] += 1
+            # self.block_reasons[resp[1]] += 1
             # Update how many times this bandwidth type has been blocked
-            self.block_per_bw[self.chosen_bw] += 1
+            # self.block_per_bw[self.chosen_bw] += 1
 
             # Only one transponder used (the original for the request)
+            # TODO: Leave for now but will delete
             return 1
 
-        response_data, num_transponders = resp[0], resp[2]
-
-        # TODO: Crazy, either another file or class
-        #   - I'm thinking a class that handles all of this stuff
-        self.hops = np.append(self.hops, len(response_data['path']) - 1)
-        self.path_lens = np.append(self.path_lens, find_path_len(path=response_data['path'], topology=self.topology))
-        self.cores_chosen[response_data['spectrum']['core_num']] += 1
-        self.route_times = np.append(self.route_times, response_data['route_time'])
-        path_mod = resp[0]['mod_format']
-        self.mods_used[self.chosen_bw][path_mod] += 1
-
-        # TODO: Maybe a method for better integration
-        if self.engine_props['check_snr'] is None or self.engine_props['check_snr'] == 'None':
-            self.path_weights[self.chosen_bw][path_mod].append(response_data['path_weight'])
-        else:
-            self.path_weights[self.chosen_bw][path_mod].append(response_data['xt_cost'])
+        # TODO: Here, also update to something better than just resp or request
+        self.stats_obj.get_iter_data(blocked=False, req_data=request, sdn_data=resp, topology=self.topology)
+        # response_data, num_transponders = resp[0], resp[2]
+        #
+        # # TODO: Crazy, either another file or class
+        # #   - I'm thinking a class that handles all of this stuff
+        # self.hops = np.append(self.hops, len(response_data['path']) - 1)
+        # self.path_lens = np.append(self.path_lens, find_path_len(path=response_data['path'], topology=self.topology))
+        # self.cores_chosen[response_data['spectrum']['core_num']] += 1
+        # self.route_times = np.append(self.route_times, response_data['route_time'])
+        # path_mod = resp[0]['mod_format']
+        # self.mods_used[self.chosen_bw][path_mod] += 1
+        #
+        # # TODO: Maybe a method for better integration
+        # if self.engine_props['check_snr'] is None or self.engine_props['check_snr'] == 'None':
+        #     self.path_weights[self.chosen_bw][path_mod].append(response_data['path_weight'])
+        # else:
+        #     self.path_weights[self.chosen_bw][path_mod].append(response_data['xt_cost'])
 
         self.reqs_status.update({self.req_id: {
-            "mod_format": response_data['mod_format'],
-            "path": response_data['path'],
-            "is_sliced": response_data['is_sliced']
+            "mod_format": resp[0]['mod_format'],
+            "path": resp[0]['path'],
+            "is_sliced": resp[0]['is_sliced']
         }})
 
-        self.num_trans += num_transponders
+        # self.num_trans += num_transponders
 
-        return num_transponders
+        # TODO: This is the number of transponders but it will be removed
+        return resp[2]
 
     def _handle_release(self, curr_time):
         """
@@ -334,8 +295,7 @@ class Engine(SDNController):
             dest = link_data['destination']
 
             # Create cores matrix
-            cores_matrix = self._create_cores_matrix(link_data['fiber']['num_cores'])
-
+            cores_matrix = np.zeros((link_data['fiber']['num_cores'], self.engine_props['spectral_slots']))
             # Add links to a network spectrum database
             self.net_spec_db[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
             self.net_spec_db[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
@@ -344,32 +304,6 @@ class Engine(SDNController):
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
         # TODO: Change self.topology to this variable
         self.engine_props['topology'] = self.topology
-
-    def _create_cores_matrix(self, num_cores):
-        """
-        Creates a 2D NumPy array representing the cores matrix for a fiber link.
-
-        :param num_cores: The number of fiber cores for the link.
-        :type num_cores: int
-
-        :return: A 2D NumPy array representing the cores matrix.
-        """
-        return np.zeros((num_cores, self.engine_props['spectral_slots']))
-
-    # TODO: Should not be in engine
-    def _print_iter_stats(self):
-        """
-        Print iteration statistics.
-
-        :param iteration: the iteration number
-        :type iteration: int
-
-        :return: None
-        """
-        print(f"Iteration {self.iteration + 1} out of {self.engine_props['max_iters']} "
-              f"completed for Erlang: {self.engine_props['erlang']}")
-        block_percent_arr = np.array(list(self.stats_dict['block_per_sim'].values()))
-        print(f'Mean of blocking: {np.mean(block_percent_arr)}')
 
     def _generate_requests(self, seed):
         """
@@ -380,7 +314,7 @@ class Engine(SDNController):
 
         :return: None
         """
-        # TODO: Crazy, too many params
+        # TODO: Crazy, too many params, send props
         self.reqs_dict = generate(seed=seed,
                                   nodes=list(self.engine_props['topology_info']['nodes'].keys()),
                                   hold_time_mean=self.engine_props['holding_time'],
@@ -406,7 +340,7 @@ class Engine(SDNController):
             # TODO: Here
             self.trans_arr = np.append(self.trans_arr,
                                        self.num_trans / (
-                                                   self.engine_props['num_requests'] - self.stats_obj.blocked_reqs))
+                                               self.engine_props['num_requests'] - self.stats_obj.blocked_reqs))
 
     # TODO: Should not be in engine
     def _update_blocking_distribution(self):
@@ -493,8 +427,9 @@ class Engine(SDNController):
             self.iteration = iteration
             self._init_iter_vars()
 
-            signal.signal(signal.SIGINT, self._save_sim_results)
-            signal.signal(signal.SIGTERM, self._save_sim_results)
+            # TODO: Add this to stats_helpers.py
+            # signal.signal(signal.SIGINT, self.stats_obj.save_stats)
+            # signal.signal(signal.SIGTERM, self._save_sim_results)
 
             if self.engine_props['route_method'] == 'ai':
                 self.ai_obj.reset_epsilon()
@@ -554,9 +489,9 @@ class Engine(SDNController):
                 self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], iteration=iteration,
                                                 erlang=self.engine_props['erlang'])
 
-            # TODO: Here?
-            self._save_sim_results()
+            # TODO: Here? Still need to integrate
+            self.stats_obj.save_stats()
+            # self._save_sim_results()
 
-        # TODO: Here? Can probably stay in engine
         print(f"Erlang: {self.engine_props['erlang']} finished for "
               f"simulation number: {self.engine_props['thread_num']}.")

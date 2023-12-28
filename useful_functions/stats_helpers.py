@@ -3,6 +3,9 @@ import numpy as np
 
 # TODO: Do not re-create this each iteration, it's designed to work for multiple iters
 # TODO: Double check for proper naming
+# TODO: Potentially a copy of engine props here
+# TODO: Check to see that all constructor vars are used, maybe add to dictionary while you do this
+# TODO: Further organize this after integration
 class SimStats:
     """
     The SimStats class finds and stores all relevant statistics in simulations.
@@ -123,6 +126,46 @@ class SimStats:
             blocking_prob = self.blocked_reqs / num_reqs
 
         self.sim_block_list.append(blocking_prob)
+
+    # TODO: Implement this when you get that copy of engine props?
+    def _get_cost_data(self, mod_format: str):
+        # # TODO: Reset in init iter?? Check ALL variables
+        # if self.engine_props['check_snr'] is None or self.engine_props['check_snr'] == 'None':
+        #     self.path_weights[self.chosen_bw][path_mod].append(response_data['path_weight'])
+        # else:
+        #     self.path_weights[self.chosen_bw][path_mod].append(response_data['xt_cost'])
+        raise NotImplementedError
+
+    # TODO: Move topology to constructor, will just need a copy of engine props
+    def get_iter_data(self, blocked: bool, req_data: dict, sdn_data: dict, topology):
+        # TODO: Reset in init iter?? Check ALL variables
+        if blocked:
+            self.blocked_reqs += 1
+            self.block_reasons_dict[sdn_data[1]] += 1
+            self.bw_block_dict[req_data['bandwidth']] += 1
+            # If the request was blocked, use one transponder
+            self.trans_list.append(1)
+        else:
+            # response data is sdn_data[0] and num transponders is resp[2]
+            num_hops = len(sdn_data[0]['path'] - 1)
+            self.hops_list.append(num_hops)
+
+            path_len = find_path_len(path=sdn_data[0]['path'], topology=topology)
+            self.lengths_list.append(path_len)
+
+            core_chosen = sdn_data['spectrum']['core_num']
+            self.cores_dict[core_chosen] += 1
+
+            self.route_times_list.append(sdn_data[0]['route_time'])
+
+            mod_format = sdn_data[0]['mod_format']
+            self.mods_used_dict[mod_format] += 1
+
+            num_transponders = sdn_data[2]
+            self.trans_list.append(num_transponders)
+
+            # TODO: Implement this when you get that copy of engine props?
+            self._get_cost_data()
 
     # TODO: This comes from stats_dict in engine, the 'block_per_sim' key
     # TODO: Need to call this in engine
