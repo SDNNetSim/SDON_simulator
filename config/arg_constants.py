@@ -3,6 +3,7 @@ PARAMETERS = [
     ['ai_arguments', dict, ''],
     ['seeds', list, ''],
     ['beta', float, ''],
+    ['theta', float, ''],
     ['train_file', str, ''],
     ['check_snr', str, ''],
     ['input_power', float, ''],

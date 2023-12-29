@@ -580,7 +580,7 @@ class Routing:
     
     
     
-    def xt_load_aware(self, beta: float, xt_type: str):
+    def xt_load_aware(self, beta: float, theta: float, xt_type: str):
         """
         Calculates all path's costs with respect to intra-core cross-talk values and returns the path with the least
         amount of cross-talk interference.
@@ -618,6 +618,12 @@ class Routing:
                     link_cost = (beta * 1) + ((1 - beta) * xt_cost)
                 elif xt_type == 'with_hop_norm':
                     link_cost = (beta * 1) + ((1 - beta) * xt_cost_norm)
+                elif xt_type == 'with_hop_length':
+                    link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
+                                (theta * 1) + ((1 - beta - theta) * xt_cost)
+                elif xt_type == 'with_hop_length_norm':
+                    link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
+                                (theta * 1) + ((1 - beta - theta) * xt_cost_norm)
                 elif xt_type == 'without_length':
                     link_cost = num_spans * xt_cost
                 elif xt_type == 'without_length_norm':
@@ -631,7 +637,7 @@ class Routing:
         return resp
 
 
-    def xt_aware(self, beta: float, xt_type: str):
+    def xt_aware(self, beta: float, theta: float, xt_type: str):
         """
         Calculates all path's costs with respect to intra-core cross-talk values and returns the path with the least
         amount of cross-talk interference.
@@ -658,6 +664,9 @@ class Routing:
                             ((1 - beta) * xt_cost)
             elif xt_type == 'with_hop':
                 link_cost = (beta * 1) + ((1 - beta) * xt_cost)
+            elif xt_type == 'with_hop_length':
+                link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
+                            (theta * 1) + ((1 - beta - theta) * xt_cost)
             elif xt_type == 'without_length':
                 link_cost = (num_spans / self.max_span) * xt_cost
             else:
