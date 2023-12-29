@@ -99,78 +99,15 @@ class Engine(SDNController):
 
         # TODO: Add to standards doc (x_obj)
         # TODO: Support for this later, may start up from previous statistics
-        self.stats_obj = SimStats()
+        self.stats_obj = SimStats(engine_props=self.engine_props)
         # TODO: Temporary, add step and active requests to configuration file
+        # TODO: Change this is done twice, each iteration
         self.stats_obj.init_stats(num_requests=self.engine_props['num_requests'], step=10,
-                                  snap_keys_list=['occupied_slots', 'guard_slots', 'active_requests'])
+                                  snap_keys_list=['occupied_slots', 'guard_slots', 'active_requests',
+                                                  'blocking_prob', 'num_segments'],
+                                  cores_range=range(self.engine_props['cores_per_link']),
+                                  mod_per_bw=self.engine_props['mod_per_bw'])
         self.ai_obj = AIMethods(properties=self.engine_props)
-
-    # TODO: Should not be in engine (either in save file in use functions or a class)
-    # TODO: Will integrate in the stats helpers class (last)
-    def _save_sim_results(self):
-        """
-        Saves the simulation results to a file like #_erlang.json.
-
-        :return: None
-        """
-        # TODO: Here
-        self.stats_obj.save_stats(file_type='csv')
-
-        for _, obj in self.request_snapshots.items():
-            for key, lst in obj.items():
-                obj[key] = np.mean(lst)
-
-        for _, mod_obj in self.path_weights.items():
-            for modulation, lst in mod_obj.items():
-                # Modulation was never used
-                if len(lst) == 0:
-                    mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
-                else:
-                    mod_obj[modulation] = {'mean': float(np.mean(lst)), 'std': float(np.std(lst)),
-                                           'min': float(np.min(lst)), 'max': float(np.max(lst))}
-
-        self.stats_dict['blocking_mean'] = self.blocking_mean
-        self.stats_dict['blocking_variance'] = self.blocking_variance
-        self.stats_dict['ci_rate_block'] = self.block_ci_rate
-        self.stats_dict['ci_percent_block'] = self.block_ci_percent
-
-        if self.iteration == 0:
-            self.stats_dict['sim_params'] = self.engine_props
-
-        # TODO: Ridiculous, make this better, suggestions above
-        self.stats_dict['misc_stats'][self.iteration] = {
-            'trans_mean': np.mean(self.trans_arr),
-            'block_reasons': self.block_reasons,
-            'block_per_bw': {key: np.mean(lst) for key, lst in self.block_per_bw.items()},
-            'request_snapshots': self.request_snapshots,
-            'hops': {'mean': np.mean(self.hops), 'min': np.min(self.hops),
-                     'max': np.max(self.hops)},
-            'route_times': np.mean(self.route_times),
-            'path_lengths': {'mean': np.mean(self.path_lens), 'min': np.min(self.path_lens),
-                             'max': np.max(self.path_lens)},
-            'cores_chosen': self.cores_chosen,
-            'weight_info': self.path_weights,
-            'modulation_formats': self.mods_used,
-        }
-
-        # TODO: Use OS module
-        base_fp = "data/output/"
-
-        if self.engine_props['route_method'] == 'ai':
-            self.ai_obj.save()
-
-        # Save threads to child directories
-        # TODO: Use OS module
-        base_fp += f"/{self.sim_info}/{self.engine_props['thread_num']}"
-        create_dir(base_fp)
-
-        # TODO: Comment
-        tmp_topology = copy.deepcopy(self.engine_props['topology'])
-        del self.engine_props['topology']
-        with open(f"{base_fp}/{self.engine_props['erlang']}_erlang.json", 'w', encoding='utf-8') as file_path:
-            json.dump(self.stats_dict, file_path, indent=4)
-
-        self.engine_props['topology'] = tmp_topology
 
     def _handle_arrival(self, curr_time):
         """
@@ -208,7 +145,7 @@ class Engine(SDNController):
         # Request was blocked
         if not resp[0]:
             # TODO: Here, also update to something better than just resp or request
-            self.stats_obj.get_iter_data(blocked=True, req_data=request, sdn_data=resp)
+            self.stats_obj.get_iter_data(blocked=True, req_data=request, sdn_data=resp, topology=self.topology)
             # self.stats_obj.blocked_reqs += 1
             # self.num_blocked_reqs += 1
             # Update the reason for blocking
@@ -326,97 +263,6 @@ class Engine(SDNController):
 
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
 
-    # TODO: Should not be in engine
-    def _update_transponders(self):
-        """
-        Updates the transponder usage array with the current transponder utilization.
-
-        :return: None
-        """
-        # TODO: Here
-        if self.engine_props['num_requests'] == self.stats_obj.blocked_reqs:
-            self.trans_arr = np.append(self.trans_arr, 0)
-        else:
-            # TODO: Here
-            self.trans_arr = np.append(self.trans_arr,
-                                       self.num_trans / (
-                                               self.engine_props['num_requests'] - self.stats_obj.blocked_reqs))
-
-    # TODO: Should not be in engine
-    def _update_blocking_distribution(self):
-        """
-        Updates the blocking distribution arrays with the current blocking statistics. If no requests have been blocked,
-        the arrays are not updated.
-
-        :return: None
-        """
-        # TODO: Here
-        if self.stats_obj.blocked_reqs > 0:
-            for block_type, num_times in self.block_reasons.items():
-                # TODO: Here
-                self.block_reasons[block_type] = num_times / float(self.stats_obj.blocked_reqs)
-
-    # TODO: Should not be in engine
-    def _update_request_snapshots_dict(self, request_number, num_transponders):  # pylint: disable=unused-argument
-        """
-        Updates the request snapshot dictionary with information about the current request.
-
-        :param request_number: Represents the request number we're about to allocate
-        :type request_number: int
-
-        :param num_transponders: The number of transponders the request used
-        :type num_transponders: int
-        """
-        # occupied_slots, guard_bands = self._get_total_occupied_slots()
-
-        # self.request_snapshots[request_number]['occ_slots'].append(occupied_slots)
-        # self.request_snapshots[request_number]['guard_bands'].append(guard_bands)
-        # self.request_snapshots[request_number]['active_requests'].append(len(self.active_requests))
-
-        blocking_prob = self.stats_obj.blocked_reqs / request_number
-        self.request_snapshots[request_number]["blocking_prob"].append(blocking_prob)
-
-        self.request_snapshots[request_number]['num_segments'].append(num_transponders)
-
-    # TODO: Change to one single object as mentioned above
-    def _init_iter_vars(self):
-        """
-        Initializes the variables for a single iteration of the simulation.
-
-        :return: None
-        """
-        # Initialize variables for this iteration of the simulation
-        self.block_reasons = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
-        self.num_trans = 0
-        self.hops = np.array([])
-        self.route_times = np.array([])
-        self.path_lens = np.array([])
-        # TODO: Here, very important to init after every iter! Probably an init iter function in stats_helpers instead
-        # self.num_blocked_reqs = 0
-        self.reqs_status = dict()
-        cores_range = range(self.engine_props['cores_per_link'])
-        self.cores_chosen = {key: 0 for key in cores_range}
-
-        if self.engine_props['save_snapshots']:
-            for request_number in range(0, self.engine_props['num_requests'] + 1, 10):
-                self.request_snapshots[request_number] = {
-                    'occ_slots': [],
-                    'guard_bands': [],
-                    'blocking_prob': [],
-                    'num_segments': [],
-                    'active_requests': [],
-                }
-
-        self.path_weights = dict()
-        for bandwidth, obj in self.engine_props['mod_per_bw'].items():
-            self.mods_used[bandwidth] = dict()
-            self.path_weights[bandwidth] = dict()
-            for modulation in obj.keys():
-                self.path_weights[bandwidth][modulation] = list()
-                self.mods_used[bandwidth][modulation] = 0
-
-            self.block_per_bw[bandwidth] = 0
-
     def run(self):
         """
         Runs the SDN simulation.
@@ -425,7 +271,11 @@ class Engine(SDNController):
         """
         for iteration in range(self.engine_props["max_iters"]):
             self.iteration = iteration
-            self._init_iter_vars()
+            self.stats_obj.init_stats(num_requests=self.engine_props['num_requests'], step=10,
+                                      snap_keys_list=['occupied_slots', 'guard_slots', 'active_requests',
+                                                      'blocking_prob', 'num_segments'],
+                                      cores_range=range(self.engine_props['cores_per_link']),
+                                      mod_per_bw=self.engine_props['mod_per_bw'])
 
             # TODO: Add this to stats_helpers.py
             # signal.signal(signal.SIGINT, self.stats_obj.save_stats)
@@ -452,9 +302,10 @@ class Engine(SDNController):
                     num_transponders = self._handle_arrival(curr_time)
 
                     if request_number % 10 == 0 and self.engine_props['save_snapshots']:
-                        # TODO: Here
-                        # self.stats_obj.get_occupied_slots(net_spec_db=self.net_spec_db, req_num=request_number)
-                        self._update_request_snapshots_dict(request_number, num_transponders)
+                        # TODO: Here, we return number of transponders from before, but we won't do this in the future
+                        self.stats_obj.get_occupied_slots(net_spec_dict=self.net_spec_db, req_num=request_number,
+                                                          num_trans=num_transponders)
+                        # self._update_request_snapshots_dict(request_number, num_transponders)
 
                     request_number += 1
                 elif req_type == "release":
@@ -466,8 +317,10 @@ class Engine(SDNController):
             # TODO: Here
             self.stats_obj.get_blocking(num_reqs=self.engine_props['num_requests'])
 
-            self._update_blocking_distribution()
-            self._update_transponders()
+            # self._update_blocking_distribution()
+            # TODO: Here
+            # self._update_transponders()
+            self.stats_obj.end_iter_stats(num_reqs=self.engine_props['num_requests'])
 
             # Some form of ML/RL is being used, ignore confidence intervals for training and testing
             # TODO: What? Clean this up
@@ -483,6 +336,7 @@ class Engine(SDNController):
                     if self.stats_obj.get_conf_inter(iteration=iteration, erlang=self.engine_props['erlang']):
                         return
 
+            # TODO: Add to config file, the amount of times we want to print
             if (iteration + 1) % 20 == 0 or iteration == 0:
                 # TODO: Here
                 # self._print_iter_stats()
@@ -490,7 +344,7 @@ class Engine(SDNController):
                                                 erlang=self.engine_props['erlang'])
 
             # TODO: Here? Still need to integrate
-            self.stats_obj.save_stats()
+            self.stats_obj.save_stats(iteration=iteration, sim_info=self.sim_info)
             # self._save_sim_results()
 
         print(f"Erlang: {self.engine_props['erlang']} finished for "
