@@ -1,84 +1,74 @@
-import numpy as np
 import copy
 import json
 
+import numpy as np
+
+from stats_args import empty_props
+from stats_args import SNAP_KEYS_LIST
 from useful_functions.sim_functions import find_path_len
 from useful_functions.handle_dirs_files import create_dir
 
 
-# TODO: Do not re-create this each iteration, it's designed to work for multiple iters
-# TODO: Double check for proper naming
-# TODO: Potentially a copy of engine props here
-# TODO: Check to see that all constructor vars are used, maybe add to dictionary while you do this
-# TODO: Further organize this after integration
 # TODO: Add SIGINT and SIGTERM
+# TODO: Review code:
+#   - Read doc strings
+#   - Variable names
+#   - Code readability/efficiency
+#   - Move repeat variables to self
+#   - Use constant variables from engine props!
 class SimStats:
     """
     The SimStats class finds and stores all relevant statistics in simulations.
     """
 
     def __init__(self, engine_props: dict, stats_props: dict = None):
-        # TODO: Move this to an external file
-        # TODO: To override or pickup simulation from an end point (not implemented yet)
-        # TODO: A method to return this is in the correct format/save?
-        self.stats_props = stats_props
+        # TODO: Implement ability to pick up from previously run simulations
+        if stats_props is not None:
+            self.stats_props = stats_props
+        else:
+            self.stats_props = empty_props
+
         self.engine_props = engine_props
 
-        # TODO: Add to standard, variable type if list or dict
-        # tmp_obj
-        # TODO: Combine all into one object, a reset or init function or something similar
-        self.bw_block_dict = dict()
-        # request_snapshots
-        self.snapshots_dict = dict()
-        # active_requests
-        # TODO: No longer needed
-        self.active_reqs_dict = dict()
-        # cores_chosen
-        self.cores_dict = dict()
-        # path_weights
-        self.weights_dict = dict()
-        # mods_used
-        self.mods_used_dict = dict()
-        self.block_bw_dict = dict()
-        # TODO: Do not use this, something better
-        self.stats_dict = {'block_per_sim': dict(), 'misc_stats': dict()}
-        self.snap_keys_list = ['occupied_slots', 'guard_slots', 'active_requests', 'blocking_prob', 'num_segments']
-        # block_reasons
-        # TODO: Generalize maybe
-        # TODO: Initialize after each iteration?
-        self.block_reasons_dict = {'distance': None, 'congestion': None, 'xt_threshold': None}
-
-        # TODO: Will incorporate num_trans by iteration number in the list list[iter_num] += 1
-        # block_per_sim
-        self.sim_block_list = list()
-        # trans_arr
-        self.trans_list = list()
-        # hops
-        self.hops_list = list()
-        # path_lens
-        self.lengths_list = list()
-        # route_times
-        self.route_times_list = list()
-
-        # num_blocked_reqs
-        # TODO: Update this in engine ++, and set to zero?
-        self.num_trans = 0
+        # Used to track transponders for a single allocated request
+        self.curr_trans = 0
+        # Used to track transponders for an entire simulation on average
+        self.total_trans = 0
         self.blocked_reqs = 0
-        # blocking_mean
         self.block_mean = None
-        # blocking_variance
         self.block_variance = None
-        # block_ci
-        # TODO: Will convert this, no need to have a ci and ci percent
         self.block_ci = None
         self.block_ci_percent = None
 
-    # TODO: Add to standards doc (get)
-    # TODO: Combine with get path slots
-    # TODO: Change name to get snapshots dict or something
-    # _get_total_occupied_slots
-    # Also _get_path_free_slots
-    def get_occupied_slots(self, net_spec_dict: dict, req_num: int, path_list: list = None):
+    @staticmethod
+    def _get_snapshot_info(net_spec_dict: dict, path_list: list):
+        """
+        Retrieves relative information for simulation snapshots.
+
+        :param net_spec_dict: The current network spectrum database.
+        :param path_list: A path to find snapshot info, if empty, does this for the entire network.
+        :return: The occupied slots, number of guard bands, and active requests.
+        :rtype: tuple
+        """
+        active_reqs_set = set()
+        occupied_slots = 0
+        guard_slots = 0
+        # Skip by two because the link is bidirectional, no need to check both arrays e.g., (0, 1) and (1, 0)
+        for link in list(net_spec_dict.keys())[::2]:
+            if path_list is not None and link not in path_list:
+                continue
+            link_data = net_spec_dict[link]
+            for core in link_data['cores_matrix']:
+                requests_set = set(core[core > 0])
+                for curr_req in requests_set:
+                    active_reqs_set.add(curr_req)
+                occupied_slots += len(np.where(core != 0)[0])
+                guard_slots += len(np.where(core < 0)[0])
+
+        return occupied_slots, guard_slots, len(active_reqs_set)
+
+    # TODO: We never actually call path list here
+    def update_snapshot(self, net_spec_dict: dict, req_num: int, path_list: list = None):
         """
         Finds the total number of occupied slots and guard bands currently allocated in the network or a specific path.
 
@@ -87,77 +77,68 @@ class SimStats:
         :param path_list: The desired path to find the occupied slots on.
         :return: None
         """
-        active_reqs_set = set()
-        occupied_slots = 0
-        guard_slots = 0
-
-        # Skip by two because the link is bidirectional, no need to check both arrays e.g., (0, 1) and (1, 0)
-        for link in list(net_spec_dict.keys())[::2]:
-            if path_list is not None and link not in path_list:
-                continue
-
-            link_data = net_spec_dict[link]
-            for core in link_data['cores_matrix']:
-                requests = set(core[core > 0])
-                for curr_req in requests:
-                    active_reqs_set.add(curr_req)
-
-                occupied_slots += len(np.where(core != 0)[0])
-                guard_slots += len(np.where(core < 0)[0])
-
-        self.snapshots_dict[req_num]['occupied_slots'].append(occupied_slots)
-        self.snapshots_dict[req_num]['guard_slots'].append(guard_slots)
-        self.snapshots_dict[req_num]['active_requests'].append(len(active_reqs_set))
-
+        occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(net_spec_dict=net_spec_dict,
+                                                                           path_list=path_list)
         blocking_prob = self.blocked_reqs / req_num
-        self.snapshots_dict[req_num]["blocking_prob"].append(blocking_prob)
-        # TODO: Temporary
-        # self.snapshots_dict[req_num]['num_segments'].append(num_trans)
-        self.snapshots_dict[req_num]['num_segments'].append(5)
 
-    # TODO: Just pass an empty list of snapshot keys if you don't want them
-    # TODO: Make sure to call init stats
-    # TODO: Change cores_range to something else
-    # TODO: Not the best name
-    # TODO: Not all variables are being initialized here, hops, path lens, ect.
-    def init_stats(self, num_requests: int, snapshot_step: int, cores_range: range,
-                   mod_per_bw: dict):
+        self.stats_props['snapshots_dict'][req_num]['occupied_slots'].append(occupied_slots)
+        self.stats_props['snapshots_dict'][req_num]['guard_slots'].append(guard_slots)
+        self.stats_props['snapshots_dict'][req_num]['active_requests'].append(active_reqs)
+        self.stats_props['snapshots_dict'][req_num]["blocking_prob"].append(blocking_prob)
+        self.stats_props['snapshots_dict'][req_num]['num_segments'].append(self.curr_trans)
+
+    def _init_snapshots(self, num_reqs: int, snapshot_step: int):
+        for req_num in range(0, num_reqs + 1, snapshot_step):
+            self.stats_props['snapshots_dict'][req_num] = dict()
+            for key in SNAP_KEYS_LIST:
+                self.stats_props['snapshots_dict'][req_num][key] = list()
+
+    def _init_mods_weights_bws(self, mod_per_bw: dict):
+        for bandwidth, obj in mod_per_bw.items():
+            self.stats_props['mods_used_dict'][bandwidth] = dict()
+            self.stats_props['weights_dict'][bandwidth] = dict()
+            for modulation in obj.keys():
+                self.stats_props['weights_dict'][bandwidth][modulation] = list()
+                self.stats_props['mods_used_dict'][bandwidth][modulation] = 0
+
+            self.stats_props['block_bw_dict'][bandwidth] = 0
+
+    # TODO: Take advantage of engine props for sure
+    def _init_stat_dicts(self, mod_per_bw: dict, num_reqs: int, snapshot_step: int, core_range: range):
+        for stat_key in self.stats_props:
+            if stat_key == 'mods_used_dict' or stat_key == 'weights_dict' or stat_key == 'block_bw_dict':
+                self._init_mods_weights_bws(mod_per_bw=mod_per_bw)
+            elif stat_key == 'snapshots_dict':
+                self._init_snapshots(num_reqs=num_reqs, snapshot_step=snapshot_step)
+            elif stat_key == 'cores_dict':
+                self.stats_props['cores_dict'] = {key: 0 for key in core_range}
+            elif stat_key == 'block_reasons_dict':
+                self.stats_props['block_reasons_dict'] = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
+            else:
+                raise ValueError('Dictionary statistic was not reset in props.')
+
+    def _init_stat_lists(self):
+        for stat_key in self.stats_props:
+            if isinstance(self.stats_props[stat_key], list):
+                self.stats_props[stat_key] = list()
+
+    # TODO: Not all variables are being initialized here, hops, path lens, etc.
+    def init_iter_stats(self, num_reqs: int, snapshot_step: int, core_range: range, mod_per_bw: dict):
         """
         Initializes data structures used in other methods of this class.
 
-        :param num_requests: The number of requests for the simulation.
+        :param num_reqs: The number of requests for the simulation.
         :param snapshot_step: How often to take snapshot statistics.
         :param mod_per_bw: Contains the modulations and bandwidths used.
-        :param cores_range: The range of core values used.
+        :param core_range: The range of core values used.
         :return: None
         """
-        # TODO: Add step to configuration file
-        for req_num in range(0, num_requests + 1, snapshot_step):
-            self.snapshots_dict[req_num] = dict()
-            # TODO: Occupied slots, guard bands, blocking prob, num segments, active requests
-            # TODO: Add to self
-            for key in self.snap_keys_list:
-                self.snapshots_dict[req_num][key] = list()
-
-        self.cores_dict = {key: 0 for key in cores_range}
+        self._init_stat_dicts(num_reqs=num_reqs, snapshot_step=snapshot_step, core_range=core_range,
+                              mod_per_bw=mod_per_bw)
+        # TODO: A function to loop these and set them to zero?
         self.blocked_reqs = 0
-        self.num_trans = 0
+        self.total_trans = 0
 
-        # TODO: This desperately needs engine props in this class
-        for bandwidth, obj in mod_per_bw.items():
-            self.mods_used_dict[bandwidth] = dict()
-            self.weights_dict[bandwidth] = dict()
-            for modulation in obj.keys():
-                self.weights_dict[bandwidth][modulation] = list()
-                self.mods_used_dict[bandwidth][modulation] = 0
-
-            self.block_bw_dict[bandwidth] = 0
-
-        # TODO: This and all other variables need to be cheked for multiple iterations when saved
-        self.block_reasons_dict = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
-
-    # _calculate_block_percent
-    # TODO: May move num_reqs to constructor
     def get_blocking(self, num_reqs: int):
         """
         Gets the current blocking probability.
@@ -169,18 +150,14 @@ class SimStats:
             blocking_prob = 0
         else:
             blocking_prob = self.blocked_reqs / num_reqs
+        self.stats_props['sim_block_list'].append(blocking_prob)
 
-        self.sim_block_list.append(blocking_prob)
-
-    # TODO: Implement this when you get that copy of engine props?
+    # TODO: Make sure this is called in engine
     def _get_cost_data(self, mod_format: str):
-        # # TODO: Reset in init iter?? Check ALL variables
-        # if self.engine_props['check_snr'] is None or self.engine_props['check_snr'] == 'None':
-        #     self.path_weights[self.chosen_bw][path_mod].append(response_data['path_weight'])
-        # else:
-        #     self.path_weights[self.chosen_bw][path_mod].append(response_data['xt_cost'])
-        pass
-        # raise NotImplementedError
+        if self.engine_props['check_snr'] is None or self.engine_props['check_snr'] == 'None':
+            self.path_weights[self.chosen_bw][path_mod].append(response_data['path_weight'])
+        else:
+            self.path_weights[self.chosen_bw][path_mod].append(response_data['xt_cost'])
 
     # TODO: Move topology to constructor, will just need a copy of engine props
     # TODO: Not the best name, rename to update or something, this is not each iteration
@@ -192,7 +169,7 @@ class SimStats:
             self.block_reasons_dict[sdn_data[1]] += 1
             self.block_bw_dict[req_data['bandwidth']] += 1
             # If the request was blocked, use one transponder
-            self.num_trans += 1
+            self.total_trans += 1
         else:
             # response data is sdn_data[0] and num transponders is resp[2]
             num_hops = len(sdn_data[0]['path']) - 1
@@ -213,7 +190,7 @@ class SimStats:
 
             num_transponders = sdn_data[2]
             # TODO: Use this for the get occupied slots function
-            self.num_trans += num_transponders
+            self.total_trans += num_transponders
 
             # TODO: Implement this when you get that copy of engine props?
             self._get_cost_data(mod_format='None')
@@ -340,7 +317,7 @@ class SimStats:
             self.trans_list.append(0)
         else:
             # TODO: This SHOULD work but needs to be checked
-            trans_mean = self.num_trans / num_reqs - self.blocked_reqs
+            trans_mean = self.total_trans / num_reqs - self.blocked_reqs
             self.trans_list.append(trans_mean)
 
         if self.blocked_reqs > 0:

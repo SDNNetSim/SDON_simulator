@@ -75,6 +75,8 @@ class Engine:
         self.stats_obj.get_iter_data(req_data=request_data, sdn_data=sdn_resp, topology=self.topology)
 
         if sdn_resp[0]:
+            self.stats_obj.curr_trans = sdn_resp[2]
+
             self.reqs_status_dict.update({self.sdn_obj.req_id: {
                 "mod_format": sdn_resp[0]['mod_format'],
                 "path": sdn_resp[0]['path'],
@@ -165,7 +167,7 @@ class Engine:
                     self.handle_arrival(curr_time)
 
                     if req_num % self.engine_props['snapshot_step'] == 0 and self.engine_props['save_snapshots']:
-                        self.stats_obj.get_occupied_slots(net_spec_dict=self.net_spec_dict, req_num=req_num)
+                        self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
 
                     req_num += 1
                 elif req_type == "release":
