@@ -325,7 +325,7 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
         selected_path = routing_obj.xt_aware(beta=properties['beta'], xt_type=properties['xt_type'])
         path_len = find_path_len(path= selected_path[0][0], topology=topology)
         temp_mod = sort_nested_dict_vals(properties['mod_per_bw'][chosen_bw], nested_key='max_length')
-        
+        resp = selected_path[0], [temp_mod], [path_len]
     elif properties['route_method'] == 'xt_load_aware':
         # TODO: Add xt_type to the configuration file
         # TODO: Add checking modulation format and set slots_needed
