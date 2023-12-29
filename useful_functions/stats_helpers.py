@@ -24,6 +24,7 @@ class SimStats:
 
         # TODO: Add to standard, variable type if list or dict
         # tmp_obj
+        # TODO: Combine all into one object, a reset or init function or something similar
         self.bw_block_dict = dict()
         # request_snapshots
         self.snapshots_dict = dict()
@@ -74,13 +75,12 @@ class SimStats:
     # TODO: Change name to get snapshots dict or something
     # _get_total_occupied_slots
     # Also _get_path_free_slots
-    def get_occupied_slots(self, net_spec_dict: dict, req_num: int, num_trans: int, path_list: list = None):
+    def get_occupied_slots(self, net_spec_dict: dict, req_num: int, path_list: list = None):
         """
         Finds the total number of occupied slots and guard bands currently allocated in the network or a specific path.
 
         :param net_spec_dict: The current network spectrum database.
         :param req_num: The current request number.
-        :param num_trans: The number of transponders used for the request.
         :param path_list: The desired path to find the occupied slots on.
         :return: None
         """
@@ -108,7 +108,9 @@ class SimStats:
 
         blocking_prob = self.blocked_reqs / req_num
         self.snapshots_dict[req_num]["blocking_prob"].append(blocking_prob)
-        self.snapshots_dict[req_num]['num_segments'].append(num_trans)
+        # TODO: Temporary
+        # self.snapshots_dict[req_num]['num_segments'].append(num_trans)
+        self.snapshots_dict[req_num]['num_segments'].append(5)
 
     # TODO: Just pass an empty list of snapshot keys if you don't want them
     # TODO: Make sure to call init stats
@@ -178,9 +180,10 @@ class SimStats:
 
     # TODO: Move topology to constructor, will just need a copy of engine props
     # TODO: Not the best name, rename to update or something, this is not each iteration
-    def get_iter_data(self, blocked: bool, req_data: dict, sdn_data: dict, topology):
+    # TODO: Change resp
+    def get_iter_data(self, resp: bool, req_data: dict, sdn_data: dict, topology):
         # TODO: Reset in init iter?? Check ALL variables
-        if blocked:
+        if not resp[0]:
             self.blocked_reqs += 1
             self.block_reasons_dict[sdn_data[1]] += 1
             self.block_bw_dict[req_data['bandwidth']] += 1
@@ -205,6 +208,7 @@ class SimStats:
             self.mods_used_dict[bandwidth][mod_format] += 1
 
             num_transponders = sdn_data[2]
+            # TODO: Use this for the get occupied slots function
             self.num_trans += num_transponders
 
             # TODO: Implement this when you get that copy of engine props?
