@@ -24,20 +24,20 @@ class Engine:
         self.net_spec_dict = dict()
         # Contains the requests generated in a simulation
         self.reqs_dict = None
-        # Holds relevant information of requests that have been ALLOCATED in a simulation
+        # Holds relevant information of requests that have been ALLOCATED in a simulation, used for debugging
         self.reqs_status_dict = dict()
 
         self.iteration = 0
+        self.topology = nx.Graph()
         # For the purposes of saving simulation output data
         self.sim_info = os.path.join(self.engine_props['network'], self.engine_props['date'],
                                      self.engine_props['sim_start'])
 
         self.sdn_obj = SDNController(properties=self.engine_props)
-        self._create_topology()
         self.stats_obj = SimStats(engine_props=self.engine_props)
         self.ai_obj = AIMethods(properties=self.engine_props)
 
-    def _update_ai_obj(self, sdn_data: dict):
+    def update_ai_obj(self, sdn_data: dict):
         """
         Updates the artificial intelligent object class after each request.
         
@@ -56,7 +56,7 @@ class Engine:
 
             self.ai_obj.update(routed=routed, spectrum=spectrum, path_mod=path_mod)
 
-    def _handle_arrival(self, curr_time: float):
+    def handle_arrival(self, curr_time: float):
         """
         Updates the SDN controller to handle an arrival request and retrieves relevant request statistics.
 
@@ -71,7 +71,7 @@ class Engine:
         self.sdn_obj.chosen_bw = request_data['bandwidth']
         sdn_resp = self.sdn_obj.handle_event(request_type='arrival')
 
-        self._update_ai_obj(sdn_data=sdn_resp)
+        self.update_ai_obj(sdn_data=sdn_resp)
         self.stats_obj.get_iter_data(req_data=request_data, sdn_data=sdn_resp, topology=self.topology)
 
         if sdn_resp[0]:
@@ -81,7 +81,7 @@ class Engine:
                 "is_sliced": sdn_resp[0]['is_sliced']
             }})
 
-    def _handle_release(self, curr_time: float):
+    def handle_release(self, curr_time: float):
         """
         Updates the SDN controller to handle the release of a request.
 
@@ -101,15 +101,13 @@ class Engine:
         else:
             pass
 
-    def _create_topology(self):
+    def create_topology(self):
         """
         Create the physical topology of the simulation.
 
         :return: None
         """
-        self.topology = nx.Graph()
         self.net_spec_dict = {}
-
         # Create nodes
         self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
         # Create links
@@ -126,7 +124,7 @@ class Engine:
         self.sdn_obj.net_spec_db = self.net_spec_dict
         self.engine_props['topology'] = self.topology
 
-    def _generate_requests(self, seed: int):
+    def generate_requests(self, seed: int):
         """
         Calls the request generator to generate requests.
 
@@ -142,46 +140,36 @@ class Engine:
 
         :return: None
         """
+        self.create_topology()
         for iteration in range(self.engine_props["max_iters"]):
             self.iteration = iteration
-            # TODO: Step encoded to 10 temporarily
-            # TODO: Maybe snap keys list has a default, it shouldn't be input here
-            self.stats_obj.init_stats(num_requests=self.engine_props['num_requests'], step=10,
-                                      snap_keys_list=['occupied_slots', 'guard_slots', 'active_requests',
-                                                      'blocking_prob', 'num_segments'],
+            self.stats_obj.init_stats(num_requests=self.engine_props['num_requests'],
+                                      snapshot_step=self.engine_props['snapshot_step'],
                                       cores_range=range(self.engine_props['cores_per_link']),
                                       mod_per_bw=self.engine_props['mod_per_bw'])
-
-            # TODO: Add this to stats_helpers.py
-            # signal.signal(signal.SIGINT, self.stats_obj.save_stats)
-            # signal.signal(signal.SIGTERM, self._save_sim_results)
 
             if self.engine_props['route_method'] == 'ai':
                 self.ai_obj.reset_epsilon()
                 self.ai_obj.episode = iteration
-                # TODO: Add SIGINT and SIGTERM to ai functions
-
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.engine_props['erlang']} "
                       f"simulation number: {self.engine_props['thread_num']}.")
 
             seed = self.engine_props["seeds"][iteration] if self.engine_props["seeds"] else iteration + 1
-            self._generate_requests(seed)
-
+            self.generate_requests(seed)
             req_num = 1
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
                     self.ai_obj.req_id = req_num
-                    self._handle_arrival(curr_time)
+                    self.handle_arrival(curr_time)
 
-                    # TODO: Config file for this, req_num % 10
-                    if req_num % 10 == 0 and self.engine_props['save_snapshots']:
+                    if req_num % self.engine_props['snapshot_step'] == 0 and self.engine_props['save_snapshots']:
                         self.stats_obj.get_occupied_slots(net_spec_dict=self.net_spec_dict, req_num=req_num)
 
                     req_num += 1
                 elif req_type == "release":
-                    self._handle_release(curr_time)
+                    self.handle_release(curr_time)
                 else:
                     raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '
                                               f'got: {req_type}')
@@ -189,21 +177,11 @@ class Engine:
             self.stats_obj.get_blocking(num_reqs=self.engine_props['num_requests'])
             self.stats_obj.end_iter_stats(num_reqs=self.engine_props['num_requests'])
             # Some form of ML/RL is being used, ignore confidence intervals for training and testing
-            # TODO: What? Clean this up
-            if self.engine_props['ai_algorithm'] == 'None':
-                # TODO: Here
-                # if self._check_confidence_interval():
+            if not self.engine_props['ai_algorithm'] == 'None' and not self.engine_props['ai_arguments']['is_training']:
                 if self.stats_obj.get_conf_inter(iteration=iteration, erlang=self.engine_props['erlang']):
                     return
-            else:
-                if not self.engine_props['ai_arguments']['is_training']:
-                    # TODO: Here
-                    # if self._check_confidence_interval():
-                    if self.stats_obj.get_conf_inter(iteration=iteration, erlang=self.engine_props['erlang']):
-                        return
 
-            # TODO: Add to config file, the amount of times we want to print
-            if (iteration + 1) % 20 == 0 or iteration == 0:
+            if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
                 self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], iteration=iteration,
                                                 erlang=self.engine_props['erlang'])
 
