@@ -614,6 +614,10 @@ class Routing:
                 elif xt_type == 'with_length_norm':
                     link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
                                 ((1 - beta) * xt_cost_norm)
+                elif xt_type == 'with_hop':
+                    link_cost = (beta * 1) + ((1 - beta) * xt_cost)
+                elif xt_type == 'with_hop_norm':
+                    link_cost = (beta * 1) + ((1 - beta) * xt_cost_norm)
                 elif xt_type == 'without_length':
                     link_cost = num_spans * xt_cost
                 elif xt_type == 'without_length_norm':
@@ -652,6 +656,8 @@ class Routing:
             if xt_type == 'with_length':
                 link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
                             ((1 - beta) * xt_cost)
+            elif xt_type == 'with_hop':
+                link_cost = (beta * 1) + ((1 - beta) * xt_cost)
             elif xt_type == 'without_length':
                 link_cost = (num_spans / self.max_span) * xt_cost
             else:
