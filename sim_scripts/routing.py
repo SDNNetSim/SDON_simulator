@@ -614,9 +614,9 @@ class Routing:
                 elif xt_type == 'with_length_norm':
                     link_cost = (beta * (self.topology[source][destination]['length'] / self.max_link)) + \
                                 ((1 - beta) * xt_cost_norm)
-                elif xt_type == 'with_out_length':
+                elif xt_type == 'without_length':
                     link_cost = num_spans * xt_cost
-                elif xt_type == 'with_out_length_norm':
+                elif xt_type == 'without_length_norm':
                     link_cost = num_spans * xt_cost_norm
 
             # At the moment, we have identical bi-directional links
