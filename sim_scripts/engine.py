@@ -12,7 +12,6 @@ from useful_functions.ai_functions import AIMethods
 from useful_functions.stats_helpers import SimStats
 
 
-# TODO: Keep super for now, but change to sdn_obj and make it a standard (last)
 class Engine:
     """
     Controls a single simulation.
@@ -20,24 +19,42 @@ class Engine:
 
     def __init__(self, **kwargs):
         self.engine_props = kwargs['properties']
-        
+
         # The network spectrum database
         self.net_spec_dict = dict()
         # Contains the requests generated in a simulation
         self.reqs_dict = None
         # Holds relevant information of requests that have been ALLOCATED in a simulation
         self.reqs_status_dict = dict()
-        
+
         self.iteration = 0
-        # For the purposes of saving relevant simulation information to a certain pathway
+        # For the purposes of saving simulation output data
         self.sim_info = os.path.join(self.engine_props['network'], self.engine_props['date'],
                                      self.engine_props['sim_start'])
 
         self.sdn_obj = SDNController(properties=self.engine_props)
         self._create_topology()
-        # TODO: Change name of engine props
         self.stats_obj = SimStats(engine_props=self.engine_props)
         self.ai_obj = AIMethods(properties=self.engine_props)
+
+    def _update_ai_obj(self, sdn_data: dict):
+        """
+        Updates the artificial intelligent object class after each request.
+        
+        :param sdn_data: The data that was retrieved from the SDN controller.
+        :return: None
+        """
+        if self.engine_props['route_method'] == 'ai':
+            if not sdn_data[0]:
+                routed = False
+                spectrum = {}
+                path_mod = ''
+            else:
+                spectrum = sdn_data[0]['spectrum']
+                routed = True
+                path_mod = sdn_data[0]['mod_format']
+
+            self.ai_obj.update(routed=routed, spectrum=spectrum, path_mod=path_mod)
 
     def _handle_arrival(self, curr_time: float):
         """
@@ -46,28 +63,16 @@ class Engine:
         :param curr_time: The arrival time of the request.
         :return: None
         """
-        request = self.reqs_dict[curr_time]
-        self.sdn_obj.req_id = request['id']
-        self.sdn_obj.source = request['source']
-        self.sdn_obj.destination = request['destination']
+        request_data = self.reqs_dict[curr_time]
+        self.sdn_obj.req_id = request_data['id']
+        self.sdn_obj.source = request_data['source']
+        self.sdn_obj.destination = request_data['destination']
         self.sdn_obj.path = None
-        self.sdn_obj.chosen_bw = request['bandwidth']
+        self.sdn_obj.chosen_bw = request_data['bandwidth']
         sdn_resp = self.sdn_obj.handle_event(request_type='arrival')
 
-        # TODO: Make this better, it's not good enough
-        if self.engine_props['route_method'] == 'ai':
-            if not sdn_resp[0]:
-                routed = False
-                spectrum = {}
-                path_mod = ''
-            else:
-                spectrum = sdn_resp[0]['spectrum']
-                routed = True
-                path_mod = sdn_resp[0]['mod_format']
-            self.ai_obj.update(routed=routed, spectrum=spectrum, path_mod=path_mod)
-
-        # TODO: Using resp twice here
-        self.stats_obj.get_iter_data(resp=sdn_resp, req_data=request, sdn_data=sdn_resp, topology=self.topology)
+        self._update_ai_obj(sdn_data=sdn_resp)
+        self.stats_obj.get_iter_data(req_data=request_data, sdn_data=sdn_resp, topology=self.topology)
 
         if sdn_resp[0]:
             self.reqs_status_dict.update({self.sdn_obj.req_id: {
@@ -111,48 +116,36 @@ class Engine:
         for link_num, link_data in self.engine_props['topology_info']['links'].items():
             source = link_data['source']
             dest = link_data['destination']
-
-            # Create cores matrix
             cores_matrix = np.zeros((link_data['fiber']['num_cores'], self.engine_props['spectral_slots']))
-            # Add links to a network spectrum database
+
             self.net_spec_dict[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
             self.net_spec_dict[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
-
-            # Add links to physical topology
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
-        # TODO: Change self.topology to this variable
+
         self.sdn_obj.topology = self.topology
         self.sdn_obj.net_spec_db = self.net_spec_dict
         self.engine_props['topology'] = self.topology
 
     def _generate_requests(self, seed: int):
         """
-        Generates the requests for the simulation.
+        Calls the request generator to generate requests.
 
-        :param seed: The seed to use for the random number generator.
+        :param seed: The seed to use for the random generation.
         :return: None
         """
-        # TODO: Crazy, too many params, send props
-        self.reqs_dict = generate(seed=seed,
-                                  nodes=list(self.engine_props['topology_info']['nodes'].keys()),
-                                  hold_time_mean=self.engine_props['holding_time'],
-                                  arr_rate_mean=self.engine_props['arrival_rate'],
-                                  num_reqs=self.engine_props['num_requests'],
-                                  mod_per_bw=self.engine_props['mod_per_bw'],
-                                  req_dist=self.engine_props['request_distribution'],
-                                  sim_type=self.engine_props['sim_type'])
-
+        self.reqs_dict = generate(seed=seed, engine_props=self.engine_props)
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
 
     def run(self):
         """
-        Runs the Engine's methods.
+        Controls the Engine class methods.
 
         :return: None
         """
         for iteration in range(self.engine_props["max_iters"]):
             self.iteration = iteration
             # TODO: Step encoded to 10 temporarily
+            # TODO: Maybe snap keys list has a default, it shouldn't be input here
             self.stats_obj.init_stats(num_requests=self.engine_props['num_requests'], step=10,
                                       snap_keys_list=['occupied_slots', 'guard_slots', 'active_requests',
                                                       'blocking_prob', 'num_segments'],
@@ -166,9 +159,7 @@ class Engine:
             if self.engine_props['route_method'] == 'ai':
                 self.ai_obj.reset_epsilon()
                 self.ai_obj.episode = iteration
-                # TODO: Not sure what to do for integration here
-                # signal.signal(signal.SIGINT, self.ai_obj.save)
-                # signal.signal(signal.SIGTERM, self.ai_obj.save)
+                # TODO: Add SIGINT and SIGTERM to ai functions
 
             if iteration == 0:
                 print(f"Simulation started for Erlang: {self.engine_props['erlang']} "
@@ -177,22 +168,22 @@ class Engine:
             seed = self.engine_props["seeds"][iteration] if self.engine_props["seeds"] else iteration + 1
             self._generate_requests(seed)
 
-            request_number = 1
+            req_num = 1
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
-                    self.ai_obj.req_id = request_number
+                    self.ai_obj.req_id = req_num
                     self._handle_arrival(curr_time)
 
-                    # TODO: Config file for this, request_number % 10
-                    if request_number % 10 == 0 and self.engine_props['save_snapshots']:
-                        self.stats_obj.get_occupied_slots(net_spec_dict=self.net_spec_dict, req_num=request_number)
+                    # TODO: Config file for this, req_num % 10
+                    if req_num % 10 == 0 and self.engine_props['save_snapshots']:
+                        self.stats_obj.get_occupied_slots(net_spec_dict=self.net_spec_dict, req_num=req_num)
 
-                    request_number += 1
+                    req_num += 1
                 elif req_type == "release":
                     self._handle_release(curr_time)
                 else:
-                    raise NotImplementedError(f'Request type unrecongnized. Expected arrival or release, '
+                    raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '
                                               f'got: {req_type}')
 
             self.stats_obj.get_blocking(num_reqs=self.engine_props['num_requests'])

@@ -4,57 +4,35 @@ import warnings
 from useful_functions.random_generation import set_seed, uniform_rv, exponential_rv
 
 
-def generate(sim_type: str, seed: int, nodes: list, hold_time_mean: float, arr_rate_mean: float,
-             num_reqs: int, mod_per_bw: dict, req_dist: dict):
+def generate(seed: int, engine_props: dict):
     """
     Generates requests for a simulation.
 
-    :param sim_type: The simulation type.
-    :type sim_type: str
-
     :param seed: Seed for random number generation.
-    :type seed: int
-
-    :param nodes: List of nodes in the network.
-    :type nodes: list
-
-    :param hold_time_mean: Mean hold time of a request.
-    :type hold_time_mean: float
-
-    :param arr_rate_mean: Mean arrival rate of requests.
-    :type arr_rate_mean: float
-
-    :param num_reqs: Number of requests to generate.
-    :type num_reqs: int
-
-    :param mod_per_bw: Dictionary with modulation formats for each bandwidth.
-    :type mod_per_bw: dict
-
-    :param req_dist: Dictionary with the distribution of requests among different bandwidths.
-    :type req_dist: dict
-
-    :return: A dictionary with the generated requests.
+    :param engine_props: Properties from the engine class.
+    :return: A dictionary with the generated requests and request information.
     :rtype: dict
     """
-    # Initialize variables
     requests = {}
+    nodes = list(engine_props['topology_info']['nodes'].keys())
     current_time = 0
     counter_id = 1
     set_seed(seed=seed)
+    # Fixme
     warnings.warn('Request generation only works if the amount of requests can be evenly distributed.')
 
-    bandwidth_counts = {bandwidth: int(req_dist[bandwidth] * num_reqs) for bandwidth in
-                        mod_per_bw}
-    bandwidth_list = list(mod_per_bw.keys())
+    bandwidth_counts = {bandwidth: int(engine_props['request_distribution'][bandwidth] * engine_props['num_requests'])
+                        for bandwidth in engine_props['mod_per_bw']}
+    bandwidth_list = list(engine_props['mod_per_bw'].keys())
 
     # Generate requests, multiply number of requests by two since we have arrival and departure types
-    while len(requests) < (num_reqs * 2):
-        current_time += exponential_rv(arr_rate_mean)
+    while len(requests) < (engine_props['num_requests'] * 2):
+        current_time += exponential_rv(engine_props['arrival_rate'])
 
-        if sim_type == 'arash':
-            depart_time = current_time + exponential_rv(1 / hold_time_mean)
+        if engine_props['sim_type'] == 'arash':
+            depart_time = current_time + exponential_rv(1 / engine_props['holding_time'])
         else:
-            depart_time = current_time + exponential_rv(hold_time_mean)
+            depart_time = current_time + exponential_rv(engine_props['holding_time'])
 
         source = nodes[uniform_rv(len(nodes))]
         dest = nodes[uniform_rv(len(nodes))]
@@ -77,7 +55,7 @@ def generate(sim_type: str, seed: int, nodes: list, hold_time_mean: float, arr_r
                 "depart": depart_time,
                 "request_type": "arrival",
                 "bandwidth": chosen_bandwidth,
-                "mod_formats": mod_per_bw[chosen_bandwidth],
+                "mod_formats": engine_props['mod_per_bw'][chosen_bandwidth],
             }})
             requests.update({depart_time: {
                 "id": counter_id,
@@ -87,7 +65,7 @@ def generate(sim_type: str, seed: int, nodes: list, hold_time_mean: float, arr_r
                 "depart": depart_time,
                 "request_type": "release",
                 "bandwidth": chosen_bandwidth,
-                "mod_formats": mod_per_bw[chosen_bandwidth],
+                "mod_formats": engine_props['mod_per_bw'][chosen_bandwidth],
             }})
             counter_id += 1
         else:

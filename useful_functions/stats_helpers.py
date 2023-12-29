@@ -181,9 +181,9 @@ class SimStats:
     # TODO: Move topology to constructor, will just need a copy of engine props
     # TODO: Not the best name, rename to update or something, this is not each iteration
     # TODO: Change resp
-    def get_iter_data(self, resp: bool, req_data: dict, sdn_data: dict, topology):
+    def get_iter_data(self, req_data: dict, sdn_data: dict, topology):
         # TODO: Reset in init iter?? Check ALL variables
-        if not resp[0]:
+        if not sdn_data[0]:
             self.blocked_reqs += 1
             self.block_reasons_dict[sdn_data[1]] += 1
             self.block_bw_dict[req_data['bandwidth']] += 1
