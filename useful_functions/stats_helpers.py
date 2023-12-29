@@ -11,12 +11,14 @@ from useful_functions.handle_dirs_files import create_dir
 # TODO: Potentially a copy of engine props here
 # TODO: Check to see that all constructor vars are used, maybe add to dictionary while you do this
 # TODO: Further organize this after integration
+# TODO: Add SIGINT and SIGTERM
 class SimStats:
     """
     The SimStats class finds and stores all relevant statistics in simulations.
     """
 
     def __init__(self, engine_props: dict, stats_props: dict = None):
+        # TODO: Move this to an external file
         # TODO: To override or pickup simulation from an end point (not implemented yet)
         # TODO: A method to return this is in the correct format/save?
         self.stats_props = stats_props
@@ -40,6 +42,7 @@ class SimStats:
         self.block_bw_dict = dict()
         # TODO: Do not use this, something better
         self.stats_dict = {'block_per_sim': dict(), 'misc_stats': dict()}
+        self.snap_keys_list = ['occupied_slots', 'guard_slots', 'active_requests', 'blocking_prob', 'num_segments']
         # block_reasons
         # TODO: Generalize maybe
         # TODO: Initialize after each iteration?
@@ -117,22 +120,23 @@ class SimStats:
     # TODO: Change cores_range to something else
     # TODO: Not the best name
     # TODO: Not all variables are being initialized here, hops, path lens, ect.
-    def init_stats(self, num_requests: int, step: int, snap_keys_list: list, cores_range: range, mod_per_bw: dict):
+    def init_stats(self, num_requests: int, snapshot_step: int, cores_range: range,
+                   mod_per_bw: dict):
         """
         Initializes data structures used in other methods of this class.
 
         :param num_requests: The number of requests for the simulation.
-        :param step: How often to take snapshot statistics.
-        :param snap_keys_list: Keys for desired stats to be tracked, for example, occupied slots.
+        :param snapshot_step: How often to take snapshot statistics.
         :param mod_per_bw: Contains the modulations and bandwidths used.
         :param cores_range: The range of core values used.
         :return: None
         """
         # TODO: Add step to configuration file
-        for req_num in range(0, num_requests + 1, step):
+        for req_num in range(0, num_requests + 1, snapshot_step):
             self.snapshots_dict[req_num] = dict()
             # TODO: Occupied slots, guard bands, blocking prob, num segments, active requests
-            for key in snap_keys_list:
+            # TODO: Add to self
+            for key in self.snap_keys_list:
                 self.snapshots_dict[req_num][key] = list()
 
         self.cores_dict = {key: 0 for key in cores_range}

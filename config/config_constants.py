@@ -1,6 +1,7 @@
 import ast
 
 
+# TODO: Change the name of this file, they are not constants
 def str_to_bool(string):
     """
     Convert any giving string to a boolean.
@@ -77,4 +78,6 @@ OTHER_OPTIONS = {
     'requested_xt': ast.literal_eval,
     'k_paths': int,
     'xt_type': str,
+    'snapshot_step': int,
+    'print_step': int,
 }

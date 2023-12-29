@@ -1,3 +1,4 @@
+# TODO: These are also not constants
 PARAMETERS = [
     ['ai_algorithm', str, ''],
     # ['ai_arguments', dict, ''],
@@ -34,4 +35,6 @@ PARAMETERS = [
     ['arrival_rate', dict, ''],
     ['save_snapshots', bool, ''],
     ['xt_type', str, ''],
+    ['snapshot_step', int, ''],
+    ['print_step', int, ''],
 ]
