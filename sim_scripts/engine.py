@@ -13,7 +13,7 @@ from useful_functions.stats_helpers import SimStats
 
 
 # TODO: Keep super for now, but change to sdn_obj and make it a standard (last)
-class Engine(SDNController):
+class Engine:
     """
     Controls a single simulation.
     """
@@ -33,8 +33,7 @@ class Engine(SDNController):
         self.sim_info = os.path.join(self.engine_props['network'], self.engine_props['date'],
                                      self.engine_props['sim_start'])
 
-        # Initialize the constructor of the SDNController class
-        super().__init__(properties=self.engine_props)
+        self.sdn_obj = SDNController(properties=self.engine_props)
         self._create_topology()
         # TODO: Change name of engine props
         self.stats_obj = SimStats(engine_props=self.engine_props)
@@ -47,14 +46,13 @@ class Engine(SDNController):
         :param curr_time: The arrival time of the request.
         :return: None
         """
-        # TODO: This is the class inheritance, might want to get rid of this
         request = self.reqs_dict[curr_time]
-        self.req_id = request['id']
-        self.source = request['source']
-        self.destination = request['destination']
-        self.path = None
-        self.chosen_bw = request['bandwidth']
-        sdn_resp = self.handle_event(request_type='arrival')
+        self.sdn_obj.req_id = request['id']
+        self.sdn_obj.source = request['source']
+        self.sdn_obj.destination = request['destination']
+        self.sdn_obj.path = None
+        self.sdn_obj.chosen_bw = request['bandwidth']
+        sdn_resp = self.sdn_obj.handle_event(request_type='arrival')
 
         # TODO: Make this better, it's not good enough
         if self.engine_props['route_method'] == 'ai':
@@ -72,7 +70,7 @@ class Engine(SDNController):
         self.stats_obj.get_iter_data(resp=sdn_resp, req_data=request, sdn_data=sdn_resp, topology=self.topology)
 
         if sdn_resp[0]:
-            self.reqs_status_dict.update({self.req_id: {
+            self.reqs_status_dict.update({self.sdn_obj.req_id: {
                 "mod_format": sdn_resp[0]['mod_format'],
                 "path": sdn_resp[0]['path'],
                 "is_sliced": sdn_resp[0]['is_sliced']
@@ -86,14 +84,14 @@ class Engine(SDNController):
         :return: None
         """
         request = self.reqs_dict[curr_time]
-        self.req_id = request['id']
-        self.source = request['source']
-        self.destination = request['destination']
-        self.chosen_bw = request['bandwidth']
+        self.sdn_obj.req_id = request['id']
+        self.sdn_obj.source = request['source']
+        self.sdn_obj.destination = request['destination']
+        self.sdn_obj.chosen_bw = request['bandwidth']
 
         if self.reqs_dict[curr_time]['id'] in self.reqs_status_dict:
-            self.path = self.reqs_status_dict[self.reqs_dict[curr_time]['id']]['path']
-            self.handle_event(request_type='release')
+            self.sdn_obj.path = self.reqs_status_dict[self.reqs_dict[curr_time]['id']]['path']
+            self.sdn_obj.handle_event(request_type='release')
         # Request was blocked, nothing to release
         else:
             pass
@@ -123,6 +121,8 @@ class Engine(SDNController):
             # Add links to physical topology
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
         # TODO: Change self.topology to this variable
+        self.sdn_obj.topology = self.topology
+        self.sdn_obj.net_spec_db = self.net_spec_dict
         self.engine_props['topology'] = self.topology
 
     def _generate_requests(self, seed: int):
