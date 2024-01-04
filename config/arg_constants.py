@@ -37,4 +37,5 @@ PARAMETERS = [
     ['xt_type', str, ''],
     ['snapshot_step', int, ''],
     ['print_step', int, ''],
+    ['file_type', str, ''],
 ]

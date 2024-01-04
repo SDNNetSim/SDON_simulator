@@ -1,5 +1,6 @@
 # Standard library imports
 import os
+import signal
 
 # Third party library imports
 import networkx as nx
@@ -72,7 +73,7 @@ class Engine:
         sdn_resp = self.sdn_obj.handle_event(request_type='arrival')
 
         self.update_ai_obj(sdn_data=sdn_resp)
-        self.stats_obj.get_iter_data(req_data=request_data, sdn_data=sdn_resp, topology=self.topology)
+        self.stats_obj.iter_update(req_data=request_data, sdn_data=sdn_resp)
 
         if sdn_resp[0]:
             self.stats_obj.curr_trans = sdn_resp[2]
@@ -123,6 +124,7 @@ class Engine:
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
 
         self.sdn_obj.topology = self.topology
+        self.stats_obj.topology = self.topology
         self.sdn_obj.net_spec_db = self.net_spec_dict
         self.engine_props['topology'] = self.topology
 
@@ -145,12 +147,12 @@ class Engine:
         self.create_topology()
         for iteration in range(self.engine_props["max_iters"]):
             self.iteration = iteration
-            self.stats_obj.init_stats(num_requests=self.engine_props['num_requests'],
-                                      snapshot_step=self.engine_props['snapshot_step'],
-                                      cores_range=range(self.engine_props['cores_per_link']),
-                                      mod_per_bw=self.engine_props['mod_per_bw'])
+            self.stats_obj.init_iter_stats()
 
             if self.engine_props['route_method'] == 'ai':
+                signal.signal(signal.SIGINT, self.ai_obj.save)
+                signal.signal(signal.SIGTERM, self.ai_obj.save)
+
                 self.ai_obj.reset_epsilon()
                 self.ai_obj.episode = iteration
             if iteration == 0:
@@ -176,18 +178,21 @@ class Engine:
                     raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '
                                               f'got: {req_type}')
 
-            self.stats_obj.get_blocking(num_reqs=self.engine_props['num_requests'])
-            self.stats_obj.end_iter_stats(num_reqs=self.engine_props['num_requests'])
+            self.stats_obj.get_blocking()
+            self.stats_obj.end_iter_update()
             # Some form of ML/RL is being used, ignore confidence intervals for training and testing
             if not self.engine_props['ai_algorithm'] == 'None' and not self.engine_props['ai_arguments']['is_training']:
                 if self.stats_obj.get_conf_inter(iteration=iteration, erlang=self.engine_props['erlang']):
+                    self.ai_obj.save()
                     return
 
             if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
                 self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], iteration=iteration,
                                                 erlang=self.engine_props['erlang'])
 
-            self.stats_obj.save_stats(iteration=iteration, sim_info=self.sim_info)
+            self.ai_obj.save()
+            self.stats_obj.save_stats(iteration=iteration, sim_info=self.sim_info,
+                                      file_type=self.engine_props['file_type'])
 
         print(f"Erlang: {self.engine_props['erlang']} finished for "
               f"simulation number: {self.engine_props['thread_num']}.")

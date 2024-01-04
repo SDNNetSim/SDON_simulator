@@ -1,6 +1,5 @@
 empty_props = {
     'iter_stats': dict(),
-    'bw_block_dict': dict(),
     'snapshots_dict': dict(),
     'cores_dict': dict(),
     'weights_dict': dict(),
