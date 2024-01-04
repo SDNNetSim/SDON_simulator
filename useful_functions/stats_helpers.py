@@ -1,4 +1,3 @@
-import copy
 import json
 import os
 import math
@@ -13,17 +12,12 @@ from useful_functions.handle_dirs_files import create_dir
 
 
 # TODO: Add SIGINT and SIGTERM
-# TODO: Review code:
-#   - Read doc strings
-#   - Variable names
-#   - Code readability/efficiency
-#   - Move repeat variables to self
 class SimStats:
     """
     The SimStats class finds and stores all relevant statistics in simulations.
     """
 
-    def __init__(self, engine_props: dict, stats_props: dict = None):
+    def __init__(self, engine_props: dict, sim_info: str, stats_props: dict = None):
         # TODO: Implement ability to pick up from previously run simulations
         if stats_props is not None:
             self.stats_props = stats_props
@@ -31,8 +25,9 @@ class SimStats:
             self.stats_props = empty_props
 
         self.engine_props = engine_props
+        self.sim_info = sim_info
 
-        self.save_dict = dict()
+        self.save_dict = {'iter_stats': {}}
 
         # Used to track transponders for a single allocated request
         self.curr_trans = 0
@@ -44,6 +39,7 @@ class SimStats:
         self.block_ci = None
         self.block_ci_percent = None
         self.topology = None
+        self.iteration = None
 
     @staticmethod
     def _get_snapshot_info(net_spec_dict: dict, path_list: list):
@@ -72,6 +68,7 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
+    # TODO: Path list is never used in engine yet
     def update_snapshot(self, net_spec_dict: dict, req_num: int, path_list: list = None):
         """
         Finds the total number of occupied slots and guard bands currently allocated in the network or a specific path.
@@ -111,13 +108,12 @@ class SimStats:
         for stat_key, data_type in self.stats_props.items():
             if not isinstance(data_type, dict):
                 continue
-
             if stat_key in ('mods_used_dict', 'weights_dict', 'block_bw_dict'):
                 self._init_mods_weights_bws()
             elif stat_key == 'snapshots_dict':
                 self._init_snapshots()
             elif stat_key == 'cores_dict':
-                self.stats_props['cores_dict'] = {key: 0 for key in range(self.engine_props['cores_per_link'])}
+                self.stats_props['cores_dict'] = {core: 0 for core in range(self.engine_props['cores_per_link'])}
             elif stat_key == 'block_reasons_dict':
                 self.stats_props['block_reasons_dict'] = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
             elif stat_key != 'iter_stats':
@@ -166,8 +162,6 @@ class SimStats:
             self.blocked_reqs += 1
             self.stats_props['block_reasons_dict'][sdn_data[1]] += 1
             self.stats_props['block_bw_dict'][req_data['bandwidth']] += 1
-            # If the request was blocked, use one transponder
-            self.total_trans += 1
         else:
             num_hops = len(sdn_data[0]['path']) - 1
             self.stats_props['hops_list'].append(num_hops)
@@ -197,13 +191,13 @@ class SimStats:
                     curr_snapshot[snap_key] = None
 
         for _, mod_obj in self.stats_props['weights_dict'].items():
-            for modulation, lst in mod_obj.items():
+            for modulation, data_list in mod_obj.items():
                 # Modulation was never used
-                if len(lst) == 0:
+                if len(data_list) == 0:
                     mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
                 else:
-                    mod_obj[modulation] = {'mean': mean(lst), 'std': stdev(lst),
-                                           'min': min(lst), 'max': max(lst)}
+                    mod_obj[modulation] = {'mean': mean(data_list), 'std': stdev(data_list),
+                                           'min': min(data_list), 'max': max(data_list)}
 
     def end_iter_update(self):
         """
@@ -214,7 +208,7 @@ class SimStats:
         if self.engine_props['num_requests'] == self.blocked_reqs:
             self.stats_props['trans_list'].append(0)
         else:
-            trans_mean = self.total_trans / self.engine_props['num_requests'] - self.blocked_reqs
+            trans_mean = self.total_trans / float(self.engine_props['num_requests'] - self.blocked_reqs)
             self.stats_props['trans_list'].append(trans_mean)
 
         if self.blocked_reqs > 0:
@@ -223,12 +217,10 @@ class SimStats:
 
         self._get_iter_means()
 
-    def get_conf_inter(self, iteration: int, erlang: float):
+    def get_conf_inter(self):
         """
         Get the confidence interval for every iteration so far.
 
-        :param iteration: The iteration number.
-        :param erlang: The current traffic volume (erlang).
         :return: Whether the simulations should end for this erlang.
         :rtype: bool
         """
@@ -249,54 +241,48 @@ class SimStats:
         # TODO: Add to configuration file (ci percent, same as above)
         if block_ci_percent <= 5:
             print(f"Confidence interval of {round(block_ci_percent, 2)}% reached. "
-                  f"{iteration + 1}, ending and saving results for Erlang: {erlang}")
-            self.save_stats(iteration=iteration)
+                  f"{self.iteration + 1}, ending and saving results for Erlang: {self.engine_props['erlang']}")
+            self.save_stats()
             return True
 
         return False
 
-    # TODO: Move file type and sim info to constructor
-    # TODO: Implement batch saves?
-    def save_stats(self, iteration: int, sim_info: str, file_type: str):
+    # TODO: Implement batch saves
+    def save_stats(self):
         """
         Saves simulations stats as either a json or csv file.
 
-        :param file_type: The desired file type, either json or csv.
-        :param iteration: The iteration that is about to finish.
-        :param sim_info: Contains the topology, date, and time used for saving the file.
         :return: None
         """
-        if file_type not in ('json', 'csv'):
-            raise NotImplementedError(f'Invalid file type: {file_type}, expected csv or json.')
+        if self.engine_props['file_type'] not in ('json', 'csv'):
+            raise NotImplementedError(f"Invalid file type: {self.engine_props['file_type']}, expected csv or json.")
 
         self.save_dict['blocking_mean'] = self.block_mean
         self.save_dict['blocking_variance'] = self.block_variance
         self.save_dict['ci_rate_block'] = self.block_ci
         self.save_dict['ci_percent_block'] = self.block_ci_percent
 
-        save_fp = os.path.join('data', 'output', sim_info, self.engine_props['thread_num'])
+        self.save_dict['iter_stats'][self.iteration] = dict()
+        for stat_key in self.stats_props:
+            if stat_key in ('trans_list', 'hops_list', 'lengths_list', 'route_times_list'):
+                self.save_dict['iter_stats'][self.iteration][stat_key] = mean(self.stats_props[stat_key])
+            else:
+                self.save_dict['iter_stats'][self.iteration][stat_key] = self.stats_props[stat_key]
+
+        save_fp = os.path.join('data', 'output', self.sim_info, self.engine_props['thread_num'])
         create_dir(save_fp)
-
-        # Save input parameter data (won't change per iter)
-        if iteration == 0:
-            with open(f"{save_fp}/_params.json", 'w', encoding='utf-8') as file_path:
-                json.dump(self.save_dict, file_path, indent=4)
-
-        # Save all other data
-        if file_type == 'json':
+        if self.engine_props['file_type'] == 'json':
             with open(f"{save_fp}/{self.engine_props['erlang']}_erlang.json", 'w', encoding='utf-8') as file_path:
                 json.dump(self.save_dict, file_path, indent=4)
         else:
             raise NotImplementedError
 
-    def print_iter_stats(self, max_iters: int, iteration: int, erlang: float):
+    def print_iter_stats(self, max_iters: int):
         """
         Prints iteration stats, mostly used to ensure simulations are running fine.
 
         :param max_iters: The maximum number of iterations.
-        :param iteration: The current iteration finished.
-        :param erlang: The current traffic volume.
         :return: None
         """
-        print(f"Iteration {iteration + 1} out of {max_iters} completed for Erlang: {erlang}")
+        print(f"Iteration {self.iteration + 1} out of {max_iters} completed for Erlang: {self.engine_props['erlang']}")
         print(f"Mean of blocking: {np.mean(self.stats_props['sim_block_list'])}")

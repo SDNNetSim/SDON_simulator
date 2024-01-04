@@ -35,7 +35,7 @@ class Engine:
                                      self.engine_props['sim_start'])
 
         self.sdn_obj = SDNController(properties=self.engine_props)
-        self.stats_obj = SimStats(engine_props=self.engine_props)
+        self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
         self.ai_obj = AIMethods(properties=self.engine_props)
 
     def update_ai_obj(self, sdn_data: dict):
@@ -147,7 +147,11 @@ class Engine:
         self.create_topology()
         for iteration in range(self.engine_props["max_iters"]):
             self.iteration = iteration
+
+            self.stats_obj.iteration = iteration
             self.stats_obj.init_iter_stats()
+            signal.signal(signal.SIGINT, self.stats_obj.save_stats)
+            signal.signal(signal.SIGTERM, self.stats_obj.save_stats)
 
             if self.engine_props['route_method'] == 'ai':
                 signal.signal(signal.SIGINT, self.ai_obj.save)
@@ -182,17 +186,15 @@ class Engine:
             self.stats_obj.end_iter_update()
             # Some form of ML/RL is being used, ignore confidence intervals for training and testing
             if not self.engine_props['ai_algorithm'] == 'None' and not self.engine_props['ai_arguments']['is_training']:
-                if self.stats_obj.get_conf_inter(iteration=iteration, erlang=self.engine_props['erlang']):
+                if self.stats_obj.get_conf_inter():
                     self.ai_obj.save()
                     return
 
             if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
-                self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], iteration=iteration,
-                                                erlang=self.engine_props['erlang'])
+                self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'])
 
             self.ai_obj.save()
-            self.stats_obj.save_stats(iteration=iteration, sim_info=self.sim_info,
-                                      file_type=self.engine_props['file_type'])
+            self.stats_obj.save_stats()
 
         print(f"Erlang: {self.engine_props['erlang']} finished for "
               f"simulation number: {self.engine_props['thread_num']}.")
