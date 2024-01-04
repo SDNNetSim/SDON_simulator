@@ -11,7 +11,6 @@ from useful_functions.sim_functions import find_path_len
 from useful_functions.handle_dirs_files import create_dir
 
 
-# TODO: Add SIGINT and SIGTERM
 class SimStats:
     """
     The SimStats class finds and stores all relevant statistics in simulations.
@@ -68,7 +67,6 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
-    # TODO: Path list is never used in engine yet
     def update_snapshot(self, net_spec_dict: dict, req_num: int, path_list: list = None):
         """
         Finds the total number of occupied slots and guard bands currently allocated in the network or a specific path.
@@ -285,4 +283,4 @@ class SimStats:
         :return: None
         """
         print(f"Iteration {self.iteration + 1} out of {max_iters} completed for Erlang: {self.engine_props['erlang']}")
-        print(f"Mean of blocking: {np.mean(self.stats_props['sim_block_list'])}")
+        print(f"Mean of blocking: {round(mean(self.stats_props['sim_block_list']), 2)}")
