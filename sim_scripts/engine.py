@@ -185,7 +185,9 @@ class Engine:
             self.stats_obj.get_blocking()
             self.stats_obj.end_iter_update()
             # Some form of ML/RL is being used, ignore confidence intervals for training and testing
-            if not self.engine_props['ai_algorithm'] == 'None' and not self.engine_props['ai_arguments']['is_training']:
+            # TODO: What I'm going to do for now is remove ai_arguments, since I'll eventually replace it with something
+            #   else
+            if self.engine_props['ai_algorithm'] == 'None':
                 if self.stats_obj.get_conf_inter():
                     self.ai_obj.save()
                     return
