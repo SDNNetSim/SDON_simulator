@@ -7,7 +7,7 @@ import networkx as nx
 import numpy as np
 
 # Local application imports
-from sim_scripts.request_generator import generate
+from sim_scripts.request_generator import get_requests
 from sim_scripts.sdn_controller import SDNController
 from useful_functions.ai_functions import AIMethods
 from useful_functions.stats_helpers import SimStats
@@ -135,7 +135,7 @@ class Engine:
         :param seed: The seed to use for the random generation.
         :return: None
         """
-        self.reqs_dict = generate(seed=seed, engine_props=self.engine_props)
+        self.reqs_dict = get_requests(seed=seed, engine_props=self.engine_props)
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
 
     def run(self):

@@ -2,25 +2,21 @@
 import numpy as np
 
 
-def set_seed(seed):
+def set_seed(seed: int):
     """
     Sets the seed for random number generation functions.
 
     :param seed: The seed
-    :type seed: int
-
     :return: None
     """
     np.random.seed(seed)
 
 
-def uniform_rv(scale_param=None):
+def get_uniform_rv(scale_param: float = None):
     """
     Generates a value from a uniform distribution. Optional scale parameter.
 
     :param scale_param: A scale parameter
-    :type scale_param: float
-
     :return: A uniform random variable
     :rtype: int
     """
@@ -30,15 +26,13 @@ def uniform_rv(scale_param=None):
     return int(np.random.uniform(0, 1) * scale_param)
 
 
-def exponential_rv(scale_param):
+def get_exponential_rv(scale_param: float):
     """
     Generates a value from an exponential distribution.
 
     :param scale_param: A scale parameter
-    :type scale_param: float
-
     :return: An exponential random variable
     :rtype: float
     """
     # np.log is the natural logarithm
-    return ((-1.0) / float(scale_param)) * np.log(uniform_rv())
+    return ((-1.0) / float(scale_param)) * np.log(get_uniform_rv())
