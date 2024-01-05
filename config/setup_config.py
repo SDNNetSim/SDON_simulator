@@ -1,6 +1,6 @@
 import configparser
 
-from useful_functions.handle_dirs_files import create_dir
+from useful_functions.os_helpers import create_dir
 from config import config_constants
 
 

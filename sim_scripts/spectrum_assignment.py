@@ -7,7 +7,7 @@ from operator import itemgetter
 # Third-party library imports
 import numpy as np
 
-import useful_functions.sim_functions
+import useful_functions.sim_helpers
 
 
 class SpectrumAssignment:  # pylint: disable=too-few-public-methods

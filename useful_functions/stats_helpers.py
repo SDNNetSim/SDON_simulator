@@ -8,8 +8,8 @@ import numpy as np
 
 from useful_functions.stats_args import empty_props
 from useful_functions.stats_args import SNAP_KEYS_LIST
-from useful_functions.sim_functions import find_path_len
-from useful_functions.handle_dirs_files import create_dir
+from useful_functions.sim_helpers import find_path_len
+from useful_functions.os_helpers import create_dir
 
 
 class SimStats:

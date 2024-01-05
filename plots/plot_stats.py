@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Local application imports
-from useful_functions.handle_dirs_files import create_dir
+from useful_functions.os_helpers import create_dir
 from interactive_plots import plot_q_table
 
 

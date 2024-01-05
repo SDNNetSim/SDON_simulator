@@ -7,8 +7,8 @@ import numpy as np
 import networkx as nx
 
 # Local application imports
-from useful_functions.handle_dirs_files import create_dir
-from useful_functions.sim_functions import find_path_congestion, find_core_frag_cong
+from useful_functions.os_helpers import create_dir
+from useful_functions.sim_helpers import find_path_congestion, find_core_frag_cong
 from sim_scripts.routing import Routing
 
 

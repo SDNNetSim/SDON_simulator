@@ -2,57 +2,34 @@
 import math
 import copy
 import warnings
-from typing import List
 
 # Third-party library imports
 import networkx as nx
 import numpy as np
 
-# Local application imports
-import useful_functions.sim_functions
+from useful_functions.sim_helpers import find_free_channels, find_free_slots
+from useful_functions.sim_helpers import find_taken_channels, find_path_len, get_path_mod
 
 
 class Routing:
     """
-    This class contains methods for routing packets in a network topology.
+    This class contains methods related to routing network requests.
     """
 
+    # TODO: Review team guidelines document for every line of code here
+    # TODO: Find a better way for this, too many parameters, most likely routing_props
     def __init__(self, print_warn: bool = None, source: str = None, destination: str = None, topology: nx.Graph = None,
                  net_spec_db: dict = None, mod_formats: dict = None, slots_needed: int = None, guard_slots: int = None,
                  beta: float = None, bandwidth: str = None):
-        """
-        Initializes the Routing class.
+        # TODO: Here is where I'll hold most of the information
+        self.routing_props = None
+        # TODO: Not sure if I'll need this but I'll try
+        self.sdn_props = None
+        # TODO: Should probably have a route selection method in this script instead of the helpers script
 
-        :param print_warn: If we'd like to print warnings or not.
-        :type print_warn: bool
-
-        :param source: The source node ID.
-        :type source: str
-
-        :param destination: The destination node ID.
-        :type destination: str
-
-        :param topology: The network topology represented as a NetworkX Graph object.
-        :type topology: nx.Graph
-
-        :param net_spec_db: A database of network spectrum.
-        :type net_spec_db: dict
-
-        :param mod_formats: A dict of available modulation formats and their potential reach.
-        :type mod_formats: dict
-
-        :param slots_needed: The number of slots needed for the connection.
-        :type slots_needed: int
-
-        :param guard_slots: The number of slots to be allocated for a guard band
-        :type guard_slots: int
-
-        :param beta: Used for NLI calculation costs.
-        :type beta: float
-
-        :param bandwidth: The required bandwidth for the connection.
-        :type bandwidth: str
-        """
+        # TODO: At least some of these will be available in engine_props or sdn_props or something similar
+        # TODO: Might be worth while to change sdn_props first
+        # TODO: Check to make sure all of these are actually needed in the constructor
         self.print_warn = print_warn
         self.source = source
         self.destination = destination
@@ -60,14 +37,19 @@ class Routing:
         self.net_spec_db = net_spec_db
         self.slots_needed = slots_needed
         self.guard_slots = guard_slots
+        # TODO: Comment, have no idea what beta is
         self.beta = beta
         self.bandwidth = bandwidth
         self.mod_formats = mod_formats
 
+        # TODO: Maybe a better way to do this?
         # The nodes of a pathway for a given request
         self.path = []
+        # TODO: Why two of these?
         # A list of potential paths
         self.paths_list = []
+        # TODO: These are constants, either store to another file or delete?
+        #   - I don't think these are needed here, they're used in snr_measurements
         # Constants related to non-linear impairment calculations
         self.input_power = 1e-3
         # Channel frequency spacing
@@ -80,38 +62,28 @@ class Routing:
         self.span_len = 100.0
         self.max_span = self.max_link / self.span_len
 
-        self.find_free_slots = useful_functions.sim_functions.find_free_slots
-        self.find_free_channels = useful_functions.sim_functions.find_free_channels
-        self.find_taken_channels = useful_functions.sim_functions.find_taken_channels
-        self.find_path_len = useful_functions.sim_functions.find_path_len
-        self.get_path_mod = useful_functions.sim_functions.get_path_mod
-
     def find_least_cong_path(self):
         """
         Finds the least congested path from the list of available paths.
 
         :return: The least congested path
-        :rtype: List[int]
+        :rtype: list
         """
-        # Sort dictionary by number of free slots, descending (least congested)
+        # Sort dictionary by number of free slots, descending
         sorted_paths_list = sorted(self.paths_list, key=lambda d: d['link_info']['free_slots'], reverse=True)
 
         return sorted_paths_list[0]['path']
 
-    def find_most_cong_link(self, path: List[int]):
+    def find_most_cong_link(self, path: list):
         """
-        Given a path, find the most congested link between all nodes. Count how many slots are taken.
-        For multiple cores, the number of spectrum slots occupied is added for each link.
+        Given a path, find the most congested link.
 
         :param path: The path to analyze
-        :type path: list[int]
-
         :return: The congestion level of the most congested link in the path
         :rtype: int
         """
-        # Initialize variables to keep track of the most congested link found
-        most_congested_link = None
-        most_congested_slots = -1
+        most_cong_link = None
+        most_cong_slots = -1
 
         # Iterate over all links in the path
         for i in range(len(path) - 1):
@@ -121,25 +93,25 @@ class Routing:
             # Iterate over all cores in the link
             for core_arr in cores_matrix:
                 free_slots = np.sum(core_arr == 0)
+                if free_slots < most_cong_slots or most_cong_link is None:
+                    most_cong_slots = free_slots
+                    most_cong_link = link
 
-                # Check if the current core is more congested than the most congested core found so far
-                if free_slots < most_congested_slots or most_congested_link is None:
-                    most_congested_slots = free_slots
-                    most_congested_link = link
+        # TODO: Standardize return format in all functions
+        tmp_dict = {'path': path, 'link_info': {'link': most_cong_link, 'free_slots': most_cong_slots}}
+        self.paths_list.append(tmp_dict)
 
-        # Update the list of potential paths with information about the most congested link in the path
-        self.paths_list.append(
-            {'path': path, 'link_info': {'link': most_congested_link, 'free_slots': most_congested_slots}})
+        return most_cong_slots
 
-        return most_congested_slots
-
+    # TODO: Change name to get_least_congested or something
     def least_congested_path(self):
         """
-        Implementation of the least congested pathway algorithm, based on Arash Rezaee's research paper's assumptions.
+        Find and return the least congested path in the network.
 
-        :return: The least congested path, or a tuple indicating that the algorithm failed to find a valid path
-        :rtype: list or tuple[bool, bool, bool]
+        :return: The least congested path
+        :rtype: list
         """
+        # TODO: Naming conventions
         # Use NetworkX to find all simple paths between the source and destination nodes
         all_paths = nx.shortest_simple_paths(self.topology, self.source, self.destination)
 
@@ -161,23 +133,22 @@ class Routing:
                     return [least_cong_path], 'QPSK', None
 
         # If no valid path was found, return a tuple indicating failure
+        # TODO: Is this return format correct?
         return [False], [False], [False]
 
     def least_weight_path(self, weight: str):
         """
-        Given a graph with a desired source and destination, find the shortest path with respect to a given weight.
+        Find the path with respect to a given weight.
 
-        :param weight: Determines the weight to consider for finding the shortest path.
-        :type weight: str
-
-        :return: A tuple containing the shortest path and its modulation format
+        :param weight: Determines the weight to consider for finding the path.
+        :return: The least weight path and its modulation format
         :rtype: tuple
         """
-        # This networkx function will always return the shortest paths in order
         paths_obj = nx.shortest_simple_paths(G=self.topology, source=self.source, target=self.destination,
                                              weight=weight)
 
         for path in paths_obj:
+            # TODO: Comment
             if weight == 'xt_cost':
                 path_len = sum(self.topology[path[i]][path[i + 1]][weight] for i in range(len(path) - 1))
             else:
@@ -191,11 +162,10 @@ class Routing:
         Finds the k-shortest-paths based on link lengths.
 
         :param k_paths: The number of paths to consider.
-        :type k_paths: int
-
         :return: The k-shortest-paths with their modulation formats assigned.
         :rtype: tuple
         """
+        # TODO: Naming conventions
         paths = list()
         mod_formats = list()
         path_lens = list()
@@ -217,7 +187,7 @@ class Routing:
 
         return paths, cores, mod_formats, path_lens
 
-    # TODO: Move these functions to useful functions eventually, also check the entire simulator for things like this
+    # TODO: Move to sim_helpers, also check for duplicates
     def _setup_simulated_link(self, slots_per_core: int):
         """
         Create a simulated link from the network for calculation purposes.
@@ -252,6 +222,7 @@ class Routing:
 
         return simulated_link
 
+    # TODO: There should be an snr_helpers file instead
     def find_worst_nli(self):
         """
         Finds the maximum possible NLI for a link in the network.
@@ -277,7 +248,7 @@ class Routing:
         self.net_spec_db[links[0]]['cores_matrix'][0] = original_link
         return nli_worst
 
-    # TODO: Potential repeat code
+    # TODO: Potential repeat code, also move to snr_helpers
     def _find_channel_mci(self, num_spans: float, center_freq: float, taken_channels: list):
         """
         For a given super-channel, calculate the multichannel interference.
@@ -308,6 +279,7 @@ class Routing:
         mci = (mci / self.mci_w) * num_spans
         return mci
 
+    # TODO: Move to snr helpers
     def _find_link_cost(self, num_spans: float, channels_dict: dict, taken_channels: list):
         """
         Given a link, find the non-linear impairment cost for all cores on that link.
@@ -346,6 +318,7 @@ class Routing:
 
         return link_cost
 
+    # TODO: Move to snr helpers
     def _get_final_nli_cost(self, link: tuple, num_spans: float, source: str, destination: str):
         """
         Controls sub-methods and calculates the final non-linear impairment cost for a link.
@@ -399,6 +372,7 @@ class Routing:
         return resp
 
     # TODO: Move core number to the constructor?
+    # TODO: Move to snr helpers
     @staticmethod
     def _find_adjacent_cores(core_num: int):
         """
@@ -422,6 +396,7 @@ class Routing:
 
         return before, after
 
+    # TODO: SNR helpers file
     def _find_num_overlapped(self, channel: int, core_num: int, link_num: int):
         """
         Finds the number of overlapped channels for a single core on a link.
@@ -463,6 +438,7 @@ class Routing:
 
         return num_overlapped
 
+    # TODO: Same here, snr helpers
     def _find_xt_link_cost(self, free_slots: dict, link_num: int):
         """
         Finds the cross-talk cost for a single link.

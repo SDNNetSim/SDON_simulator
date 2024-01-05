@@ -358,6 +358,7 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
     :return: The potential paths and path modulation formats.
     :rtype: dict
     """
+    # TODO: Do not re-create this object each time
     # The artificial intelligence objects have their own routing class
     if properties['ai_algorithm'] == 'None':
         routing_obj = Routing(print_warn=properties['warnings'], source=source, destination=destination,
@@ -367,6 +368,7 @@ def get_route(properties: dict, source: str, destination: str, topology: nx.Grap
 
     # TODO: Change constant QPSK modulation formats
     # TODO: All other routing methods will break, return None for cores
+    # TODO: Move these to routing.py after cleaned up, accept for ai_obj
     if properties['route_method'] == 'nli_aware':
         slots_needed = properties['mod_per_bw'][chosen_bw]['QPSK']['slots_needed']
         routing_obj.slots_needed = slots_needed
