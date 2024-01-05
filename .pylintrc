@@ -163,6 +163,7 @@ disable=raw-checker-failed,
         too-many-locals,
         too-many-branches,
         redefined-outer-name,
+        missing-module-docstring,
 
 
 # Enable the message, report, category or checker with the given id(s). You can

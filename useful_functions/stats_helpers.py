@@ -12,8 +12,6 @@ from useful_functions.sim_functions import find_path_len
 from useful_functions.handle_dirs_files import create_dir
 
 
-# TODO: Min and max for hops and path lengths, change name on save
-# TODO: Sim block list being saved in each iteration
 class SimStats:
     """
     The SimStats class finds and stores all relevant statistics in simulations.
@@ -103,7 +101,6 @@ class SimStats:
                 self.stats_props['weights_dict'][bandwidth][modulation] = list()
                 self.stats_props['mods_used_dict'][bandwidth][modulation] = 0
 
-            # TODO: It's correct but being overridden
             self.stats_props['block_bw_dict'][bandwidth] = 0
 
     def _init_stat_dicts(self):
@@ -154,7 +151,6 @@ class SimStats:
 
         self.stats_props['sim_block_list'].append(blocking_prob)
 
-    # TODO: It's almost as if block_bw_dict is the same both times and not updated and or initialized
     def iter_update(self, req_data: dict, sdn_data: dict):
         """
         Continuously updates the statistical data for each request allocated/blocked in the current iteration.
@@ -271,7 +267,8 @@ class SimStats:
         self.save_dict['iter_stats'][self.iteration] = dict()
         for stat_key in self.stats_props:
             if stat_key in ('trans_list', 'hops_list', 'lengths_list', 'route_times_list'):
-                self.save_dict['iter_stats'][self.iteration][stat_key] = mean(self.stats_props[stat_key])
+                mean_key = f"{stat_key.split('list')[0]}mean"
+                self.save_dict['iter_stats'][self.iteration][mean_key] = mean(self.stats_props[stat_key])
             else:
                 self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(self.stats_props[stat_key])
 
