@@ -283,4 +283,4 @@ class SimStats:
         :return: None
         """
         print(f"Iteration {self.iteration + 1} out of {max_iters} completed for Erlang: {self.engine_props['erlang']}")
-        print(f"Mean of blocking: {round(mean(self.stats_props['sim_block_list']), 2)}")
+        print(f"Mean of blocking: {round(mean(self.stats_props['sim_block_list']), 4)}")
