@@ -7,8 +7,8 @@ import networkx as nx
 import numpy as np
 
 # Local application imports
+# TODO: Might end up moving this to spectrum assignment too
 import sim_scripts.spectrum_assignment
-from sim_scripts.routing import Routing
 
 
 def get_path_mod(mod_formats: dict, path_len: int):
@@ -325,78 +325,6 @@ def find_taken_channels(net_spec_db: dict, des_link: tuple):
             channels.append(curr_channel)
 
         resp[core_num] = channels
-
-    return resp
-
-
-def get_route(properties: dict, source: str, destination: str, topology: nx.Graph, net_spec_db: dict, chosen_bw: str,
-              ai_obj: object):
-    """
-    Given request information, attempt to find a route for the request for various routing methods.
-
-    :param properties: Contains various simulation configuration properties that are constant.
-    :type properties: dict
-
-    :param source: The source node.
-    :type source: str
-
-    :param destination: The destination node.
-    :type destination: str
-
-    :param topology: The network topology information.
-    :type topology: nx.Graph
-
-    :param net_spec_db: The network spectrum database.
-    :type net_spec_db: dict
-
-    :param chosen_bw: The chosen bandwidth.
-    :type chosen_bw: str
-
-    :param ai_obj: The object for artificial intelligence, if it's being used.
-    :type ai_obj: object
-
-    :return: The potential paths and path modulation formats.
-    :rtype: dict
-    """
-    # TODO: Do not re-create this object each time
-    # The artificial intelligence objects have their own routing class
-    if properties['ai_algorithm'] == 'None':
-        routing_obj = Routing(print_warn=properties['warnings'], source=source, destination=destination,
-                              topology=topology, net_spec_db=net_spec_db,
-                              mod_formats=properties['mod_per_bw'][chosen_bw], bandwidth=chosen_bw,
-                              guard_slots=properties['guard_slots'])
-
-    # TODO: Change constant QPSK modulation formats
-    # TODO: All other routing methods will break, return None for cores
-    # TODO: Move these to routing.py after cleaned up, accept for ai_obj
-    if properties['route_method'] == 'nli_aware':
-        slots_needed = properties['mod_per_bw'][chosen_bw]['QPSK']['slots_needed']
-        routing_obj.slots_needed = slots_needed
-        routing_obj.beta = properties['beta']
-        resp = routing_obj.nli_aware()
-    elif properties['route_method'] == 'xt_aware':
-        resp = routing_obj.xt_aware(beta=properties['beta'], xt_type=properties['xt_type'])
-    elif properties['route_method'] == 'least_congested':
-        resp = routing_obj.least_congested_path()
-    elif properties['route_method'] == 'shortest_path':
-        resp = routing_obj.least_weight_path(weight='length')
-    elif properties['route_method'] == 'k_shortest_path':
-        resp = routing_obj.k_shortest_path(k_paths=properties['k_paths'])
-    elif properties['route_method'] == 'ai':
-        # Used for routing related to artificial intelligence
-        selected_path, selected_core = ai_obj.route(source=int(source), destination=int(destination),
-                                                    net_spec_db=net_spec_db, chosen_bw=chosen_bw,
-                                                    guard_slots=properties['guard_slots'])
-
-        # A path could not be found, assign None to path modulation
-        if not selected_path:
-            resp = [selected_path], [False], [False], [False]
-        else:
-            path_len = find_path_len(path=selected_path, topology=topology)
-            path_mod = [get_path_mod(mod_formats=properties['mod_per_bw'][chosen_bw], path_len=path_len)]
-            resp = [selected_path], [selected_core], [path_mod], [path_len]
-    else:
-        raise NotImplementedError(f"Routing method not recognized, got: {properties['route_method']}.")
 
     return resp
 

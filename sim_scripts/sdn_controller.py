@@ -1,48 +1,24 @@
-# Standard library imports
 import time
 import numpy as np
 
-# Local application imports
-from sim_scripts.spectrum_assignment import SpectrumAssignment
+from arg_scripts.sdn_args import empty_props
 from sim_scripts.snr_measurements import SnrMeasurements
-# TODO: Remove wildcard import
-from useful_functions.sim_helpers import *  # pylint: disable=unused-wildcard-import
+from helper_scripts.routing_helpers import get_route
+from helper_scripts.sim_helpers import get_spectrum
 
 
 # TODO: Private methods don't really need comments
+# TODO: Naming conventions, review all files with team docs
 class SDNController:
     """
     This class contains methods to support software-defined network controller functionality.
     """
 
-    # TODO: Review team guidelines document, especially naming conventions
     def __init__(self, properties: dict = None):
-        self.sdn_props = properties
+        # TODO: Remember you changed sdn_props to engine_props
+        self.engine_props = properties
+        self.sdn_props = empty_props
         self.ai_obj = None
-
-        # TODO: Move most of this to sdn_props, update in engine!
-        # The current request id number
-        self.req_id = None
-        # The updated network spectrum database
-        self.net_spec_db = dict()
-        # Source node
-        self.source = None
-        # Destination node
-        self.destination = None
-        # The current path
-        self.path = None
-        self.core = None
-        # The chosen bandwidth for the current request
-        self.chosen_bw = None
-        # Determines if light slicing is limited to a single core or not
-        self.single_core = False
-        # The number of transponders used to allocate the request
-        self.num_transponders = 1
-        # Determines whether the block was due to distance or congestion
-        self.block_reason = False
-        # The physical network topology as a networkX graph
-        self.topology = None
-        # Class related to all things for calculating the signal-to-noise ratio
         self.snr_obj = SnrMeasurements(properties=properties)
 
     def release(self):
@@ -138,9 +114,7 @@ class SDNController:
         return spectrum, xt_cost, mod_chosen
 
     def _handle_routing(self):
-        resp = get_route(properties=self.sdn_props, source=self.source, destination=self.destination,
-                         topology=self.topology, net_spec_db=self.net_spec_db, chosen_bw=self.chosen_bw,
-                         ai_obj=self.ai_obj)
+        resp = get_route(engine_props=self.engine_props, sdn_props=self.sdn_props, ai_obj=self.ai_obj)
         return resp
 
     def handle_event(self, request_type: str):

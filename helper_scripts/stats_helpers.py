@@ -6,10 +6,10 @@ from statistics import mean, variance, stdev
 
 import numpy as np
 
-from useful_functions.stats_args import empty_props
-from useful_functions.stats_args import SNAP_KEYS_LIST
-from useful_functions.sim_helpers import find_path_len
-from useful_functions.os_helpers import create_dir
+from arg_scripts.stats_args import empty_props
+from arg_scripts.stats_args import SNAP_KEYS_LIST
+from helper_scripts.sim_helpers import find_path_len
+from helper_scripts.os_helpers import create_dir
 
 
 class SimStats:

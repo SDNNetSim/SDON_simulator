@@ -9,8 +9,8 @@ import numpy as np
 # Local application imports
 from sim_scripts.request_generator import get_requests
 from sim_scripts.sdn_controller import SDNController
-from useful_functions.ai_helpers import AIMethods
-from useful_functions.stats_helpers import SimStats
+from helper_scripts.ai_helpers import AIMethods
+from helper_scripts.stats_helpers import SimStats
 
 
 class Engine:
