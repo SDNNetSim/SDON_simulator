@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 
 from arg_scripts.routing_args import empty_props
-from helper_scripts.routing_helpers import get_nli_cost, find_xt_link_cost
+from helper_scripts.routing_helpers import RoutingHelpers
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, find_free_slots
 
 
@@ -16,6 +16,9 @@ class Routing:
         self.engine_props = engine_props
         self.sdn_props = sdn_props
         self.route_props = empty_props
+
+        self.route_help_obj = RoutingHelpers(engine_props=self.engine_props, sdn_props=self.sdn_props,
+                                             route_props=self.route_props)
 
     def _find_most_cong_link(self, node_list: list):
         most_cong_link = None

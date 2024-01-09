@@ -1,9 +1,10 @@
 import time
 import numpy as np
 
+from sim_scripts.routing import Routing
 from arg_scripts.sdn_args import empty_props
 from sim_scripts.snr_measurements import SnrMeasurements
-from helper_scripts.routing_helpers import get_route
+# TODO: Convert to using a routing class here and update properly, do the same with spectrum assignment
 from helper_scripts.sim_helpers import get_spectrum
 
 
@@ -18,8 +19,12 @@ class SDNController:
         # TODO: Remember you changed sdn_props to engine_props
         self.engine_props = properties
         self.sdn_props = empty_props
+
         self.ai_obj = None
         self.snr_obj = SnrMeasurements(properties=properties)
+        # TODO: We have route object here, can use whatever we want in its props
+        # TODO: Make sure to update this object properly
+        self.route_obj = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
     def release(self):
         """

@@ -46,32 +46,25 @@ class AIMethods:
     def _q_spectrum(self):
         raise NotImplementedError
 
-    def _q_routing(self, source: str, destination: str, net_spec_db: dict, chosen_bw: str):
-        """
-        Given a request, determines the path from source to destination.
-
-        :param source: The source node.
-        :type source: str
-
-        :param destination: The destination node.
-        :type destination: str
-
-        :param net_spec_db: The network spectrum database.
-        :type net_spec_db: dict
-
-        :param chosen_bw: The bandwidth of the current request to be routed.
-        :type chosen_bw: str
-
-        :return: A path from source to destination and a modulation format.
-        :rtype: list, str
-        """
-        self.ai_obj.net_spec_db = net_spec_db
-        self.ai_obj.source = source
-        self.ai_obj.destination = destination
-        self.ai_obj.chosen_bw = chosen_bw
+    # TODO: A core should not be selected in routing
+    def _q_routing(self, sdn_props: dict, route_props: dict):
+        self.ai_obj.net_spec_db = sdn_props['net_spec_db']
+        self.ai_obj.source = route_props['source']
+        self.ai_obj.destination = route_props['destination']
+        self.ai_obj.chosen_bw = route_props['chosen_bw']
         path = self.ai_obj.route()
         core = self.ai_obj.core_assignment()
-        return path, core
+
+        # A path could not be found, assign None to path modulation
+        if not selected_path:
+            resp = [selected_path], [False], [False], [False]
+        else:
+            path_len = find_path_len(path=selected_path, topology=self.sdn_props['topology'])
+            path_mod = [
+                get_path_mod(mod_formats=engine_props['mod_per_bw'][sdn_props['chosen_bw']], path_len=path_len)]
+            resp = [selected_path], [selected_core], [path_mod], [path_len]
+
+        return [path], [path_mod]
 
     def _init_q_learning(self):
         """
@@ -101,8 +94,7 @@ class AIMethods:
         """
         resp = None
         if self.algorithm == 'q_learning':
-            resp = self._q_routing(source=kwargs['source'], destination=kwargs['destination'],
-                                   net_spec_db=kwargs['net_spec_db'], chosen_bw=kwargs['chosen_bw'])
+            resp = self._q_routing(sdn_props=kwargs['sdn_props'], route_props=kwargs['route_props'])
 
         return resp
 
