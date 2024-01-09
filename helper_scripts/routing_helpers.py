@@ -1,74 +1,188 @@
+import copy
+import math
+
 import numpy as np
 
-from helper_scripts.sim_helpers import find_path_len, get_path_mod
-from sim_scripts.routing import Routing
+from helper_scripts.sim_helpers import find_free_channels, find_taken_channels
 
 
-# TODO: Can eventually include this in routing and delete this file or put other things in it
-# TODO: Will eventually include routing in sdn_controller
-# TODO: Standardize return format
-def get_route(engine_props: dict, sdn_props: dict, ai_obj: object):
-    routing_obj = Routing(engine_props=engine_props, sdn_props=sdn_props)
+class RoutingHelpers:
+    """
+    Class containing methods to assist with finding routes in the routing class.
+    """
 
-    # TODO: Run all of these to make sure they work and have the same results as prior commits
-    # TODO: Using variables multiple times? declare here?
-    if engine_props['route_method'] == 'nli_aware':
-        slots_needed = engine_props['mod_per_bw'][sdn_props['chosen_bw']]['QPSK']['slots_needed']
-        routing_obj.slots_needed = slots_needed
-        routing_obj.beta = engine_props['beta']
-        resp = routing_obj.nli_aware()
-    elif engine_props['route_method'] == 'xt_aware':
-        resp = routing_obj.xt_aware(beta=engine_props['beta'], xt_type=engine_props['xt_type'])
-    elif engine_props['route_method'] == 'least_congested':
-        resp = routing_obj.find_least_cong_path()
-    elif engine_props['route_method'] == 'shortest_path':
-        resp = routing_obj.find_least_weight_path(weight='length')
-    elif engine_props['route_method'] == 'k_shortest_path':
-        resp = routing_obj.k_shortest_path(k_paths=engine_props['k_paths'])
-    elif engine_props['route_method'] == 'ai':
-        # Used for routing related to artificial intelligence
-        # TODO: Just pass properties here when you get to ai_obj
-        selected_path, selected_core = ai_obj.route(source=int(sdn_props['source']),
-                                                    destination=int(sdn_props['destination']),
-                                                    net_spec_db=sdn_props['net_spec_db'],
-                                                    chosen_bw=sdn_props['chosen_bw'],
-                                                    guard_slots=engine_props['guard_slots'])
+    def __init__(self, route_props: dict, engine_props: dict, sdn_props: dict):
+        self.route_props = route_props
+        self.engine_props = engine_props
+        self.sdn_props = sdn_props
 
-        # A path could not be found, assign None to path modulation
-        if not selected_path:
-            resp = [selected_path], [False], [False], [False]
+    def _get_simulated_link(self):
+        sim_link_list = np.zeros(self.engine_props['spectral_slots'])
+        # Add to the step to account for the guard band
+        for i in range(0, len(sim_link_list), self.sdn_props['slots_needed'] + self.engine_props['guard_slots']):
+            value_to_set = i // self.sdn_props['slots_needed'] + 1
+            sim_link_list[i:i + self.sdn_props['slots_needed'] + 2] = value_to_set
+
+        # Add guard-bands
+        sim_link_list[self.sdn_props['slots_needed']::self.sdn_props['slots_needed'] +
+                                                      self.sdn_props['guard_slots']] *= -1
+        # Free the middle-most channel with respect to the number of slots needed
+        center_index = len(sim_link_list) // 2
+        if self.sdn_props['slots_needed'] % 2 == 0:
+            start_index = center_index - self.sdn_props['slots_needed'] // 2
+            end_idx = center_index + self.sdn_props['slots_needed'] // 2
         else:
-            path_len = find_path_len(path=selected_path, topology=sdn_props['topology'])
-            path_mod = [get_path_mod(mod_formats=engine_props['mod_per_bw'][sdn_props['chosen_bw']], path_len=path_len)]
-            resp = [selected_path], [selected_core], [path_mod], [path_len]
-    else:
-        raise NotImplementedError(f"Routing method not recognized, got: {engine_props['route_method']}.")
+            start_index = center_index - self.sdn_props['slots_needed'] // 2
+            end_idx = center_index + self.sdn_props['slots_needed'] // 2 + 1
 
-    # TODO: Return routing props here
-    return resp
+        sim_link_list[start_index:end_idx] = 0
+        return sim_link_list
 
+    def find_worst_nli(self, num_span: float):
+        """
+        Finds the worst possible non-linear impairment cost.
 
-def get_simulated_link(slots_needed: int, guard_slots: int, slots_per_core: int):
-    # Simulate a fully congested link
-    simulated_link = np.zeros(slots_per_core)
+        :param num_span: The number of span a link has.
+        :return: The worst NLI.
+        :rtype: float
+        """
+        links_list = list(self.sdn_props['net_spec_db'].keys())
+        sim_link_list = self._get_simulated_link()
 
-    # Add to the step to account for the guard band
-    for i in range(0, len(simulated_link), slots_needed + guard_slots):
-        value_to_set = i // slots_needed + 1
-        simulated_link[i:i + slots_needed + 2] = value_to_set
+        orig_link_list = copy.copy(self.sdn_props['net_spec_db'][links_list[0]]['cores_matrix'][0])
+        self.sdn_props['net_spec_db'][links_list[0]]['cores_matrix'][0] = sim_link_list
 
-    # Add guard-bands
-    simulated_link[slots_needed::slots_needed + guard_slots] *= -1
+        free_channels_dict = find_free_channels(net_spec_db=self.sdn_props['net_spec_db'],
+                                                slots_needed=self.sdn_props['slots_needed'], des_link=links_list[0])
+        taken_channels_dict = find_taken_channels(net_spec_db=self.sdn_props['net_spec_db'], des_link=links_list[0])
 
-    # Free the middle-most channel with respect to the number of slots needed
-    center_index = len(simulated_link) // 2
-    if slots_needed % 2 == 0:
-        start_index = center_index - slots_needed // 2
-        end_idx = center_index + slots_needed // 2
-    else:
-        start_index = center_index - slots_needed // 2
-        end_idx = center_index + slots_needed // 2 + 1
+        nli_worst = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
+                                         num_span=num_span)
+        self.sdn_props['net_spec_db'][links_list[0]]['cores_matrix'][0] = orig_link_list
+        return nli_worst
 
-    simulated_link[start_index:end_idx] = 0
+    def _find_link_cost(self, free_channels_dict: dict, taken_channels_dict: dict, num_span: float):
+        nli_cost = 0
+        num_channels = 0
+        for core_num, free_channels in free_channels_dict.items():
+            # Update MCI for available channel
+            for channel in free_channels:
+                num_channels += 1
+                # Calculate the center frequency for the open channel
+                center_freq = (channel[0] * self.route_props['freq_spacing']) + ((self.route_props['slots_needed'] *
+                                                                                  self.route_props['freq_spacing']) / 2)
 
-    return simulated_link
+                nli_cost += self._find_channel_mci(channels_list=taken_channels_dict[core_num], center_freq=center_freq,
+                                                   num_span=num_span)
+
+        # A constant score of 1000 if the link is fully congested
+        if num_channels == 0:
+            return 1000.0
+
+        link_cost = nli_cost / num_channels
+        return link_cost
+
+    def _find_channel_mci(self, channels_list: list, center_freq: float, num_span: float):
+        mci = 0
+        for channel in channels_list:
+            # The current center frequency for the occupied channel
+            curr_freq = (channel[0] * self.route_props['freq_spacing']) + \
+                        ((len(channel) * self.route_props['freq_spacing']) / 2)
+            bandwidth = len(channel) * self.route_props['freq_spacing']
+            # Power spectral density
+            power_spec_dens = self.route_props['input_power'] / bandwidth
+
+            mci += (power_spec_dens ** 2) * math.log(abs((abs(center_freq - curr_freq) + (bandwidth / 2)) / (
+                    abs(center_freq - curr_freq) - (bandwidth / 2))))
+
+        mci = (mci / self.route_props['mci_worst']) * num_span
+        return mci
+
+    @staticmethod
+    def _find_adjacent_cores(core_num: int):
+        # Identify the adjacent cores to the currently selected core
+        # The neighboring core directly before the currently selected core
+        before = 5 if core_num == 0 else core_num - 1
+        # The neighboring core directly after the currently selected core
+        after = 0 if core_num == 5 else core_num + 1
+
+        return before, after
+
+    def _find_num_overlapped(self, channel: int, core_num: int, link_num: int, net_spec_db: dict):
+        num_overlapped = 0.0
+        if core_num != 6:
+            adj_cores_tuple = self._find_adjacent_cores(core_num=core_num)
+            if net_spec_db[link_num]['cores_matrix'][adj_cores_tuple[0]][channel] > 0:
+                num_overlapped += 1
+            if net_spec_db[link_num]['cores_matrix'][adj_cores_tuple[1]][channel] > 0:
+                num_overlapped += 1
+            if net_spec_db[link_num]['cores_matrix'][6][channel] > 0:
+                num_overlapped += 1
+
+            num_overlapped /= 3
+        # The number of overlapped cores for core six will be different since it's the center core
+        else:
+            for sub_core_num in range(6):
+                if net_spec_db[link_num]['cores_matrix'][sub_core_num][channel] > 0:
+                    num_overlapped += 1
+
+            num_overlapped /= 6
+
+        return num_overlapped
+
+    # fixme: Only works for seven cores
+    # TODO: Finish docstring, not sure what free_slots_dict is
+    def find_xt_link_cost(self, free_slots_dict: dict, link_num: int):
+        """
+        Finds the intra-core crosstalk cost for a single link.
+
+        :param free_slots_dict:
+        :param link_num:
+        :return:
+        """
+        xt_cost = 0
+        num_free_slots = 0
+        for core_num in free_slots_dict:
+            num_free_slots += len(free_slots_dict[core_num])
+            for channel in free_slots_dict[core_num]:
+                num_overlapped = self._find_num_overlapped(channel=channel, core_num=core_num, link_num=link_num,
+                                                           net_spec_db=self.sdn_props['net_spec_db'])
+                xt_cost += num_overlapped
+
+        # A constant score of 1000 if the link is fully congested
+        if num_free_slots == 0:
+            return 1000.0
+
+        link_cost = xt_cost / num_free_slots
+        return link_cost
+
+    def nli_path(self, path_list: list):
+        """
+        Find the non-linear impairment for a single path.
+
+        :param path_list: The given path.
+        :return: The NLI calculation for the path.
+        :rtype: float
+        """
+        nli_cost = 0
+        for source, destination in zip(path_list, path_list[1:]):
+            num_span = self.engine_props['topology'][source][destination]['length'] / self.route_props['span_len']
+            link_tuple = (source, destination)
+            nli_cost += self._get_nli_cost(link_tuple=link_tuple, num_span=num_span)
+
+        return nli_cost
+
+    def _get_nli_cost(self, link_tuple: tuple, num_span: float):
+        free_channels_dict = find_free_channels(net_spec_db=self.sdn_props['net_spec_db'],
+                                                slots_needed=self.sdn_props['slots_needed'], des_link=link_tuple)
+        taken_channels_dict = find_taken_channels(net_spec_db=self.sdn_props['net_spec_db'], des_link=link_tuple)
+
+        nli_cost = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
+                                        num_span=num_span)
+        # Tradeoff between link length and the non-linear impairment cost
+        source, destination = link_tuple[0], link_tuple[1]
+        nli_cost = (self.engine_props['beta'] *
+                    (self.engine_props['topology'][source][destination]['length'] /
+                     self.route_props['max_link'])) + ((1 - self.engine_props['beta']) * nli_cost)
+
+        return nli_cost
