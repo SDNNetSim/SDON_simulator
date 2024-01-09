@@ -6,7 +6,7 @@ from helper_scripts.routing_helpers import RoutingHelpers
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, find_free_slots
 
 
-# TODO: Standardize return format
+# TODO: Standardize return format (will achieve this when running)
 class Routing:
     """
     This class contains methods related to routing network requests.
@@ -114,12 +114,11 @@ class Routing:
         """
         Finds and selects the path with the least amount of non-linear impairment.
         """
-        for link in self.sdn_props['net_spec_db']:
-            source, destination = link[0], link[1]
+        for link_tuple in self.sdn_props['net_spec_db']:
+            source, destination = link_tuple[0], link_tuple[1]
             num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props['span_len']
 
-            link_cost = get_nli_cost(link=link, num_spans=num_spans, route_props=self.route_props,
-                                     engine_props=self.engine_props)
+            link_cost = self.route_help_obj.get_nli_cost(link_tuple=link_tuple, num_span=num_spans)
             self.sdn_props['topology'][source][destination]['nli_cost'] = link_cost
 
         self.find_least_weight(weight='nli_cost')
@@ -136,9 +135,10 @@ class Routing:
             source, destination = link_list[0], link_list[1]
             num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props['span_len']
 
-            free_slots = find_free_slots(net_spec_db=self.sdn_props['net_spec_db'], des_link=link_list)
-            xt_cost = find_xt_link_cost(free_slots=free_slots, link_num=link_list,
-                                        net_spec_db=self.sdn_props['net_spec_db'])
+            free_slots_dict = find_free_slots(net_spec_db=self.sdn_props['net_spec_db'], des_link=link_list)
+            # TODO: Find the link number (will do when running)
+            link_num = None
+            xt_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=free_slots_dict, link_num=link_num)
 
             if self.engine_props['xt_type'] == 'with_length':
                 link_cost = self.sdn_props['topology'][source][destination]['length'] / self.route_props['max_link']

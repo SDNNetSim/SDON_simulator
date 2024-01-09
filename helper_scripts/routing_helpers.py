@@ -156,7 +156,7 @@ class RoutingHelpers:
         link_cost = xt_cost / num_free_slots
         return link_cost
 
-    def nli_path(self, path_list: list):
+    def get_nli_path(self, path_list: list):
         """
         Find the non-linear impairment for a single path.
 
@@ -168,11 +168,11 @@ class RoutingHelpers:
         for source, destination in zip(path_list, path_list[1:]):
             num_span = self.engine_props['topology'][source][destination]['length'] / self.route_props['span_len']
             link_tuple = (source, destination)
-            nli_cost += self._get_nli_cost(link_tuple=link_tuple, num_span=num_span)
+            nli_cost += self.get_nli_cost(link_tuple=link_tuple, num_span=num_span)
 
         return nli_cost
 
-    def _get_nli_cost(self, link_tuple: tuple, num_span: float):
+    def get_nli_cost(self, link_tuple: tuple, num_span: float):
         free_channels_dict = find_free_channels(net_spec_db=self.sdn_props['net_spec_db'],
                                                 slots_needed=self.sdn_props['slots_needed'], des_link=link_tuple)
         taken_channels_dict = find_taken_channels(net_spec_db=self.sdn_props['net_spec_db'], des_link=link_tuple)
