@@ -329,63 +329,7 @@ def find_taken_channels(net_spec_db: dict, des_link: tuple):
     return resp
 
 
-def get_spectrum(properties: dict, chosen_bw: str, path: list, net_spec_db: dict, modulation: str, snr_obj: object,
-                 path_mod: str, core: int):
-    """
-    Given relevant request information, find a given spectrum for various allocation methods.
-
-    :param properties: Contains various simulation configuration properties that are constant.
-    :type properties: dict
-
-    :param chosen_bw: The chosen bandwidth for this request.
-    :type chosen_bw: str
-
-    :param path: The chosen path for this request.
-    :type path: list
-
-    :param net_spec_db: The network spectrum database.
-    :type net_spec_db: dict
-
-    :param modulation: The modulation format chosen for this request.
-    :type modulation: str
-
-    :param snr_obj: If check_snr is true, the object containing all snr related methods.
-    :type snr_obj: object
-
-    :param path_mod: The modulation format for the given path.
-    :type path_mod: str
-
-    :return: The information related to the spectrum found for allocation, false otherwise.
-    :rtype: dict
-    """
-    slots_needed = properties['mod_per_bw'][chosen_bw][modulation]['slots_needed']
-    spectrum_assignment = sim_scripts.spectrum_assignment.SpectrumAssignment(print_warn=properties['warnings'],
-                                                                             path=path, slots_needed=slots_needed,
-                                                                             net_spec_db=net_spec_db, core=core,
-                                                                             guard_slots=properties['guard_slots'],
-                                                                             is_sliced=False,
-                                                                             alloc_method=properties[
-                                                                                 'allocation_method'])
-
-    spectrum = spectrum_assignment.find_free_spectrum()
-    xt_cost = None
-
-    if spectrum is not False:
-        if properties['check_snr'] != 'None' and properties['check_snr'] is not None:
-            _update_snr_obj(snr_obj=snr_obj, spectrum=spectrum, path=path, path_mod=path_mod,
-                            spectral_slots=properties['spectral_slots'], net_spec_db=net_spec_db)
-            snr_check, xt_cost = handle_snr(check_snr=properties['check_snr'], snr_obj=snr_obj)
-
-            if not snr_check:
-                return False, 'xt_threshold', xt_cost
-
-        # No reason for blocking, return spectrum and None
-        return spectrum, None, xt_cost
-
-    return False, 'congestion', xt_cost
-
-
-def _update_snr_obj(snr_obj: object, spectrum: dict, path: list, path_mod: str, spectral_slots: int, net_spec_db: dict):
+def update_snr_obj(snr_obj: object, spectrum: dict, path: list, path_mod: str, spectral_slots: int, net_spec_db: dict):
     """
     Updates variables in the signal-to-noise ratio calculation object.
 

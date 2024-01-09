@@ -1,29 +1,25 @@
 import time
 import numpy as np
 
-from sim_scripts.routing import Routing
 from arg_scripts.sdn_args import empty_props
+from sim_scripts.routing import Routing
+from sim_scripts.spectrum_assignment import SpectrumAssignment
 from sim_scripts.snr_measurements import SnrMeasurements
-# TODO: Convert to using a routing class here and update properly, do the same with spectrum assignment
-from helper_scripts.sim_helpers import get_spectrum
+from helper_scripts.sim_helpers import update_snr_obj, handle_snr
 
 
-# TODO: Private methods don't really need comments
-# TODO: Naming conventions, review all files with team docs
+# TODO: Still need to clean up spectrum assignment
 class SDNController:
     """
     This class contains methods to support software-defined network controller functionality.
     """
 
     def __init__(self, properties: dict = None):
-        # TODO: Remember you changed sdn_props to engine_props
         self.engine_props = properties
         self.sdn_props = empty_props
 
         self.ai_obj = None
         self.snr_obj = SnrMeasurements(properties=properties)
-        # TODO: We have route object here, can use whatever we want in its props
-        # TODO: Make sure to update this object properly
         self.route_obj = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
     def release(self):
@@ -32,23 +28,22 @@ class SDNController:
 
         :return: None
         """
-        for src, dest in zip(self.path, self.path[1:]):
+        for src, dest in zip(self.sdn_props['path'], self.sdn_props['path'][1:]):
             src_dest = (src, dest)
             dest_src = (dest, src)
 
-            for core_num in range(self.sdn_props['cores_per_link']):
-                core_arr = self.net_spec_db[src_dest]['cores_matrix'][core_num]
-                req_indexes = np.where(core_arr == self.req_id)
-                guard_bands = np.where(core_arr == (self.req_id * -1))
+            for core_num in range(self.engine_props['cores_per_link']):
+                core_arr = self.sdn_props['net_spec_db'][src_dest]['cores_matrix'][core_num]
+                req_indexes = np.where(core_arr == self.sdn_props['req_id'])
+                guard_bands = np.where(core_arr == (self.sdn_props['req_id'] * -1))
 
                 for index in req_indexes:
-                    self.net_spec_db[src_dest]['cores_matrix'][core_num][index] = 0
-                    self.net_spec_db[dest_src]['cores_matrix'][core_num][index] = 0
+                    self.sdn_props['net_spec_db'][src_dest]['cores_matrix'][core_num][index] = 0
+                    self.sdn_props['net_spec_db'][dest_src]['cores_matrix'][core_num][index] = 0
                 for gb_index in guard_bands:
-                    self.net_spec_db[src_dest]['cores_matrix'][core_num][gb_index] = 0
-                    self.net_spec_db[dest_src]['cores_matrix'][core_num][gb_index] = 0
+                    self.sdn_props['net_spec_db'][src_dest]['cores_matrix'][core_num][gb_index] = 0
+                    self.sdn_props['net_spec_db'][dest_src]['cores_matrix'][core_num][gb_index] = 0
 
-    # TODO: Potentially split into smaller methods
     def allocate(self, start_slot: int, end_slot: int, core_num: int):
         """
         Allocates a network request.
@@ -58,36 +53,67 @@ class SDNController:
         :param core_num: The desired core to allocate the request
         :return: None
         """
-        if self.sdn_props['guard_slots']:
+        if self.engine_props['guard_slots']:
             end_slot = end_slot - 1
         else:
             end_slot += 1
-        for src, dest in zip(self.path, self.path[1:]):
+        for src, dest in zip(self.sdn_props['path'], self.sdn_props['path'][1:]):
             src_dest = (src, dest)
             dest_src = (dest, src)
 
             # Remember, Python list indexing is up to and NOT including!
-            tmp_set = set(self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot])
-            rev_tmp_set = set(self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot])
+            tmp_set = set(self.sdn_props['net_spec_db'][src_dest]['cores_matrix'][core_num][start_slot:end_slot])
+            rev_tmp_set = set(self.sdn_props['net_spec_db'][dest_src]['cores_matrix'][core_num][start_slot:end_slot])
 
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
 
-            self.net_spec_db[src_dest]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
-            self.net_spec_db[dest_src]['cores_matrix'][core_num][start_slot:end_slot] = self.req_id
+            self.sdn_props['net_spec_db'][src_dest]['cores_matrix'][core_num][start_slot:end_slot] = self.sdn_props[
+                'req_id']
+            self.sdn_props['net_spec_db'][dest_src]['cores_matrix'][core_num][start_slot:end_slot] = self.sdn_props[
+                'req_id']
 
-            if self.sdn_props['guard_slots']:
-                if self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot] != 0.0 or \
-                        self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot] != 0.0:
+            if self.engine_props['guard_slots']:
+                if self.sdn_props['net_spec_db'][src_dest]['cores_matrix'][core_num][end_slot] != 0.0 or \
+                        self.sdn_props['net_spec_db'][dest_src]['cores_matrix'][core_num][end_slot] != 0.0:
                     raise BufferError("Attempted to allocate a taken spectrum.")
 
-                self.net_spec_db[src_dest]['cores_matrix'][core_num][end_slot] = self.req_id * -1
-                self.net_spec_db[dest_src]['cores_matrix'][core_num][end_slot] = self.req_id * -1
+                self.sdn_props['net_spec_db'][src_dest]['cores_matrix'][core_num][end_slot] = self.sdn_props[
+                                                                                                  'req_id'] * -1
+                self.sdn_props['net_spec_db'][dest_src]['cores_matrix'][core_num][end_slot] = self.sdn_props[
+                                                                                                  'req_id'] * -1
 
     def handle_lps(self):
         raise NotImplementedError
 
-    def _handle_spectrum(self, mod_options: dict, core: int):
+    def __handle_spectrum(self, chosen_bw: str, path: list, net_spec_db: dict, modulation: str,
+                          snr_obj: object, path_mod: str):
+        slots_needed = self.engine_props['mod_per_bw'][chosen_bw][modulation]['slots_needed']
+        spectrum_assignment = SpectrumAssignment(print_warn=self.engine_props['warnings'],
+                                                 path=path, slots_needed=slots_needed,
+                                                 net_spec_db=self.sdn_props['net_spec_db'],
+                                                 guard_slots=self.engine_props['guard_slots'],
+                                                 is_sliced=False,
+                                                 alloc_method=self.engine_props['allocation_method'])
+
+        spectrum = spectrum_assignment.find_free_spectrum()
+        xt_cost = None
+
+        if spectrum is not False:
+            if self.engine_props['check_snr'] != 'None' and self.engine_props['check_snr'] is not None:
+                update_snr_obj(snr_obj=snr_obj, spectrum=spectrum, path=path, path_mod=path_mod,
+                               spectral_slots=self.engine_props['spectral_slots'], net_spec_db=net_spec_db)
+                snr_check, xt_cost = handle_snr(check_snr=self.engine_props['check_snr'], snr_obj=snr_obj)
+
+                if not snr_check:
+                    return False, 'xt_threshold', xt_cost
+
+            # No reason for blocking, return spectrum and None
+            return spectrum, None, xt_cost
+
+        return False, 'congestion', xt_cost
+
+    def _handle_spectrum(self, path: list, mod_options: dict):
         """
         Attempt to allocate a network request to a spectrum.
 
@@ -100,16 +126,18 @@ class SDNController:
         mod_chosen = None
         for modulation in mod_options:
             if modulation is False:
-                if self.sdn_props['max_segments'] > 1:
+                if self.engine_props['max_segments'] > 1:
                     raise NotImplementedError
 
                 continue
 
-            spectrum, self.block_reason, xt_cost = get_spectrum(properties=self.sdn_props, chosen_bw=self.chosen_bw,
-                                                                path=self.path,
-                                                                net_spec_db=self.net_spec_db, modulation=modulation,
-                                                                snr_obj=self.snr_obj,
-                                                                path_mod=modulation, core=core)
+            # TODO: This most likely won't need many params now
+            spectrum, self.block_reason, xt_cost = self.__handle_spectrum(chosen_bw=self.sdn_props['chosen_bw'],
+                                                                          path=path,
+                                                                          net_spec_db=self.sdn_props['net_spec_db'],
+                                                                          modulation=modulation,
+                                                                          snr_obj=self.snr_obj,
+                                                                          path_mod=modulation)
 
             # We found a spectrum, no need to check other modulation formats
             if spectrum is not False:
@@ -118,10 +146,6 @@ class SDNController:
 
         return spectrum, xt_cost, mod_chosen
 
-    def _handle_routing(self):
-        resp = get_route(engine_props=self.engine_props, sdn_props=self.sdn_props, ai_obj=self.ai_obj)
-        return resp
-
     def handle_event(self, request_type: str):
         """
         Handles any event that occurs in the simulation, controls this class.
@@ -129,53 +153,49 @@ class SDNController:
         :param request_type: Whether the request is an arrival or departure.
         :return: The response with relevant information, network database, and physical topology
         """
-        # Even if the request is blocked, we still use one transponder
-        # TODO: Don't think we need to return this
-        self.num_transponders = 1
-        self.block_reason = None
+        # TODO: Make sure to update engine with sdn_props, especially net_spec_db
+        # Even if the request is blocked, we still consider one transponder
+        self.sdn_props['num_trans'] = 1
 
         if request_type == "release":
+            # TODO: Need path to be released here
             self.release()
-            return self.net_spec_db
+            return
 
         start_time = time.time()
-        paths, cores, path_mods, path_weights = self._handle_routing()
+        self.route_obj.get_route(ai_obj=self.ai_obj)
         route_time = time.time() - start_time
 
-        for path, core, path_mod, path_weight in zip(paths, cores, path_mods, path_weights):
-            self.path = path
-            self.core = core
-
-            # TODO: Spectrum assignment always overrides modulation format chosen when using check snr
-            # TODO: Fix this up
+        for path_index, path in enumerate(self.route_obj.route_props['paths_list']):
             if path is not False:
-                if self.sdn_props['check_snr'] != 'None' and self.sdn_props['check_snr'] is not None:
-                    raise ValueError('You must check that max lengths are not zero before running this.')
-                if path_mod is not False:
-                    # TODO: Fix this bug
-                    mod_options = path_mod
-                else:
-                    self.block_reason = 'distance'
-                    return False, self.block_reason, self.path
+                if self.route_obj.route_props['mod_formats_list'][path_index] is False:
+                    self.sdn_props['was_routed'] = False
+                    self.sdn_props['block_reason'] = 'distance'
+                    return
 
-                spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options, core=core)
+                # TODO: Core was passed to spectrum because of the AI object, fix this, have ai_obj have a separate
+                #   spectrum assignment to pass a core to here, have it be in spectrum assignment
+                #   implement forced core another way
+                mod_options = self.route_obj.route_props['mod_formats_list'][path_index]
+                spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options, path=path)
                 # Request was blocked for this path
                 if spectrum is False or spectrum is None:
-                    self.block_reason = 'congestion'
+                    self.sdn_props['block_reason'] = 'congestion'
                     continue
 
-                resp = {
-                    'path': self.path,
-                    'mod_format': modulation,
-                    'route_time': route_time,
-                    'path_weight': path_weight,
-                    'xt_cost': xt_cost,
-                    'is_sliced': False,
-                    'spectrum': spectrum
-                }
+                self.sdn_props['was_routed'] = True
+                self.sdn_props['path'] = path
+                self.sdn_props['mod_format'] = modulation
+                self.sdn_props['route_time'] = route_time
+                self.sdn_props['path_weight'] = self.route_obj.route_props['weights_list'][path_index]
+                self.sdn_props['is_sliced'] = False
+                self.sdn_props['spectrum'] = spectrum
+                # TODO: Always one until lss is implemented
+                self.sdn_props['num_trans'] = 1
+
                 self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])
-                return resp, self.net_spec_db, self.num_transponders, self.path
+                return
 
-            self.block_reason = 'distance'
+            self.sdn_props['block_reason'] = 'distance'
 
-        return False, self.block_reason, self.path
+        self.sdn_props['was_routed'] = False

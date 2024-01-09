@@ -160,29 +160,29 @@ class SimStats:
         :return: None
         """
         # Request was blocked
-        if not sdn_data[0]:
+        if not sdn_data['was_routed']:
             self.blocked_reqs += 1
-            self.stats_props['block_reasons_dict'][sdn_data[1]] += 1
+            self.stats_props['block_reasons_dict'][sdn_data['block_reason']] += 1
             self.stats_props['block_bw_dict'][req_data['bandwidth']] += 1
         else:
-            num_hops = len(sdn_data[0]['path']) - 1
+            num_hops = len(sdn_data['path']) - 1
             self.stats_props['hops_list'].append(num_hops)
 
-            path_len = find_path_len(path=sdn_data[0]['path'], topology=self.topology)
+            path_len = find_path_len(path=sdn_data['path'], topology=self.topology)
             self.stats_props['lengths_list'].append(path_len)
 
-            core_chosen = sdn_data[0]['spectrum']['core_num']
+            core_chosen = sdn_data['spectrum']['core_num']
             self.stats_props['cores_dict'][core_chosen] += 1
 
-            self.stats_props['route_times_list'].append(sdn_data[0]['route_time'])
+            self.stats_props['route_times_list'].append(sdn_data['route_time'])
 
-            mod_format = sdn_data[0]['mod_format']
+            mod_format = sdn_data['mod_format']
             bandwidth = req_data['bandwidth']
             self.stats_props['mods_used_dict'][bandwidth][mod_format] += 1
 
-            self.total_trans += sdn_data[2]
+            self.total_trans += sdn_data['num_trans']
             # TODO: This won't work but after changing the sdn_controller it will (standardize path weight return)
-            self.stats_props['weights_dict'][bandwidth][mod_format].append(sdn_data[0]['path_weight'])
+            self.stats_props['weights_dict'][bandwidth][mod_format].append(sdn_data['path_weight'])
 
     def _get_iter_means(self):
         for _, curr_snapshot in self.stats_props['snapshots_dict'].items():

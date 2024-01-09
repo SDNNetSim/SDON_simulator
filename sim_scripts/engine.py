@@ -13,6 +13,7 @@ from helper_scripts.ai_helpers import AIMethods
 from helper_scripts.stats_helpers import SimStats
 
 
+# TODO: Blocking is off, I believe due to dict in props without copies?
 class Engine:
     """
     Controls a single simulation.
@@ -65,23 +66,26 @@ class Engine:
         :return: None
         """
         request_data = self.reqs_dict[curr_time]
-        self.sdn_obj.req_id = request_data['id']
-        self.sdn_obj.source = request_data['source']
-        self.sdn_obj.destination = request_data['destination']
-        self.sdn_obj.path = None
-        self.sdn_obj.chosen_bw = request_data['bandwidth']
-        sdn_resp = self.sdn_obj.handle_event(request_type='arrival')
+        # TODO: Just pass request data as a dict within a dict
+        self.sdn_obj.sdn_props['req_id'] = request_data['id']
+        self.sdn_obj.sdn_props['source'] = request_data['source']
+        self.sdn_obj.sdn_props['destination'] = request_data['destination']
+        self.sdn_obj.sdn_props['path'] = None
+        self.sdn_obj.sdn_props['chosen_bw'] = request_data['bandwidth']
+        self.sdn_obj.handle_event(request_type='arrival')
+        self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_db']
 
-        self.update_ai_obj(sdn_data=sdn_resp)
-        self.stats_obj.iter_update(req_data=request_data, sdn_data=sdn_resp)
+        self.update_ai_obj(sdn_data=self.sdn_obj.sdn_props)
+        self.stats_obj.iter_update(req_data=request_data, sdn_data=self.sdn_obj.sdn_props)
 
-        if sdn_resp[0]:
-            self.stats_obj.curr_trans = sdn_resp[2]
+        if self.sdn_obj.sdn_props['was_routed']:
+            self.stats_obj.curr_trans = self.sdn_obj.sdn_props['num_trans']
 
-            self.reqs_status_dict.update({self.sdn_obj.req_id: {
-                "mod_format": sdn_resp[0]['mod_format'],
-                "path": sdn_resp[0]['path'],
-                "is_sliced": sdn_resp[0]['is_sliced']
+            self.reqs_status_dict.update({request_data['id']: {
+                "mod_format": self.sdn_obj.sdn_props['mod_format'],
+                "path": self.sdn_obj.sdn_props['path'],
+                "is_sliced": self.sdn_obj.sdn_props['is_sliced'],
+                "was_routed": self.sdn_obj.sdn_props['was_routed']
             }})
 
     def handle_release(self, curr_time: float):
@@ -92,14 +96,17 @@ class Engine:
         :return: None
         """
         request = self.reqs_dict[curr_time]
-        self.sdn_obj.req_id = request['id']
-        self.sdn_obj.source = request['source']
-        self.sdn_obj.destination = request['destination']
-        self.sdn_obj.chosen_bw = request['bandwidth']
+        # TODO: Again, just a dict within a dict
+        self.sdn_obj.sdn_props['req_id'] = request['id']
+        self.sdn_obj.sdn_props['source'] = request['source']
+        self.sdn_obj.sdn_props['destination'] = request['destination']
+        self.sdn_obj.sdn_props['chosen_bw'] = request['bandwidth']
 
         if self.reqs_dict[curr_time]['id'] in self.reqs_status_dict:
-            self.sdn_obj.path = self.reqs_status_dict[self.reqs_dict[curr_time]['id']]['path']
+            self.sdn_obj.sdn_props['path'] = self.reqs_status_dict[self.reqs_dict[curr_time]['id']]['path']
             self.sdn_obj.handle_event(request_type='release')
+            # TODO: May have a copy issue here
+            self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_db']
         # Request was blocked, nothing to release
         else:
             pass
@@ -123,9 +130,10 @@ class Engine:
             self.net_spec_dict[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
 
-        self.sdn_obj.topology = self.topology
         self.stats_obj.topology = self.topology
-        self.sdn_obj.net_spec_db = self.net_spec_dict
+        # TODO: Might have been overly using dicts, double check sdn and routing before moving to spectrum
+        self.sdn_obj.sdn_props['net_spec_db'] = self.net_spec_dict
+        self.sdn_obj.sdn_props['topology'] = self.topology
         self.engine_props['topology'] = self.topology
 
     def generate_requests(self, seed: int):

@@ -97,14 +97,15 @@ class Routing:
 
     def find_k_shortest(self):
         # This networkx function will always return the shortest paths in order
-        paths_obj = nx.shortest_simple_paths(G=self.sdn_props['topology'], source=self.route_props['source'],
-                                             target=self.route_props['destination'], weight='length')
+        paths_obj = nx.shortest_simple_paths(G=self.engine_props['topology'], source=self.sdn_props['source'],
+                                             target=self.sdn_props['destination'], weight='length')
 
         for k, path_list in enumerate(paths_obj):
             if k > self.engine_props['k_paths'] - 1:
                 break
-            path_len = find_path_len(path_list, self.sdn_props['topology'])
-            mod_format = get_path_mod(self.sdn_props['mod_formats'], path_len)
+            path_len = find_path_len(path_list, self.engine_props['topology'])
+            chosen_bw = self.sdn_props['chosen_bw']
+            mod_format = get_path_mod(self.engine_props['mod_per_bw'][chosen_bw], path_len)
 
             self.route_props['paths_list'].append(path_list)
             self.route_props['mod_formats_list'].append([mod_format])
@@ -155,6 +156,11 @@ class Routing:
 
         self.find_least_weight(weight='xt_cost')
 
+    def _init_route_info(self):
+        self.route_props['paths_list'] = list()
+        self.route_props['mod_formats_list'] = list()
+        self.route_props['weights_list'] = list()
+
     def get_route(self, ai_obj: object):
         """
         Controls the class by finding the appropriate routing function.
@@ -162,6 +168,8 @@ class Routing:
         :param ai_obj: Artificial intelligence is handled in a separate class.
         :return: None
         """
+        self._init_route_info()
+
         if self.engine_props['route_method'] == 'nli_aware':
             self.find_least_nli()
         elif self.engine_props['route_method'] == 'xt_aware':

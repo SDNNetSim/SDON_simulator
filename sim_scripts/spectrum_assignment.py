@@ -7,8 +7,6 @@ from operator import itemgetter
 # Third-party library imports
 import numpy as np
 
-import helper_scripts.sim_helpers
-
 
 class SpectrumAssignment:  # pylint: disable=too-few-public-methods
     """
@@ -68,10 +66,6 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         # The final response from this class
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
-
-        self.find_free_slots = useful_functions.sim_helpers.find_free_slots
-        self.find_free_channels = useful_functions.sim_helpers.find_free_channels
-        self.get_channel_overlaps = useful_functions.sim_helpers.get_channel_overlaps
 
     def _check_other_links(self, core_num, start_slot, end_slot):
         """
