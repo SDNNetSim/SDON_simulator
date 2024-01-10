@@ -20,6 +20,8 @@ class SDNController:
         self.ai_obj = None
         self.snr_obj = SnrMeasurements(properties=properties)
         self.route_obj = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
+        # TODO: Use this for spectrum assignment instead
+        self.spectrum_obj = None
 
     # TODO: Naming conventions here
     def release(self):

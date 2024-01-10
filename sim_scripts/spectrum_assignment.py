@@ -8,41 +8,19 @@ from operator import itemgetter
 import numpy as np
 
 
-class SpectrumAssignment:  # pylint: disable=too-few-public-methods
+# TODO: Move a lot of these to spectrum helpers/args
+# TODO: Naming conventions for variables and functions
+# TODO: Instead of breaking up, move stuff to another file if you can
+# TODO: If pylint too few public methods, then rename some methods
+class SpectrumAssignment:
     """
-    Finds available spectrum slots for a given request.
+    Finds the available spectrum for a given request.
     """
 
     def __init__(self, print_warn: bool = None, path: List[int] = None, slots_needed: int = None,
                  net_spec_db: dict = None, guard_slots: int = None, single_core: bool = False,
                  is_sliced: bool = False, alloc_method: str = None, core: int = None):
-        """
-        Initializes the SpectrumAssignment class.
-
-        :param print_warn: Determines if we want to print warnings or not.
-        :type print_warn: bool
-
-        :param path: A list of integers representing the path for the request.
-        :type path: List[int]
-
-        :param slots_needed: An integer representing the number of spectral slots needed to allocate the request.
-        :type slots_needed: int
-
-        :param net_spec_db: A dictionary representing the network spectrum database.
-        :type net_spec_db: dict
-
-        :param guard_slots: An integer representing the number of slots dedicated to the guard band.
-        :type guard_slots: int
-
-        :param single_core: A boolean value indicating whether we are allowed to slice to only a single core or not.
-        :type single_core: bool
-
-        :param is_sliced: A boolean value indicating whether the request is allowed to be sliced.
-        :type is_sliced: bool
-
-        :param alloc_method: A string representing the allocation policy.
-        :type alloc_method: str
-        """
+        # TODO: Use props here instead
         self.print_warn = print_warn
         self.path = path
         self.core = core
@@ -53,7 +31,9 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         self.guard_slots = guard_slots
         self.net_spec_db = net_spec_db
 
+        # TODO: Make sure to have an init function called to reset these and other needed variables
         # The flag to determine whether the request can be allocated
+        # TODO: This is very dangerous to do
         self.is_free = True
         # A matrix containing the cores for each link in the network
         self.cores_matrix = None
@@ -67,22 +47,8 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
         # The final response from this class
         self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
 
+    # TODO: Types in param names
     def _check_other_links(self, core_num, start_slot, end_slot):
-        """
-        Given that one link is available, check all other links in the path. Core and spectrum assignments
-        MUST be the same.
-
-        :param core_num: The core in which to look for the free spectrum
-        :type core_num: int
-
-        :param start_slot: The starting index of the potentially free spectrum
-        :type start_slot: int
-
-        :param end_slot: The ending index
-        :type end_slot: int
-
-        :return: None
-        """
         self.is_free = True
         for i in range(len(self.path) - 1):
             link = (self.path[i], self.path[i + 1])
@@ -97,32 +63,13 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                 return
 
     def _link_has_free_spectrum(self, sub_path, core_num, start_slot, end_slot):
-        """
-        Check whether a link has the same spectrum assignment as the given core and whether the
-        spectrum in the given range is free.
-
-        :param sub_path: The sub-path to check
-        :type sub_path: Tuple[str, str]
-
-        :param core_num: The core in which to look for the free spectrum
-        :type core_num: int
-
-        :param start_slot: The starting index of the potentially free spectrum
-        :type start_slot: int
-
-        :param end_slot: The ending index
-        :type end_slot: int
-
-        :return: True if the spectrum is free and assigned to the given core, False otherwise
-        """
         link = self.net_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot]
         return set(link) == {0.0}
 
+    # TODO: Break this up into at least 2 functions
     def _best_fit_allocation(self):
         """
         Searches for and allocates the best-fit super channel on each link along the path.
-
-        :return: None
         """
         res_list = []
 
@@ -155,22 +102,9 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
                                      'end_slot': end_index + self.guard_slots}
                     return
 
+    # TODO: Break this up into at least two methods
+    # TODO: Might move to another file
     def _check_open_slots(self, open_slots_matrix: list, flag: bool, core_num: int):
-        """
-        Given a matrix of unallocated spectral slots, attempt to find a channel for the request.
-
-        :param open_slots_matrix: A matrix containing each core and open spectral slots on them.
-        :type open_slots_matrix: list
-
-        :param flag: A flag to determine if we should allocate using first or last fit.
-        :type flag: bool
-
-        :param core_num: The core number in which to check other links for a potential allocation.
-        :type core_num: int
-
-        :return: If we were able to successfully allocate or not.
-        :rtype: bool
-        """
         for tmp_arr in open_slots_matrix:
             if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
                 for start_index in tmp_arr:
@@ -205,6 +139,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         return False
 
+    # TODO: Maybe two methods as well
     def _handle_first_last(self, flag: str = None):
         """
         Handles either first-fit or last-fit spectrum allocation.
@@ -239,6 +174,8 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
             if resp:
                 return
 
+    # TODO: Haven't technically used xt allocation, just make sure it runs
+    # TODO: Definitely to helper script
     def _check_cores_channels(self):
         """
         For a given path, find the free channel intersections (between cores on that path) and the free slots for
@@ -270,6 +207,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         return resp
 
+    # TODO: probably to helper script
     def _find_best_core(self):
         """
         Finds the core with the least amount of overlapping super channels for previously allocated requests.
@@ -307,6 +245,7 @@ class SpectrumAssignment:  # pylint: disable=too-few-public-methods
 
         return self._handle_first_last(flag='last_fit')
 
+    # TODO: Maybe two methods for this
     def find_free_spectrum(self):
         """
         Finds available spectrum to allocate a request based on the chosen allocation policy.
