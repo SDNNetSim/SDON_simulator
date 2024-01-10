@@ -24,26 +24,26 @@ class Routing:
         most_cong_slots = -1
 
         for i in range(len(path_list) - 1):
-            link = self.sdn_props['net_spec_dict'][(path_list[i], path_list[i + 1])]
-            cores_matrix = link['cores_matrix']
+            link_dict = self.sdn_props['net_spec_dict'][(path_list[i], path_list[i + 1])]
+            cores_matrix = link_dict['cores_matrix']
 
             for core_arr in cores_matrix:
                 free_slots = np.sum(core_arr == 0)
                 if free_slots < most_cong_slots or most_cong_link is None:
                     most_cong_slots = free_slots
-                    most_cong_link = link
+                    most_cong_link = link_dict
 
         self.route_props['paths_list'].append({'path_list': path_list,
-                                               'link_info': {'link': most_cong_link,
+                                               'link_dict': {'link': most_cong_link,
                                                              'free_slots': most_cong_slots}})
 
     def _find_least_cong(self):
         # Sort dictionary by number of free slots, descending
-        sorted_paths_list = sorted(self.route_props['paths_list'], key=lambda d: d['link_info']['free_slots'],
+        sorted_paths_list = sorted(self.route_props['paths_list'], key=lambda d: d['link_dict']['free_slots'],
                                    reverse=True)
 
         self.route_props['paths_list'] = [sorted_paths_list[0]['path_list']]
-        self.route_props['weights_list'] = [int(sorted_paths_list[0]['link_info']['free_slots'])]
+        self.route_props['weights_list'] = [int(sorted_paths_list[0]['link_dict']['free_slots'])]
         # TODO: Constant QPSK format (Ask Arash)
         self.route_props['mod_formats_list'].append(['QPSK'])
 
@@ -88,6 +88,7 @@ class Routing:
             mod_format = get_path_mod(self.sdn_props['mod_formats'], resp_weight)
             self.route_props['mod_formats_list'].append([mod_format])
             self.route_props['paths_list'].append(path_list)
+            break
 
     def find_k_shortest(self):
         """
@@ -133,17 +134,19 @@ class Routing:
         :rtype: list
         """
         # At the moment, we have identical bidirectional links (no need to loop over all links)
-        for link_list in list(self.sdn_props['net_spec_db'].keys())[::2]:
+        for link_list in list(self.sdn_props['net_spec_dict'].keys())[::2]:
             source, destination = link_list[0], link_list[1]
             num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props['span_len']
 
-            free_slots_dict = find_free_slots(net_spec_db=self.sdn_props['net_spec_db'], des_link=link_list)
-            # TODO: Find the link number (will do when running)
-            link_num = None
-            xt_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=free_slots_dict, link_num=link_num)
+            free_slots_dict = find_free_slots(net_spec_db=self.sdn_props['net_spec_dict'], des_link=link_list)
+            xt_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=free_slots_dict, link_list=link_list)
 
             if self.engine_props['xt_type'] == 'with_length':
-                link_cost = self.sdn_props['topology'][source][destination]['length'] / self.route_props['max_link']
+                if self.route_props['max_link_length'] is None:
+                    self.route_help_obj.get_max_link_length()
+
+                link_cost = self.sdn_props['topology'][source][destination]['length'] / \
+                            self.route_props['max_link_length']
                 link_cost *= self.engine_props['beta']
                 link_cost += (1 - self.engine_props['beta']) * xt_cost
             elif self.engine_props['xt_type'] == 'without_length':

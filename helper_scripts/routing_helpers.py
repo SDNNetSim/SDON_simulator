@@ -109,22 +109,22 @@ class RoutingHelpers:
 
         return before, after
 
-    def _find_num_overlapped(self, channel: int, core_num: int, link_num: int, net_spec_db: dict):
+    def _find_num_overlapped(self, channel: int, core_num: int, link_list: list, net_spec_db: dict):
         num_overlapped = 0.0
         if core_num != 6:
             adj_cores_tuple = self._find_adjacent_cores(core_num=core_num)
-            if net_spec_db[link_num]['cores_matrix'][adj_cores_tuple[0]][channel] > 0:
+            if net_spec_db[link_list]['cores_matrix'][adj_cores_tuple[0]][channel] > 0:
                 num_overlapped += 1
-            if net_spec_db[link_num]['cores_matrix'][adj_cores_tuple[1]][channel] > 0:
+            if net_spec_db[link_list]['cores_matrix'][adj_cores_tuple[1]][channel] > 0:
                 num_overlapped += 1
-            if net_spec_db[link_num]['cores_matrix'][6][channel] > 0:
+            if net_spec_db[link_list]['cores_matrix'][6][channel] > 0:
                 num_overlapped += 1
 
             num_overlapped /= 3
         # The number of overlapped cores for core six will be different since it's the center core
         else:
             for sub_core_num in range(6):
-                if net_spec_db[link_num]['cores_matrix'][sub_core_num][channel] > 0:
+                if net_spec_db[link_list]['cores_matrix'][sub_core_num][channel] > 0:
                     num_overlapped += 1
 
             num_overlapped /= 6
@@ -133,7 +133,7 @@ class RoutingHelpers:
 
     # fixme: Only works for seven cores
     # TODO: Finish docstring, not sure what free_slots_dict is
-    def find_xt_link_cost(self, free_slots_dict: dict, link_num: int):
+    def find_xt_link_cost(self, free_slots_dict: dict, link_list: list):
         """
         Finds the intra-core crosstalk cost for a single link.
 
@@ -146,8 +146,8 @@ class RoutingHelpers:
         for core_num in free_slots_dict:
             num_free_slots += len(free_slots_dict[core_num])
             for channel in free_slots_dict[core_num]:
-                num_overlapped = self._find_num_overlapped(channel=channel, core_num=core_num, link_num=link_num,
-                                                           net_spec_db=self.sdn_props['net_spec_db'])
+                num_overlapped = self._find_num_overlapped(channel=channel, core_num=core_num, link_list=link_list,
+                                                           net_spec_db=self.sdn_props['net_spec_dict'])
                 xt_cost += num_overlapped
 
         # A constant score of 1000 if the link is fully congested
@@ -169,9 +169,13 @@ class RoutingHelpers:
         for source, destination in zip(path_list, path_list[1:]):
             num_span = self.engine_props['topology'][source][destination]['length'] / self.route_props['span_len']
             link_tuple = (source, destination)
-            nli_cost += self.get_nli_cost(link_tuple=link_tuple, num_span=num_span)
+            nli_cost += self.get_nli_cost(link_list=link_tuple, num_span=num_span)
 
         return nli_cost
+
+    def get_max_link_length(self):
+        topology = self.engine_props['topology']
+        self.route_props['max_link_length'] = max(nx.get_edge_attributes(topology, 'length').values(), default=0.0)
 
     def get_nli_cost(self, link_list: tuple, num_span: float):
         free_channels_dict = find_free_channels(net_spec_db=self.sdn_props['net_spec_dict'],
@@ -184,8 +188,7 @@ class RoutingHelpers:
         source, destination = link_list[0], link_list[1]
 
         if self.route_props['max_link_length'] is None:
-            topology = self.engine_props['topology']
-            self.route_props['max_link_length'] = max(nx.get_edge_attributes(topology, 'length').values(), default=0.0)
+            self.get_max_link_length()
 
         nli_cost = (self.engine_props['beta'] *
                     (self.engine_props['topology'][source][destination]['length'] /

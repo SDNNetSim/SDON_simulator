@@ -21,6 +21,7 @@ class SDNController:
         self.snr_obj = SnrMeasurements(properties=properties)
         self.route_obj = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
+    # TODO: Naming conventions here
     def release(self):
         """
         Removes a previously allocated request from the network.
@@ -82,7 +83,10 @@ class SDNController:
                 self._allocate_gb(core_matrix=core_matrix, rev_core_matrix=rev_core_matrix, end_slot=end_slot,
                                   core_num=core_num)
 
-    def handle_lps(self):
+    def handle_lss(self):
+        """
+        Handle light-segment slicing has not yet been implemented.
+        """
         raise NotImplementedError
 
     def __handle_spectrum(self, chosen_bw: str, path: list, net_spec_dict: dict, modulation: str,
@@ -132,12 +136,13 @@ class SDNController:
                 continue
 
             # TODO: This most likely won't need many params now
-            spectrum, self.block_reason, xt_cost = self.__handle_spectrum(chosen_bw=self.sdn_props['bandwidth'],
-                                                                          path=path,
-                                                                          net_spec_dict=self.sdn_props['net_spec_dict'],
-                                                                          modulation=modulation,
-                                                                          snr_obj=self.snr_obj,
-                                                                          path_mod=modulation)
+            # TODO: Block reason returned here, its _ now, need to account for this
+            spectrum, _, xt_cost = self.__handle_spectrum(chosen_bw=self.sdn_props['bandwidth'],
+                                                          path=path,
+                                                          net_spec_dict=self.sdn_props['net_spec_dict'],
+                                                          modulation=modulation,
+                                                          snr_obj=self.snr_obj,
+                                                          path_mod=modulation)
 
             # We found a spectrum, no need to check other modulation formats
             if spectrum is not False:
@@ -146,6 +151,7 @@ class SDNController:
 
         return spectrum, xt_cost, mod_chosen
 
+    # TODO: Naming conventions here
     def handle_event(self, request_type: str):
         """
         Handles any event that occurs in the simulation, controls this class.
@@ -171,11 +177,10 @@ class SDNController:
                     self.sdn_props['block_reason'] = 'distance'
                     return
 
-                # TODO: Core was passed to spectrum because of the AI object, fix this, have ai_obj have a separate
-                #   spectrum assignment to pass a core to here, have it be in spectrum assignment
-                #   implement forced core another way
+                # TODO: Core was passed to spectrum because of the AI object, need to fix this
                 mod_options = self.route_obj.route_props['mod_formats_list'][path_index]
-                spectrum, xt_cost, modulation = self._handle_spectrum(mod_options=mod_options, path=path_list)
+                # TODO: XT cost returned from spectrum, it is _ for now but needs to be used
+                spectrum, _, modulation = self._handle_spectrum(mod_options=mod_options, path=path_list)
                 # Request was blocked for this path
                 if spectrum is False or spectrum is None:
                     self.sdn_props['block_reason'] = 'congestion'

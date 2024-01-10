@@ -10,7 +10,7 @@ def get_requests(seed: int, engine_props: dict):
     :return: The generated requests and request information.
     :rtype: dict
     """
-    requests = {}
+    requests_dict = {}
     current_time = 0
     request_id = 1
 
@@ -23,7 +23,7 @@ def get_requests(seed: int, engine_props: dict):
     bandwidth_list = list(engine_props['mod_per_bw'].keys())
 
     # Generate requests, multiply the number of requests by two since we have arrival and departure types
-    while len(requests) < (engine_props['num_requests'] * 2):
+    while len(requests_dict) < (engine_props['num_requests'] * 2):
         current_time += get_exponential_rv(engine_props['arrival_rate'])
 
         if engine_props['sim_type'] == 'arash':
@@ -43,8 +43,8 @@ def get_requests(seed: int, engine_props: dict):
                 bandwidth_counts[chosen_bandwidth] -= 1
                 break
 
-        if current_time not in requests and depart_time not in requests:
-            requests.update({current_time: {
+        if current_time not in requests_dict and depart_time not in requests_dict:
+            requests_dict.update({current_time: {
                 "req_id": request_id,
                 "source": source,
                 "destination": dest,
@@ -54,7 +54,7 @@ def get_requests(seed: int, engine_props: dict):
                 "bandwidth": chosen_bandwidth,
                 "mod_formats": engine_props['mod_per_bw'][chosen_bandwidth],
             }})
-            requests.update({depart_time: {
+            requests_dict.update({depart_time: {
                 "req_id": request_id,
                 "source": source,
                 "destination": dest,
@@ -69,4 +69,4 @@ def get_requests(seed: int, engine_props: dict):
         else:
             bandwidth_counts[chosen_bandwidth] += 1
 
-    return requests
+    return requests_dict
