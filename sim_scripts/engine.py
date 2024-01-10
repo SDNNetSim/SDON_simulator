@@ -13,7 +13,6 @@ from helper_scripts.ai_helpers import AIMethods
 from helper_scripts.stats_helpers import SimStats
 
 
-# TODO: Blocking is off, I believe due to dict in props without copies?
 class Engine:
     """
     Controls a single simulation.
@@ -65,25 +64,21 @@ class Engine:
         :param curr_time: The arrival time of the request.
         :return: None
         """
-        request_data = self.reqs_dict[curr_time]
-        # TODO: Just pass request data as a dict within a dict
-        self.sdn_obj.sdn_props['req_id'] = request_data['id']
-        self.sdn_obj.sdn_props['source'] = request_data['source']
-        self.sdn_obj.sdn_props['destination'] = request_data['destination']
-        self.sdn_obj.sdn_props['path'] = None
-        self.sdn_obj.sdn_props['chosen_bw'] = request_data['bandwidth']
+        for req_key, req_value in self.reqs_dict[curr_time].items():
+            self.sdn_obj.sdn_props[req_key] = req_value
+
         self.sdn_obj.handle_event(request_type='arrival')
-        self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_db']
+        self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
 
         self.update_ai_obj(sdn_data=self.sdn_obj.sdn_props)
-        self.stats_obj.iter_update(req_data=request_data, sdn_data=self.sdn_obj.sdn_props)
+        self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=self.sdn_obj.sdn_props)
 
         if self.sdn_obj.sdn_props['was_routed']:
             self.stats_obj.curr_trans = self.sdn_obj.sdn_props['num_trans']
 
-            self.reqs_status_dict.update({request_data['id']: {
+            self.reqs_status_dict.update({self.reqs_dict[curr_time]['req_id']: {
                 "mod_format": self.sdn_obj.sdn_props['mod_format'],
-                "path": self.sdn_obj.sdn_props['path'],
+                "path": self.sdn_obj.sdn_props['path_list'],
                 "is_sliced": self.sdn_obj.sdn_props['is_sliced'],
                 "was_routed": self.sdn_obj.sdn_props['was_routed']
             }})
@@ -95,18 +90,13 @@ class Engine:
         :param curr_time: The arrival time of the request.
         :return: None
         """
-        request = self.reqs_dict[curr_time]
-        # TODO: Again, just a dict within a dict
-        self.sdn_obj.sdn_props['req_id'] = request['id']
-        self.sdn_obj.sdn_props['source'] = request['source']
-        self.sdn_obj.sdn_props['destination'] = request['destination']
-        self.sdn_obj.sdn_props['chosen_bw'] = request['bandwidth']
+        for req_key, req_value in self.reqs_dict[curr_time].items():
+            self.sdn_obj.sdn_props[req_key] = req_value
 
-        if self.reqs_dict[curr_time]['id'] in self.reqs_status_dict:
-            self.sdn_obj.sdn_props['path'] = self.reqs_status_dict[self.reqs_dict[curr_time]['id']]['path']
+        if self.reqs_dict[curr_time]['req_id'] in self.reqs_status_dict:
+            self.sdn_obj.sdn_props['path_list'] = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']
             self.sdn_obj.handle_event(request_type='release')
-            # TODO: May have a copy issue here
-            self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_db']
+            self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
         # Request was blocked, nothing to release
         else:
             pass
@@ -131,8 +121,7 @@ class Engine:
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
 
         self.stats_obj.topology = self.topology
-        # TODO: Might have been overly using dicts, double check sdn and routing before moving to spectrum
-        self.sdn_obj.sdn_props['net_spec_db'] = self.net_spec_dict
+        self.sdn_obj.sdn_props['net_spec_dict'] = self.net_spec_dict
         self.sdn_obj.sdn_props['topology'] = self.topology
         self.engine_props['topology'] = self.topology
 

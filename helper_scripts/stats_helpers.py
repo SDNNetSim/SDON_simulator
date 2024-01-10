@@ -165,10 +165,10 @@ class SimStats:
             self.stats_props['block_reasons_dict'][sdn_data['block_reason']] += 1
             self.stats_props['block_bw_dict'][req_data['bandwidth']] += 1
         else:
-            num_hops = len(sdn_data['path']) - 1
+            num_hops = len(sdn_data['path_list']) - 1
             self.stats_props['hops_list'].append(num_hops)
 
-            path_len = find_path_len(path=sdn_data['path'], topology=self.topology)
+            path_len = find_path_len(path=sdn_data['path_list'], topology=self.topology)
             self.stats_props['lengths_list'].append(path_len)
 
             core_chosen = sdn_data['spectrum']['core_num']

@@ -45,7 +45,7 @@ def get_requests(seed: int, engine_props: dict):
 
         if current_time not in requests and depart_time not in requests:
             requests.update({current_time: {
-                "id": request_id,
+                "req_id": request_id,
                 "source": source,
                 "destination": dest,
                 "arrive": current_time,
@@ -55,7 +55,7 @@ def get_requests(seed: int, engine_props: dict):
                 "mod_formats": engine_props['mod_per_bw'][chosen_bandwidth],
             }})
             requests.update({depart_time: {
-                "id": request_id,
+                "req_id": request_id,
                 "source": source,
                 "destination": dest,
                 "arrive": current_time,

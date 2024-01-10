@@ -6,7 +6,6 @@ from helper_scripts.routing_helpers import RoutingHelpers
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, find_free_slots
 
 
-# TODO: Standardize return format (will achieve this when running)
 class Routing:
     """
     This class contains methods related to routing network requests.
@@ -46,9 +45,6 @@ class Routing:
     def find_least_cong(self):
         """
         Find the least congested path in the network.
-
-        :return: The least congested path.
-        :rtype: list
         """
         all_paths_obj = nx.shortest_simple_paths(self.sdn_props['topology'], self.route_props['source'],
                                                  self.route_props['destination'])
@@ -68,9 +64,9 @@ class Routing:
                     least_path_list = self._find_least_cong()
 
         self.route_props['paths_list'].append(least_path_list)
-        # TODO: Constant QPSK format
+        # TODO: Constant QPSK format (Ask Arash)
         self.route_props['mod_formats_list'].append('QPSK')
-        # TODO: Not sure what to put here
+        # TODO: Not sure what to put here (Ask Arash)
         self.route_props['weights_list'].append(None)
 
     def find_least_weight(self, weight: str):
@@ -96,6 +92,9 @@ class Routing:
             self.route_props['paths_list'].append(path_list)
 
     def find_k_shortest(self):
+        """
+        Finds the k-shortest paths with respect to length from source to destination.
+        """
         # This networkx function will always return the shortest paths in order
         paths_obj = nx.shortest_simple_paths(G=self.engine_props['topology'], source=self.sdn_props['source'],
                                              target=self.sdn_props['destination'], weight='length')
@@ -104,7 +103,7 @@ class Routing:
             if k > self.engine_props['k_paths'] - 1:
                 break
             path_len = find_path_len(path_list, self.engine_props['topology'])
-            chosen_bw = self.sdn_props['chosen_bw']
+            chosen_bw = self.sdn_props['bandwidth']
             mod_format = get_path_mod(self.engine_props['mod_per_bw'][chosen_bw], path_len)
 
             self.route_props['paths_list'].append(path_list)
@@ -181,7 +180,7 @@ class Routing:
         elif self.engine_props['route_method'] == 'k_shortest_path':
             self.find_k_shortest()
         elif self.engine_props['route_method'] == 'ai':
-            # TODO: Need to fix ai to account for passing props, probably don't need all three params
+            # TODO: Need to fix ai to account for passing props
             path, mod_format = ai_obj.route(sdn_props=self.sdn_props, route_props=self.route_props)
             self.route_props['paths_list'] = [path]
             self.route_props['mod_formats_list'] = [mod_format]
