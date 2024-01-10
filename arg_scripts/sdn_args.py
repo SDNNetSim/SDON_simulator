@@ -8,6 +8,7 @@ empty_props = {
     'destination': None,
     'bandwidth': None,
     'num_trans': None,
+    'slots_needed': None,
     'single_core': False,
     'block_reason': None,
 }

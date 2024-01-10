@@ -2,6 +2,7 @@ import copy
 import math
 
 import numpy as np
+import networkx as nx
 
 from helper_scripts.sim_helpers import find_free_channels, find_taken_channels
 
@@ -69,7 +70,7 @@ class RoutingHelpers:
             for channel in free_channels:
                 num_channels += 1
                 # Calculate the center frequency for the open channel
-                center_freq = (channel[0] * self.route_props['freq_spacing']) + ((self.route_props['slots_needed'] *
+                center_freq = (channel[0] * self.route_props['freq_spacing']) + ((self.sdn_props['slots_needed'] *
                                                                                   self.route_props['freq_spacing']) / 2)
 
                 nli_cost += self._find_channel_mci(channels_list=taken_channels_dict[core_num], center_freq=center_freq,
@@ -172,17 +173,22 @@ class RoutingHelpers:
 
         return nli_cost
 
-    def get_nli_cost(self, link_tuple: tuple, num_span: float):
-        free_channels_dict = find_free_channels(net_spec_db=self.sdn_props['net_spec_db'],
-                                                slots_needed=self.sdn_props['slots_needed'], des_link=link_tuple)
-        taken_channels_dict = find_taken_channels(net_spec_db=self.sdn_props['net_spec_db'], des_link=link_tuple)
+    def get_nli_cost(self, link_list: tuple, num_span: float):
+        free_channels_dict = find_free_channels(net_spec_db=self.sdn_props['net_spec_dict'],
+                                                slots_needed=self.sdn_props['slots_needed'], des_link=link_list)
+        taken_channels_dict = find_taken_channels(net_spec_db=self.sdn_props['net_spec_dict'], des_link=link_list)
 
         nli_cost = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
                                         num_span=num_span)
         # Tradeoff between link length and the non-linear impairment cost
-        source, destination = link_tuple[0], link_tuple[1]
+        source, destination = link_list[0], link_list[1]
+
+        if self.route_props['max_link_length'] is None:
+            topology = self.engine_props['topology']
+            self.route_props['max_link_length'] = max(nx.get_edge_attributes(topology, 'length').values(), default=0.0)
+
         nli_cost = (self.engine_props['beta'] *
                     (self.engine_props['topology'][source][destination]['length'] /
-                     self.route_props['max_link'])) + ((1 - self.engine_props['beta']) * nli_cost)
+                     self.route_props['max_link_length'])) + ((1 - self.engine_props['beta']) * nli_cost)
 
         return nli_cost

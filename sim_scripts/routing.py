@@ -19,12 +19,12 @@ class Routing:
         self.route_help_obj = RoutingHelpers(engine_props=self.engine_props, sdn_props=self.sdn_props,
                                              route_props=self.route_props)
 
-    def _find_most_cong_link(self, node_list: list):
+    def _find_most_cong_link(self, path_list: list):
         most_cong_link = None
         most_cong_slots = -1
 
-        for i in range(len(node_list) - 1):
-            link = self.sdn_props['net_spec_db'][(node_list[i], node_list[i + 1])]
+        for i in range(len(path_list) - 1):
+            link = self.sdn_props['net_spec_dict'][(path_list[i], path_list[i + 1])]
             cores_matrix = link['cores_matrix']
 
             for core_arr in cores_matrix:
@@ -33,24 +33,27 @@ class Routing:
                     most_cong_slots = free_slots
                     most_cong_link = link
 
-        return most_cong_slots
+        self.route_props['paths_list'].append({'path_list': path_list,
+                                               'link_info': {'link': most_cong_link,
+                                                             'free_slots': most_cong_slots}})
 
     def _find_least_cong(self):
         # Sort dictionary by number of free slots, descending
         sorted_paths_list = sorted(self.route_props['paths_list'], key=lambda d: d['link_info']['free_slots'],
                                    reverse=True)
 
-        return sorted_paths_list[0]['path']
+        self.route_props['paths_list'] = [sorted_paths_list[0]['path_list']]
+        self.route_props['weights_list'] = [int(sorted_paths_list[0]['link_info']['free_slots'])]
+        # TODO: Constant QPSK format (Ask Arash)
+        self.route_props['mod_formats_list'].append(['QPSK'])
 
     def find_least_cong(self):
         """
         Find the least congested path in the network.
         """
-        all_paths_obj = nx.shortest_simple_paths(self.sdn_props['topology'], self.route_props['source'],
-                                                 self.route_props['destination'])
+        all_paths_obj = nx.shortest_simple_paths(self.engine_props['topology'], self.sdn_props['source'],
+                                                 self.sdn_props['destination'])
         min_hops = None
-        least_path_list = False
-
         for i, path in enumerate(all_paths_obj):
             num_hops = len(path)
             if i == 0:
@@ -61,13 +64,8 @@ class Routing:
                     self._find_most_cong_link(path)
                 # We exceeded minimum hops plus one, return the best path
                 else:
-                    least_path_list = self._find_least_cong()
-
-        self.route_props['paths_list'].append(least_path_list)
-        # TODO: Constant QPSK format (Ask Arash)
-        self.route_props['mod_formats_list'].append('QPSK')
-        # TODO: Not sure what to put here (Ask Arash)
-        self.route_props['weights_list'].append(None)
+                    self._find_least_cong()
+                    return
 
     def find_least_weight(self, weight: str):
         """
@@ -75,8 +73,8 @@ class Routing:
 
         :param weight: Determines the weight to consider for finding the path.
         """
-        paths_obj = nx.shortest_simple_paths(G=self.sdn_props['topology'], source=self.route_props['source'],
-                                             target=self.route_props['destination'], weight=weight)
+        paths_obj = nx.shortest_simple_paths(G=self.sdn_props['topology'], source=self.sdn_props['source'],
+                                             target=self.sdn_props['destination'], weight=weight)
 
         for path_list in paths_obj:
             # If cross-talk, our path weight is the summation across the path
@@ -88,7 +86,7 @@ class Routing:
 
             self.route_props['weights_list'].append(resp_weight)
             mod_format = get_path_mod(self.sdn_props['mod_formats'], resp_weight)
-            self.route_props['mod_formats_list'].append(mod_format)
+            self.route_props['mod_formats_list'].append([mod_format])
             self.route_props['paths_list'].append(path_list)
 
     def find_k_shortest(self):
@@ -114,11 +112,15 @@ class Routing:
         """
         Finds and selects the path with the least amount of non-linear impairment.
         """
-        for link_tuple in self.sdn_props['net_spec_db']:
-            source, destination = link_tuple[0], link_tuple[1]
+        for link_list in list(self.sdn_props['net_spec_dict'].keys())[::2]:
+            source, destination = link_list[0], link_list[1]
             num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props['span_len']
+            bandwidth = self.sdn_props['bandwidth']
+            # TODO: Constant QPSK for slots needed
+            slots_needed = self.engine_props['mod_per_bw'][bandwidth]['QPSK']['slots_needed']
+            self.sdn_props['slots_needed'] = slots_needed
 
-            link_cost = self.route_help_obj.get_nli_cost(link_tuple=link_tuple, num_span=num_spans)
+            link_cost = self.route_help_obj.get_nli_cost(link_list=link_list, num_span=num_spans)
             self.sdn_props['topology'][source][destination]['nli_cost'] = link_cost
 
         self.find_least_weight(weight='nli_cost')
@@ -179,8 +181,8 @@ class Routing:
             self.find_least_weight(weight='length')
         elif self.engine_props['route_method'] == 'k_shortest_path':
             self.find_k_shortest()
+        # TODO: Need to fix ai to account for passing props
         elif self.engine_props['route_method'] == 'ai':
-            # TODO: Need to fix ai to account for passing props
             path, mod_format = ai_obj.route(sdn_props=self.sdn_props, route_props=self.route_props)
             self.route_props['paths_list'] = [path]
             self.route_props['mod_formats_list'] = [mod_format]

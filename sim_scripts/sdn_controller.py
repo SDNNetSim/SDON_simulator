@@ -87,6 +87,7 @@ class SDNController:
 
     def __handle_spectrum(self, chosen_bw: str, path: list, net_spec_dict: dict, modulation: str,
                           snr_obj: object, path_mod: str):
+
         slots_needed = self.engine_props['mod_per_bw'][chosen_bw][modulation]['slots_needed']
         spectrum_assignment = SpectrumAssignment(print_warn=self.engine_props['warnings'],
                                                  path=path, slots_needed=slots_needed,
@@ -187,7 +188,7 @@ class SDNController:
                 self.sdn_props['path_weight'] = self.route_obj.route_props['weights_list'][path_index]
                 self.sdn_props['is_sliced'] = False
                 self.sdn_props['spectrum'] = spectrum
-                # TODO: Always one until lss is implemented
+                # TODO: Always one until segment slicing is implemented
                 self.sdn_props['num_trans'] = 1
 
                 self.allocate(spectrum['start_slot'], spectrum['end_slot'], spectrum['core_num'])

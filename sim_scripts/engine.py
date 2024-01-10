@@ -120,10 +120,10 @@ class Engine:
             self.net_spec_dict[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
 
+        self.engine_props['topology'] = self.topology
         self.stats_obj.topology = self.topology
         self.sdn_obj.sdn_props['net_spec_dict'] = self.net_spec_dict
         self.sdn_obj.sdn_props['topology'] = self.topology
-        self.engine_props['topology'] = self.topology
 
     def generate_requests(self, seed: int):
         """
