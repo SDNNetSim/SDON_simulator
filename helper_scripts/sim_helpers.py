@@ -6,10 +6,6 @@ from typing import List
 import networkx as nx
 import numpy as np
 
-# Local application imports
-# TODO: Might end up moving this to spectrum assignment too
-import sim_scripts.spectrum_assignment
-
 
 def get_path_mod(mod_formats: dict, path_len: int):
     """
