@@ -2,7 +2,7 @@ empty_props = {
     'path_list': None,
     'slots_needed': None,
     'forced_core': None,
-    'is_free': True,
+    'is_free': False,
     'modulation': None,
     'xt_cost': None,
     'cores_matrix': None,
