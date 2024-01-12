@@ -103,6 +103,9 @@ class SDNController:
         self.route_obj.get_route(ai_obj=self.ai_obj)
         route_time = time.time() - start_time
 
+        if self.sdn_props['req_id'] == 8724:
+            print('Here')
+
         for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
             if path_list is not False:
                 if self.route_obj.route_props['mod_formats_list'][path_index][0] is False:

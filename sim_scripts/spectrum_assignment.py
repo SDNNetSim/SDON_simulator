@@ -105,6 +105,8 @@ class SpectrumAssignment:
                             'guard_slots']) - 1
                     if end_index not in tmp_arr:
                         break
+                    else:
+                        self.spectrum_props['is_free'] = True
 
                     if len(self.spectrum_props['path_list']) > 2:
                         if self.engine_props['allocation_method'] == 'last_fit':
@@ -256,7 +258,7 @@ class SpectrumAssignment:
     # TODO: Still need to init more info here
     def _init_spectrum_info(self):
         self.spectrum_props = empty_props
-        # TODO: Slots needed needs to be defined
+        # TODO: Slots needed needs to be defined (also init start and end slot?)
         link_tuple = (self.spectrum_props['path_list'][0], self.spectrum_props['path_list'][1])
         rev_link_tuple = (self.spectrum_props['path_list'][1], self.spectrum_props['path_list'][0])
         self.spectrum_props['cores_matrix'] = self.sdn_props['net_spec_dict'][link_tuple]['cores_matrix']
