@@ -103,18 +103,15 @@ class SDNController:
         self.route_obj.get_route(ai_obj=self.ai_obj)
         route_time = time.time() - start_time
 
-        # TODO: Blocking probability is always the same
         for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
             if path_list is not False:
-                # TODO: I thought this would actually have a continue instead of a return
                 if self.route_obj.route_props['mod_formats_list'][path_index][0] is False:
                     self.sdn_props['was_routed'] = False
                     self.sdn_props['block_reason'] = 'distance'
-                    continue
+                    return
 
                 # TODO: Core was passed to spectrum because of the AI object, need to fix this
                 # TODO: We have route props in spectrum, just use it there
-
                 # TODO: Mod options are false?
                 mod_options = self.route_obj.route_props['mod_formats_list'][path_index]
                 # TODO: Need to keep track of XT cost
