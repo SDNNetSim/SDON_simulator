@@ -1,4 +1,4 @@
-from helper_scripts.sim_helpers import find_free_channels, find_free_slots
+from helper_scripts.sim_helpers import find_free_channels, find_free_slots, get_channel_overlaps
 
 
 
@@ -14,19 +14,19 @@ def link_has_free_spectrum(sdn_props: dict, link, rev_link, core_num, start_slot
     return False
 
 
-def check_other_links(spectrum_props: dict, core_num: int, start_index: int, end_index: int):
+def check_other_links(sdn_props: dict, spectrum_props: dict, core_num: int, start_index: int, end_index: int):
     spectrum_props['is_free'] = True
     for node in range(len(spectrum_props['path_list']) - 1):
         link = (spectrum_props['path_list'][node], spectrum_props['path_list'][node + 1])
         rev_link = (spectrum_props['path_list'][node + 1], spectrum_props['path_list'][node])
 
-        if not link_has_free_spectrum(link, rev_link, core_num, start_index, end_index):
+        if not link_has_free_spectrum(sdn_props, link, rev_link, core_num, start_index, end_index):
             spectrum_props['is_free'] = False
             return
 
 
 # TODO: Break up into two functions?
-def check_open_slots(spectrum_props: dict, engine_props: dict, open_slots_matrix: list, core_num: int):
+def check_open_slots(sdn_props: dict, spectrum_props: dict, engine_props: dict, open_slots_matrix: list, core_num: int):
     for tmp_arr in open_slots_matrix:
         # TODO: Slots needed has not been defined
         if len(tmp_arr) >= (spectrum_props['slots_needed'] + engine_props['guard_slots']):
@@ -48,7 +48,7 @@ def check_open_slots(spectrum_props: dict, engine_props: dict, open_slots_matrix
                         # increasing order
                         check_other_links(spectrum_props, core_num, end_index, start_index + engine_props['guard_slots'])
                     else:
-                        check_other_links(spectrum_props, core_num, start_index, end_index + engine_props['guard_slots'])
+                        check_other_links(sdn_props, spectrum_props, core_num, start_index, end_index + engine_props['guard_slots'])
 
                 if spectrum_props['is_free'] is not False or len(spectrum_props['path_list']) <= 2:
                     # Since we use enumeration prior and set the matrix equal to one core, the "core_num" will
@@ -74,13 +74,13 @@ def check_open_slots(spectrum_props: dict, engine_props: dict, open_slots_matrix
 
 # TODO: Haven't technically used xt allocation, just make sure it runs
 # TODO: Definitely to helper script
-def check_cores_channels(sdn_props: dict,spectrum_props: dict):
+def check_cores_channels(sdn_props: dict, spectrum_props: dict):
     resp = {'free_slots': {}, 'free_channels': {}, 'slots_inters': {}, 'channel_inters': {}}
 
     for source_dest in zip(spectrum_props['path_list'], spectrum_props['path_list'][1:]):
-        free_slots = find_free_slots(net_spec_db=self.sdn_props['net_spec_dict'], des_link=source_dest)
-        free_channels = find_free_channels(net_spec_db=self.sdn_props['net_spec_dict'],
-                                           slots_needed=self.spectrum_props['slots_needed'],
+        free_slots = find_free_slots(net_spec_db=sdn_props['net_spec_dict'], des_link=source_dest)
+        free_channels = find_free_channels(net_spec_db=sdn_props['net_spec_dict'],
+                                           slots_needed=spectrum_props['slots_needed'],
                                            des_link=source_dest)
 
         resp['free_slots'].update({source_dest: free_slots})
@@ -101,14 +101,14 @@ def check_cores_channels(sdn_props: dict,spectrum_props: dict):
 
 
 # TODO: probably to helper script
-def find_best_core():
+def find_best_core(sdn_props: dict, spectrum_props: dict):
     """
     Finds the core with the least amount of overlapping super channels for previously allocated requests.
 
     :return: The core with the least amount of overlapping channels.
     :rtype: int
     """
-    path_info = check_cores_channels()
+    path_info = check_cores_channels(sdn_props=sdn_props, spectrum_props=spectrum_props)
     all_channels = get_channel_overlaps(path_info['channel_inters'],
                                         path_info['free_slots'])
     sorted_cores = sorted(all_channels['other_channels'], key=lambda k: len(all_channels['other_channels'][k]))
