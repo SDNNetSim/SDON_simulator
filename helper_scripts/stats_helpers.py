@@ -171,12 +171,12 @@ class SimStats:
             path_len = find_path_len(path=sdn_data['path_list'], topology=self.topology)
             self.stats_props['lengths_list'].append(path_len)
 
-            core_chosen = sdn_data['core_num']
+            core_chosen = sdn_data['spectrum_dict']['core_num']
             self.stats_props['cores_dict'][core_chosen] += 1
 
             self.stats_props['route_times_list'].append(sdn_data['route_time'])
 
-            mod_format = sdn_data['mod_format']
+            mod_format = sdn_data['spectrum_dict']['modulation']
             bandwidth = req_data['bandwidth']
             self.stats_props['mods_used_dict'][bandwidth][mod_format] += 1
 

@@ -78,10 +78,10 @@ class Engine:
             self.stats_obj.curr_trans = self.sdn_obj.sdn_props['num_trans']
 
             self.reqs_status_dict.update({self.reqs_dict[curr_time]['req_id']: {
-                "mod_format": self.sdn_obj.sdn_props['mod_format'],
+                "mod_format": self.sdn_obj.sdn_props['spectrum_dict']['modulation'],
                 "path": self.sdn_obj.sdn_props['path_list'],
                 "is_sliced": self.sdn_obj.sdn_props['is_sliced'],
-                "was_routed": self.sdn_obj.sdn_props['was_routed']
+                "was_routed": self.sdn_obj.sdn_props['was_routed'],
             }})
 
     def handle_release(self, curr_time: float):

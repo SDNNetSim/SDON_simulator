@@ -52,15 +52,10 @@ class SDNController:
         core_matrix[core_num][end_slot] = self.sdn_props['req_id'] * -1
         rev_core_matrix[core_num][end_slot] = self.sdn_props['req_id'] * -1
 
-    def allocate(self, start_slot: int, end_slot: int, core_num: int):
-        """
-        Allocates a network request.
-
-        :param start_slot: The starting spectral slot to allocate the request
-        :param end_slot: The ending spectral slot to allocate the request
-        :param core_num: The desired core to allocate the request
-        :return: None
-        """
+    def allocate(self):
+        start_slot = self.spectrum_obj.spectrum_props['start_slot']
+        end_slot = self.spectrum_obj.spectrum_props['end_slot']
+        core_num = self.spectrum_obj.spectrum_props['core_num']
         if self.engine_props['guard_slots']:
             end_slot = end_slot - 1
         else:
@@ -73,7 +68,6 @@ class SDNController:
             tmp_set = set(link_dict['cores_matrix'][core_num][start_slot:end_slot])
             rev_tmp_set = set(rev_link_dict['cores_matrix'][core_num][start_slot:end_slot])
 
-            # TODO: It appears that is_free was never set to true yet it's true?
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
 
@@ -113,8 +107,6 @@ class SDNController:
                     return
 
                 # TODO: Core was passed to spectrum because of the AI object, need to fix this
-                # TODO: We have route props in spectrum, just use it there
-                # TODO: Mod options are false?
                 mod_options = self.route_obj.route_props['mod_formats_list'][path_index]
                 # TODO: Need to keep track of XT cost
                 self.spectrum_obj.spectrum_props['path_list'] = path_list
@@ -124,26 +116,16 @@ class SDNController:
                     self.sdn_props['block_reason'] = 'congestion'
                     continue
 
-                # TODO: Still not sure what to do here
-                # TODO: Instead of doing this, just return routing props and or spectrum props into sdn props as a key
-                #   Or, just return since we have that information in sdn_controller
                 self.sdn_props['was_routed'] = True
-                self.sdn_props['core_num'] = self.spectrum_obj.spectrum_props['core_num']
                 self.sdn_props['path_list'] = path_list
-                self.sdn_props['mod_format'] = self.spectrum_obj.spectrum_props['modulation']
                 self.sdn_props['route_time'] = route_time
                 self.sdn_props['path_weight'] = self.route_obj.route_props['weights_list'][path_index]
+                self.sdn_props['spectrum_dict'] = self.spectrum_obj.spectrum_props
                 self.sdn_props['is_sliced'] = False
-                # TODO: Have a route and spectrum entry in sdn_props, easier that way
-                self.sdn_props['start_slot'] = self.spectrum_obj.spectrum_props['start_slot']
-                self.sdn_props['end_slot'] = self.spectrum_obj.spectrum_props['end_slot']
                 # TODO: Always one until segment slicing is implemented
                 self.sdn_props['num_trans'] = 1
 
-                # TODO: This will have access to spectrum props
-                self.allocate(self.spectrum_obj.spectrum_props['start_slot'],
-                              self.spectrum_obj.spectrum_props['end_slot'],
-                              self.spectrum_obj.spectrum_props['core_num'])
+                self.allocate()
                 return
 
         self.sdn_props['block_reason'] = 'distance'
