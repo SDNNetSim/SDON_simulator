@@ -72,6 +72,8 @@ class SDNController:
 
             tmp_set = set(link_dict['cores_matrix'][core_num][start_slot:end_slot])
             rev_tmp_set = set(rev_link_dict['cores_matrix'][core_num][start_slot:end_slot])
+
+            # TODO: It appears that is_free was never set to true yet it's true?
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
 
@@ -102,9 +104,6 @@ class SDNController:
         start_time = time.time()
         self.route_obj.get_route(ai_obj=self.ai_obj)
         route_time = time.time() - start_time
-
-        if self.sdn_props['req_id'] == 8724:
-            print('Here')
 
         for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
             if path_list is not False:

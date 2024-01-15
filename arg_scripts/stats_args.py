@@ -5,7 +5,6 @@ empty_props = {
     'mods_used_dict': dict(),
     'block_bw_dict': dict(),
     'block_reasons_dict': {'distance': None, 'congestion': None, 'xt_threshold': None},
-
     'sim_block_list': list(),
     'trans_list': list(),
     'hops_list': list(),

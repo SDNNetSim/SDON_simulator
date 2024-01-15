@@ -13,7 +13,7 @@ from helper_scripts.ai_helpers import AIMethods
 from helper_scripts.stats_helpers import SimStats
 
 
-# TODO: Think I went a little overboard with the dictionaries, don't put EVERYthing in there
+# TODO: Think I went a little overboard with the dictionaries, don't put everything in there
 class Engine:
     """
     Controls a single simulation.

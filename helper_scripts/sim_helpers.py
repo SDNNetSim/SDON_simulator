@@ -325,28 +325,9 @@ def find_taken_channels(net_spec_db: dict, des_link: tuple):
     return resp
 
 
-def update_snr_obj(snr_obj: object, spectrum: dict, path: list, path_mod: str, spectral_slots: int, net_spec_db: dict):
-    """
-    Updates variables in the signal-to-noise ratio calculation object.
-
-    :param snr_obj: The object whose variables are updated.
-    :type snr_obj: object
-
-    :param spectrum: The spectrum chosen for the request.
-    :type spectrum: dict
-
-    :param path: The chosen path for the request.
-    :type path: list
-
-    :param path_mod: The modulation format chosen for the request.
-    :type path_mod: str
-
-    :param spectral_slots: The total number of spectral slots for each core in the network.
-    :type spectral_slots: int
-
-    :param net_spec_db: The network spectrum database.
-    :type net_spec_db: dict
-    """
+# TODO: This will just be another method in the snr script
+def handle_snr(check_snr: str, snr_obj: object, spectrum_props: dict):
+    # TODO: Make this better
     snr_obj.path = path
     snr_obj.path_mod = path_mod
     snr_obj.spectrum = spectrum
@@ -354,20 +335,6 @@ def update_snr_obj(snr_obj: object, spectrum: dict, path: list, path_mod: str, s
     snr_obj.spectral_slots = spectral_slots
     snr_obj.net_spec_db = net_spec_db
 
-
-def handle_snr(check_snr: str, snr_obj: object):
-    """
-    Determines which type of signal-to-noise ratio calculation is used and calculates it.
-
-    :param check_snr: The type of SNR calculation for every request.
-    :type check_snr: str
-
-    :param snr_obj: Object containing all methods for SNR calculation.
-    :type snr_obj: object
-
-    :return: If the SNR threshold can be met or not.
-    :rtype: bool
-    """
     if check_snr == "snr_calculation_nli":
         snr_check, xt_cost = snr_obj.check_snr()
     elif check_snr == "xt_calculation":

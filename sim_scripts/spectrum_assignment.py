@@ -5,7 +5,8 @@ from operator import itemgetter
 import numpy as np
 
 from arg_scripts.spectrum_args import empty_props
-from helper_scripts.sim_helpers import update_snr_obj, handle_snr
+from helper_scripts.sim_helpers import update_snr_obj, handle_snr, find_free_slots, find_free_channels
+from helper_scripts.sim_helpers import get_channel_overlaps
 from sim_scripts.snr_measurements import SnrMeasurements
 
 
@@ -138,7 +139,7 @@ class SpectrumAssignment:
         return False
 
     # TODO: Maybe two methods as well
-    def _handle_first_last(self, flag: str = None):
+    def _handle_first_last(self, flag: str):
         """
         Handles either first-fit or last-fit spectrum allocation.
 
@@ -161,9 +162,11 @@ class SpectrumAssignment:
             if flag == 'last_fit':
                 open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
                                      itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-            else:
+            elif flag == 'first_fit':
                 open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
                                      itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+            else:
+                raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit')
 
             resp = self._check_open_slots(open_slots_matrix=open_slots_matrix, core_num=core_num)
             # We successfully found allocation on this core, no need to check the others
@@ -183,10 +186,10 @@ class SpectrumAssignment:
         resp = {'free_slots': {}, 'free_channels': {}, 'slots_inters': {}, 'channel_inters': {}}
 
         for source_dest in zip(self.spectrum_props['path_list'], self.spectrum_props['path_list'][1:]):
-            free_slots = self.find_free_slots(net_spec_db=self.sdn_props['net_spec_dict'], des_link=source_dest)
-            free_channels = self.find_free_channels(net_spec_db=self.sdn_props['net_spec_dict'],
-                                                    slots_needed=self.spectrum_props['slots_needed'],
-                                                    des_link=source_dest)
+            free_slots = find_free_slots(net_spec_db=self.sdn_props['net_spec_dict'], des_link=source_dest)
+            free_channels = find_free_channels(net_spec_db=self.sdn_props['net_spec_dict'],
+                                               slots_needed=self.spectrum_props['slots_needed'],
+                                               des_link=source_dest)
 
             resp['free_slots'].update({source_dest: free_slots})
             resp['free_channels'].update({source_dest: free_channels})
@@ -213,7 +216,7 @@ class SpectrumAssignment:
         :rtype: int
         """
         path_info = self._check_cores_channels()
-        all_channels = self.get_channel_overlaps(path_info['channel_inters'],
+        all_channels = get_channel_overlaps(path_info['channel_inters'],
                                                  path_info['free_slots'])
         sorted_cores = sorted(all_channels['other_channels'], key=lambda k: len(all_channels['other_channels'][k]))
 
@@ -223,6 +226,7 @@ class SpectrumAssignment:
                 sorted_cores.remove(6)
         return sorted_cores[0]
 
+    # fixme: Only works for 7 cores
     def _xt_aware_allocation(self):
         """
         Cross-talk aware spectrum allocation. Attempts to allocate a request with the least amount of cross-talk
@@ -231,9 +235,6 @@ class SpectrumAssignment:
         :return: The information of the request if allocated, false otherwise.
         :rtype dict
         """
-        if self.print_warn:
-            warnings.warn('Method: xt_aware_allocation used in '
-                          'spectrum_assignment that only supports 7 cores per fiber.')
         core = self._find_best_core()
         # Graph coloring for cores
         # TODO: Update des_core
@@ -249,8 +250,8 @@ class SpectrumAssignment:
         if self.engine_props['allocation_method'] == 'best_fit':
             self._best_fit_allocation()
         elif self.engine_props['allocation_method'] in ('first_fit', 'last_fit'):
-            self._handle_first_last()
-        elif self.engine_props['allocation_method'] == 'cross_talk_aware':
+            self._handle_first_last(flag=self.engine_props['allocation_method'])
+        elif self.engine_props['allocation_method'] == 'xt_aware':
             self._xt_aware_allocation()
         else:
             raise NotImplementedError(f"Expected first_fit or best_fit, got: {self.engine_props['allocation_method']}")
@@ -258,6 +259,8 @@ class SpectrumAssignment:
     # TODO: Still need to init more info here
     def _init_spectrum_info(self):
         self.spectrum_props = empty_props
+        # TODO: Interesting, why wouldn't spectrum props reset?
+        self.spectrum_props['is_free'] = False
         # TODO: Slots needed needs to be defined (also init start and end slot?)
         link_tuple = (self.spectrum_props['path_list'][0], self.spectrum_props['path_list'][1])
         rev_link_tuple = (self.spectrum_props['path_list'][1], self.spectrum_props['path_list'][0])
@@ -282,16 +285,15 @@ class SpectrumAssignment:
 
                 if self.engine_props['check_snr'] != 'None' and self.engine_props['check_snr'] is not None:
                     # TODO: Need snr object here
-                    # TODO: This will be much different after cleaning snr script
-                    update_snr_obj(snr_obj=snr_obj, spectrum=spectrum, path=path, path_mod=path_mod,
-                                   spectral_slots=self.engine_props['spectral_slots'], net_spec_db=net_spec_dict)
-                    snr_check, xt_cost = handle_snr(check_snr=self.engine_props['check_snr'], snr_obj=snr_obj)
-                    self.spectrum_props['xt_cost'] = xt_cost
-
-                    # TODO: All of these will be returned as spectrum_props so we don't need them
-                    # TODO: Make sure this series of statements and on are correct
-                    if not snr_check:
-                        return False, 'xt_threshold', xt_cost
+                    # TODO: This will be much different after cleaning snr script, hold off for now
+                    raise NotImplementedError
+                    # snr_check, xt_cost = handle_snr(check_snr=self.engine_props['check_snr'], snr_obj=snr_obj)
+                    # self.spectrum_props['xt_cost'] = xt_cost
+                    #
+                    # # TODO: All of these will be returned as spectrum_props so we don't need them
+                    # # TODO: Make sure this series of statements and on are correct
+                    # if not snr_check:
+                    #     return False, 'xt_threshold', xt_cost
 
                 return
 
