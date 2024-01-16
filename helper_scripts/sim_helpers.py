@@ -252,7 +252,7 @@ def find_free_slots(net_spec_db: dict, des_link: tuple):
     return resp
 
 
-def find_free_channels(net_spec_db: dict, slots_needed: int, des_link: tuple):
+def find_free_channels(net_spec_dict: dict, slots_needed: int, link_tuple: tuple):
     """
     Finds the free super-channels on a given link.
 
@@ -291,7 +291,7 @@ def find_free_channels(net_spec_db: dict, slots_needed: int, des_link: tuple):
     return resp
 
 
-def find_taken_channels(net_spec_db: dict, des_link: tuple):
+def find_taken_channels(net_spec_dict: dict, link_tuple: tuple):
     """
     Finds the taken super-channels on a given link.
 

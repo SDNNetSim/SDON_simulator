@@ -1,4 +1,3 @@
-# Third-party library imports
 import numpy as np
 
 
@@ -7,7 +6,6 @@ def set_seed(seed: int):
     Sets the seed for random number generation functions.
 
     :param seed: The seed
-    :return: None
     """
     np.random.seed(seed)
 
