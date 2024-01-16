@@ -14,33 +14,33 @@ def get_requests(seed: int, engine_props: dict):
     current_time = 0
     request_id = 1
 
-    nodes = list(engine_props['topology_info']['nodes'].keys())
+    nodes_list = list(engine_props['topology_info']['nodes'].keys())
     set_seed(seed=seed)
 
     # Create request distribution
-    bandwidth_counts = {bandwidth: int(engine_props['request_distribution'][bandwidth] * engine_props['num_requests'])
-                        for bandwidth in engine_props['mod_per_bw']}
+    bw_counts_dict = {bandwidth: int(engine_props['request_distribution'][bandwidth] * engine_props['num_requests'])
+                      for bandwidth in engine_props['mod_per_bw']}
     bandwidth_list = list(engine_props['mod_per_bw'].keys())
 
     # Generate requests, multiply the number of requests by two since we have arrival and departure types
     while len(requests_dict) < (engine_props['num_requests'] * 2):
-        current_time += get_exponential_rv(engine_props['arrival_rate'])
+        current_time += get_exponential_rv(scale_param=engine_props['arrival_rate'])
 
         if engine_props['sim_type'] == 'arash':
-            depart_time = current_time + get_exponential_rv(1 / engine_props['holding_time'])
+            depart_time = current_time + get_exponential_rv(scale_param=1 / engine_props['holding_time'])
         else:
-            depart_time = current_time + get_exponential_rv(engine_props['holding_time'])
+            depart_time = current_time + get_exponential_rv(scale_param=engine_props['holding_time'])
 
-        source = nodes[get_uniform_rv(len(nodes))]
-        dest = nodes[get_uniform_rv(len(nodes))]
+        source = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]
+        dest = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]
 
         while dest == source:
-            dest = nodes[get_uniform_rv(len(nodes))]
+            dest = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]
 
         while True:
-            chosen_bandwidth = bandwidth_list[get_uniform_rv(len(bandwidth_list))]
-            if bandwidth_counts[chosen_bandwidth] > 0:
-                bandwidth_counts[chosen_bandwidth] -= 1
+            chosen_bandwidth = bandwidth_list[get_uniform_rv(scale_param=len(bandwidth_list))]
+            if bw_counts_dict[chosen_bandwidth] > 0:
+                bw_counts_dict[chosen_bandwidth] -= 1
                 break
 
         if current_time not in requests_dict and depart_time not in requests_dict:
@@ -67,6 +67,6 @@ def get_requests(seed: int, engine_props: dict):
             request_id += 1
         # Bandwidth was not chosen due to either arrival or depart time already existing, add back to distribution
         else:
-            bandwidth_counts[chosen_bandwidth] += 1
+            bw_counts_dict[chosen_bandwidth] += 1
 
     return requests_dict
