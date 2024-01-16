@@ -12,38 +12,33 @@ class SDNController:
     This class contains methods to support software-defined network controller functionality.
     """
 
-    def __init__(self, properties: dict = None):
-        self.engine_props = properties
+    def __init__(self, engine_props: dict):
+        self.engine_props = engine_props
         self.sdn_props = empty_props
 
         self.ai_obj = None
-        self.snr_obj = SnrMeasurements(properties=properties)
+        self.snr_obj = SnrMeasurements(properties=engine_props)
         self.route_obj = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
-        self.spectrum_obj = SpectrumAssignment(engine_props=self.engine_props, sdn_props=self.sdn_props,
-                                               route_props=self.route_obj.route_props)
+        self.spectrum_obj = SpectrumAssignment(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
-    # TODO: Naming conventions here
     def release(self):
         """
         Removes a previously allocated request from the network.
 
         :return: None
         """
-        for src, dest in zip(self.sdn_props['path_list'], self.sdn_props['path_list'][1:]):
-            src_dest = (src, dest)
-            dest_src = (dest, src)
-
+        for source, dest in zip(self.sdn_props['path_list'], self.sdn_props['path_list'][1:]):
             for core_num in range(self.engine_props['cores_per_link']):
-                core_arr = self.sdn_props['net_spec_dict'][src_dest]['cores_matrix'][core_num]
-                req_indexes = np.where(core_arr == self.sdn_props['req_id'])
-                guard_bands = np.where(core_arr == (self.sdn_props['req_id'] * -1))
+                core_arr = self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix'][core_num]
+                req_id_arr = np.where(core_arr == self.sdn_props['req_id'])
+                gb_arr = np.where(core_arr == (self.sdn_props['req_id'] * -1))
 
-                for index in req_indexes:
-                    self.sdn_props['net_spec_dict'][src_dest]['cores_matrix'][core_num][index] = 0
-                    self.sdn_props['net_spec_dict'][dest_src]['cores_matrix'][core_num][index] = 0
-                for gb_index in guard_bands:
-                    self.sdn_props['net_spec_dict'][src_dest]['cores_matrix'][core_num][gb_index] = 0
-                    self.sdn_props['net_spec_dict'][dest_src]['cores_matrix'][core_num][gb_index] = 0
+                for req_index in req_id_arr:
+                    self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix'][core_num][req_index] = 0
+                    self.sdn_props['net_spec_dict'][(dest, source)]['cores_matrix'][core_num][req_index] = 0
+                for gb_index in gb_arr:
+                    self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix'][core_num][gb_index] = 0
+                    self.sdn_props['net_spec_dict'][(dest, source)]['cores_matrix'][core_num][gb_index] = 0
 
     def _allocate_gb(self, core_matrix: list, rev_core_matrix: list, core_num: int, end_slot: int):
         if core_matrix[core_num][end_slot] != 0.0 or rev_core_matrix[core_num][end_slot] != 0.0:
@@ -53,13 +48,18 @@ class SDNController:
         rev_core_matrix[core_num][end_slot] = self.sdn_props['req_id'] * -1
 
     def allocate(self):
+        """
+        Allocates a network request.
+        """
         start_slot = self.spectrum_obj.spectrum_props['start_slot']
         end_slot = self.spectrum_obj.spectrum_props['end_slot']
         core_num = self.spectrum_obj.spectrum_props['core_num']
+
         if self.engine_props['guard_slots']:
             end_slot = end_slot - 1
         else:
             end_slot += 1
+
         for link_tuple in zip(self.sdn_props['path_list'], self.sdn_props['path_list'][1:]):
             # Remember, Python list indexing is up to and NOT including!
             link_dict = self.sdn_props['net_spec_dict'][(link_tuple[0], link_tuple[1])]
@@ -80,13 +80,13 @@ class SDNController:
                 self._allocate_gb(core_matrix=core_matrix, rev_core_matrix=rev_core_matrix, end_slot=end_slot,
                                   core_num=core_num)
 
-    # TODO: Naming conventions here
     def handle_event(self, request_type: str):
         """
         Handles any event that occurs in the simulation, controls this class.
 
         :param request_type: Whether the request is an arrival or departure.
-        :return: The response with relevant information, network database, and physical topology
+        :return: The properties of this class.
+        :rtype: dict
         """
         # Even if the request is blocked, we still consider one transponder
         self.sdn_props['num_trans'] = 1
@@ -106,7 +106,6 @@ class SDNController:
                     self.sdn_props['block_reason'] = 'distance'
                     return
 
-                # TODO: Core was passed to spectrum because of the AI object, need to fix this
                 mod_options = self.route_obj.route_props['mod_formats_list'][path_index]
                 # TODO: Need to keep track of XT cost
                 self.spectrum_obj.spectrum_props['path_list'] = path_list

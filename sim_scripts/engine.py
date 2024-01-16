@@ -35,7 +35,7 @@ class Engine:
         self.sim_info = os.path.join(self.engine_props['network'], self.engine_props['date'],
                                      self.engine_props['sim_start'])
 
-        self.sdn_obj = SDNController(properties=self.engine_props)
+        self.sdn_obj = SDNController(engine_props=self.engine_props)
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
         self.ai_obj = AIMethods(properties=self.engine_props)
 
