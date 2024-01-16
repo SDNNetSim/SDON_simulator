@@ -106,10 +106,9 @@ class SDNController:
                     self.sdn_props['block_reason'] = 'distance'
                     return
 
-                mod_options = self.route_obj.route_props['mod_formats_list'][path_index]
-                # TODO: Need to keep track of XT cost
+                mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
                 self.spectrum_obj.spectrum_props['path_list'] = path_list
-                self.spectrum_obj.get_spectrum(mod_options=mod_options)
+                self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
                 # Request was blocked for this path
                 if self.spectrum_obj.spectrum_props['is_free'] is not True:
                     self.sdn_props['block_reason'] = 'congestion'

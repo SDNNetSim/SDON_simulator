@@ -1,7 +1,6 @@
 from helper_scripts.sim_helpers import find_free_channels, find_free_slots, get_channel_overlaps
 
 
-
 # TODO: Make sure to check link and rev_link
 # TODO: Can put multiple params in constructor as well
 def link_has_free_spectrum(sdn_props: dict, link, rev_link, core_num, start_slot, end_slot):
@@ -46,9 +45,11 @@ def check_open_slots(sdn_props: dict, spectrum_props: dict, engine_props: dict, 
                     if engine_props['allocation_method'] == 'last_fit':
                         # Note that these are reversed since we search in decreasing order, but allocate in
                         # increasing order
-                        check_other_links(spectrum_props, core_num, end_index, start_index + engine_props['guard_slots'])
+                        check_other_links(sdn_props, spectrum_props, core_num, end_index,
+                                          start_index + engine_props['guard_slots'])
                     else:
-                        check_other_links(sdn_props, spectrum_props, core_num, start_index, end_index + engine_props['guard_slots'])
+                        check_other_links(sdn_props, spectrum_props, core_num, start_index,
+                                          end_index + engine_props['guard_slots'])
 
                 if spectrum_props['is_free'] is not False or len(spectrum_props['path_list']) <= 2:
                     # Since we use enumeration prior and set the matrix equal to one core, the "core_num" will
