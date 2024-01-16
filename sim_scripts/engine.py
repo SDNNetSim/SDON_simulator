@@ -13,7 +13,7 @@ from helper_scripts.ai_helpers import AIMethods
 from helper_scripts.stats_helpers import SimStats
 
 
-# TODO: Think I went a little overboard with the dictionaries, don't put everything in there
+# TODO: No support for AI in all scripts for the time being
 class Engine:
     """
     Controls a single simulation.
@@ -39,22 +39,21 @@ class Engine:
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
         self.ai_obj = AIMethods(properties=self.engine_props)
 
-    def update_ai_obj(self, sdn_data: dict):
+    def update_ai_obj(self, sdn_dict: dict):
         """
         Updates the artificial intelligent object class after each request.
         
-        :param sdn_data: The data that was retrieved from the SDN controller.
-        :return: None
+        :param sdn_dict: The data that was retrieved from the SDN controller.
         """
         if self.engine_props['route_method'] == 'ai':
-            if not sdn_data[0]:
+            if not sdn_dict['was_routed']:
                 routed = False
                 spectrum = {}
                 path_mod = ''
             else:
-                spectrum = sdn_data[0]['spectrum']
+                spectrum = sdn_dict['spectrum_dict']
                 routed = True
-                path_mod = sdn_data[0]['mod_format']
+                path_mod = sdn_dict['spectrum_dict']['mod_format']
 
             self.ai_obj.update(routed=routed, spectrum=spectrum, path_mod=path_mod)
 
@@ -63,7 +62,6 @@ class Engine:
         Updates the SDN controller to handle an arrival request and retrieves relevant request statistics.
 
         :param curr_time: The arrival time of the request.
-        :return: None
         """
         for req_key, req_value in self.reqs_dict[curr_time].items():
             self.sdn_obj.sdn_props[req_key] = req_value
@@ -71,7 +69,7 @@ class Engine:
         self.sdn_obj.handle_event(request_type='arrival')
         self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
 
-        self.update_ai_obj(sdn_data=self.sdn_obj.sdn_props)
+        self.update_ai_obj(sdn_dict=self.sdn_obj.sdn_props)
         self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=self.sdn_obj.sdn_props)
 
         if self.sdn_obj.sdn_props['was_routed']:
@@ -168,14 +166,14 @@ class Engine:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
                     self.ai_obj.req_id = req_num
-                    self.handle_arrival(curr_time)
+                    self.handle_arrival(curr_time=curr_time)
 
                     if req_num % self.engine_props['snapshot_step'] == 0 and self.engine_props['save_snapshots']:
                         self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
 
                     req_num += 1
                 elif req_type == "release":
-                    self.handle_release(curr_time)
+                    self.handle_release(curr_time=curr_time)
                 else:
                     raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '
                                               f'got: {req_type}')
@@ -183,8 +181,6 @@ class Engine:
             self.stats_obj.get_blocking()
             self.stats_obj.end_iter_update()
             # Some form of ML/RL is being used, ignore confidence intervals for training and testing
-            # TODO: What I'm going to do for now is remove ai_arguments, since I'll eventually replace it with something
-            #   else
             if self.engine_props['ai_algorithm'] == 'None':
                 if self.stats_obj.get_conf_inter():
                     self.ai_obj.save()
