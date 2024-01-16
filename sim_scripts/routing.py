@@ -54,14 +54,14 @@ class Routing:
         all_paths_obj = nx.shortest_simple_paths(self.engine_props['topology'], self.sdn_props['source'],
                                                  self.sdn_props['destination'])
         min_hops = None
-        for i, path in enumerate(all_paths_obj):
-            num_hops = len(path)
+        for i, path_list in enumerate(all_paths_obj):
+            num_hops = len(path_list)
             if i == 0:
                 min_hops = num_hops
-                self._find_most_cong_link(path)
+                self._find_most_cong_link(path_list=path_list)
             else:
                 if num_hops <= min_hops + 1:
-                    self._find_most_cong_link(path)
+                    self._find_most_cong_link(path_list=path_list)
                 # We exceeded minimum hops plus one, return the best path
                 else:
                     self._find_least_cong()
@@ -101,9 +101,9 @@ class Routing:
         for k, path_list in enumerate(paths_obj):
             if k > self.engine_props['k_paths'] - 1:
                 break
-            path_len = find_path_len(path_list, self.engine_props['topology'])
+            path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
             chosen_bw = self.sdn_props['bandwidth']
-            mod_format = get_path_mod(self.engine_props['mod_per_bw'][chosen_bw], path_len)
+            mod_format = get_path_mod(mods_dict=self.engine_props['mod_per_bw'][chosen_bw], path_len=path_len)
 
             self.route_props['paths_list'].append(path_list)
             self.route_props['mod_formats_list'].append([mod_format])
@@ -113,11 +113,12 @@ class Routing:
         """
         Finds and selects the path with the least amount of non-linear impairment.
         """
+        # Bidirectional links are identical, therefore, we don't have to check each one
         for link_list in list(self.sdn_props['net_spec_dict'].keys())[::2]:
             source, destination = link_list[0], link_list[1]
             num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props['span_len']
             bandwidth = self.sdn_props['bandwidth']
-            # TODO: Constant QPSK for slots needed
+            # TODO: Constant QPSK for slots needed (Ask Arash)
             slots_needed = self.engine_props['mod_per_bw'][bandwidth]['QPSK']['slots_needed']
             self.sdn_props['slots_needed'] = slots_needed
 
@@ -184,7 +185,6 @@ class Routing:
             self.find_least_weight(weight='length')
         elif self.engine_props['route_method'] == 'k_shortest_path':
             self.find_k_shortest()
-        # TODO: Need to fix ai to account for passing props
         elif self.engine_props['route_method'] == 'ai':
             path, mod_format = ai_obj.route(sdn_props=self.sdn_props, route_props=self.route_props)
             self.route_props['paths_list'] = [path]

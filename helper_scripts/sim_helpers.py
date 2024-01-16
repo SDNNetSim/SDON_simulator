@@ -7,7 +7,7 @@ import networkx as nx
 import numpy as np
 
 
-def get_path_mod(mod_formats: dict, path_len: int):
+def get_path_mod(mods_dict: dict, path_len: int):
     """
     Given an object of modulation formats and maximum lengths, choose the one that satisfies the requirements.
 
@@ -19,11 +19,11 @@ def get_path_mod(mod_formats: dict, path_len: int):
 
     :return: The chosen modulation format, or false
     """
-    if mod_formats['QPSK']['max_length'] >= path_len > mod_formats['16-QAM']['max_length']:
+    if mods_dict['QPSK']['max_length'] >= path_len > mods_dict['16-QAM']['max_length']:
         resp = 'QPSK'
-    elif mod_formats['16-QAM']['max_length'] >= path_len > mod_formats['64-QAM']['max_length']:
+    elif mods_dict['16-QAM']['max_length'] >= path_len > mods_dict['64-QAM']['max_length']:
         resp = '16-QAM'
-    elif mod_formats['64-QAM']['max_length'] >= path_len:
+    elif mods_dict['64-QAM']['max_length'] >= path_len:
         resp = '64-QAM'
     else:
         return False
@@ -89,7 +89,7 @@ def sort_dict_keys(dictionary: dict):
     return sorted_dict
 
 
-def find_path_len(path: List[str], topology: nx.Graph):
+def find_path_len(path_list: List[str], topology: nx.Graph):
     """
     Finds the length of a path in a physical topology.
 
@@ -102,8 +102,8 @@ def find_path_len(path: List[str], topology: nx.Graph):
     :return: The length of the path.
     """
     path_len = 0
-    for i in range(len(path) - 1):
-        path_len += topology[path[i]][path[i + 1]]['length']
+    for i in range(len(path_list) - 1):
+        path_len += topology[path_list[i]][path_list[i + 1]]['length']
 
     return path_len
 
