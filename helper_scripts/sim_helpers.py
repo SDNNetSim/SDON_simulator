@@ -323,25 +323,3 @@ def find_taken_channels(net_spec_db: dict, des_link: tuple):
         resp[core_num] = channels
 
     return resp
-
-
-# TODO: This will just be another method in the snr script
-def handle_snr(check_snr: str, snr_obj: object, spectrum_props: dict):
-    # TODO: Make this better
-    snr_obj.path = path
-    snr_obj.path_mod = path_mod
-    snr_obj.spectrum = spectrum
-    snr_obj.assigned_slots = spectrum['end_slot'] - spectrum['start_slot'] + 1
-    snr_obj.spectral_slots = spectral_slots
-    snr_obj.net_spec_db = net_spec_db
-
-    if check_snr == "snr_calculation_nli":
-        snr_check, xt_cost = snr_obj.check_snr()
-    elif check_snr == "xt_calculation":
-        snr_check, xt_cost = snr_obj.check_xt()
-    elif check_snr == "snr_calculation_xt":
-        snr_check, xt_cost = snr_obj.check_snr_xt()
-    else:
-        raise NotImplementedError(f'Unexpected check_snr flag got: {check_snr}')
-
-    return snr_check, xt_cost

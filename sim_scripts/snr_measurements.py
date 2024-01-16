@@ -4,19 +4,19 @@ import numpy as np
 import networkx as nx
 
 
+# fixme: Only works for seven cores
 class SnrMeasurements:
     """
-    Calculates SNR for a given request.
+    Handles signal-to-noise ratio calculations for a given request.
     """
 
-    def __init__(self, properties: dict):
-        """
-        Initializes the SnrMeasurements class.
-
-        :param properties: Contains various simulation properties.
-        :type properties: dict
-        """
-        self.snr_props = properties
+    def __init__(self, engine_props: dict, sdn_props: dict, spectrum_props: dict):
+        # TODO: Check if you actually need all of these props
+        self.engine_props = engine_props
+        self.sdn_props = sdn_props
+        self.spectrum_props = spectrum_props
+        # TODO: snr props was sdn_props before I believe, change to empty props
+        # self.engine_props = snr_props
 
         self.light_frequency = 1.9341 * 10 ** 14
         self.plank = 6.62607004e-34
@@ -90,12 +90,12 @@ class SnrMeasurements:
         :return: The updated cross-phase modulation noise.
         :rtype: float
         """
-        num_slots = len(np.where(spectrum_contents == curr_link[self.spectrum['core_num']])[0]) * self.snr_props[
+        num_slots = len(np.where(spectrum_contents == curr_link[self.spectrum_props['core_num']])[0]) * self.engine_props[
             'bw_per_slot']
-        channel_freq = ((slot_index * self.snr_props['bw_per_slot']) + (num_slots / 2)) * 10 ** 9
+        channel_freq = ((slot_index * self.engine_props['bw_per_slot']) + (num_slots / 2)) * 10 ** 9
 
         channel_bw = num_slots * 10 ** 9
-        channel_psd = self.snr_props['input_power'] / channel_bw
+        channel_psd = self.engine_props['input_power'] / channel_bw
         if self.center_freq != channel_freq:
             new_xci = curr_xci + ((channel_psd ** 2) * math.log(
                 abs((abs(self.center_freq - channel_freq) + (channel_bw / 2)) / (
@@ -120,9 +120,9 @@ class SnrMeasurements:
         self.visited_channels = []
         # Cross-phase modulation noise
         xci_noise = 0
-        for slot_index in range(self.snr_props['spectral_slots']):
+        for slot_index in range(self.engine_props['spectral_slots']):
             curr_link = self.net_spec_db[(self.path[link], self.path[link + 1])]['cores_matrix']
-            spectrum_contents = curr_link[self.spectrum['core_num']][slot_index]
+            spectrum_contents = curr_link[self.spectrum_props['core_num']][slot_index]
 
             # Spectrum is occupied
             if spectrum_contents > 0 and spectrum_contents not in self.visited_channels:
@@ -146,7 +146,7 @@ class SnrMeasurements:
         mean_xt = (2 * self.bend_radius * self.coupling_coeff ** 2) / (self.prop_const * self.core_pitch)
         # The cross-talk noise power
         # TODO: Should we use span or link length?
-        power_xt = adjacent_cores * mean_xt * self.length * 1e3 * self.snr_props['input_power']
+        power_xt = adjacent_cores * mean_xt * self.length * 1e3 * self.engine_props['input_power']
 
         return power_xt
 
@@ -183,12 +183,12 @@ class SnrMeasurements:
         eff_span_len = (1 - math.e ** (-2 * self.attenuation * self.length * 10 ** 3)) / (2 * self.attenuation)
 
         baud_rate = int(self.req_bit_rate) * 10 ** 9 / 2
-        temp_coef = ((self.snr_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2) * (
+        temp_coef = ((self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2) * (
                 eff_span_len ** 2) * (self.center_psd ** 3) * (self.bandwidth ** 2)) / (
                             (baud_rate ** 2) * math.pi * self.dispersion * (self.length * 10 ** 3))
 
         # The PSD correction term
-        psd_correction = (80 / 81) * self.snr_props['phi'][self.path_mod] * temp_coef * hn_series
+        psd_correction = (80 / 81) * self.engine_props['phi'][self.path_mod] * temp_coef * hn_series
 
         return psd_correction
 
@@ -200,7 +200,7 @@ class SnrMeasurements:
         :rtype float
         """
         # Determine if we're using the GN or EGN model
-        if self.snr_props['egn_model']:
+        if self.engine_props['egn_model']:
             psd_correction = self._handle_egn_model()
             psd_nli = ((self.sci_psd + self.xci_psd) * self.mu_param * self.center_psd) - psd_correction
         else:
@@ -216,21 +216,21 @@ class SnrMeasurements:
         :type link: int
         """
         self.mu_param = (3 * (
-                self.snr_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2)) / (
+                self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2)) / (
                                 2 * math.pi * self.attenuation * np.abs(self.dispersion))
         self.sci_psd = self._calculate_sci_psd()
         self.xci_psd = self._calculate_xci(link=link)
-        # TODO Add support for self.snr_props['topology_info']['links'][link_id]['fiber']['nsp']
+        # TODO Add support for self.engine_props['topology_info']['links'][link_id]['fiber']['nsp']
         self.nsp = 1.8
 
-        self.length = self.snr_props['topology_info']['links'][self.link_id]['span_length']
-        self.num_span = self.snr_props['topology_info']['links'][self.link_id]['length'] / self.length
+        self.length = self.engine_props['topology_info']['links'][self.link_id]['span_length']
+        self.num_span = self.engine_props['topology_info']['links'][self.link_id]['length'] / self.length
 
     def update_link_constants(self):
         """
         Updates non-linear impairment parameters that will remain constant for future calculations.
         """
-        self.link = self.snr_props['topology_info']['links'][self.link_id]['fiber']
+        self.link = self.engine_props['topology_info']['links'][self.link_id]['fiber']
         self.attenuation = self.link['attenuation']
         self.dispersion = self.link['dispersion']
         self.bend_radius = self.link['bending_radius']
@@ -242,10 +242,10 @@ class SnrMeasurements:
         """
         Updates variables for the center frequency, bandwidth, and PSD for the current request.
         """
-        self.center_freq = ((self.spectrum['start_slot'] * self.snr_props['bw_per_slot']) + (
-                (self.assigned_slots * self.snr_props['bw_per_slot']) / 2)) * 10 ** 9
-        self.bandwidth = self.assigned_slots * self.snr_props['bw_per_slot'] * 10 ** 9
-        self.center_psd = self.snr_props['input_power'] / self.bandwidth
+        self.center_freq = ((self.start_slot * self.engine_props['bw_per_slot']) + (
+                (self.assigned_slots * self.engine_props['bw_per_slot']) / 2)) * 10 ** 9
+        self.bandwidth = self.assigned_slots * self.engine_props['bw_per_slot'] * 10 ** 9
+        self.center_psd = self.engine_props['input_power'] / self.bandwidth
 
     def check_snr(self):
         """
@@ -265,7 +265,7 @@ class SnrMeasurements:
             psd_nli = self._calculate_psd_nli()
             psd_ase = (self.plank * self.light_frequency * self.nsp) * (
                     math.exp(self.attenuation * self.length * 10 ** 3) - 1)
-            if self.snr_props['xt_noise']:
+            if self.engine_props['xt_noise']:
                 p_xt = self._calculate_pxt(adjacent_cores=None)
             else:
                 p_xt = 0
@@ -294,7 +294,7 @@ class SnrMeasurements:
             self._update_link_params(link=link)
             psd_ase = (self.plank * self.light_frequency * self.nsp) * (
                     math.exp(self.attenuation * self.length * 10 ** 3) - 1)
-            if self.snr_props['xt_noise']:
+            if self.engine_props['xt_noise']:
                 p_xt = self._calculate_pxt(adjacent_cores=None)
             else:
                 p_xt = 0
@@ -317,16 +317,16 @@ class SnrMeasurements:
         :return: The number of adjacent cores that have overlapping channels.
         """
         resp = 0
-        if self.spectrum['core_num'] != 6:
+        if self.spectrum_props['core_num'] != 6:
             # The neighboring core directly before the currently selected core
-            before = 5 if self.spectrum['core_num'] == 0 else self.spectrum['core_num'] - 1
+            before = 5 if self.spectrum_props['core_num'] == 0 else self.spectrum_props['core_num'] - 1
             # The neighboring core directly after the currently selected core
-            after = 0 if self.spectrum['core_num'] == 5 else self.spectrum['core_num'] + 1
+            after = 0 if self.spectrum_props['core_num'] == 5 else self.spectrum_props['core_num'] + 1
             adjacent_cores = [before, after, 6]
         else:
             adjacent_cores = list(range(6))
 
-        for curr_slot in range(self.spectrum['start_slot'], self.spectrum['end_slot']):
+        for curr_slot in range(self.spectrum_props['start_slot'], self.spectrum_props['end_slot']):
             overlapped = 0
             for core_num in adjacent_cores:
                 core_contents = self.net_spec_db[link_nodes]['cores_matrix'][core_num][curr_slot]
@@ -350,7 +350,7 @@ class SnrMeasurements:
         :rtype: tuple
         """
         if flag == 'intra_core':
-            edge_lengths = nx.get_edge_attributes(self.snr_props['topology'], 'length')
+            edge_lengths = nx.get_edge_attributes(self.engine_props['topology'], 'length')
             max_link = max(edge_lengths, key=edge_lengths.get, default=None)
             self.link_id = self.net_spec_db[max_link]['link_num']
             max_length = edge_lengths.get(max_link, 0.0)
@@ -375,7 +375,7 @@ class SnrMeasurements:
         for link in range(0, len(self.path) - 1):
             link_nodes = (self.path[link], self.path[link + 1])
             self.link_id = self.net_spec_db[link_nodes]['link_num']
-            link_length = self.snr_props['topology_info']['links'][self.link_id]['length']
+            link_length = self.engine_props['topology_info']['links'][self.link_id]['length']
             self.update_link_constants()
             self._update_link_params(link=link)
 
@@ -386,6 +386,31 @@ class SnrMeasurements:
             resp = True
         else:
             cross_talk = 10 * math.log10(cross_talk)
-            resp = cross_talk < self.snr_props['requested_xt'][self.path_mod]
+            resp = cross_talk < self.engine_props['requested_xt'][self.path_mod]
 
         return resp, cross_talk
+
+    # TODO: Probably don't need this method in the future
+    def _update(self):
+        self.path = self.spectrum_props['path_list']
+        self.path_mod = self.spectrum_props['modulation']
+        # TODO: I deleted spectrum
+        self.assigned_slots = self.spectrum_props['end_slot'] - self.spectrum_props['start_slot'] + 1
+        # TODO: Not sure what this was
+        self.start_slot = self.spectrum_props['start_slot']
+        self.end_slot = self.spectrum_props['end_slot']
+        self.net_spec_db = self.sdn_props['net_spec_dict']
+
+    # TODO: Check snr should be in props somewhere
+    def handle_snr(self):
+        self._update()
+        if self.engine_props['check_snr'] == "snr_calculation_nli":
+            snr_check, xt_cost = self.check_snr()
+        elif self.engine_props['check_snr'] == "xt_calculation":
+            snr_check, xt_cost = self.check_xt()
+        elif self.engine_props['check_snr'] == "snr_calculation_xt":
+            snr_check, xt_cost = self.check_snr_xt()
+        else:
+            raise NotImplementedError(f"Unexpected check_snr flag got: {self.engine_props['check_snr']}")
+
+        return snr_check, xt_cost

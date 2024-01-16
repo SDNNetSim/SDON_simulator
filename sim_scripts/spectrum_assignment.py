@@ -5,7 +5,6 @@ import numpy as np
 
 from arg_scripts.spectrum_args import empty_props
 from helper_scripts.spectrum_helpers import check_open_slots, find_best_core, check_other_links
-from helper_scripts.sim_helpers import handle_snr
 from sim_scripts.snr_measurements import SnrMeasurements
 
 
@@ -19,7 +18,8 @@ class SpectrumAssignment:
         self.engine_props = engine_props
         self.sdn_props = sdn_props
 
-        self.snr_obj = SnrMeasurements(properties=self.sdn_props)
+        self.snr_obj = SnrMeasurements(engine_props=self.engine_props, sdn_props=self.sdn_props,
+                                       spectrum_props=self.spectrum_props)
 
     def _allocate_best_fit(self, channels_list: list):
         for channel_dict in channels_list:
@@ -151,8 +151,7 @@ class SpectrumAssignment:
             if self.spectrum_props['is_free']:
                 self.spectrum_props['modulation'] = modulation
                 if self.engine_props['check_snr'] != 'None' and self.engine_props['check_snr'] is not None:
-                    # TODO: Will fix this after best_fit
-                    snr_check, xt_cost = handle_snr(engine_props=self.engine_props, sdn_props=self.sdn_props)
+                    snr_check, xt_cost = self.snr_obj.handle_snr()
                     # TODO: Make sure to account for this in sdn_controller
                     self.spectrum_props['xt_cost'] = xt_cost
                     if not snr_check:

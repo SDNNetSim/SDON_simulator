@@ -4,7 +4,6 @@ import numpy as np
 from arg_scripts.sdn_args import empty_props
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
-from sim_scripts.snr_measurements import SnrMeasurements
 
 
 class SDNController:
@@ -17,7 +16,6 @@ class SDNController:
         self.sdn_props = empty_props
 
         self.ai_obj = None
-        self.snr_obj = SnrMeasurements(properties=engine_props)
         self.route_obj = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
         self.spectrum_obj = SpectrumAssignment(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
