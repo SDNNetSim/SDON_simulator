@@ -81,4 +81,6 @@ OTHER_OPTIONS = {
     'snapshot_step': int,
     'print_step': int,
     'file_type': str,
+    'theta': float,
+    'filter_mods': bool,
 }

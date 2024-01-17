@@ -38,4 +38,7 @@ PARAMETERS = [
     ['snapshot_step', int, ''],
     ['print_step', int, ''],
     ['file_type', str, ''],
+    # TODO: Check these
+    ['theta', float, ''],
+    ['filter_mods', bool, ''],
 ]

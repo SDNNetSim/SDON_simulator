@@ -1,8 +1,6 @@
-# Standard library imports
 import copy
 from typing import List
 
-# Third-party library imports
 import networkx as nx
 import numpy as np
 

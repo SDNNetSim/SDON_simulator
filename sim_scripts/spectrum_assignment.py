@@ -120,6 +120,8 @@ class SpectrumAssignment:
             self.handle_first_last(flag=self.engine_props['allocation_method'])
         elif self.engine_props['allocation_method'] == 'xt_aware':
             self.xt_aware()
+        elif self.engine_props['allocation_method'] == 'prioritized_first_fit':
+            raise NotImplementedError('Need to implement this.')
         else:
             raise NotImplementedError(f"Expected first_fit or best_fit, got: {self.engine_props['allocation_method']}")
 

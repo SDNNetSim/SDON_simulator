@@ -110,7 +110,8 @@ class SimStats:
             if stat_key in ('mods_used_dict', 'weights_dict', 'block_bw_dict'):
                 self._init_mods_weights_bws()
             elif stat_key == 'snapshots_dict':
-                self._init_snapshots()
+                if self.engine_props['save_snapshots']:
+                    self._init_snapshots()
             elif stat_key == 'cores_dict':
                 self.stats_props['cores_dict'] = {core: 0 for core in range(self.engine_props['cores_per_link'])}
             elif stat_key == 'block_reasons_dict':
