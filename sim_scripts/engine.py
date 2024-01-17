@@ -168,7 +168,7 @@ class Engine:
                     self.ai_obj.req_id = req_num
                     self.handle_arrival(curr_time=curr_time)
 
-                    if req_num % self.engine_props['snapshot_step'] == 0 and self.engine_props['save_snapshots']:
+                    if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
                         self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
 
                     req_num += 1

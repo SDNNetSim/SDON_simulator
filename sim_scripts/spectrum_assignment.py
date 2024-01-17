@@ -64,6 +64,12 @@ class SpectrumAssignment:
         if self.spectrum_props['forced_core'] is not None:
             core_matrix = [self.spectrum_props['cores_matrix'][self.spectrum_props['forced_core']]]
             start_core = self.spectrum_props['forced_core']
+        elif self.engine_props['allocation_method'] in ('priority_first', 'priority_last'):
+            core_list = [0, 2, 4, 1, 3, 5, 6]
+            core_matrix = list()
+            for curr_core in core_list:
+                core_matrix.append([self.spectrum_props['cores_matrix'][curr_core]])
+            start_core = 0
         else:
             core_matrix = self.spectrum_props['cores_matrix']
             start_core = 0
@@ -82,10 +88,10 @@ class SpectrumAssignment:
             open_slots_arr = np.where(core_arr == 0)[0]
 
             # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
-            if flag == 'last_fit':
+            if flag in ('last_fit', 'priority_last'):
                 open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
                                      itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-            elif flag == 'first_fit':
+            elif flag in ('first_fit', 'priority_first'):
                 open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
                                      itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
             else:
@@ -116,12 +122,10 @@ class SpectrumAssignment:
     def _get_spectrum(self):
         if self.engine_props['allocation_method'] == 'best_fit':
             self.find_best_fit()
-        elif self.engine_props['allocation_method'] in ('first_fit', 'last_fit'):
+        elif self.engine_props['allocation_method'] in ('first_fit', 'last_fit', 'priority_first', 'priority_last'):
             self.handle_first_last(flag=self.engine_props['allocation_method'])
         elif self.engine_props['allocation_method'] == 'xt_aware':
             self.xt_aware()
-        elif self.engine_props['allocation_method'] == 'prioritized_first_fit':
-            raise NotImplementedError('Need to implement this.')
         else:
             raise NotImplementedError(f"Expected first_fit or best_fit, got: {self.engine_props['allocation_method']}")
 
