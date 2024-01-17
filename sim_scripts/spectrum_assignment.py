@@ -68,7 +68,7 @@ class SpectrumAssignment:
             core_list = [0, 2, 4, 1, 3, 5, 6]
             core_matrix = list()
             for curr_core in core_list:
-                core_matrix.append([self.spectrum_props['cores_matrix'][curr_core]])
+                core_matrix.append(self.spectrum_props['cores_matrix'][curr_core])
             start_core = 0
         else:
             core_matrix = self.spectrum_props['cores_matrix']
