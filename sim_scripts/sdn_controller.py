@@ -78,6 +78,66 @@ class SDNController:
                 self._allocate_gb(core_matrix=core_matrix, rev_core_matrix=rev_core_matrix, end_slot=end_slot,
                                   core_num=core_num)
 
+    def allocate_lps():
+        """
+        Attempts to perform light path slicing (LPS) to allocate a request.
+
+        :return: A dict of allocated bandwith, mod formats and cross talk cost if LPS is successfully carried out, False otherwise
+        """
+        if self.chosen_bw == '25' or self.sdn_props['max_segments'] == 1:
+            return False
+
+        path_len = find_path_len(self.path, self.topology)
+        # Sort the dictionary in descending order by bandwidth
+        modulation_formats = sort_dict_keys(self.sdn_props['mod_per_bw'])
+
+        for bandwidth, modulation_dict in modulation_formats.items():
+            # Cannot slice to a larger bandwidth, or slice within a bandwidth itself
+            if int(bandwidth) >= int(self.chosen_bw):
+                continue
+
+            tmp_format = get_path_mod(modulation_dict, path_len)
+            if tmp_format is False:
+                self.block_reason = 'distance'
+                continue
+
+            num_segments = int(int(self.chosen_bw) / int(bandwidth))
+            if num_segments > self.sdn_props['max_segments']:
+                self.block_reason = 'max_segments'
+                break
+            self.num_transponders = num_segments
+
+            is_allocated = True
+            resp = {'mod_format': [], 'bw': [], 'xt_cost': [], 'spectrum': []}
+            # Check if all slices can be allocated
+            for _ in range(num_segments):
+                spectrum, xt_cost, modulation = self._handle_spectrum_lps(mod_options=[tmp_format], lps_bw=bandwidth)
+
+                if spectrum is not False and spectrum is not None:
+                    self.allocate(start_slot=spectrum['start_slot'], end_slot=spectrum['end_slot'],
+                                  core_num=spectrum['core_num'])
+
+                    # TODO: Was this averaged afterwards? What happened with it
+                    #   - Average what you can, otherwise not sure yet, just treat them as separate requests?
+                    #   - The spectrum has to be "taken" before another request can be looked for
+                    #       - For this reason, probably best to have in sdn controller
+                    resp['xt_cost'].append(xt_cost)
+                    resp['mod_format'].append(tmp_format)
+                    resp['bw'].append(bandwidth)
+                    resp['spectrum'].append(spectrum)
+                # Clear all previously attempted allocations
+                else:
+                    self.release()
+                    is_allocated = False
+                    self.block_reason = 'congestion'
+                    break
+
+            if is_allocated:
+                return resp
+
+    def _handle_lss(self):
+        raise NotImplementedError
+
     def handle_event(self, request_type: str):
         """
         Handles any event that occurs in the simulation, controls this class.
@@ -97,32 +157,39 @@ class SDNController:
         self.route_obj.get_route(ai_obj=self.ai_obj)
         route_time = time.time() - start_time
 
-        for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
-            if path_list is not False:
-                if self.route_obj.route_props['mod_formats_list'][path_index][0] is False:
-                    self.sdn_props['was_routed'] = False
-                    self.sdn_props['block_reason'] = 'distance'
+        #  TODO: Before we are looping through modulation formats? Why? Multiple for one path I'm assuming, routing
+        segment_slicing = False
+        while True:
+            for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
+                if path_list is not False:
+                    # TODO: I changed this from a return to a continue statement
+                    if self.route_obj.route_props['mod_formats_list'][path_index][0] is False:
+                        self.sdn_props['was_routed'] = False
+                        self.sdn_props['block_reason'] = 'distance'
+                        continue
+
+                    # TODO: Route props should return all modulation formats to be considered, if multiple too
+                    mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
+                    self.spectrum_obj.spectrum_props['path_list'] = path_list
+                    self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
+                    # Request was blocked for this path
+                    if self.spectrum_obj.spectrum_props['is_free'] is not True:
+                        self.sdn_props['block_reason'] = 'congestion'
+                        continue
+
+                    self.sdn_props['was_routed'] = True
+                    self.sdn_props['path_list'] = path_list
+                    self.sdn_props['route_time'] = route_time
+                    self.sdn_props['path_weight'] = self.route_obj.route_props['weights_list'][path_index]
+                    self.sdn_props['spectrum_dict'] = self.spectrum_obj.spectrum_props
+                    self.sdn_props['is_sliced'] = False
+
+                    self.allocate()
                     return
 
-                mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
-                self.spectrum_obj.spectrum_props['path_list'] = path_list
-                self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
-                # Request was blocked for this path
-                if self.spectrum_obj.spectrum_props['is_free'] is not True:
-                    self.sdn_props['block_reason'] = 'congestion'
-                    continue
-
-                self.sdn_props['was_routed'] = True
-                self.sdn_props['path_list'] = path_list
-                self.sdn_props['route_time'] = route_time
-                self.sdn_props['path_weight'] = self.route_obj.route_props['weights_list'][path_index]
-                self.sdn_props['spectrum_dict'] = self.spectrum_obj.spectrum_props
-                self.sdn_props['is_sliced'] = False
-                # TODO: Always one until segment slicing is implemented
-                self.sdn_props['num_trans'] = 1
-
-                self.allocate()
+            if self.engine_props['max_segments'] > 1 and self.sdn_props['bandwidth'] != '25':
+                segment_slicing = True
+            else:
+                self.sdn_props['block_reason'] = 'distance'
+                self.sdn_props['was_routed'] = False
                 return
-
-        self.sdn_props['block_reason'] = 'distance'
-        self.sdn_props['was_routed'] = False

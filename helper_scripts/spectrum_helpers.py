@@ -119,3 +119,4 @@ def find_best_core(sdn_props: dict, spectrum_props: dict):
         if 6 in sorted_cores:
             sorted_cores.remove(6)
     return sorted_cores[0]
+

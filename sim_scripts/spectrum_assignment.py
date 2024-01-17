@@ -145,10 +145,6 @@ class SpectrumAssignment:
         self._init_spectrum_info()
         for modulation in mod_format_list:
             if modulation is False:
-                # TODO: Light segment slicing will be a helper function for spectrum assignment
-                if self.engine_props['max_segments'] > 1:
-                    raise NotImplementedError
-
                 continue
 
             self.spectrum_props['slots_needed'] = self.sdn_props['mod_formats'][modulation]['slots_needed']
