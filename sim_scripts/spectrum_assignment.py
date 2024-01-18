@@ -144,6 +144,7 @@ class SpectrumAssignment:
         """
         self._init_spectrum_info()
         for modulation in mod_format_list:
+            # TODO: Not sure about block reason here
             if modulation is False:
                 continue
 

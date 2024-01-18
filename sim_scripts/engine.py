@@ -57,6 +57,7 @@ class Engine:
 
             self.ai_obj.update(routed=routed, spectrum=spectrum, path_mod=path_mod)
 
+    # TODO: Need to double check that I'm updating everything correctly here
     def handle_arrival(self, curr_time: float):
         """
         Updates the SDN controller to handle an arrival request and retrieves relevant request statistics.
@@ -171,7 +172,6 @@ class Engine:
                     if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
                         self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
 
-                    print(req_num)
                     req_num += 1
                 elif req_type == "release":
                     self.handle_release(curr_time=curr_time)
