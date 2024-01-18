@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Local application imports
-from useful_functions.os_helpers import create_dir
+from helper_scripts.os_helpers import create_dir
 from interactive_plots import plot_q_table
 
 
@@ -364,13 +364,13 @@ class PlotStats:
 
                     self.erlang_dict = erlang_dict
                     self._find_blocking()
-                    self._find_algorithm()
-                    self._find_sim_info(network=obj['network'])
-                    self._find_modulation_info()
-                    self._find_network_usage()
-                    if self.erlang_dict['sim_params']['ai_algorithm'] != 'None':
-                        self._find_ai_stats()
-                    self._find_misc_stats()
+                    # self._find_algorithm()
+                    # self._find_sim_info(network=obj['network'])
+                    # self._find_modulation_info()
+                    # self._find_network_usage()
+                    # if self.erlang_dict['sim_params']['ai_algorithm'] != 'None':
+                    #     self._find_ai_stats()
+                    # self._find_misc_stats()
 
     def _save_plot(self, file_name: str):
         file_path = f'./output/{self.net_names[0][-1]}/{self.dates[0][-1]}/{self.times[0][-1]}'
@@ -479,14 +479,14 @@ class PlotStats:
         legend_list = list()
         for _, objs in self.plot_dict.items():
             for _, sim_obj in objs.items():
-                if sim_obj['algorithm'][0] == 'k':
-                    style = 'dashed'
-                    if x_vals == 'time_steps':
-                        continue
-                elif sim_obj['algorithm'][0:2] == 'Ba':
-                    style = 'dashdot'
-                else:
-                    style = 'solid'
+                # if sim_obj['algorithm'][0] == 'k':
+                #     style = 'dashed'
+                #     if x_vals == 'time_steps':
+                #         continue
+                # elif sim_obj['algorithm'][0:2] == 'Ba':
+                #     style = 'dashdot'
+                # else:
+                style = 'solid'
 
                 for curr_value in y_vals:
                     if reward_flags is not None:
@@ -508,7 +508,7 @@ class PlotStats:
                             legend_item = self._snake_to_title(curr_value)
                             legend_list.append(f"{legend_item}")
                         else:
-                            legend_list.append(f"{sim_obj['algorithm']}")
+                            # legend_list.append(f"{sim_obj['algorithm']}")
                             plt.plot(sim_obj[x_vals], sim_obj[curr_value], linestyle=style, markersize=2.3)
 
         plt.legend(legend_list)
@@ -752,7 +752,7 @@ def main():
             # ['route_method', 'k_shortest_path']
         ]
     }
-    sim_times, sim_nums, networks, dates = find_times(dates_networks={'1217': 'USNet'}, filters=filters)
+    sim_times, sim_nums, networks, dates = find_times(dates_networks={'0118': 'USNet'}, filters=filters)
     plot_obj = PlotStats(net_names=networks, dates=dates, times=sim_times, sims=sim_nums)
 
     plot_obj.plot_blocking()

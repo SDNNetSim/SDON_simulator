@@ -1,6 +1,7 @@
 import time
 import numpy as np
 
+from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len
 from arg_scripts.sdn_args import empty_props
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
@@ -79,12 +80,19 @@ class SDNController:
                                   core_num=core_num)
 
     # TODO: Here we are assuming we already have a modulation formats list from routing
-    def _handle_slicing(self, path_list: list, mod_format_list: list):
-        bw_list = list(self.engine_props['mod_per_bw'].keys())
-        # We can't slice into larger or equal size bandwidth
-        bw_list = [bandwidth for bandwidth in bw_list if int(bandwidth) < int(self.sdn_props['bandwidth'])]
+    # TODO: Light segment slicing should loop all modulation formats in order like before
+    def _handle_slicing(self, path_list: list):
+        bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
+        for bandwidth, mods_dict in bw_mod_dict.items():
+            # We can't slice to a larger or equal bandwidth
+            if int(bandwidth) >= int(self.sdn_props['bandwidth']):
+                continue
 
-        for bandwidth in bw_list:
+            path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
+            mod_format = get_path_mod(mods_dict=mods_dict, path_len=path_len)
+            if not mod_format:
+                continue
+
             self.sdn_props['was_routed'] = True
             num_segments = int(int(self.sdn_props['bandwidth']) / int(bandwidth))
             if num_segments > self.engine_props['max_segments']:
@@ -94,7 +102,8 @@ class SDNController:
 
             self.sdn_props['num_trans'] = num_segments
             self.spectrum_obj.spectrum_props['path_list'] = path_list
-            for _ in range(num_segments):
+            mod_format_list = [mod_format]
+            for segment in range(num_segments):
                 self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
                 # TODO: Need to append and check important information like:
                 #   - XT, is_slices, start_slot, end_slot, mod_format, bandwidth, spectrum (start and end slot)
@@ -105,6 +114,9 @@ class SDNController:
                     self.sdn_props['block_reason'] = 'congestion'
                     self.release()
                     break
+
+            if self.sdn_props['was_routed']:
+                return
 
     def handle_event(self, request_type: str):
         """
@@ -133,7 +145,7 @@ class SDNController:
                     mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
 
                     if segment_slicing:
-                        self._handle_slicing(path_list=path_list, mod_format_list=mod_format_list)
+                        self._handle_slicing(path_list=path_list)
                         if not self.sdn_props['was_routed']:
                             self.sdn_props['num_trans'] = 1
                             continue
