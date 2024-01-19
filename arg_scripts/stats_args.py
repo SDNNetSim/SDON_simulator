@@ -10,6 +10,7 @@ empty_props = {
     'hops_list': list(),
     'lengths_list': list(),
     'route_times_list': list(),
+    'xt_list': list(),
 }
 
 SNAP_KEYS_LIST = ['occupied_slots', 'guard_slots', 'active_requests', 'blocking_prob', 'num_segments']

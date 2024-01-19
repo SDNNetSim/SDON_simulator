@@ -82,7 +82,7 @@ class Routing:
                 resp_weight = sum(self.sdn_props['topology'][path_list[i]][path_list[i + 1]][weight]
                                   for i in range(len(path_list) - 1))
             else:
-                resp_weight = find_path_len(path=path_list, topology=self.sdn_props['topology'])
+                resp_weight = find_path_len(path_list=path_list, topology=self.sdn_props['topology'])
 
             self.route_props['weights_list'].append(resp_weight)
             mod_format = get_path_mod(self.sdn_props['mod_formats'], resp_weight)

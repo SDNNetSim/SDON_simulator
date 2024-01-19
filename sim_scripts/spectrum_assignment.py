@@ -136,11 +136,12 @@ class SpectrumAssignment:
         self.spectrum_props['rev_cores_matrix'] = self.sdn_props['net_spec_dict'][rev_link_tuple]['cores_matrix']
         self.spectrum_props['is_free'] = False
 
-    def get_spectrum(self, mod_format_list: list):
+    def get_spectrum(self, mod_format_list: list, slice_bandwidth: str = None):
         """
         Controls the class, attempts to find an available spectrum.
 
         :param mod_format_list: A list of modulation formats to attempt allocation.
+        :param slice_bandwidth: A bandwidth used for light-segment slicing.
         """
         self._init_spectrum_info()
         for modulation in mod_format_list:
@@ -148,7 +149,11 @@ class SpectrumAssignment:
             if modulation is False:
                 continue
 
-            self.spectrum_props['slots_needed'] = self.sdn_props['mod_formats'][modulation]['slots_needed']
+            if slice_bandwidth:
+                bandwidth_dict = self.engine_props['mod_per_bw'][slice_bandwidth]
+                self.spectrum_props['slots_needed'] = bandwidth_dict[modulation]['slots_needed']
+            else:
+                self.spectrum_props['slots_needed'] = self.sdn_props['mod_formats'][modulation]['slots_needed']
             self._get_spectrum()
 
             if self.spectrum_props['is_free']:

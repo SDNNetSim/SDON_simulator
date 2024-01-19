@@ -79,8 +79,36 @@ class SDNController:
                 self._allocate_gb(core_matrix=core_matrix, rev_core_matrix=rev_core_matrix, end_slot=end_slot,
                                   core_num=core_num)
 
-    # TODO: Here we are assuming we already have a modulation formats list from routing
-    # TODO: Light segment slicing should loop all modulation formats in order like before
+    def _update_req_stats(self, bandwidth: str):
+        self.sdn_props['bandwidth_list'].append(bandwidth)
+        for stat_key in self.sdn_props['stat_key_list']:
+            spectrum_key = stat_key.split('_')[0]
+            if spectrum_key == 'xt':
+                spectrum_key = 'xt_cost'
+            elif spectrum_key == 'core':
+                spectrum_key = 'core_num'
+            self.sdn_props[stat_key].append(self.spectrum_obj.spectrum_props[spectrum_key])
+
+    def _init_req_stats(self):
+        self.sdn_props['bandwidth_list'] = list()
+        for stat_key in self.sdn_props['stat_key_list']:
+            self.sdn_props[stat_key] = list()
+
+    def _allocate_slicing(self, num_segments: int, mod_format: str, path_list: list, bandwidth: str):
+        self.sdn_props['num_trans'] = num_segments
+        self.spectrum_obj.spectrum_props['path_list'] = path_list
+        mod_format_list = [mod_format]
+        for segment in range(num_segments):
+            self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth)
+            if self.spectrum_obj.spectrum_props['is_free']:
+                self.allocate()
+                self._update_req_stats(bandwidth=bandwidth)
+            else:
+                self.sdn_props['was_routed'] = False
+                self.sdn_props['block_reason'] = 'congestion'
+                self.release()
+                break
+
     def _handle_slicing(self, path_list: list):
         bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
         for bandwidth, mods_dict in bw_mod_dict.items():
@@ -100,23 +128,14 @@ class SDNController:
                 self.block_reason = 'max_segments'
                 break
 
-            self.sdn_props['num_trans'] = num_segments
-            self.spectrum_obj.spectrum_props['path_list'] = path_list
-            mod_format_list = [mod_format]
-            for segment in range(num_segments):
-                self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
-                # TODO: Need to append and check important information like:
-                #   - XT, is_slices, start_slot, end_slot, mod_format, bandwidth, spectrum (start and end slot)
-                if self.spectrum_obj.spectrum_props['is_free']:
-                    self.allocate()
-                else:
-                    self.sdn_props['was_routed'] = False
-                    self.sdn_props['block_reason'] = 'congestion'
-                    self.release()
-                    break
+            self._allocate_slicing(num_segments=num_segments, mod_format=mod_format, path_list=path_list,
+                                   bandwidth=bandwidth)
 
             if self.sdn_props['was_routed']:
+                self.sdn_props['is_sliced'] = True
                 return
+            else:
+                self.sdn_props['is_slices'] = False
 
     def handle_event(self, request_type: str):
         """
@@ -162,14 +181,15 @@ class SDNController:
                             self.sdn_props['block_reason'] = 'congestion'
                             continue
 
+                    self._update_req_stats(bandwidth=self.sdn_props['bandwidth'])
                     self.sdn_props['was_routed'] = True
                     self.sdn_props['route_time'] = route_time
+                    # TODO: Ask Arash, multiple path weights?
                     self.sdn_props['path_weight'] = self.route_obj.route_props['weights_list'][path_index]
-                    # TODO: Spectrum dict has XT, make sure to handle in engine
                     self.sdn_props['spectrum_dict'] = self.spectrum_obj.spectrum_props
-                    self.sdn_props['is_sliced'] = False
 
                     if not segment_slicing:
+                        self.sdn_props['is_sliced'] = False
                         self.allocate()
                     return
 

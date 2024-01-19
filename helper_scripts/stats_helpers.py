@@ -152,6 +152,17 @@ class SimStats:
 
         self.stats_props['sim_block_list'].append(blocking_prob)
 
+    def _handle_iter_lists(self, sdn_data: dict):
+        for stat_key in sdn_data['stat_key_list']:
+            for i, data in enumerate(sdn_data[stat_key]):
+                if stat_key == 'core_list':
+                    self.stats_props['cores_dict'][data] += 1
+                elif stat_key == 'modulation_list':
+                    bandwidth = sdn_data['bandwidth_list'][i]
+                    self.stats_props['mods_used_dict'][bandwidth][data] += 1
+                elif stat_key == 'xt_list':
+                    self.stats_props['xt_list'].append(data)
+
     def iter_update(self, req_data: dict, sdn_data: dict):
         """
         Continuously updates the statistical data for each request allocated/blocked in the current iteration.
@@ -172,17 +183,13 @@ class SimStats:
             path_len = find_path_len(path_list=sdn_data['path_list'], topology=self.topology)
             self.stats_props['lengths_list'].append(path_len)
 
-            core_chosen = sdn_data['spectrum_dict']['core_num']
-            self.stats_props['cores_dict'][core_chosen] += 1
-
+            self._handle_iter_lists(sdn_data=sdn_data)
             self.stats_props['route_times_list'].append(sdn_data['route_time'])
-
-            mod_format = sdn_data['spectrum_dict']['modulation']
-            bandwidth = req_data['bandwidth']
-            self.stats_props['mods_used_dict'][bandwidth][mod_format] += 1
-
             self.total_trans += sdn_data['num_trans']
             # TODO: This won't work but after changing the sdn_controller it will (standardize path weight return)
+            # TODO: Not sure what to do here yet (Ask Arash about what he would like to see here)
+            bandwidth = sdn_data['bandwidth']
+            mod_format = sdn_data['modulation_list'][0]
             self.stats_props['weights_dict'][bandwidth][mod_format].append(sdn_data['path_weight'])
 
     def _get_iter_means(self):
@@ -267,9 +274,12 @@ class SimStats:
 
         self.save_dict['iter_stats'][self.iteration] = dict()
         for stat_key in self.stats_props:
-            if stat_key in ('trans_list', 'hops_list', 'lengths_list', 'route_times_list'):
+            # TODO: Need min and max for some of these
+            # TODO: Ask Arash, when XT is None it is set to zero for now
+            if stat_key in ('trans_list', 'hops_list', 'lengths_list', 'route_times_list', 'xt_list'):
                 mean_key = f"{stat_key.split('list')[0]}mean"
-                self.save_dict['iter_stats'][self.iteration][mean_key] = mean(self.stats_props[stat_key])
+                stat_array = [0 if stat is None else stat for stat in self.stats_props[stat_key]]
+                self.save_dict['iter_stats'][self.iteration][mean_key] = mean(stat_array)
             else:
                 self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(self.stats_props[stat_key])
 

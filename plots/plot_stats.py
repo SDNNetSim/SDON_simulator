@@ -385,7 +385,7 @@ class PlotStats:
 
         if y_ticks:
             plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
-            plt.ylim(10 ** -3, 1)
+            plt.ylim(10 ** -4, 1)
             plt.yscale('log')
 
         if y_lim:
