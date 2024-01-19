@@ -45,7 +45,7 @@ class PlotStats:
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
         self.markers = ['o', '^', 's', 'x']
         # self.x_ticks = list(range(10, 450, 50))
-        self.x_ticks = [10, 100, 200, 300, 400, 500, 600, 700]
+        self.x_ticks = [10, 100, 200, 300, 400]
 
         self._get_data()
 
