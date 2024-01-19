@@ -206,7 +206,11 @@ class SimStats:
                 if len(data_list) == 0:
                     mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
                 else:
-                    mod_obj[modulation] = {'mean': mean(data_list), 'std': stdev(data_list),
+                    if len(data_list) == 1:
+                        deviation = 0.0
+                    else:
+                        deviation = stdev(data_list)
+                    mod_obj[modulation] = {'mean': mean(data_list), 'std': deviation,
                                            'min': min(data_list), 'max': max(data_list)}
 
     def end_iter_update(self):
@@ -278,7 +282,12 @@ class SimStats:
             # TODO: Ask Arash, when XT is None it is set to zero for now
             if stat_key in ('trans_list', 'hops_list', 'lengths_list', 'route_times_list', 'xt_list'):
                 mean_key = f"{stat_key.split('list')[0]}mean"
-                stat_array = [0 if stat is None else stat for stat in self.stats_props[stat_key]]
+                if stat_key == 'xt_list':
+                    stat_array = [0 if stat is None else stat for stat in self.stats_props[stat_key]]
+                    # TODO: Change
+                    stat_array = [0]
+                else:
+                    stat_array = self.stats_props[stat_key]
                 self.save_dict['iter_stats'][self.iteration][mean_key] = mean(stat_array)
             else:
                 self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(self.stats_props[stat_key])

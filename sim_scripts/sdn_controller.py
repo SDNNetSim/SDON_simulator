@@ -145,6 +145,7 @@ class SDNController:
         :return: The properties of this class.
         :rtype: dict
         """
+        self._init_req_stats()
         # Even if the request is blocked, we still consider one transponder
         self.sdn_props['num_trans'] = 1
 
@@ -157,6 +158,7 @@ class SDNController:
         route_time = time.time() - start_time
 
         segment_slicing = False
+        # TODO: I think this while loop is slowing things down/ not correct
         while True:
             for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
                 if path_list is not False:
