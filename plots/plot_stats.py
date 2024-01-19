@@ -752,7 +752,7 @@ def main():
             # ['route_method', 'k_shortest_path']
         ]
     }
-    sim_times, sim_nums, networks, dates = find_times(dates_networks={'0118': 'USNet'}, filters=filters)
+    sim_times, sim_nums, networks, dates = find_times(dates_networks={'0119': 'USNet'}, filters=filters)
     plot_obj = PlotStats(net_names=networks, dates=dates, times=sim_times, sims=sim_nums)
 
     plot_obj.plot_blocking()
