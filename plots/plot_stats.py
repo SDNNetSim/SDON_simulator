@@ -45,7 +45,7 @@ class PlotStats:
         self.line_styles = ['solid', 'dashed', 'dotted', 'dashdot']
         self.markers = ['o', '^', 's', 'x']
         # self.x_ticks = list(range(10, 450, 50))
-        self.x_ticks = [10, 50, 100, 150, 200, 250, 300, 350, 400]
+        self.x_ticks = [10, 100, 200, 300, 400, 500, 600, 700]
 
         self._get_data()
 
@@ -385,7 +385,7 @@ class PlotStats:
 
         if y_ticks:
             plt.yticks([10 ** -4, 10 ** -3, 10 ** -2, 10 ** -1, 1])
-            plt.ylim(10 ** -4, 1)
+            plt.ylim(10 ** -5, 1)
             plt.yscale('log')
 
         if y_lim:

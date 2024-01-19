@@ -206,6 +206,7 @@ class SimStats:
                 if len(data_list) == 0:
                     mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
                 else:
+                    # TODO: Is this ever equal to one?
                     if len(data_list) == 1:
                         deviation = 0.0
                     else:
