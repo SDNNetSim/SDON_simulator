@@ -158,12 +158,14 @@ class SDNController:
         route_time = time.time() - start_time
 
         segment_slicing = False
-        # TODO: I think this while loop is slowing things down/ not correct
         while True:
             for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
                 if path_list is not False:
                     self.sdn_props['path_list'] = path_list
-                    mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
+                    try:
+                        mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
+                    except:
+                        print('Here')
 
                     if segment_slicing:
                         self._handle_slicing(path_list=path_list)
