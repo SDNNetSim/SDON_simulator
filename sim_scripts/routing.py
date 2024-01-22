@@ -3,7 +3,7 @@ import numpy as np
 
 from arg_scripts.routing_args import empty_props
 from helper_scripts.routing_helpers import RoutingHelpers
-from helper_scripts.sim_helpers import find_path_len, get_path_mod, find_free_slots
+from helper_scripts.sim_helpers import find_path_len, get_path_mod, find_free_slots, sort_nested_dict_vals
 
 
 class Routing:
@@ -81,12 +81,16 @@ class Routing:
             if weight == 'xt_cost':
                 resp_weight = sum(self.sdn_props['topology'][path_list[i]][path_list[i + 1]][weight]
                                   for i in range(len(path_list) - 1))
+                # TODO: This seems to not have been working?
+                mod_formats_list = sort_nested_dict_vals(original_dict=self.sdn_props['mod_formats'],
+                                                         nested_key='max_length')
+                self.route_props['mod_formats_list'] = mod_formats_list
             else:
                 resp_weight = find_path_len(path_list=path_list, topology=self.sdn_props['topology'])
+                mod_format = get_path_mod(self.sdn_props['mod_formats'], resp_weight)
+                self.route_props['mod_formats_list'].append([mod_format])
 
             self.route_props['weights_list'].append(resp_weight)
-            mod_format = get_path_mod(self.sdn_props['mod_formats'], resp_weight)
-            self.route_props['mod_formats_list'].append([mod_format])
             self.route_props['paths_list'].append(path_list)
             break
 
