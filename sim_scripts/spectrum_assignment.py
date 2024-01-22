@@ -147,6 +147,7 @@ class SpectrumAssignment:
         for modulation in mod_format_list:
             # TODO: Not sure about block reason here
             if modulation is False:
+                self.sdn_props['block_reason'] = 'distance'
                 continue
 
             if slice_bandwidth:

@@ -85,11 +85,14 @@ class Routing:
                 mod_formats = sort_nested_dict_vals(original_dict=self.sdn_props['mod_formats'],
                                                     nested_key='max_length')
                 path_len = find_path_len(path_list=path_list, topology=self.sdn_props['topology'])
+                mod_format_list = list()
                 for mod_format in mod_formats:
                     if self.sdn_props['mod_formats'][mod_format]['max_length'] >= path_len:
-                        self.route_props['mod_formats_list'].append([mod_format])
+                        mod_format_list.append(mod_format)
                     else:
-                        self.route_props['mod_formats_list'].append([False])
+                        mod_format_list.append(False)
+
+                self.route_props['mod_formats_list'].append(mod_format_list)
             else:
                 resp_weight = find_path_len(path_list=path_list, topology=self.sdn_props['topology'])
                 mod_format = get_path_mod(self.sdn_props['mod_formats'], resp_weight)

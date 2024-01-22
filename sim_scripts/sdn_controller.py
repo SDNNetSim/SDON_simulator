@@ -94,6 +94,7 @@ class SDNController:
         for stat_key in self.sdn_props['stat_key_list']:
             self.sdn_props[stat_key] = list()
 
+    # TODO: Bandwidth list is not correct for slicing, appending original bandwidth
     def _allocate_slicing(self, num_segments: int, mod_format: str, path_list: list, bandwidth: str):
         self.sdn_props['num_trans'] = num_segments
         self.spectrum_obj.spectrum_props['path_list'] = path_list
@@ -162,10 +163,7 @@ class SDNController:
             for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
                 if path_list is not False:
                     self.sdn_props['path_list'] = path_list
-                    try:
-                        mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
-                    except:
-                        print('Here')
+                    mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
 
                     if segment_slicing:
                         self._handle_slicing(path_list=path_list)
@@ -173,19 +171,14 @@ class SDNController:
                             self.sdn_props['num_trans'] = 1
                             continue
                     else:
-                        if self.route_obj.route_props['mod_formats_list'][path_index][0] is False:
-                            self.sdn_props['was_routed'] = False
-                            self.sdn_props['block_reason'] = 'distance'
-                            continue
-
                         self.spectrum_obj.spectrum_props['path_list'] = path_list
                         self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
                         # Request was blocked for this path
                         if self.spectrum_obj.spectrum_props['is_free'] is not True:
                             self.sdn_props['block_reason'] = 'congestion'
                             continue
+                        self._update_req_stats(bandwidth=self.sdn_props['bandwidth'])
 
-                    self._update_req_stats(bandwidth=self.sdn_props['bandwidth'])
                     self.sdn_props['was_routed'] = True
                     self.sdn_props['route_time'] = route_time
                     # TODO: Ask Arash, multiple path weights?
