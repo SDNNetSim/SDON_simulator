@@ -126,15 +126,15 @@ class Routing:
         Finds and selects the path with the least amount of non-linear impairment.
         """
         # Bidirectional links are identical, therefore, we don't have to check each one
-        for link_list in list(self.sdn_props['net_spec_dict'].keys())[::2]:
-            source, destination = link_list[0], link_list[1]
+        for link_tuple in list(self.sdn_props['net_spec_dict'].keys())[::2]:
+            source, destination = link_tuple[0], link_tuple[1]
             num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props['span_len']
             bandwidth = self.sdn_props['bandwidth']
             # TODO: Constant QPSK for slots needed (Ask Arash)
             slots_needed = self.engine_props['mod_per_bw'][bandwidth]['QPSK']['slots_needed']
             self.sdn_props['slots_needed'] = slots_needed
 
-            link_cost = self.route_help_obj.get_nli_cost(link_list=link_list, num_span=num_spans)
+            link_cost = self.route_help_obj.get_nli_cost(link_tuple=link_tuple, num_span=num_spans)
             self.sdn_props['topology'][source][destination]['nli_cost'] = link_cost
 
         self.find_least_weight(weight='nli_cost')

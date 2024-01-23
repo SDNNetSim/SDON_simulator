@@ -94,7 +94,6 @@ class SDNController:
         for stat_key in self.sdn_props['stat_key_list']:
             self.sdn_props[stat_key] = list()
 
-    # TODO: Bandwidth list is not correct for slicing, appending original bandwidth
     def _allocate_slicing(self, num_segments: int, mod_format: str, path_list: list, bandwidth: str):
         self.sdn_props['num_trans'] = num_segments
         self.spectrum_obj.spectrum_props['path_list'] = path_list

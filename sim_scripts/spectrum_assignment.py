@@ -144,7 +144,6 @@ class SpectrumAssignment:
         """
         self._init_spectrum_info()
         for modulation in mod_format_list:
-            # TODO: Not sure about block reason here
             if modulation is False:
                 self.sdn_props['block_reason'] = 'distance'
                 continue
@@ -160,7 +159,6 @@ class SpectrumAssignment:
                 self.spectrum_props['modulation'] = modulation
                 if self.engine_props['check_snr'] != 'None' and self.engine_props['check_snr'] is not None:
                     snr_check, xt_cost = self.snr_obj.handle_snr()
-                    # TODO: Make sure to account for this in sdn_controller
                     self.spectrum_props['xt_cost'] = xt_cost
                     if not snr_check:
                         self.spectrum_props['is_free'] = False
