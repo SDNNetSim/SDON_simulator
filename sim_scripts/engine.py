@@ -165,6 +165,10 @@ class Engine:
             req_num = 1
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
+
+                if req_num == 965:
+                    print('Begin debug line 170 in engine.py')
+
                 if req_type == "arrival":
                     self.ai_obj.req_id = req_num
                     self.handle_arrival(curr_time=curr_time)

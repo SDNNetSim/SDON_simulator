@@ -63,18 +63,17 @@ class SpectrumAssignment:
     def _setup_first_last(self):
         if self.spectrum_props['forced_core'] is not None:
             core_matrix = [self.spectrum_props['cores_matrix'][self.spectrum_props['forced_core']]]
-            start_core = self.spectrum_props['forced_core']
+            core_list = [self.spectrum_props['forced_core']]
         elif self.engine_props['allocation_method'] in ('priority_first', 'priority_last'):
             core_list = [0, 2, 4, 1, 3, 5, 6]
             core_matrix = list()
             for curr_core in core_list:
                 core_matrix.append(self.spectrum_props['cores_matrix'][curr_core])
-            start_core = 0
         else:
             core_matrix = self.spectrum_props['cores_matrix']
-            start_core = 0
+            core_list = [core_num for core_num in range(0, self.engine_props['core_per_link'])]
 
-        return core_matrix, start_core
+        return core_matrix, core_list
 
     def handle_first_last(self, flag: str):
         """
@@ -83,8 +82,8 @@ class SpectrumAssignment:
         :param flag: A flag to determine which allocation method to be used.
         :type flag: str
         """
-        core_matrix, start_core = self._setup_first_last()
-        for core_num, core_arr in enumerate(core_matrix, start=start_core):
+        core_matrix, core_list = self._setup_first_last()
+        for core_num, core_arr in zip(core_matrix, core_list):
             open_slots_arr = np.where(core_arr == 0)[0]
 
             # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
