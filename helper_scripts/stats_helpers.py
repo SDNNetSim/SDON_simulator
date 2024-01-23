@@ -2,6 +2,7 @@ import json
 import os
 import math
 import copy
+import statistics
 from statistics import mean, variance, stdev
 
 import numpy as np
@@ -285,11 +286,14 @@ class SimStats:
                 mean_key = f"{stat_key.split('list')[0]}mean"
                 if stat_key == 'xt_list':
                     stat_array = [0 if stat is None else stat for stat in self.stats_props[stat_key]]
-                    # TODO: Change
-                    stat_array = [0]
                 else:
                     stat_array = self.stats_props[stat_key]
-                self.save_dict['iter_stats'][self.iteration][mean_key] = mean(stat_array)
+
+                # Every request was blocked
+                if len(stat_array) == 0:
+                    self.save_dict['iter_stats'][self.iteration][mean_key] = None
+                else:
+                    self.save_dict['iter_stats'][self.iteration][mean_key] = mean(stat_array)
             else:
                 self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(self.stats_props[stat_key])
 

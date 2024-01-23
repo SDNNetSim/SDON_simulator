@@ -83,7 +83,7 @@ class SpectrumAssignment:
         :type flag: str
         """
         core_matrix, core_list = self._setup_first_last()
-        for core_num, core_arr in zip(core_matrix, core_list):
+        for core_arr, core_num in zip(core_matrix, core_list):
             open_slots_arr = np.where(core_arr == 0)[0]
 
             # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
