@@ -90,8 +90,9 @@ class SnrMeasurements:
         :return: The updated cross-phase modulation noise.
         :rtype: float
         """
-        num_slots = len(np.where(spectrum_contents == curr_link[self.spectrum_props['core_num']])[0]) * self.engine_props[
-            'bw_per_slot']
+        num_slots = len(np.where(spectrum_contents == curr_link[self.spectrum_props['core_num']])[0]) * \
+                    self.engine_props[
+                        'bw_per_slot']
         channel_freq = ((slot_index * self.engine_props['bw_per_slot']) + (num_slots / 2)) * 10 ** 9
 
         channel_bw = num_slots * 10 ** 9
@@ -163,7 +164,7 @@ class SnrMeasurements:
         :return: The cross-talk normalized by the number of adjacent cores.
         :rtype: float
         """
-        mean_xt = (2 * self.bend_radius * (self.coupling_coeff ** 2)) / (self.prop_const * self.core_pitch)
+        mean_xt = 3.78e-9
         resp_xt = (1 - math.exp(-2 * mean_xt * link_length * 1e3)) / (1 + math.exp(-2 * mean_xt * link_length * 1e3))
 
         return resp_xt * adjacent_cores
