@@ -142,19 +142,22 @@ class Engine:
         :return: None
         """
         self.create_topology()
+        with open('new_network_5095.json', 'r') as file_path:
+            self.net_spec_dict = json.load(file_path)
+
+        for link_tuple in self.net_spec_dict:
+            for core_num, core_arr in enumerate(self.net_spec_dict[link_tuple]['cores_matrix']):
+                self.net_spec_dict[link_tuple]['cores_matrix'][core_num] = np.array(core_arr)
+
+            self.net_spec_dict[link_tuple]['cores_matrix'] = np.array(self.net_spec_dict[link_tuple][
+                                                                          'cores_matrix'])
+
+        self.net_spec_dict = {eval(key): value for key, value in self.net_spec_dict.items()}
+
+        self.sdn_obj.sdn_props['net_spec_dict'] = self.net_spec_dict
+
+
         for iteration in range(self.engine_props["max_iters"]):
-            with open('new_network_5095.json', 'r') as file_path:
-                self.net_spec_dict = json.load(file_path)
-
-            for link_tuple in self.net_spec_dict:
-                for core_num, core_arr in enumerate(self.net_spec_dict[link_tuple]['cores_matrix']):
-                    self.net_spec_dict[link_tuple]['cores_matrix'][core_num] = np.array(core_arr)
-
-                self.net_spec_dict[link_tuple]['cores_matrix'] = np.array(self.net_spec_dict[link_tuple][
-                                                                              'cores_matrix'])
-
-            self.net_spec_dict = {eval(key): value for key, value in self.net_spec_dict.items()}
-
             self.iteration = iteration
 
             self.stats_obj.iteration = iteration
