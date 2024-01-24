@@ -155,7 +155,6 @@ class Engine:
 
             self.net_spec_dict = {eval(key): value for key, value in self.net_spec_dict.items()}
 
-
             self.iteration = iteration
 
             self.stats_obj.iteration = iteration
@@ -175,8 +174,10 @@ class Engine:
 
             seed = self.engine_props["seeds"][iteration] if self.engine_props["seeds"] else iteration + 1
             self.generate_requests(seed)
-            req_num = 1
+            req_num = 5095
             for curr_time in self.reqs_dict:
+                if self.reqs_dict[curr_time]['req_id'] < 5095:
+                    continue
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
 
