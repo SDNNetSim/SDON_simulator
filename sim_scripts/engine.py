@@ -192,19 +192,19 @@ class Engine:
                 if req_type == "arrival":
 
                     # TODO: Remove
-                    if req_num == 5090:
-                        for link_tuple in self.net_spec_dict:
-                            for core_num, core_arr in enumerate(self.net_spec_dict[link_tuple]['cores_matrix']):
-                                self.net_spec_dict[link_tuple]['cores_matrix'][core_num] = core_arr.tolist()
-
-                            self.net_spec_dict[link_tuple]['cores_matrix'] = self.net_spec_dict[link_tuple][
-                                'cores_matrix'].tolist()
-
-                        dict_for_json = {str(key): value for key, value in self.net_spec_dict.items()}
-                        with open('new_network_5090.json', 'w') as file_path:
-                            json.dump(dict_for_json, file_path)
-
-                        exit()
+                    # if req_num == 5090:
+                    #     for link_tuple in self.net_spec_dict:
+                    #         for core_num, core_arr in enumerate(self.net_spec_dict[link_tuple]['cores_matrix']):
+                    #             self.net_spec_dict[link_tuple]['cores_matrix'][core_num] = core_arr.tolist()
+                    #
+                    #         self.net_spec_dict[link_tuple]['cores_matrix'] = self.net_spec_dict[link_tuple][
+                    #             'cores_matrix'].tolist()
+                    #
+                    #     dict_for_json = {str(key): value for key, value in self.net_spec_dict.items()}
+                    #     with open('new_network_5090.json', 'w') as file_path:
+                    #         json.dump(dict_for_json, file_path)
+                    #
+                    #     exit()
                     # TODO: End remove
 
                     self.ai_obj.req_id = req_num

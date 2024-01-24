@@ -163,9 +163,12 @@ class SpectrumAssignment:
                     if not snr_check:
                         self.spectrum_props['is_free'] = False
                         self.sdn_props['block_reason'] = 'xt_threshold'
-                        return
+                        continue
+                    else:
+                        self.spectrum_props['is_free'] = True
+                        self.sdn_props['block_reason'] = None
 
                 return
 
             self.spectrum_props['block_reason'] = 'congestion'
-            return
+            continue
