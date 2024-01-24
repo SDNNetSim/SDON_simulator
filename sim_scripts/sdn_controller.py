@@ -135,7 +135,7 @@ class SDNController:
                 self.sdn_props['is_sliced'] = True
                 return
             else:
-                self.sdn_props['is_slices'] = False
+                self.sdn_props['is_sliced'] = False
 
     def handle_event(self, request_type: str):
         """

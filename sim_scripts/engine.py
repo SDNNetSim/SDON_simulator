@@ -1,6 +1,7 @@
 # Standard library imports
 import os
 import signal
+import json
 
 # Third party library imports
 import networkx as nx
@@ -165,6 +166,32 @@ class Engine:
             for curr_time in self.reqs_dict:
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
+
+                    # TODO: Remove
+                    if req_num == 5095:
+                        for link_tuple in self.net_spec_dict:
+                            for core_num, core_arr in enumerate(self.net_spec_dict[link_tuple]['cores_matrix']):
+                                self.net_spec_dict[link_tuple]['cores_matrix'][core_num] = core_arr.tolist()
+
+                            self.net_spec_dict[link_tuple]['cores_matrix'] = self.net_spec_dict[link_tuple][
+                                'cores_matrix'].tolist()
+
+                        dict_for_json = {str(key): value for key, value in self.net_spec_dict.items()}
+                        with open('new_network_5095.json', 'w') as file_path:
+                            json.dump(dict_for_json, file_path)
+
+                        # with open('new_network_5095.json', 'r') as file_path:
+                        #     self.net_spec_dict = json.load(file_path)
+                        #
+                        # for link_tuple in self.net_spec_dict:
+                        #     for core_num, core_arr in enumerate(self.net_spec_dict[link_tuple]['cores_matrix']):
+                        #         self.net_spec_dict[link_tuple]['cores_matrix'][core_num] = np.array(core_arr)
+                        #
+                        #     self.net_spec_dict[link_tuple]['cores_matrix'] = np.array(self.net_spec_dict[link_tuple][
+                        #                                                                   'cores_matrix'])
+                        #
+                        # self.net_spec_dict = {eval(key): value for key, value in self.net_spec_dict.items()}
+
                     self.ai_obj.req_id = req_num
                     self.handle_arrival(curr_time=curr_time)
 
