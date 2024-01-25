@@ -282,16 +282,16 @@ class SnrMeasurements:
         cross_talk = 0
 
         self._init_center_vars()
-        for link in range(0, len(self.spectrum_props['path_list']) - 1):
-            link_nodes = (self.spectrum_props['path_list'][link], self.spectrum_props['path_list'][link + 1])
-            self.link_id = self.sdn_props['net_spec_dict'][link_nodes]['link_num']
-            link_length = self.engine_props['topology_info']['links'][self.link_id]['length']
-            self.link_dict = self.engine_props['topology_info']['links'][self.link_id]['fiber']
-            # self.update_link_constants()
-            self._update_link_params(link=link)
+        for link_num in range(0, len(self.spectrum_props['path_list']) - 1):
+            link_tuple = (self.spectrum_props['path_list'][link_num], self.spectrum_props['path_list'][link_num + 1])
 
-            adjacent_cores = self.check_adjacent_cores(link_nodes=link_nodes)
-            cross_talk += self.calculate_xt(adjacent_cores=adjacent_cores, link_length=link_length)
+            self.link_id = self.sdn_props['net_spec_dict'][link_tuple]['link_num']
+            link_length = self.engine_props['topology_info']['links'][self.link_id]['length']
+            self.snr_props['link_dict'] = self.engine_props['topology_info']['links'][self.link_id]['fiber']
+            self._update_link_params(link_num=link_num)
+
+            num_adjacent = self.check_adjacent_cores(link_tuple=link_tuple)
+            cross_talk += self.calculate_xt(num_adjacent=num_adjacent, link_length=link_length)
 
         if cross_talk == 0:
             resp = True
