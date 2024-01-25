@@ -20,8 +20,8 @@ class Engine:
     Controls a single simulation.
     """
 
-    def __init__(self, **kwargs):
-        self.engine_props = kwargs['properties']
+    def __init__(self, engine_props: dict):
+        self.engine_props = engine_props
 
         # The network spectrum database
         self.net_spec_dict = dict()
