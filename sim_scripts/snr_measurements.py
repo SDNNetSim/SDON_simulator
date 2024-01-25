@@ -146,34 +146,30 @@ class SnrMeasurements:
         :return: The total power spectral density non-linear interference
         :rtype float
         """
-        # Determine if we're using the GN or EGN model
+        psd_nli = self.snr_props['sci_psd'] + self.snr_props['xci_psd']
+        psd_nli *= self.snr_props['mu_param'] * self.snr_props['center_psd']
         if self.engine_props['egn_model']:
             psd_correction = self._handle_egn_model()
-            psd_nli = ((self.snr_props['sci_psd'] + self.snr_props['xci_psd']) * self.snr_props['mu_param'] *
-                       self.snr_props['center_psd']) - psd_correction
-        else:
-            psd_nli = (self.snr_props['sci_psd'] + self.snr_props['xci_psd']) * self.snr_props['mu_param'] * \
-                      self.snr_props['center_psd']
+            psd_nli -= psd_correction
 
         return psd_nli
 
     # TODO: Change to link num
-    def _update_link_params(self, link: int):
+    def _update_link_params(self, link_num: int):
         """
         Updates needed parameters for each link used for calculating SNR or XT.
         """
-        self.snr_props['mu_param'] = (3 * (
-                self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2)) / (
-                                             2 * math.pi * self.link_dict['attenuation'] * np.abs(
-                                         self.link_dict['dispersion']))
+        non_linearity = self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2
+        self.snr_props['mu_param'] = 3 * non_linearity
+        mu_denominator = 2 * math.pi * self.link_dict['attenuation'] * np.abs(self.link_dict['dispersion'])
+        self.snr_props['mu_param'] /= mu_denominator
+
         self.snr_props['sci_psd'] = self._calculate_sci_psd()
-        self.snr_props['xci_psd'] = self._calculate_xci(link=link)
-        # TODO Add support for self.engine_props['topology_info']['links'][link_id]['fiber']['nsp']
-        # self.snr_props['nsp'] = 1.8
+        self.snr_props['xci_psd'] = self._calculate_xci(link_num=link_num)
 
         self.snr_props['length'] = self.engine_props['topology_info']['links'][self.link_id]['span_length']
-        self.snr_props['num_span'] = self.engine_props['topology_info']['links'][self.link_id]['length'] / \
-                                     self.snr_props['length']
+        link_length = self.engine_props['topology_info']['links'][self.link_id]['length']
+        self.snr_props['num_span'] = link_length / self.snr_props['length']
 
     def _init_center_vars(self):
         """
