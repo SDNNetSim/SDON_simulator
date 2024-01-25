@@ -1,5 +1,4 @@
 import copy
-from typing import List
 
 import networkx as nx
 import numpy as np
@@ -176,7 +175,7 @@ def find_free_slots(net_spec_dict: dict, link_tuple: tuple):
     """
     link = net_spec_dict[link_tuple]['cores_matrix']
     resp = {}
-    for core_num in range(len(link)):
+    for core_num in range(len(link)):  # pylint: disable=consider-using-enumerate
         free_slots_list = np.where(link[core_num] == 0)[0]
         resp.update({core_num: free_slots_list})
 
