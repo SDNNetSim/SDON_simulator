@@ -31,7 +31,7 @@ class SnrMeasurements:
         :rtype: float
         """
         rho_param = (math.pi ** 2) * np.abs(self.snr_props['link_dict']['dispersion'])
-        rho_param /= 2 * self.snr_props['link_dict']['attenuation']
+        rho_param /= (2 * self.snr_props['link_dict']['attenuation'])
 
         sci_psd = self.snr_props['center_psd'] ** 2
         sci_psd *= math.asinh(rho_param * (self.snr_props['bandwidth'] ** 2))
@@ -52,7 +52,7 @@ class SnrMeasurements:
 
         if self.snr_props['center_freq'] != channel_freq:
             log_term = abs(self.snr_props['center_freq'] - channel_freq) + (channel_bw / 2)
-            log_term /= abs(self.snr_props['center_freq'] - channel_freq) - (channel_bw / 2)
+            log_term /= (abs(self.snr_props['center_freq'] - channel_freq) - (channel_bw / 2))
             calculated_xci = (channel_psd ** 2) * math.log(abs(log_term))
             new_xci = curr_xci + calculated_xci
         else:
@@ -133,7 +133,7 @@ class SnrMeasurements:
 
         temp_coef = self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2
         temp_coef *= eff_span_len ** 2
-        temp_coef *= self.snr_props['center_psd'] ** 3 * self.snr_props['bandwidth'] ** 2
+        temp_coef *= (self.snr_props['center_psd'] ** 3 * self.snr_props['bandwidth'] ** 2)
         temp_coef /= ((baud_rate ** 2) * math.pi * self.snr_props['link_dict']['dispersion'] *
                       (self.snr_props['length'] * 10 ** 3))
 
@@ -150,7 +150,7 @@ class SnrMeasurements:
         :rtype float
         """
         psd_nli = self.snr_props['sci_psd'] + self.snr_props['xci_psd']
-        psd_nli *= self.snr_props['mu_param'] * self.snr_props['center_psd']
+        psd_nli *= (self.snr_props['mu_param'] * self.snr_props['center_psd'])
         if self.engine_props['egn_model']:
             psd_correction = self._handle_egn_model()
             psd_nli -= psd_correction
