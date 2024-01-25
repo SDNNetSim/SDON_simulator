@@ -29,34 +29,31 @@ class SnrMeasurements:
         :return: The self-phase power spectral density.
         :rtype: float
         """
-        rho_numerator = (math.pi ** 2) * np.abs(self.link_dict['dispersion'])
-        rho_denominator = 2 * self.link_dict['attenuation']
-        rho_param = rho_numerator / rho_denominator
+        rho_param = (math.pi ** 2) * np.abs(self.link_dict['dispersion'])
+        rho_param /= 2 * self.link_dict['attenuation']
 
-        first_term = self.snr_props['center_psd'] ** 2
-        second_term = math.asinh(rho_param * (self.snr_props['bandwidth'] ** 2))
-        sci_psd = first_term * second_term
+        sci_psd = self.snr_props['center_psd'] ** 2
+        sci_psd *= math.asinh(rho_param * (self.snr_props['bandwidth'] ** 2))
         return sci_psd
 
-    # TODO: I believe repeat code, calculate mci function in routing.py
-    def _update_link_xci(self, spectrum_contents: float, curr_link: np.ndarray, slot_index: int, curr_xci: float):
+    def _update_link_xci(self, req_id: float, curr_link: np.ndarray, slot_index: int, curr_xci: float):
         """
         Given the spectrum contents, updates the link's cross-phase modulation noise.
 
         :return: The updated cross-phase modulation noise.
         :rtype: float
         """
-        num_slots = len(np.where(spectrum_contents == curr_link[self.spectrum_props['core_num']])[0]) * \
-                    self.engine_props[
-                        'bw_per_slot']
-        channel_freq = ((slot_index * self.engine_props['bw_per_slot']) + (num_slots / 2)) * 10 ** 9
-
-        channel_bw = num_slots * 10 ** 9
+        channel_bw = len(np.where(req_id == curr_link[self.spectrum_props['core_num']])[0])
+        channel_bw *= self.engine_props['bw_per_slot']
+        channel_freq = ((slot_index * self.engine_props['bw_per_slot']) + (channel_bw / 2)) * 10 ** 9
+        channel_bw *= 10 ** 9
         channel_psd = self.engine_props['input_power'] / channel_bw
+
         if self.snr_props['center_freq'] != channel_freq:
-            new_xci = curr_xci + ((channel_psd ** 2) * math.log(
-                abs((abs(self.snr_props['center_freq'] - channel_freq) + (channel_bw / 2)) / (
-                        abs(self.snr_props['center_freq'] - channel_freq) - (channel_bw / 2)))))
+            log_term = abs(self.snr_props['center_freq'] - channel_freq) + (channel_bw / 2)
+            log_term /= abs(self.snr_props['center_freq'] - channel_freq) - (channel_bw / 2)
+            calculated_xci = (channel_psd ** 2) * math.log(abs(log_term))
+            new_xci = curr_xci + calculated_xci
         else:
             new_xci = curr_xci
 
@@ -98,7 +95,7 @@ class SnrMeasurements:
         """
         # A statistical mean of the cross-talk
         mean_xt = (2 * self.link_dict['bending_radius'] * self.link_dict['mode_coupling_co'] ** 2) / (
-                    self.link['propagation_const'] * self.link_dict['core_pitch'])
+                self.link['propagation_const'] * self.link_dict['core_pitch'])
         # The cross-talk noise power
         # TODO: Should we use span or link length?
         power_xt = adjacent_cores * mean_xt * self.snr_props['length'] * 1e3 * self.engine_props['input_power']
@@ -131,13 +128,13 @@ class SnrMeasurements:
 
         # The effective span length
         eff_span_len = (1 - math.e ** (-2 * self.link_dict['attenuation'] * self.snr_props['length'] * 10 ** 3)) / (
-                    2 * self.link_dict['attenuation'])
+                2 * self.link_dict['attenuation'])
 
         baud_rate = int(self.snr_props['req_bit_rate']) * 10 ** 9 / 2
         temp_coef = ((self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2) * (
                 eff_span_len ** 2) * (self.snr_props['center_psd'] ** 3) * (self.snr_props['bandwidth'] ** 2)) / (
                             (baud_rate ** 2) * math.pi * self.link_dict['dispersion'] * (
-                                self.snr_props['length'] * 10 ** 3))
+                            self.snr_props['length'] * 10 ** 3))
 
         # The PSD correction term
         psd_correction = (80 / 81) * self.engine_props['phi'][self.spectrum_props['modulation']] * temp_coef * hn_series
