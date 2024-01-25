@@ -188,29 +188,34 @@ class SnrMeasurements:
         :return: Whether the SNR threshold can be met.
         :rtype: bool
         """
-        snr = 0
+        total_snr = 0
         self._init_center_vars()
-        for link in range(0, len(self.spectrum_props['path_list']) - 1):
-            self.link_id = self.sdn_props['net_spec_dict'][
-                (self.spectrum_props['path_list'][link], self.spectrum_props['path_list'][link + 1])]['link_num']
+        for link_num in range(0, len(self.spectrum_props['path_list']) - 1):
+            source = self.spectrum_props['path_list'][link_num]
+            dest = self.spectrum_props['path_list'][link_num + 1]
+            self.link_id = self.sdn_props['net_spec_dict'][(source, dest)]['link_num']
 
-            self.link_dict = self.engine_props['topology_info']['links'][self.link_id]['fiber']
-            self._update_link_params(link=link)
+            self.snr_props['link_dict'] = self.engine_props['topology_info']['links'][self.link_id]['fiber']
+            self._update_link_params(link_num=link_num)
 
             psd_nli = self._calculate_psd_nli()
-            psd_ase = (self.snr_props['plank'] * self.snr_props['light_frequency'] * self.snr_props['nsp']) * (
-                    math.exp(self.link_dict['attenuation'] * self.snr_props['length'] * 10 ** 3) - 1)
+            psd_ase = self.snr_props['plank'] * self.snr_props['light_frequency'] * self.snr_props['nsp']
+            psd_ase *= (math.exp(self.link_dict['attenuation'] * self.snr_props['length'] * 10 ** 3) - 1)
+
             if self.engine_props['xt_noise']:
+                # fixme
                 p_xt = self._calculate_pxt(adjacent_cores=None)
             else:
                 p_xt = 0
 
-            snr += (1 / ((self.snr_props['center_psd'] * self.snr_props['bandwidth']) / (
-                    ((psd_ase + psd_nli) * self.snr_props['bandwidth'] + p_xt) * self.snr_props['num_span'])))
+            curr_snr = self.snr_props['center_psd'] * self.snr_props['bandwidth']
+            curr_snr /= (((psd_ase + psd_nli) * self.snr_props['bandwidth'] + p_xt) * self.snr_props['num_span'])
 
-        snr = 10 * math.log10(1 / snr)
+            total_snr += (1 / curr_snr)
 
-        resp = snr > self.snr_props['req_snr']
+        total_snr = 10 * math.log10(1 / total_snr)
+
+        resp = total_snr > self.snr_props['req_snr']
         return resp
 
     def check_snr_xt(self):
