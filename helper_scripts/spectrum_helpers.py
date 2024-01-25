@@ -79,10 +79,10 @@ def check_cores_channels(sdn_props: dict, spectrum_props: dict):
     resp = {'free_slots': {}, 'free_channels': {}, 'slots_inters': {}, 'channel_inters': {}}
 
     for source_dest in zip(spectrum_props['path_list'], spectrum_props['path_list'][1:]):
-        free_slots = find_free_slots(net_spec_db=sdn_props['net_spec_dict'], des_link=source_dest)
-        free_channels = find_free_channels(net_spec_db=sdn_props['net_spec_dict'],
+        free_slots = find_free_slots(net_spec_dict=sdn_props['net_spec_dict'], link_tuple=source_dest)
+        free_channels = find_free_channels(net_spec_dict=sdn_props['net_spec_dict'],
                                            slots_needed=spectrum_props['slots_needed'],
-                                           des_link=source_dest)
+                                           link_tuple=source_dest)
 
         resp['free_slots'].update({source_dest: free_slots})
         resp['free_channels'].update({source_dest: free_channels})
@@ -112,7 +112,7 @@ def find_best_core(sdn_props: dict, spectrum_props: dict):
     path_info = check_cores_channels(sdn_props=sdn_props, spectrum_props=spectrum_props)
     all_channels = get_channel_overlaps(path_info['channel_inters'],
                                         path_info['free_slots'])
-    sorted_cores = sorted(all_channels['other_channels'], key=lambda k: len(all_channels['other_channels'][k]))
+    sorted_cores = sorted(all_channels['non_over_dict'], key=lambda k: len(all_channels['non_over_dict'][k]))
 
     # TODO: Comment why
     if len(sorted_cores) > 1:

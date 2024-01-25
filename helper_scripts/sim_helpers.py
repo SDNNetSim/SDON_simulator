@@ -116,34 +116,29 @@ def find_path_cong(path_list: list, net_spec_dict: dict):
     return average_path_cong
 
 
-def get_channel_overlaps(free_channels: dict, free_slots: dict):
+def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict):
     """
-    Given the free channels and free slots on a given path, find the number of overlapping and non-overlapping channels
-    between adjacent cores.
+    Find the number of overlapping and non-overlapping channels between adjacent cores.
 
-    :param free_channels: The free channels found on the given path.
-    :type free_channels: dict
-
-    :param free_slots: All free slots on the path.
-    :type free_slots: dict
-
+    :param free_channels_dict: The free super-channels found on a path.
+    :param free_slots_dict: The free slots found on the given path.
     :return: The overlapping and non-overlapping channels for every core.
     :rtype: dict
     """
-    resp = {'overlap_channels': {}, 'other_channels': {}}
-    num_cores = int(len(free_channels.keys()))
+    resp = {'overlapped_dict': {}, 'non_over_dict': {}}
+    num_cores = int(len(free_channels_dict.keys()))
 
-    for core_num, channels in free_channels.items():
-        resp['overlap_channels'][core_num] = list()
-        resp['other_channels'][core_num] = list()
+    for core_num, channels_list in free_channels_dict.items():
+        resp['overlapped_dict'][core_num] = list()
+        resp['non_over_dict'][core_num] = list()
 
-        for curr_channel in channels:
-            overlap = False
+        for curr_channel in channels_list:
+            is_overlapped = False
             for sub_core in range(0, num_cores):
                 if sub_core == core_num:
                     continue
 
-                for _, slots_dict in free_slots.items():
+                for _, slots_dict in free_slots_dict.items():
                     # The final core overlaps with all other cores
                     if core_num == num_cores - 1:
                         result = np.isin(curr_channel, slots_dict[sub_core])
@@ -157,37 +152,33 @@ def get_channel_overlaps(free_channels: dict, free_slots: dict):
                         result = np.append(result, np.isin(curr_channel, slots_dict[num_cores - 1]))
 
                     if np.any(result):
-                        resp['overlap_channels'][core_num].append(curr_channel)
-                        overlap = True
+                        resp['overlapped_dict'][core_num].append(curr_channel)
+                        is_overlapped = True
                         break
 
-                    resp['other_channels'][core_num].append(curr_channel)
+                    resp['non_over_dict'][core_num].append(curr_channel)
 
                 # No need to check other cores, we already determined this channel overlaps with other channels
-                if overlap:
+                if is_overlapped:
                     break
 
     return resp
 
 
-def find_free_slots(net_spec_db: dict, des_link: tuple):
+def find_free_slots(net_spec_dict: dict, link_tuple: tuple):
     """
     Find every unallocated spectral slot for a given link.
 
-    :param net_spec_db: The most updated network spectrum database.
-    :type net_spec_db: dict
-
-    :param des_link: The link to find the free slots on.
-    :type des_link: tuple
-
+    :param net_spec_dict: The most updated network spectrum database.
+    :param link_tuple: The link to find the free slots on.
     :return: The indexes of the free spectral slots on the link for each core.
     :rtype: dict
     """
-    link = net_spec_db[des_link]['cores_matrix']
+    link = net_spec_dict[link_tuple]['cores_matrix']
     resp = {}
-    for core_num in range(len(link)):  # pylint: disable=consider-using-enumerate
-        indexes = np.where(link[core_num] == 0)[0]
-        resp.update({core_num: indexes})
+    for core_num in range(len(link)):
+        free_slots_list = np.where(link[core_num] == 0)[0]
+        resp.update({core_num: free_slots_list})
 
     return resp
 

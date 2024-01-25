@@ -151,7 +151,7 @@ class Routing:
             source, destination = link_list[0], link_list[1]
             num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props['span_len']
 
-            free_slots_dict = find_free_slots(net_spec_db=self.sdn_props['net_spec_dict'], des_link=link_list)
+            free_slots_dict = find_free_slots(net_spec_dict=self.sdn_props['net_spec_dict'], link_tuple=link_list)
             xt_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=free_slots_dict, link_list=link_list)
 
             if self.engine_props['xt_type'] == 'with_length':
