@@ -81,7 +81,7 @@ class SDNController:
     def _update_req_stats(self, bandwidth: str):
         self.sdn_props['bandwidth_list'].append(bandwidth)
         for stat_key in self.sdn_props['stat_key_list']:
-            spectrum_key = stat_key.split('_')[0]
+            spectrum_key = stat_key.split('_')[0]  # pylint: disable=use-maxsplit-arg
             if spectrum_key == 'xt':
                 spectrum_key = 'xt_cost'
             elif spectrum_key == 'core':
@@ -92,7 +92,7 @@ class SDNController:
         self.sdn_props['num_trans'] = num_segments
         self.spectrum_obj.spectrum_props['path_list'] = path_list
         mod_format_list = [mod_format]
-        for segment in range(num_segments):
+        for _ in range(num_segments):
             self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth)
             if self.spectrum_obj.spectrum_props['is_free']:
                 self.allocate()
@@ -119,7 +119,7 @@ class SDNController:
             num_segments = int(int(self.sdn_props['bandwidth']) / int(bandwidth))
             if num_segments > self.engine_props['max_segments']:
                 self.sdn_props['was_routed'] = False
-                self.block_reason = 'max_segments'
+                self.sdn_props['block_reason'] = 'max_segments'
                 break
 
             self._allocate_slicing(num_segments=num_segments, mod_format=mod_format, path_list=path_list,
@@ -128,8 +128,8 @@ class SDNController:
             if self.sdn_props['was_routed']:
                 self.sdn_props['is_sliced'] = True
                 return
-            else:
-                self.sdn_props['is_sliced'] = False
+
+            self.sdn_props['is_sliced'] = False
 
     def _init_req_stats(self):
         self.sdn_props['bandwidth_list'] = list()
