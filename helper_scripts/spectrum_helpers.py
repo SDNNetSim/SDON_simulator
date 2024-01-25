@@ -2,12 +2,12 @@ from helper_scripts.sim_helpers import find_free_channels, find_free_slots, get_
 
 
 # TODO: Convert these methods to a class?
-def _check_free_spectrum(sdn_props: dict, link_tuple: tuple, rev_link_tuple: tuple, core_num: int, start_slot: int,
-                         end_slot: int):
-    spectrum = sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][core_num][start_slot:end_slot]
-    reversed_spectrum = sdn_props['net_spec_dict'][rev_link_tuple]['cores_matrix'][core_num][start_slot:end_slot]
+def _check_free_spectrum(sdn_props: dict, link_tuple: tuple, rev_link_tuple: tuple, core_num: int, start_index: int,
+                         end_index: int):
+    spectrum_set = sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][core_num][start_index:end_index]
+    rev_spectrum_set = sdn_props['net_spec_dict'][rev_link_tuple]['cores_matrix'][core_num][start_index:end_index]
 
-    if set(spectrum) == {0.0} and set(reversed_spectrum) == {0.0}:
+    if set(spectrum_set) == {0.0} and set(rev_spectrum_set) == {0.0}:
         return True
 
     return False
@@ -16,10 +16,11 @@ def _check_free_spectrum(sdn_props: dict, link_tuple: tuple, rev_link_tuple: tup
 def check_other_links(sdn_props: dict, spectrum_props: dict, core_num: int, start_index: int, end_index: int):
     spectrum_props['is_free'] = True
     for node in range(len(spectrum_props['path_list']) - 1):
-        link = (spectrum_props['path_list'][node], spectrum_props['path_list'][node + 1])
-        rev_link = (spectrum_props['path_list'][node + 1], spectrum_props['path_list'][node])
+        link_tuple = (spectrum_props['path_list'][node], spectrum_props['path_list'][node + 1])
+        rev_link_tuple = (spectrum_props['path_list'][node + 1], spectrum_props['path_list'][node])
 
-        if not _check_free_spectrum(sdn_props, link, rev_link, core_num, start_index, end_index):
+        if not _check_free_spectrum(sdn_props=sdn_props, link_tuple=link_tuple, rev_link_tuple=rev_link_tuple,
+                                    core_num=core_num, start_index=start_index, end_index=end_index):
             spectrum_props['is_free'] = False
             return
 
