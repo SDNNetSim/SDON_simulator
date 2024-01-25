@@ -17,6 +17,16 @@ class RoutingHelpers:
         self.engine_props = engine_props
         self.sdn_props = sdn_props
 
+    def _get_indexes(self, center_index: int):
+        if self.sdn_props['slots_needed'] % 2 == 0:
+            start_index = center_index - self.sdn_props['slots_needed'] // 2
+            end_index = center_index + self.sdn_props['slots_needed'] // 2
+        else:
+            start_index = center_index - self.sdn_props['slots_needed'] // 2
+            end_index = center_index + self.sdn_props['slots_needed'] // 2 + 1
+
+        return start_index, end_index
+
     def _get_simulated_link(self):
         sim_link_list = np.zeros(self.engine_props['spectral_slots'])
         # Add to the step to account for the guard band
@@ -29,14 +39,9 @@ class RoutingHelpers:
         sim_link_list[self.sdn_props['slots_needed']::total_slots] *= -1
         # Free the middle-most channel with respect to the number of slots needed
         center_index = len(sim_link_list) // 2
-        if self.sdn_props['slots_needed'] % 2 == 0:
-            start_index = center_index - self.sdn_props['slots_needed'] // 2
-            end_idx = center_index + self.sdn_props['slots_needed'] // 2
-        else:
-            start_index = center_index - self.sdn_props['slots_needed'] // 2
-            end_idx = center_index + self.sdn_props['slots_needed'] // 2 + 1
+        start_index, end_index = self._get_indexes(center_index=center_index)
 
-        sim_link_list[start_index:end_idx] = 0
+        sim_link_list[start_index:end_index] = 0
         return sim_link_list
 
     def find_worst_nli(self, num_span: float):
@@ -57,9 +62,9 @@ class RoutingHelpers:
                                                 slots_needed=self.sdn_props['slots_needed'], link_tuple=links_list[0])
         taken_channels_dict = find_taken_channels(net_spec_dict=self.sdn_props['net_spec_dict'],
                                                   link_tuple=links_list[0])
-
         nli_worst = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
                                          num_span=num_span)
+
         self.sdn_props['net_spec_dict'][links_list[0]]['cores_matrix'][0] = orig_link_list
         return nli_worst
 
