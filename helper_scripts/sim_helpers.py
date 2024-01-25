@@ -7,16 +7,14 @@ import numpy as np
 
 def get_path_mod(mods_dict: dict, path_len: int):
     """
-    Given an object of modulation formats and maximum lengths, choose the one that satisfies the requirements.
+    Choose a modulation format that will allocate a network request.
 
-    :param mod_formats: The modulation object, holds needed information for maximum reach
-    :type mod_formats: dict
-
+    :param mods_dict: Information for maximum reach for each modulation format.
     :param path_len: The length of the path to be taken
-    :type path_len: int
-
-    :return: The chosen modulation format, or false
+    :return: The chosen modulation format
+    :rtype: str
     """
+    # Pycharm auto-formats it like this for comparisons...I'd rather this look weird than look at PyCharm warnings
     if mods_dict['QPSK']['max_length'] >= path_len > mods_dict['16-QAM']['max_length']:
         resp = 'QPSK'
     elif mods_dict['16-QAM']['max_length'] >= path_len > mods_dict['64-QAM']['max_length']:
