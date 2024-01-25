@@ -218,13 +218,9 @@ class SnrMeasurements:
         resp = total_snr > self.snr_props['req_snr']
         return resp
 
-    # TODO: Change to link tuple
-    def check_adjacent_cores(self, link_nodes: tuple):
+    def check_adjacent_cores(self, link_tuple: tuple):
         """
         Given a link, finds the number of cores which have overlapping channels on a fiber.
-
-        :param link_nodes: The source and destination nodes.
-        :type link_nodes: tuple
 
         :return: The number of adjacent cores that have overlapping channels.
         """
@@ -234,14 +230,14 @@ class SnrMeasurements:
             before = 5 if self.spectrum_props['core_num'] == 0 else self.spectrum_props['core_num'] - 1
             # The neighboring core directly after the currently selected core
             after = 0 if self.spectrum_props['core_num'] == 5 else self.spectrum_props['core_num'] + 1
-            adjacent_cores = [before, after, 6]
+            adj_cores_list = [before, after, 6]
         else:
-            adjacent_cores = list(range(6))
+            adj_cores_list = list(range(6))
 
         for curr_slot in range(self.spectrum_props['start_slot'], self.spectrum_props['end_slot']):
             overlapped = 0
-            for core_num in adjacent_cores:
-                core_contents = self.sdn_props['net_spec_dict'][link_nodes]['cores_matrix'][core_num][curr_slot]
+            for core_num in adj_cores_list:
+                core_contents = self.sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][core_num][curr_slot]
                 if core_contents > 0.0:
                     overlapped += 1
 
