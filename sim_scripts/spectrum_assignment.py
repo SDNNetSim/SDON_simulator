@@ -71,7 +71,7 @@ class SpectrumAssignment:
                 core_matrix.append(self.spectrum_props['cores_matrix'][curr_core])
         else:
             core_matrix = self.spectrum_props['cores_matrix']
-            core_list = [core_num for core_num in range(0, self.engine_props['core_per_link'])]
+            core_list = [core_num for core_num in range(0, self.engine_props['cores_per_link'])]
 
         return core_matrix, core_list
 
