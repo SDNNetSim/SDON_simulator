@@ -18,50 +18,9 @@ class SnrMeasurements:
         self.sdn_props = sdn_props
         self.spectrum_props = spectrum_props
 
-        # TODO: These are now in snr_args, were not dictionaries prior
-        # self.snr_props['light_frequency'] = 1.9341 * 10 ** 14
-        # self.snr_props['plank'] = 6.62607004e-34
-        # self.snr_props['req_bit_rate'] = 12.5
-        # self.snr_props['req_snr'] = 8.5
-
-        # TODO: These were originally constructor variables (path and path_mod)
-        # self.spectrum_props['path_list'] = list()
-        # self.spectrum_props['modulation'] = None
-        # self.spectrum = dict()
-        # TODO: This was net spec db before
-        # self.sdn_props['net_spec_dict'] = dict()
-
-        # TODO: Put in snr_args
-        # self.link_dict['attenuation'] = None
-        # self.link_dict['dispersion'] = None
-        # self.link_dict['bending_radius'] = None
-        # self.link_dict['mode_coupling_co'] = None
-        # self.link['propagation_const'] = None
-        # self.link_dict['core_pitch'] = None
-
-        # The center frequency
-        # self.snr_props['center_freq'] = None
-        # The power spectral density for the center channel
-        # self.snr_props['center_psd'] = None
-        # The current requests bandwidth
-        # self.snr_props['bandwidth'] = None
-
-        # Used as a parameter for the GN model
-        # self.snr_props['mu_param'] = None
-        # The self-phase power spectral density
-        # self.snr_props['sci_psd'] = None
-        # Cross-phase modulation power spectral density
-        # self.self.snr_props['xci_psd'] = None
         self.visited_channels = None
-        # self.snr_props['length'] = None
-        # self.snr_props['nsp'] = None
-        # self.snr_props['num_span'] = None
-
         self.link_id = None
-        # self.link = None
-        # TODO: Changed this from assigned slots to num slots
         self.num_slots = None
-        # self.baud_rates = None
 
     def _calculate_sci_psd(self):
         """
@@ -208,17 +167,6 @@ class SnrMeasurements:
         self.snr_props['length'] = self.engine_props['topology_info']['links'][self.link_id]['span_length']
         self.snr_props['num_span'] = self.engine_props['topology_info']['links'][self.link_id]['length'] / self.snr_props['length']
 
-    # TODO: Remove this method
-    # def update_link_constants(self):
-        # TODO: Change all of these to only use link_dict
-        # self.link_dict = self.engine_props['topology_info']['links'][self.link_id]['fiber']
-        # self.link_dict['attenuation'] = self.link_dict['attenuation']
-        # self.link_dict['dispersion'] = self.link_dict['dispersion']
-        # self.link_dict['bending_radius'] = self.link['bending_radius']
-        # self.link_dict['mode_coupling_co'] = self.link['mode_coupling_co']
-        # self.link['propagation_const'] = self.link['propagation_const']
-        # self.link_dict['core_pitch'] = self.link_dict['core_pitch']
-
     def _init_center_vars(self):
         """
         Updates variables for the center frequency, bandwidth, and PSD for the current request.
@@ -226,12 +174,8 @@ class SnrMeasurements:
         self.snr_props['center_freq'] = ((self.spectrum_props['start_slot'] * self.engine_props['bw_per_slot']) + (
                 (self.num_slots * self.engine_props['bw_per_slot']) / 2)) * 10 ** 9
 
-        # self.snr_props['center_freq'] = ((self.spectrum_props['start_slot'] * self.engine_props['bw_per_slot']) + (
-        #         (self.num_slots * self.engine_props['bw_per_slot']) / 2)) * 10 ** 9
         self.snr_props['bandwidth'] = self.num_slots * self.engine_props['bw_per_slot'] * 10 ** 9
-        # self.snr_props['bandwidth'] = self.num_slots * self.engine_props['bw_per_slot'] * 10 ** 9
         self.snr_props['center_psd'] = self.engine_props['input_power'] / self.snr_props['bandwidth']
-        # self.snr_props['center_psd'] = self.engine_props['input_power'] / self.snr_props['bandwidth']
 
     def check_snr(self):
         """
@@ -246,7 +190,6 @@ class SnrMeasurements:
             self.link_id = self.sdn_props['net_spec_dict'][(self.spectrum_props['path_list'][link], self.spectrum_props['path_list'][link + 1])]['link_num']
 
             self.link_dict = self.engine_props['topology_info']['links'][self.link_id]['fiber']
-            # self.update_link_constants()
             self._update_link_params(link=link)
 
             psd_nli = self._calculate_psd_nli()
