@@ -99,8 +99,8 @@ class SnrMeasurements:
 
         return power_xt
 
-    # TODO: Change to num_adjacent
-    def calculate_xt(self, adjacent_cores: int, link_length: int):
+    @staticmethod
+    def calculate_xt(num_adjacent: int, link_length: int):
         """
         Calculates the cross-talk interference based on the number of adjacent cores.
 
@@ -108,9 +108,10 @@ class SnrMeasurements:
         :rtype: float
         """
         mean_xt = 3.78e-9
-        resp_xt = (1 - math.exp(-2 * mean_xt * link_length * 1e3)) / (1 + math.exp(-2 * mean_xt * link_length * 1e3))
+        resp_xt = 1 - math.exp(-2 * mean_xt * link_length * 1e3)
+        resp_xt /= (1 + math.exp(-2 * mean_xt * link_length * 1e3))
 
-        return resp_xt * adjacent_cores
+        return resp_xt * num_adjacent
 
     def _handle_egn_model(self):
         """
