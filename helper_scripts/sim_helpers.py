@@ -72,16 +72,12 @@ def sort_dict_keys(dictionary: dict):
     return sorted_dict
 
 
-def find_path_len(path_list: List[str], topology: nx.Graph):
+def find_path_len(path_list: list, topology: nx.Graph):
     """
     Finds the length of a path in a physical topology.
 
-    :param path: A list of integers representing the nodes in the path.
-    :type path: list of str
-
-    :param topology: A networkx graph object representing the physical topology of the simulation.
-    :type topology: networkx.Graph
-
+    :param path_list: A list of integers representing the nodes in the path.
+    :param topology: The network topology.
     :return: The length of the path.
     """
     path_len = 0
