@@ -125,14 +125,14 @@ class SnrMeasurements:
             hn_series = hn_series + 1 / i
 
         # The effective span length
-        eff_span_len = (1 - math.e ** (-2 * self.link_dict['attenuation'] * self.snr_props['length'] * 10 ** 3)) / (
-                2 * self.link_dict['attenuation'])
-
+        eff_span_len = 1 - math.e ** (-2 * self.link_dict['attenuation'] * self.snr_props['length'] * 10 ** 3)
+        eff_span_len /= (2 * self.link_dict['attenuation'])
         baud_rate = int(self.snr_props['req_bit_rate']) * 10 ** 9 / 2
-        temp_coef = ((self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2) * (
-                eff_span_len ** 2) * (self.snr_props['center_psd'] ** 3) * (self.snr_props['bandwidth'] ** 2)) / (
-                            (baud_rate ** 2) * math.pi * self.link_dict['dispersion'] * (
-                            self.snr_props['length'] * 10 ** 3))
+
+        temp_coef = self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2
+        temp_coef *= eff_span_len ** 2
+        temp_coef *= self.snr_props['center_psd'] ** 3 * self.snr_props['bandwidth'] ** 2
+        temp_coef /= ((baud_rate ** 2) * math.pi * self.link_dict['dispersion'] * (self.snr_props['length'] * 10 ** 3))
 
         # The PSD correction term
         psd_correction = (80 / 81) * self.engine_props['phi'][self.spectrum_props['modulation']] * temp_coef * hn_series
