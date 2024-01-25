@@ -154,7 +154,6 @@ class SnrMeasurements:
 
         return psd_nli
 
-    # TODO: Change to link num
     def _update_link_params(self, link_num: int):
         """
         Updates needed parameters for each link used for calculating SNR or XT.
@@ -175,8 +174,9 @@ class SnrMeasurements:
         """
         Updates variables for the center frequency, bandwidth, and PSD for the current request.
         """
-        self.snr_props['center_freq'] = ((self.spectrum_props['start_slot'] * self.engine_props['bw_per_slot']) + (
-                (self.num_slots * self.engine_props['bw_per_slot']) / 2)) * 10 ** 9
+        self.snr_props['center_freq'] = self.spectrum_props['start_slot'] * self.engine_props['bw_per_slot']
+        self.snr_props['center_freq'] += ((self.num_slots * self.engine_props['bw_per_slot']) / 2)
+        self.snr_props['center_freq'] *= 10 ** 9
 
         self.snr_props['bandwidth'] = self.num_slots * self.engine_props['bw_per_slot'] * 10 ** 9
         self.snr_props['center_psd'] = self.engine_props['input_power'] / self.snr_props['bandwidth']
