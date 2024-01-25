@@ -6,7 +6,6 @@ import networkx as nx
 from arg_scripts.snr_args import empty_props
 
 
-# TODO: Double check all parenthesis
 # fixme: Only works for seven cores
 class SnrMeasurements:
     """
