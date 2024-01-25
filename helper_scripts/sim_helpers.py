@@ -60,13 +60,10 @@ def sort_nested_dict_vals(original_dict: dict, nested_key: str):
 
 def sort_dict_keys(dictionary: dict):
     """
-    Given a dictionary with key-value pairs, return a new dictionary with the same pairs, sorted by keys in descending
-    order.
+    Sort a dictionary by keys in descending order.
 
     :param dictionary: The dictionary to sort.
-    :type dictionary: dict
-
-    :return: A new dictionary with the same pairs as the input dictionary, but sorted by keys in descending order.
+    :return: The newly sorted dictionary.
     :rtype: dict
     """
     sorted_keys = sorted(map(int, dictionary.keys()), reverse=True)
