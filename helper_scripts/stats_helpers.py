@@ -2,7 +2,6 @@ import json
 import os
 import math
 import copy
-import statistics
 from statistics import mean, variance, stdev
 
 import numpy as np

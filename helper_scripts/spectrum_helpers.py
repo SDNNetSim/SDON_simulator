@@ -1,13 +1,13 @@
 from helper_scripts.sim_helpers import find_free_channels, find_free_slots, get_channel_overlaps
 
 
-# TODO: Make sure to check link and rev_link
-# TODO: Can put multiple params in constructor as well
-def link_has_free_spectrum(sdn_props: dict, link, rev_link, core_num, start_slot, end_slot):
-    spec = sdn_props['net_spec_dict'][link]['cores_matrix'][core_num][start_slot:end_slot]
-    rev_spec = sdn_props['net_spec_dict'][rev_link]['cores_matrix'][core_num][start_slot:end_slot]
+# TODO: Convert these methods to a class?
+def _check_free_spectrum(sdn_props: dict, link_tuple: tuple, rev_link_tuple: tuple, core_num: int, start_slot: int,
+                         end_slot: int):
+    spectrum = sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][core_num][start_slot:end_slot]
+    reversed_spectrum = sdn_props['net_spec_dict'][rev_link_tuple]['cores_matrix'][core_num][start_slot:end_slot]
 
-    if set(spec) == {0.0} and set(rev_spec) == {0.0}:
+    if set(spectrum) == {0.0} and set(reversed_spectrum) == {0.0}:
         return True
 
     return False
@@ -19,7 +19,7 @@ def check_other_links(sdn_props: dict, spectrum_props: dict, core_num: int, star
         link = (spectrum_props['path_list'][node], spectrum_props['path_list'][node + 1])
         rev_link = (spectrum_props['path_list'][node + 1], spectrum_props['path_list'][node])
 
-        if not link_has_free_spectrum(sdn_props, link, rev_link, core_num, start_index, end_index):
+        if not _check_free_spectrum(sdn_props, link, rev_link, core_num, start_index, end_index):
             spectrum_props['is_free'] = False
             return
 
@@ -119,4 +119,3 @@ def find_best_core(sdn_props: dict, spectrum_props: dict):
         if 6 in sorted_cores:
             sorted_cores.remove(6)
     return sorted_cores[0]
-
