@@ -218,37 +218,6 @@ class SnrMeasurements:
         resp = total_snr > self.snr_props['req_snr']
         return resp
 
-    def check_snr_xt(self):
-        """
-        Determines whether the SNR threshold can be met for a single request.
-
-        :return: Whether the SNR threshold can be met.
-        :rtype: bool
-        """
-        snr = 0
-        self._init_center_vars()
-        for link in range(0, len(self.spectrum_props['path_list']) - 1):
-            self.link_id = self.sdn_props['net_spec_dict'][
-                (self.spectrum_props['path_list'][link], self.spectrum_props['path_list'][link + 1])]['link_num']
-
-            self.link_dict = self.engine_props['topology_info']['links'][self.link_id]['fiber']
-            # self.update_link_constants()
-            self._update_link_params(link=link)
-            psd_ase = (self.snr_props['plank'] * self.snr_props['light_frequency'] * self.snr_props['nsp']) * (
-                    math.exp(self.link_dict['attenuation'] * self.snr_props['length'] * 10 ** 3) - 1)
-            if self.engine_props['xt_noise']:
-                p_xt = self._calculate_pxt(adjacent_cores=None)
-            else:
-                p_xt = 0
-
-            snr += (1 / ((self.snr_props['center_psd'] * self.snr_props['bandwidth']) / (
-                    (psd_ase * self.snr_props['bandwidth'] + p_xt) * self.snr_props['num_span'])))
-
-        snr = 10 * math.log10(1 / snr)
-
-        resp = snr > self.snr_props['req_snr']
-        return resp
-
     # TODO: Change to link tuple
     def check_adjacent_cores(self, link_nodes: tuple):
         """
@@ -343,9 +312,6 @@ class SnrMeasurements:
             snr_check, xt_cost = self.check_snr()
         elif self.engine_props['check_snr'] == "xt_calculation":
             snr_check, xt_cost = self.check_xt()
-            # TODO: Changed from snr_calculation_xt to snr_calc_xt
-        elif self.engine_props['check_snr'] == "snr_calc_xt":
-            snr_check, xt_cost = self.check_snr_xt()
         else:
             raise NotImplementedError(f"Unexpected check_snr flag got: {self.engine_props['check_snr']}")
 
