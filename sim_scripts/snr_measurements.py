@@ -18,7 +18,7 @@ class SnrMeasurements:
         self.sdn_props = sdn_props
         self.spectrum_props = spectrum_props
 
-        self.visited_channels = None
+        self.channels_list = None
         self.link_id = None
         self.num_slots = None
 
@@ -59,28 +59,26 @@ class SnrMeasurements:
 
         return new_xci
 
-    # TODO: I believe I've implemented something similar in routing (calculate MCI on my branch)
-    # TODO: That doesn't have multi-core support I believe, and, probably better to move here instead
-    # TODO: Change to link num or is it a tuple?
-    def _calculate_xci(self, link: int):
+    def _calculate_xci(self, link_num: int):
         """
         Calculates the cross-phase modulation noise on a link for a single request.
 
         :return: The total cross-phase modulation noise on the link
         :rtype: float
         """
-        self.visited_channels = []
+        self.channels_list = []
         # Cross-phase modulation noise
         xci_noise = 0
         for slot_index in range(self.engine_props['spectral_slots']):
-            curr_link = self.sdn_props['net_spec_dict'][
-                (self.spectrum_props['path_list'][link], self.spectrum_props['path_list'][link + 1])]['cores_matrix']
-            spectrum_contents = curr_link[self.spectrum_props['core_num']][slot_index]
+            source = self.spectrum_props['path_list'][link_num]
+            dest = self.spectrum_props['path_list'][link_num + 1]
+            curr_link = self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix']
+            req_id = curr_link[self.spectrum_props['core_num']][slot_index]
 
             # Spectrum is occupied
-            if spectrum_contents > 0 and spectrum_contents not in self.visited_channels:
-                self.visited_channels.append(spectrum_contents)
-                xci_noise = self._update_link_xci(spectrum_contents=spectrum_contents, curr_link=curr_link,
+            if req_id > 0 and req_id not in self.channels_list:
+                self.channels_list.append(req_id)
+                xci_noise = self._update_link_xci(req_id=req_id, curr_link=curr_link,
                                                   slot_index=slot_index, curr_xci=xci_noise)
 
         return xci_noise
@@ -123,7 +121,7 @@ class SnrMeasurements:
         """
         # The harmonic number series
         hn_series = 0
-        for i in range(1, math.ceil((len(self.visited_channels) - 1) / 2) + 1):
+        for i in range(1, math.ceil((len(self.channels_list) - 1) / 2) + 1):
             hn_series = hn_series + 1 / i
 
         # The effective span length
