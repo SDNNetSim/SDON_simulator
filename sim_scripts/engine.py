@@ -37,7 +37,7 @@ class Engine:
 
         self.sdn_obj = SDNController(engine_props=self.engine_props)
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
-        self.ai_obj = AIMethods(properties=self.engine_props)
+        self.ai_obj = AIMethods(engine_props=self.engine_props)
 
     def update_ai_obj(self, sdn_dict: dict):
         """
