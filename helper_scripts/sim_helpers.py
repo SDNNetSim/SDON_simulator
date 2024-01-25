@@ -220,31 +220,27 @@ def find_taken_channels(net_spec_dict: dict, link_tuple: tuple):
     """
     Finds the taken super-channels on a given link.
 
-    :param net_spec_db: The most updated network spectrum database.
-    :type net_spec_db: dict
-
-    :param des_link: The link to search on.
-    :type des_link: tuple
-
-    :return: A matrix containing the indexes for unavailable super-channels for that request for every core.
+    :param net_spec_dict: The most updated network spectrum database.
+    :param link_tuple: The link to search on.
+    :return: Unavailable super-channels for every core.
     :rtype: dict
     """
     resp = {}
-    cores_matrix = copy.deepcopy(net_spec_db[des_link]['cores_matrix'])
-    for core_num, link in enumerate(cores_matrix):
-        channels = []
-        curr_channel = []
+    cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'])
+    for core_num, link_list in enumerate(cores_matrix):
+        channels_list = []
+        curr_channel_list = []
 
-        for value in link:
+        for value in link_list:
             if value > 0:
-                curr_channel.append(value)
-            elif value < 0 and curr_channel:
-                channels.append(curr_channel)
-                curr_channel = []
+                curr_channel_list.append(value)
+            elif value < 0 and curr_channel_list:
+                channels_list.append(curr_channel_list)
+                curr_channel_list = []
 
-        if curr_channel:
-            channels.append(curr_channel)
+        if curr_channel_list:
+            channels_list.append(curr_channel_list)
 
-        resp[core_num] = channels
+        resp[core_num] = channels_list
 
     return resp
