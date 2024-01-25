@@ -82,10 +82,17 @@ def check_super_channels(sdn_props: dict, spectrum_props: dict, engine_props: di
     return False
 
 
-# TODO: Haven't technically used xt allocation, just make sure it runs
-# TODO: Definitely to helper script
-def check_cores_channels(sdn_props: dict, spectrum_props: dict):
-    resp = {'free_slots': {}, 'free_channels': {}, 'slots_inters': {}, 'channel_inters': {}}
+# TODO: This should be two functions, also does NOT find overlapping
+def find_link_inters(sdn_props: dict, spectrum_props: dict):
+    """
+    Finds all slots and super-channels that have overlapping allocated requests. Also find free channels and slots.
+
+    :param sdn_props: The properties of the SDN class.
+    :param spectrum_props: The properties of the spectrum assignment class.
+    :return: The free slots and super-channels along with intersecting slots and super-channels.
+    :rtype: dict
+    """
+    resp = {'free_slots_dict': {}, 'free_channels_dict': {}, 'slots_inters_dict': {}, 'channel_inters_dict': {}}
 
     for source_dest in zip(spectrum_props['path_list'], spectrum_props['path_list'][1:]):
         free_slots = find_free_slots(net_spec_dict=sdn_props['net_spec_dict'], link_tuple=source_dest)
@@ -93,34 +100,35 @@ def check_cores_channels(sdn_props: dict, spectrum_props: dict):
                                            slots_needed=spectrum_props['slots_needed'],
                                            link_tuple=source_dest)
 
-        resp['free_slots'].update({source_dest: free_slots})
-        resp['free_channels'].update({source_dest: free_channels})
+        resp['free_slots_dict'].update({source_dest: free_slots})
+        resp['free_channels_dict'].update({source_dest: free_channels})
 
-        for core_num in resp['free_slots'][source_dest]:
-            if core_num not in resp['slots_inters']:
-                resp['slots_inters'].update({core_num: set(resp['free_slots'][source_dest][core_num])})
+        for core_num in resp['free_slots_dict'][source_dest]:
+            if core_num not in resp['slots_inters_dict']:
+                resp['slots_inters_dict'].update({core_num: set(resp['free_slots_dict'][source_dest][core_num])})
 
-                resp['channel_inters'].update({core_num: resp['free_channels'][source_dest][core_num]})
+                resp['channel_inters_dict'].update({core_num: resp['free_channels_dict'][source_dest][core_num]})
             else:
-                intersection = resp['slots_inters'][core_num] & set(resp['free_slots'][source_dest][core_num])
-                resp['slots_inters'][core_num] = intersection
-                resp['channel_inters'][core_num] = [item for item in resp['channel_inters'][core_num] if
-                                                    item in resp['free_channels'][source_dest][core_num]]
+                intersection = resp['slots_inters_dict'][core_num] & set(resp['free_slots_dict'][source_dest][core_num])
+                resp['slots_inters_dict'][core_num] = intersection
+                resp['channel_inters_dict'][core_num] = [item for item in resp['channel_inters_dict'][core_num] if
+                                                         item in resp['free_channels_dict'][source_dest][core_num]]
 
     return resp
 
 
-# TODO: probably to helper script
 def find_best_core(sdn_props: dict, spectrum_props: dict):
     """
-    Finds the core with the least amount of overlapping super channels for previously allocated requests.
+    Finds the core with the least amount of overlapping super channels.
 
+    :param sdn_props: Properties of the SDN controller.
+    :param spectrum_props: Properties of the spectrum assignment class.
     :return: The core with the least amount of overlapping channels.
     :rtype: int
     """
-    path_info = check_cores_channels(sdn_props=sdn_props, spectrum_props=spectrum_props)
-    all_channels = get_channel_overlaps(path_info['channel_inters'],
-                                        path_info['free_slots'])
+    path_info = find_link_inters(sdn_props=sdn_props, spectrum_props=spectrum_props)
+    all_channels = get_channel_overlaps(path_info['channel_inters_dict'],
+                                        path_info['free_slots_dict'])
     sorted_cores = sorted(all_channels['non_over_dict'], key=lambda k: len(all_channels['non_over_dict'][k]))
 
     # TODO: Comment why
