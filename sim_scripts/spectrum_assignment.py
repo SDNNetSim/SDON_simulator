@@ -29,8 +29,9 @@ class SpectrumAssignment:
                     break
 
                 if len(self.spectrum_props['path_list']) > 2:
-                    check_other_links(self.sdn_props, self.spectrum_props, channel_dict['core'], start_index,
-                                      end_index + self.engine_props['guard_slots'])
+                    check_other_links(sdn_props=self.sdn_props, spectrum_props=self.spectrum_props,
+                                      core_num=channel_dict['core'], start_index=start_index,
+                                      end_index=end_index + self.engine_props['guard_slots'])
 
                 if self.spectrum_props['is_free'] or len(self.spectrum_props['path_list']) <= 2:
                     self.spectrum_props['start_slot'] = start_index
@@ -52,9 +53,9 @@ class SpectrumAssignment:
 
                 tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
                               itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-                for channel in tmp_matrix:
-                    if len(channel) >= self.spectrum_props['slots_needed']:
-                        channels_list.append({'link': (src, dest), 'core': core_num, 'channel': channel})
+                for channel_list in tmp_matrix:
+                    if len(channel_list) >= self.spectrum_props['slots_needed']:
+                        channels_list.append({'link': (src, dest), 'core': core_num, 'channel': channel_list})
 
         # Sort the list of candidate super channels
         channels_list = sorted(channels_list, key=lambda d: len(d['channel']))
@@ -71,7 +72,7 @@ class SpectrumAssignment:
                 core_matrix.append(self.spectrum_props['cores_matrix'][curr_core])
         else:
             core_matrix = self.spectrum_props['cores_matrix']
-            core_list = [core_num for core_num in range(0, self.engine_props['cores_per_link'])]
+            core_list = list(range(0, self.engine_props['cores_per_link']))
 
         return core_matrix, core_list
 
@@ -80,7 +81,6 @@ class SpectrumAssignment:
         Handles either first-fit or last-fit spectrum allocation.
 
         :param flag: A flag to determine which allocation method to be used.
-        :type flag: str
         """
         core_matrix, core_list = self._setup_first_last()
         for core_arr, core_num in zip(core_matrix, core_list):
@@ -164,9 +164,9 @@ class SpectrumAssignment:
                         self.spectrum_props['is_free'] = False
                         self.sdn_props['block_reason'] = 'xt_threshold'
                         continue
-                    else:
-                        self.spectrum_props['is_free'] = True
-                        self.sdn_props['block_reason'] = None
+
+                    self.spectrum_props['is_free'] = True
+                    self.sdn_props['block_reason'] = None
 
                 return
 
