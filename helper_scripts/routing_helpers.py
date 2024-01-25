@@ -44,6 +44,46 @@ class RoutingHelpers:
         sim_link_list[start_index:end_index] = 0
         return sim_link_list
 
+    def _find_channel_mci(self, channels_list: list, center_freq: float, num_span: float):
+        total_mci = 0
+        for channel in channels_list:
+            # The current center frequency for the occupied channel
+            curr_freq = channel[0] * self.route_props['freq_spacing']
+            curr_freq += (len(channel) * self.route_props['freq_spacing']) / 2
+            bandwidth = len(channel) * self.route_props['freq_spacing']
+            # Power spectral density
+            power_spec_dens = self.route_props['input_power'] / bandwidth
+
+            curr_mci = abs(center_freq - curr_freq) + (bandwidth / 2)
+            curr_mci = math.log(curr_mci / abs(center_freq - curr_freq) - (bandwidth / 2))
+            curr_mci *= power_spec_dens ** 2
+
+            total_mci += curr_mci
+
+        total_mci = (total_mci / self.route_props['mci_worst']) * num_span
+        return total_mci
+
+    def _find_link_cost(self, free_channels_dict: dict, taken_channels_dict: dict, num_span: float):
+        nli_cost = 0
+        num_channels = 0
+        for core_num, free_channels_list in free_channels_dict.items():
+            # Update MCI for available channel
+            for channel in free_channels_list:
+                num_channels += 1
+                # Calculate the center frequency for the open channel
+                center_freq = channel[0] * self.route_props['freq_spacing']
+                center_freq += (self.sdn_props['slots_needed'] * self.route_props['freq_spacing']) / 2
+
+                nli_cost += self._find_channel_mci(channels_list=taken_channels_dict[core_num], center_freq=center_freq,
+                                                   num_span=num_span)
+
+        # A constant score of 1000 if the link is fully congested
+        if num_channels == 0:
+            return 1000.0
+
+        link_cost = nli_cost / num_channels
+        return link_cost
+
     def find_worst_nli(self, num_span: float):
         """
         Finds the worst possible non-linear impairment cost.
@@ -67,45 +107,6 @@ class RoutingHelpers:
 
         self.sdn_props['net_spec_dict'][links_list[0]]['cores_matrix'][0] = orig_link_list
         return nli_worst
-
-    def _find_link_cost(self, free_channels_dict: dict, taken_channels_dict: dict, num_span: float):
-        nli_cost = 0
-        num_channels = 0
-        for core_num, free_channels_list in free_channels_dict.items():
-            # Update MCI for available channel
-            for channel in free_channels_list:
-                num_channels += 1
-                # Calculate the center frequency for the open channel
-                center_freq = channel[0] * self.route_props['freq_spacing']
-                center_freq += (self.sdn_props['slots_needed'] * self.route_props['freq_spacing']) / 2
-
-                nli_cost += self._find_channel_mci(channels_list=taken_channels_dict[core_num], center_freq=center_freq,
-                                                   num_span=num_span)
-
-        # A constant score of 1000 if the link is fully congested
-        if num_channels == 0:
-            return 1000.0
-
-        link_cost = nli_cost / num_channels
-        return link_cost
-
-    def _find_channel_mci(self, channels_list: list, center_freq: float, num_span: float):
-        mci = 0
-        for channel in channels_list:
-            # The current center frequency for the occupied channel
-            curr_freq = channel[0] * self.route_props['freq_spacing']
-            curr_freq += (len(channel) * self.route_props['freq_spacing']) / 2
-            bandwidth = len(channel) * self.route_props['freq_spacing']
-            # Power spectral density
-            power_spec_dens = self.route_props['input_power'] / bandwidth
-
-            first_term = power_spec_dens ** 2
-            second_term = abs(center_freq - curr_freq) + (bandwidth / 2)
-            third_term = abs(center_freq - curr_freq) - (bandwidth / 2)
-            mci += first_term * math.log(abs(second_term / third_term))
-
-        mci = (mci / self.route_props['mci_worst']) * num_span
-        return mci
 
     @staticmethod
     def _find_adjacent_cores(core_num: int):
