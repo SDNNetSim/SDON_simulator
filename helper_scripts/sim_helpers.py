@@ -10,8 +10,8 @@ def get_path_mod(mods_dict: dict, path_len: int):
     Choose a modulation format that will allocate a network request.
 
     :param mods_dict: Information for maximum reach for each modulation format.
-    :param path_len: The length of the path to be taken
-    :return: The chosen modulation format
+    :param path_len: The length of the path to be taken.
+    :return: The chosen modulation format.
     :rtype: str
     """
     # Pycharm auto-formats it like this for comparisons...I'd rather this look weird than look at PyCharm warnings
@@ -27,25 +27,19 @@ def get_path_mod(mods_dict: dict, path_len: int):
     return resp
 
 
-def find_max_length(source: int, destination: int, topology: nx.Graph):
+def find_max_path_len(source: int, destination: int, topology: nx.Graph):
     """
-    Find the maximum path length possible.
+    Find the maximum path length possible of a path in the network.
 
     :param source: The source node.
-    :type source: int
-
     :param destination: The destination node.
-    :type destination: int
-
     :param topology: The network topology.
-    :type topology: nx.Graph
-
     :return: The length of the longest path possible.
     :rtype: float
     """
-    paths = list(nx.shortest_simple_paths(topology, source, destination))
-    longest_path = paths[-1]
-    resp = find_path_len(path=longest_path, topology=topology)
+    all_paths_list = list(nx.shortest_simple_paths(topology, source, destination))
+    path_list = all_paths_list[-1]
+    resp = find_path_len(path_list=path_list, topology=topology)
 
     return resp
 
@@ -55,12 +49,8 @@ def sort_nested_dict_vals(original_dict: dict, nested_key: str):
     Sort a dictionary by a value which belongs to a nested key.
 
     :param original_dict: The original dictionary.
-    :type original_dict: dict
-
     :param nested_key: The nested key to sort by.
-    :type nested_key: str
-
-    :return: The sorted dictionary (ascending).
+    :return: The sorted dictionary, ascending.
     :rtype: dict
     """
     sorted_items = sorted(original_dict.items(), key=lambda x: x[1][nested_key])
