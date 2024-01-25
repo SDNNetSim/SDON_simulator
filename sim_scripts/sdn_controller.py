@@ -1,4 +1,5 @@
 import time
+
 import numpy as np
 
 from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len
@@ -23,8 +24,6 @@ class SDNController:
     def release(self):
         """
         Removes a previously allocated request from the network.
-
-        :return: None
         """
         for source, dest in zip(self.sdn_props['path_list'], self.sdn_props['path_list'][1:]):
             for core_num in range(self.engine_props['cores_per_link']):
@@ -89,11 +88,6 @@ class SDNController:
                 spectrum_key = 'core_num'
             self.sdn_props[stat_key].append(self.spectrum_obj.spectrum_props[spectrum_key])
 
-    def _init_req_stats(self):
-        self.sdn_props['bandwidth_list'] = list()
-        for stat_key in self.sdn_props['stat_key_list']:
-            self.sdn_props[stat_key] = list()
-
     def _allocate_slicing(self, num_segments: int, mod_format: str, path_list: list, bandwidth: str):
         self.sdn_props['num_trans'] = num_segments
         self.spectrum_obj.spectrum_props['path_list'] = path_list
@@ -137,13 +131,16 @@ class SDNController:
             else:
                 self.sdn_props['is_sliced'] = False
 
+    def _init_req_stats(self):
+        self.sdn_props['bandwidth_list'] = list()
+        for stat_key in self.sdn_props['stat_key_list']:
+            self.sdn_props[stat_key] = list()
+
     def handle_event(self, request_type: str):
         """
         Handles any event that occurs in the simulation, controls this class.
 
         :param request_type: Whether the request is an arrival or departure.
-        :return: The properties of this class.
-        :rtype: dict
         """
         self._init_req_stats()
         # Even if the request is blocked, we still consider one transponder
@@ -180,7 +177,6 @@ class SDNController:
 
                     self.sdn_props['was_routed'] = True
                     self.sdn_props['route_time'] = route_time
-                    # TODO: Ask Arash, multiple path weights?
                     self.sdn_props['path_weight'] = self.route_obj.route_props['weights_list'][path_index]
                     self.sdn_props['spectrum_dict'] = self.spectrum_obj.spectrum_props
 
