@@ -1,7 +1,7 @@
 from helper_scripts.sim_helpers import find_free_channels, find_free_slots, get_channel_overlaps
 
 
-# TODO: Convert these methods to a class?
+# TODO: Convert these methods to a class
 def _check_free_spectrum(sdn_props: dict, link_tuple: tuple, rev_link_tuple: tuple, core_num: int, start_index: int,
                          end_index: int):
     spectrum_set = sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][core_num][start_index:end_index]
@@ -25,27 +25,49 @@ def check_other_links(sdn_props: dict, spectrum_props: dict, core_num: int, star
             return
 
 
-# TODO: Break up into two functions?
-def check_open_slots(sdn_props: dict, spectrum_props: dict, engine_props: dict, open_slots_matrix: list, core_num: int):
-    for tmp_arr in open_slots_matrix:
-        # TODO: Slots needed has not been defined
-        if len(tmp_arr) >= (spectrum_props['slots_needed'] + engine_props['guard_slots']):
-            for start_index in tmp_arr:
+def _update_spec_props(spectrum_props: dict, engine_props: dict, start_index: int, end_index: int, core_num: int):
+    if spectrum_props['forced_core'] is not None:
+        core_num = spectrum_props['forced_core']
+
+    if engine_props['allocation_method'] == 'last_fit':
+        spectrum_props['start_slot'] = end_index
+        spectrum_props['end_slot'] = start_index + engine_props['guard_slots']
+    else:
+        spectrum_props['start_slot'] = start_index
+        spectrum_props['end_slot'] = end_index + engine_props['guard_slots']
+
+    spectrum_props['core_num'] = core_num
+    return spectrum_props
+
+
+def check_super_channels(sdn_props: dict, spectrum_props: dict, engine_props: dict, open_slots_matrix: list,
+                         core_num: int):
+    """
+    Given a matrix of available super-channels, find one that can allocate the current request.
+
+    :param sdn_props: Properties of the SDN controller.
+    :param spectrum_props: Properties of the spectrum assignment class.
+    :param engine_props: Properties of the engine class.
+    :param open_slots_matrix: A matrix where each entry is an available super-channel's indexes.
+    :param core_num: The core number which is currently being checked.
+    :return: If the request can be successfully allocated.
+    :rtype: bool
+    """
+    for super_channel in open_slots_matrix:
+        if len(super_channel) >= (spectrum_props['slots_needed'] + engine_props['guard_slots']):
+            for start_index in super_channel:
                 if engine_props['allocation_method'] == 'last_fit':
-                    end_index = (start_index - spectrum_props['slots_needed'] - engine_props[
-                        'guard_slots']) + 1
+                    end_index = (start_index - spectrum_props['slots_needed'] - engine_props['guard_slots']) + 1
                 else:
-                    end_index = (start_index + spectrum_props['slots_needed'] + engine_props[
-                        'guard_slots']) - 1
-                if end_index not in tmp_arr:
+                    end_index = (start_index + spectrum_props['slots_needed'] + engine_props['guard_slots']) - 1
+                if end_index not in super_channel:
                     break
                 else:
                     spectrum_props['is_free'] = True
 
                 if len(spectrum_props['path_list']) > 2:
                     if engine_props['allocation_method'] == 'last_fit':
-                        # Note that these are reversed since we search in decreasing order, but allocate in
-                        # increasing order
+                        # Note that these are reversed since we search in descending, but allocate in ascending
                         check_other_links(sdn_props, spectrum_props, core_num, end_index,
                                           start_index + engine_props['guard_slots'])
                     else:
@@ -53,22 +75,8 @@ def check_open_slots(sdn_props: dict, spectrum_props: dict, engine_props: dict, 
                                           end_index + engine_props['guard_slots'])
 
                 if spectrum_props['is_free'] is not False or len(spectrum_props['path_list']) <= 2:
-                    # Since we use enumeration prior and set the matrix equal to one core, the "core_num" will
-                    # always be zero even if our desired core index is different, is this lazy coding? Idek
-                    # fixme no forced core here
-                    # TODO: What?
-                    if spectrum_props['forced_core'] is not None:
-                        core_num = spectrum_props['forced_core']
-
-                    # TODO: Can make this better
-                    if engine_props['allocation_method'] == 'last_fit':
-                        spectrum_props['start_slot'] = end_index
-                        spectrum_props['end_slot'] = start_index + engine_props['guard_slots']
-                    else:
-                        spectrum_props['start_slot'] = start_index
-                        spectrum_props['end_slot'] = end_index + engine_props['guard_slots']
-
-                    spectrum_props['core_num'] = core_num
+                    _update_spec_props(spectrum_props=spectrum_props, engine_props=engine_props,
+                                       start_index=start_index, end_index=end_index, core_num=core_num)
                     return True
 
     return False

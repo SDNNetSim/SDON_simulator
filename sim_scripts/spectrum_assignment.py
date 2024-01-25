@@ -4,7 +4,7 @@ from operator import itemgetter
 import numpy as np
 
 from arg_scripts.spectrum_args import empty_props
-from helper_scripts.spectrum_helpers import check_open_slots, find_best_core, check_other_links
+from helper_scripts.spectrum_helpers import check_super_channels, find_best_core, check_other_links
 from sim_scripts.snr_measurements import SnrMeasurements
 
 
@@ -96,9 +96,9 @@ class SpectrumAssignment:
             else:
                 raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
 
-            was_allocated = check_open_slots(sdn_props=self.sdn_props, spectrum_props=self.spectrum_props,
-                                             engine_props=self.engine_props,
-                                             open_slots_matrix=open_slots_matrix, core_num=core_num)
+            was_allocated = check_super_channels(sdn_props=self.sdn_props, spectrum_props=self.spectrum_props,
+                                                 engine_props=self.engine_props,
+                                                 open_slots_matrix=open_slots_matrix, core_num=core_num)
             if was_allocated:
                 return
 
