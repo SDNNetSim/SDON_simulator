@@ -210,8 +210,8 @@ class RoutingHelpers:
                                                 slots_needed=self.sdn_props['slots_needed'], link_tuple=link_tuple)
         taken_channels_dict = find_taken_channels(net_spec_dict=self.sdn_props['net_spec_dict'], link_tuple=link_tuple)
 
-        nli_cost = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
-                                        num_span=num_span)
+        link_cost = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
+                                         num_span=num_span)
 
         source, dest = link_tuple[0], link_tuple[1]
         if self.route_props['max_link_length'] is None:
@@ -219,6 +219,6 @@ class RoutingHelpers:
 
         nli_cost = self.engine_props['topology'][source][dest]['length'] / self.route_props['max_link_length']
         nli_cost *= self.engine_props['beta']
-        nli_cost += ((1 - self.engine_props['beta']) * nli_cost)
+        nli_cost += ((1 - self.engine_props['beta']) * link_cost)
 
         return nli_cost
