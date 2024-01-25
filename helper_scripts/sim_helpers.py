@@ -187,37 +187,31 @@ def find_free_channels(net_spec_dict: dict, slots_needed: int, link_tuple: tuple
     """
     Finds the free super-channels on a given link.
 
-    :param net_spec_db: The most updated network spectrum database.
-    :type net_spec_db: dict
-
+    :param net_spec_dict: The most updated network spectrum database.
     :param slots_needed: The number of slots needed for the request.
-    :type slots_needed: int
-
-    :param des_link: The link to search on.
-    :type des_link: tuple
-
-    :return: A matrix containing the indexes for available super-channels for that request for every core.
+    :param link_tuple: The link to search on.
+    :return: Available super-channels for every core.
     :rtype: dict
     """
     resp = {}
-    cores_matrix = copy.deepcopy(net_spec_db[des_link]['cores_matrix'])
-    for core_num, link in enumerate(cores_matrix):
-        indexes = np.where(link == 0)[0]
-        channels = []
-        curr_channel = []
+    cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'])
+    for core_num, link_list in enumerate(cores_matrix):
+        indexes = np.where(link_list == 0)[0]
+        channels_list = []
+        curr_channel_list = []
 
         for i, free_index in enumerate(indexes):
             if i == 0:
-                curr_channel.append(free_index)
+                curr_channel_list.append(free_index)
             elif free_index == indexes[i - 1] + 1:
-                curr_channel.append(free_index)
-                if len(curr_channel) == slots_needed:
-                    channels.append(curr_channel.copy())
-                    curr_channel.pop(0)
+                curr_channel_list.append(free_index)
+                if len(curr_channel_list) == slots_needed:
+                    channels_list.append(curr_channel_list.copy())
+                    curr_channel_list.pop(0)
             else:
-                curr_channel = [free_index]
+                curr_channel_list = [free_index]
 
-        resp.update({core_num: channels})
+        resp.update({core_num: channels_list})
 
     return resp
 
