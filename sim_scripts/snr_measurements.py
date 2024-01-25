@@ -260,11 +260,12 @@ class SnrMeasurements:
         if flag == 'intra_core':
             edge_lengths = nx.get_edge_attributes(self.engine_props['topology'], 'length')
             max_link = max(edge_lengths, key=edge_lengths.get, default=None)
+
             self.link_id = self.sdn_props['net_spec_dict'][max_link]['link_num']
             max_length = edge_lengths.get(max_link, 0.0)
-            self.link_dict = self.engine_props['topology_info']['links'][self.link_id]['fiber']
-            # self.update_link_constants()
-            resp = self.calculate_xt(adjacent_cores=6, link_length=max_length)
+            self.snr_props['link_dict'] = self.engine_props['topology_info']['links'][self.link_id]['fiber']
+
+            resp = self.calculate_xt(num_adjacent=6, link_length=max_length)
             resp = 10 * math.log10(resp)
         else:
             raise NotImplementedError
