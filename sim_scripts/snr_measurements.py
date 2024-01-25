@@ -30,8 +30,8 @@ class SnrMeasurements:
         :return: The self-phase power spectral density.
         :rtype: float
         """
-        rho_param = (math.pi ** 2) * np.abs(self.link_dict['dispersion'])
-        rho_param /= 2 * self.link_dict['attenuation']
+        rho_param = (math.pi ** 2) * np.abs(self.snr_props['link_dict']['dispersion'])
+        rho_param /= 2 * self.snr_props['link_dict']['attenuation']
 
         sci_psd = self.snr_props['center_psd'] ** 2
         sci_psd *= math.asinh(rho_param * (self.snr_props['bandwidth'] ** 2))
@@ -92,8 +92,9 @@ class SnrMeasurements:
         :rtype: float
         """
         # A statistical mean of the cross-talk
-        mean_xt = 2 * self.link_dict['bending_radius'] * self.link_dict['mode_coupling_co'] ** 2
-        mean_xt /= (self.link_dict['propagation_const'] * self.link_dict['core_pitch'])
+        mean_xt = 2 * self.snr_props['link_dict']['bending_radius']
+        mean_xt *= self.snr_props['link_dict']['mode_coupling_co'] ** 2
+        mean_xt /= (self.snr_props['link_dict']['propagation_const'] * self.snr_props['link_dict']['core_pitch'])
         # The cross-talk noise power
         power_xt = num_adjacent * mean_xt * self.snr_props['length'] * 1e3 * self.engine_props['input_power']
 
@@ -125,14 +126,16 @@ class SnrMeasurements:
             hn_series = hn_series + 1 / i
 
         # The effective span length
-        eff_span_len = 1 - math.e ** (-2 * self.link_dict['attenuation'] * self.snr_props['length'] * 10 ** 3)
-        eff_span_len /= (2 * self.link_dict['attenuation'])
+        power = -2 * self.snr_props['link_dict']['attenuation'] * self.snr_props['length'] * 10 ** 3
+        eff_span_len = 1 - math.e ** power
+        eff_span_len /= (2 * self.snr_props['link_dict']['attenuation'])
         baud_rate = int(self.snr_props['req_bit_rate']) * 10 ** 9 / 2
 
         temp_coef = self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2
         temp_coef *= eff_span_len ** 2
         temp_coef *= self.snr_props['center_psd'] ** 3 * self.snr_props['bandwidth'] ** 2
-        temp_coef /= ((baud_rate ** 2) * math.pi * self.link_dict['dispersion'] * (self.snr_props['length'] * 10 ** 3))
+        temp_coef /= ((baud_rate ** 2) * math.pi * self.snr_props['link_dict']['dispersion'] *
+                      (self.snr_props['length'] * 10 ** 3))
 
         # The PSD correction term
         psd_correction = (80 / 81) * self.engine_props['phi'][self.spectrum_props['modulation']] * temp_coef * hn_series
@@ -160,7 +163,8 @@ class SnrMeasurements:
         """
         non_linearity = self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2
         self.snr_props['mu_param'] = 3 * non_linearity
-        mu_denominator = 2 * math.pi * self.link_dict['attenuation'] * np.abs(self.link_dict['dispersion'])
+        mu_denominator = 2 * math.pi * self.snr_props['link_dict']['attenuation']
+        mu_denominator *= np.abs(self.snr_props['link_dict']['dispersion'])
         self.snr_props['mu_param'] /= mu_denominator
 
         self.snr_props['sci_psd'] = self._calculate_sci_psd()
@@ -200,11 +204,11 @@ class SnrMeasurements:
 
             psd_nli = self._calculate_psd_nli()
             psd_ase = self.snr_props['plank'] * self.snr_props['light_frequency'] * self.snr_props['nsp']
-            psd_ase *= (math.exp(self.link_dict['attenuation'] * self.snr_props['length'] * 10 ** 3) - 1)
+            psd_ase *= (math.exp(self.snr_props['link_dict']['attenuation'] * self.snr_props['length'] * 10 ** 3) - 1)
 
             if self.engine_props['xt_noise']:
                 # fixme
-                p_xt = self._calculate_pxt(adjacent_cores=None)
+                p_xt = self._calculate_pxt(num_adjacent=-100)
             else:
                 p_xt = 0
 
@@ -302,6 +306,12 @@ class SnrMeasurements:
         return resp, cross_talk
 
     def handle_snr(self):
+        """
+        Controls the methods of this class.
+
+        :return: Whether snr is acceptable for allocation or not for a given request and its cost
+        :rtype: tuple
+        """
         self.num_slots = self.spectrum_props['end_slot'] - self.spectrum_props['start_slot'] + 1
         # TODO: Changed from snr_calculation_nli to snr_calc_nli
         # TODO: This param should NOT be called check_snr
