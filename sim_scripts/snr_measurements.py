@@ -6,6 +6,7 @@ import networkx as nx
 from arg_scripts.snr_args import empty_props
 
 
+# TODO: Double check all parenthesis
 # fixme: Only works for seven cores
 class SnrMeasurements:
     """
@@ -83,8 +84,7 @@ class SnrMeasurements:
 
         return xci_noise
 
-    # TODO: Change to num adjacent
-    def _calculate_pxt(self, adjacent_cores: int):
+    def _calculate_pxt(self, num_adjacent: int):
         """
         Calculates the cross-talk noise power.
 
@@ -92,11 +92,10 @@ class SnrMeasurements:
         :rtype: float
         """
         # A statistical mean of the cross-talk
-        mean_xt = (2 * self.link_dict['bending_radius'] * self.link_dict['mode_coupling_co'] ** 2) / (
-                self.link['propagation_const'] * self.link_dict['core_pitch'])
+        mean_xt = 2 * self.link_dict['bending_radius'] * self.link_dict['mode_coupling_co'] ** 2
+        mean_xt /= (self.link_dict['propagation_const'] * self.link_dict['core_pitch'])
         # The cross-talk noise power
-        # TODO: Should we use span or link length?
-        power_xt = adjacent_cores * mean_xt * self.snr_props['length'] * 1e3 * self.engine_props['input_power']
+        power_xt = num_adjacent * mean_xt * self.snr_props['length'] * 1e3 * self.engine_props['input_power']
 
         return power_xt
 
