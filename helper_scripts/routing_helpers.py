@@ -127,19 +127,19 @@ class RoutingHelpers:
 
         return adj_core_list
 
-    def _find_num_overlapped(self, channel: int, core_num: int, cores_matrix: dict):
+    def _find_num_overlapped(self, channel: int, core_num: int, core_info_dict: dict):
         num_overlapped = 0.0
         if core_num != 6:
             adj_cores_list = self._find_adjacent_cores(core_num=core_num)
             for curr_core in adj_cores_list:
-                if cores_matrix[curr_core][channel] > 0:
+                if core_info_dict[curr_core][channel] > 0:
                     num_overlapped += 1
 
             num_overlapped /= 3
         # The number of overlapped cores for core six will be different since it's the center core
         else:
             for sub_core_num in range(6):
-                if cores_matrix[sub_core_num][channel] > 0:
+                if core_info_dict[sub_core_num][channel] > 0:
                     num_overlapped += 1
 
             num_overlapped /= 6
@@ -161,9 +161,9 @@ class RoutingHelpers:
         for core_num in free_slots_dict:
             free_slots += len(free_slots_dict[core_num])
             for channel in free_slots_dict[core_num]:
-                cores_matrix = self.sdn_props['net_spec_dict'][link_list]['cores_matrix']
+                core_info_dict = self.sdn_props['net_spec_dict'][link_list]['cores_matrix']
                 num_overlapped = self._find_num_overlapped(channel=channel, core_num=core_num,
-                                                           cores_matrix=cores_matrix)
+                                                           core_info_dict=core_info_dict)
                 xt_cost += num_overlapped
 
         # A constant score of 1000 if the link is fully congested
@@ -217,9 +217,8 @@ class RoutingHelpers:
         if self.route_props['max_link_length'] is None:
             self.get_max_link_length()
 
-        first_term = self.engine_props['topology'][source][dest]['length'] / self.route_props['max_link_length']
-        first_term *= self.engine_props['beta']
-        second_term = (1 - self.engine_props['beta']) * nli_cost
-        nli_cost = first_term + second_term
+        nli_cost = self.engine_props['topology'][source][dest]['length'] / self.route_props['max_link_length']
+        nli_cost *= self.engine_props['beta']
+        nli_cost += ((1 - self.engine_props['beta']) * nli_cost)
 
         return nli_cost
