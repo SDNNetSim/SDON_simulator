@@ -1,7 +1,6 @@
 # Standard library imports
 import os
 import signal
-import json
 
 # Third party library imports
 import networkx as nx
@@ -49,14 +48,14 @@ class Engine:
         if self.engine_props['route_method'] == 'ai':
             if not sdn_dict['was_routed']:
                 routed = False
-                spectrum = {}
+                spectrum_dict = {}
                 path_mod = ''
             else:
-                spectrum = sdn_dict['spectrum_dict']
+                spectrum_dict = sdn_dict['spectrum_dict']
                 routed = True
                 path_mod = sdn_dict['spectrum_dict']['mod_format']
 
-            self.ai_obj.update(routed=routed, spectrum=spectrum, path_mod=path_mod)
+            self.ai_obj.update(routed=routed, spectrum=spectrum_dict, path_mod=path_mod)
 
     def handle_arrival(self, curr_time: float):
         """
@@ -88,7 +87,6 @@ class Engine:
         Updates the SDN controller to handle the release of a request.
 
         :param curr_time: The arrival time of the request.
-        :return: None
         """
         for req_key, req_value in self.reqs_dict[curr_time].items():
             self.sdn_obj.sdn_props[req_key] = req_value
@@ -104,8 +102,6 @@ class Engine:
     def create_topology(self):
         """
         Create the physical topology of the simulation.
-
-        :return: None
         """
         self.net_spec_dict = {}
         # Create nodes
@@ -130,7 +126,6 @@ class Engine:
         Calls the request generator to generate requests.
 
         :param seed: The seed to use for the random generation.
-        :return: None
         """
         self.reqs_dict = get_requests(seed=seed, engine_props=self.engine_props)
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
@@ -138,33 +133,14 @@ class Engine:
     def run(self):
         """
         Controls the Engine class methods.
-
-        :return: None
         """
         self.create_topology()
-
-        # TODO: Remove
-        # with open('new_network_5090.json', 'r') as file_path:
-        #     self.net_spec_dict = json.load(file_path)
-        #
-        # for link_tuple in self.net_spec_dict:
-        #     for core_num, core_arr in enumerate(self.net_spec_dict[link_tuple]['cores_matrix']):
-        #         self.net_spec_dict[link_tuple]['cores_matrix'][core_num] = np.array(core_arr)
-        #
-        #     self.net_spec_dict[link_tuple]['cores_matrix'] = np.array(self.net_spec_dict[link_tuple][
-        #                                                                   'cores_matrix'])
-        #
-        # self.net_spec_dict = {eval(key): value for key, value in self.net_spec_dict.items()}
-        #
-        # self.sdn_obj.sdn_props['net_spec_dict'] = self.net_spec_dict
-        # TODO: End remove
-
-
         for iteration in range(self.engine_props["max_iters"]):
             self.iteration = iteration
 
             self.stats_obj.iteration = iteration
             self.stats_obj.init_iter_stats()
+            # To prevent incomplete saves
             signal.signal(signal.SIGINT, self.stats_obj.save_stats)
             signal.signal(signal.SIGTERM, self.stats_obj.save_stats)
 
@@ -180,33 +156,10 @@ class Engine:
 
             seed = self.engine_props["seeds"][iteration] if self.engine_props["seeds"] else iteration + 1
             self.generate_requests(seed)
-            # TODO: Change back to one only
             req_num = 1
-            # req_num = 5090
             for curr_time in self.reqs_dict:
-                # TODO: Remove
-                # if self.reqs_dict[curr_time]['req_id'] < 5090:
-                #     continue
-                # TODO: End remove
                 req_type = self.reqs_dict[curr_time]["request_type"]
                 if req_type == "arrival":
-
-                    # TODO: Remove
-                    # if req_num == 5090:
-                    #     for link_tuple in self.net_spec_dict:
-                    #         for core_num, core_arr in enumerate(self.net_spec_dict[link_tuple]['cores_matrix']):
-                    #             self.net_spec_dict[link_tuple]['cores_matrix'][core_num] = core_arr.tolist()
-                    #
-                    #         self.net_spec_dict[link_tuple]['cores_matrix'] = self.net_spec_dict[link_tuple][
-                    #             'cores_matrix'].tolist()
-                    #
-                    #     dict_for_json = {str(key): value for key, value in self.net_spec_dict.items()}
-                    #     with open('new_network_5090.json', 'w') as file_path:
-                    #         json.dump(dict_for_json, file_path)
-                    #
-                    #     exit()
-                    # TODO: End remove
-
                     self.ai_obj.req_id = req_num
                     self.handle_arrival(curr_time=curr_time)
 
