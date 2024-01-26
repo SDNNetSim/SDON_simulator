@@ -1,8 +1,11 @@
 from helper_scripts.sim_helpers import find_free_channels, find_free_slots, get_channel_overlaps
 
 
-# TODO: I don't think we need to return constructor variables
 class SpectrumHelpers:
+    """
+    Contains methods that assist with the spectrum assignment class.
+    """
+
     def __init__(self, engine_props: dict, sdn_props: dict, spectrum_props: dict):
         self.engine_props = engine_props
         self.spectrum_props = spectrum_props
@@ -24,6 +27,9 @@ class SpectrumHelpers:
         return False
 
     def check_other_links(self):
+        """
+        Checks other links in the path since the first link was free.
+        """
         self.spectrum_props['is_free'] = True
         for node in range(len(self.spectrum_props['path_list']) - 1):
             link_tuple = (self.spectrum_props['path_list'][node], self.spectrum_props['path_list'][node + 1])
@@ -67,8 +73,7 @@ class SpectrumHelpers:
                             'guard_slots']) - 1
                     if self.end_index not in super_channel:
                         break
-                    else:
-                        self.spectrum_props['is_free'] = True
+                    self.spectrum_props['is_free'] = True
 
                     if len(self.spectrum_props['path_list']) > 2:
                         self.check_other_links()
@@ -79,15 +84,37 @@ class SpectrumHelpers:
 
         return False
 
-    # TODO: This should be two functions, also does NOT find overlapping
+    @staticmethod
+    def _find_link_inters(info_dict: dict, source_dest: tuple):
+        for core_num in info_dict['free_slots_dict'][source_dest]:
+            if core_num not in info_dict['slots_inters_dict']:
+                tmp_dict = {core_num: set(info_dict['free_slots_dict'][source_dest][core_num])}
+                info_dict['slots_inters_dict'].update(tmp_dict)
+
+                tmp_dict = {core_num: set(info_dict['free_channels_dict'][source_dest][core_num])}
+                info_dict['channel_inters_dict'].update(tmp_dict)
+            else:
+                slot_inters_dict = info_dict['slots_inters_dict'][core_num]
+                free_slots_set = set(info_dict['free_slots_dict'][source_dest][core_num])
+                slot_inters = slot_inters_dict & free_slots_set
+                info_dict['slots_inters_dict'][core_num] = slot_inters
+
+                tmp_list = list()
+                for item in info_dict['channel_inters_dict'][core_num]:
+                    if item in info_dict['free_channels_dict'][source_dest][core_num]:
+                        tmp_list.append(item)
+
+                info_dict['channel_inters_dict'][core_num] = tmp_list
+
     def find_link_inters(self):
         """
-        Finds all slots and super-channels that have overlapping allocated requests. Also find free channels and slots.
+        Finds all slots and super-channels and spectral slots that have potential intersections.
 
         :return: The free slots and super-channels along with intersecting slots and super-channels.
         :rtype: dict
         """
-        resp = {'free_slots_dict': {}, 'free_channels_dict': {}, 'slots_inters_dict': {}, 'channel_inters_dict': {}}
+        info_dict = {'free_slots_dict': {}, 'free_channels_dict': {}, 'slots_inters_dict': {},
+                     'channel_inters_dict': {}}
 
         for source_dest in zip(self.spectrum_props['path_list'], self.spectrum_props['path_list'][1:]):
             free_slots = find_free_slots(net_spec_dict=self.sdn_props['net_spec_dict'], link_tuple=source_dest)
@@ -95,22 +122,10 @@ class SpectrumHelpers:
                                                slots_needed=self.spectrum_props['slots_needed'],
                                                link_tuple=source_dest)
 
-            resp['free_slots_dict'].update({source_dest: free_slots})
-            resp['free_channels_dict'].update({source_dest: free_channels})
+            info_dict['free_slots_dict'].update({source_dest: free_slots})
+            info_dict['free_channels_dict'].update({source_dest: free_channels})
 
-            for core_num in resp['free_slots_dict'][source_dest]:
-                if core_num not in resp['slots_inters_dict']:
-                    resp['slots_inters_dict'].update({core_num: set(resp['free_slots_dict'][source_dest][core_num])})
-
-                    resp['channel_inters_dict'].update({core_num: resp['free_channels_dict'][source_dest][core_num]})
-                else:
-                    intersection = resp['slots_inters_dict'][core_num] & set(
-                        resp['free_slots_dict'][source_dest][core_num])
-                    resp['slots_inters_dict'][core_num] = intersection
-                    resp['channel_inters_dict'][core_num] = [item for item in resp['channel_inters_dict'][core_num] if
-                                                             item in resp['free_channels_dict'][source_dest][core_num]]
-
-        return resp
+        return info_dict
 
     def find_best_core(self):
         """
