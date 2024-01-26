@@ -6,8 +6,6 @@ def str_to_bool(string):
     Convert any giving string to a boolean.
 
     :param string: The input string.
-    :type string: str
-
     :return: True or False
     :rtype: bool
     """
@@ -62,7 +60,7 @@ ARASH_REQUIRED_OPTIONS = {
 
 OTHER_OPTIONS = {
     'ai_algorithm': str,
-    # TODO: Correct this
+    # TODO: Correct this (No longer a dict)
     # 'ai_arguments': ast.literal_eval,
     'policy': str,
     'seeds': list,
@@ -86,6 +84,7 @@ OTHER_OPTIONS = {
 
 COMMAND_LINE_PARAMS = [
     ['ai_algorithm', str, ''],
+    # TODO: Correct this (No longer a dict)
     # ['ai_arguments', dict, ''],
     ['policy', str, ''],
     ['seeds', list, ''],
