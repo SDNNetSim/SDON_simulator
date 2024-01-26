@@ -15,7 +15,6 @@ def str_to_bool(string):
 YUE_REQUIRED_OPTIONS = {
     'sim_type': str,
     'network': str,
-    'warnings': str_to_bool,
     'bw_per_slot': float,
     'thread_erlangs': str_to_bool,
     'holding_time': float,
@@ -32,12 +31,14 @@ YUE_REQUIRED_OPTIONS = {
     'route_method': str,
     'request_distribution': ast.literal_eval,
     'save_snapshots': str_to_bool,
+    'snapshot_step': int,
+    'print_step': int,
+    'file_type': str,
 }
 
 ARASH_REQUIRED_OPTIONS = {
     'sim_type': str,
     'network': str,
-    'warnings': str_to_bool,
     'holding_time': float,
     'erlangs': ast.literal_eval,
     'thread_erlangs': str_to_bool,
@@ -55,18 +56,19 @@ ARASH_REQUIRED_OPTIONS = {
     'request_distribution': ast.literal_eval,
     'beta': float,
     'save_snapshots': str_to_bool,
+    'snapshot_step': int,
+    'print_step': int,
+    'file_type': str,
     'xt_type': str,
 }
 
 OTHER_OPTIONS = {
     'ai_algorithm': str,
-    # TODO: Correct this (No longer a dict)
-    # 'ai_arguments': ast.literal_eval,
     'policy': str,
     'seeds': list,
     'beta': float,
     'train_file': str,
-    'check_snr': str,
+    'snr_type': str,
     'input_power': float,
     'egn_model': str_to_bool,
     'phi': ast.literal_eval,
@@ -84,13 +86,11 @@ OTHER_OPTIONS = {
 
 COMMAND_LINE_PARAMS = [
     ['ai_algorithm', str, ''],
-    # TODO: Correct this (No longer a dict)
-    # ['ai_arguments', dict, ''],
     ['policy', str, ''],
     ['seeds', list, ''],
     ['beta', float, ''],
     ['train_file', str, ''],
-    ['check_snr', str, ''],
+    ['snr_type', str, ''],
     ['input_power', float, ''],
     ['egn_model', bool, ''],
     ['phi', dict, ''],
@@ -100,7 +100,6 @@ COMMAND_LINE_PARAMS = [
     ['k_paths', int, ''],
     ['sim_type', str, ''],
     ['network', str, ''],
-    ['warnings', bool, ''],
     ['holding_time', float, ''],
     ['erlangs', dict, ''],
     ['thread_erlangs', bool, ''],
