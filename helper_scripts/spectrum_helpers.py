@@ -4,7 +4,6 @@ from helper_scripts.sim_helpers import find_free_channels, find_free_slots, get_
 # TODO: I don't think we need to return constructor variables
 class SpectrumHelpers:
     def __init__(self, engine_props: dict, sdn_props: dict, spectrum_props: dict):
-        # TODO: Update these in spectrum assignment
         self.engine_props = engine_props
         self.spectrum_props = spectrum_props
         self.sdn_props = sdn_props

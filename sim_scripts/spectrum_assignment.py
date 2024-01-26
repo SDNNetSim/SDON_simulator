@@ -4,7 +4,7 @@ from operator import itemgetter
 import numpy as np
 
 from arg_scripts.spectrum_args import empty_props
-from helper_scripts.spectrum_helpers import check_super_channels, find_best_core, check_other_links
+from helper_scripts.spectrum_helpers import SpectrumHelpers
 from sim_scripts.snr_measurements import SnrMeasurements
 
 
@@ -20,6 +20,8 @@ class SpectrumAssignment:
 
         self.snr_obj = SnrMeasurements(engine_props=self.engine_props, sdn_props=self.sdn_props,
                                        spectrum_props=self.spectrum_props)
+        self.spec_help_obj = SpectrumHelpers(engine_props=self.engine_props, sdn_props=self.sdn_props,
+                                             spectrum_props=self.spectrum_props)
 
     def _allocate_best_fit(self, channels_list: list):
         for channel_dict in channels_list:
@@ -29,9 +31,10 @@ class SpectrumAssignment:
                     break
 
                 if len(self.spectrum_props['path_list']) > 2:
-                    check_other_links(sdn_props=self.sdn_props, spectrum_props=self.spectrum_props,
-                                      core_num=channel_dict['core'], start_index=start_index,
-                                      end_index=end_index + self.engine_props['guard_slots'])
+                    self.spec_help_obj.start_index = start_index
+                    self.spec_help_obj.end_index = end_index
+                    self.spec_help_obj.core_num = channel_dict['core']
+                    self.spec_help_obj.check_other_links()
 
                 if self.spectrum_props['is_free'] or len(self.spectrum_props['path_list']) <= 2:
                     self.spectrum_props['start_slot'] = start_index
@@ -96,9 +99,8 @@ class SpectrumAssignment:
             else:
                 raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
 
-            was_allocated = check_super_channels(sdn_props=self.sdn_props, spectrum_props=self.spectrum_props,
-                                                 engine_props=self.engine_props,
-                                                 open_slots_matrix=open_slots_matrix, core_num=core_num)
+            self.spec_help_obj.core_num = core_num
+            was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix)
             if was_allocated:
                 return
 
@@ -110,7 +112,7 @@ class SpectrumAssignment:
         :return: The information of the request if allocated or False if not possible.
         :rtype dict
         """
-        core = find_best_core(sdn_props=self.sdn_props, spectrum_props=self.spectrum_props)
+        core = self.spec_help_obj.find_best_core()
         # Graph coloring for cores will be in this order
         if core in [0, 2, 4, 6]:
             self.spectrum_props['forced_core'] = core
