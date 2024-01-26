@@ -13,8 +13,8 @@ from data_scripts.structure_data import create_network
 from data_scripts.generate_data import create_bw_info, create_pt
 from sim_scripts.engine import Engine
 from helper_scripts.os_helpers import create_dir
-from config.setup_config import read_config
-from config.parse_args import parse_args
+from config_scripts.setup_config import read_config
+from config_scripts.parse_args import parse_args
 
 
 class NetworkSimulator:

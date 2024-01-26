@@ -1,6 +1,6 @@
 import argparse
 
-from config.arg_constants import PARAMETERS
+from config_scripts.arg_constants import PARAMETERS
 
 
 def parse_args():

@@ -1,7 +1,7 @@
 import configparser
 
 from helper_scripts.os_helpers import create_dir
-from config import config_constants
+from config_scripts import config_constants
 
 
 def _copy_dict_vals(dest_key: str, dictionary: dict):
@@ -30,7 +30,7 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
     Checks if multiple threads should be run. If so, structure each sim's params.
 
     :param config: The configuration object
-    :type config: config.ConfigParser
+    :type config: config_scripts.ConfigParser
 
     :param config_dict: A dictionary containing the main thread with key value pairs.
     :type config_dict: dict
@@ -77,12 +77,12 @@ def read_config(args_obj: dict):
     config = configparser.ConfigParser()
 
     try:
-        config.read('config/run_ini/config.ini')
+        config.read('config_scripts/run_ini/config_scripts.ini')
 
         if not config.has_section('s1') or not config.has_option('s1', 'sim_type'):
-            create_dir('config/run_ini')
+            create_dir('config_scripts/run_ini')
             raise ValueError("Missing 's1' section in the configuration file or simulation type option. "
-                             "Please ensure you have a file called config.ini in the run_ini directory.")
+                             "Please ensure you have a file called config_scripts.ini in the run_ini directory.")
 
         if config['s1']['sim_type'] == 'arash':
             required_options = config_constants.ARASH_REQUIRED_OPTIONS
@@ -94,7 +94,7 @@ def read_config(args_obj: dict):
             if not config.has_option('s1', option):
                 raise ValueError(f"Missing '{option}' in the 's1' section.")
 
-        # Structure config value into a dictionary for the main simulation
+        # Structure config_scripts value into a dictionary for the main simulation
         for key, value in config.items('s1'):
             # Convert the values in ini value to desired types since they default as strings
             try:
