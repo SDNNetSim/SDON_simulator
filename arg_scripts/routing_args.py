@@ -8,6 +8,5 @@ empty_props = {
     'mci_worst': 6.3349755556585961e-027,
     'max_link_length': None,
     'span_len': 100.0,
-    # TODO: Calculate max span
     'max_span': None,
 }
