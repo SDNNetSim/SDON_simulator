@@ -186,8 +186,6 @@ class SimStats:
             self._handle_iter_lists(sdn_data=sdn_data)
             self.stats_props['route_times_list'].append(sdn_data['route_time'])
             self.total_trans += sdn_data['num_trans']
-            # TODO: This won't work but after changing the sdn_controller it will (standardize path weight return)
-            # TODO: Not sure what to do here yet (Ask Arash about what he would like to see here)
             bandwidth = sdn_data['bandwidth']
             mod_format = sdn_data['modulation_list'][0]
             self.stats_props['weights_dict'][bandwidth][mod_format].append(sdn_data['path_weight'])
@@ -262,7 +260,6 @@ class SimStats:
 
         return False
 
-    # TODO: Implement batch saves
     def save_stats(self):
         """
         Saves simulations stats as either a json or csv file.
@@ -279,10 +276,8 @@ class SimStats:
 
         self.save_dict['iter_stats'][self.iteration] = dict()
         for stat_key in self.stats_props:
-            # TODO: Need min and max for some of these
-            # TODO: Ask Arash, when XT is None it is set to zero for now
             if stat_key in ('trans_list', 'hops_list', 'lengths_list', 'route_times_list', 'xt_list'):
-                mean_key = f"{stat_key.split('list')[0]}mean"
+                save_key = f"{stat_key.split('list')[0]}"
                 if stat_key == 'xt_list':
                     stat_array = [0 if stat is None else stat for stat in self.stats_props[stat_key]]
                 else:
@@ -290,9 +285,13 @@ class SimStats:
 
                 # Every request was blocked
                 if len(stat_array) == 0:
-                    self.save_dict['iter_stats'][self.iteration][mean_key] = None
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}mean'] = None
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}min'] = None
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}max'] = None
                 else:
-                    self.save_dict['iter_stats'][self.iteration][mean_key] = mean(stat_array)
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}mean'] = mean(stat_array)
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}min'] = min(stat_array)
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}max'] = max(stat_array)
             else:
                 self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(self.stats_props[stat_key])
 
