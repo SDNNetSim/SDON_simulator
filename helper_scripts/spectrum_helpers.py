@@ -14,9 +14,9 @@ class SpectrumHelpers:
 
     def _check_free_spectrum(self, link_tuple: tuple, rev_link_tuple: tuple):
         core_arr = self.sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][self.core_num]
-        spectrum_set = core_arr[self.start_index:self.end_index]
+        spectrum_set = core_arr[self.start_index:self.end_index + self.engine_props['guard_slots']]
         rev_core_arr = self.sdn_props['net_spec_dict'][rev_link_tuple]['cores_matrix'][self.core_num]
-        rev_spectrum_set = rev_core_arr[self.start_index:self.end_index]
+        rev_spectrum_set = rev_core_arr[self.start_index:self.end_index + self.engine_props['guard_slots']]
 
         if set(spectrum_set) == {0.0} and set(rev_spectrum_set) == {0.0}:
             return True
@@ -51,24 +51,21 @@ class SpectrumHelpers:
         """
         Given a matrix of available super-channels, find one that can allocate the current request.
 
-        :param sdn_props: Properties of the SDN controller.
-        :param spectrum_props: Properties of the spectrum assignment class.
-        :param engine_props: Properties of the engine class.
         :param open_slots_matrix: A matrix where each entry is an available super-channel's indexes.
-        :param core_num: The core number which is currently being checked.
         :return: If the request can be successfully allocated.
         :rtype: bool
         """
         for super_channel in open_slots_matrix:
             if len(super_channel) >= (self.spectrum_props['slots_needed'] + self.engine_props['guard_slots']):
                 for start_index in super_channel:
+                    self.start_index = start_index
                     if self.engine_props['allocation_method'] == 'last_fit':
-                        end_index = (start_index - self.spectrum_props['slots_needed'] - self.engine_props[
+                        self.end_index = (self.start_index - self.spectrum_props['slots_needed'] - self.engine_props[
                             'guard_slots']) + 1
                     else:
-                        end_index = (start_index + self.spectrum_props['slots_needed'] + self.engine_props[
+                        self.end_index = (self.start_index + self.spectrum_props['slots_needed'] + self.engine_props[
                             'guard_slots']) - 1
-                    if end_index not in super_channel:
+                    if self.end_index not in super_channel:
                         break
                     else:
                         self.spectrum_props['is_free'] = True
@@ -87,8 +84,6 @@ class SpectrumHelpers:
         """
         Finds all slots and super-channels that have overlapping allocated requests. Also find free channels and slots.
 
-        :param sdn_props: The properties of the SDN class.
-        :param spectrum_props: The properties of the spectrum assignment class.
         :return: The free slots and super-channels along with intersecting slots and super-channels.
         :rtype: dict
         """
@@ -121,8 +116,6 @@ class SpectrumHelpers:
         """
         Finds the core with the least amount of overlapping super channels.
 
-        :param sdn_props: Properties of the SDN controller.
-        :param spectrum_props: Properties of the spectrum assignment class.
         :return: The core with the least amount of overlapping channels.
         :rtype: int
         """
