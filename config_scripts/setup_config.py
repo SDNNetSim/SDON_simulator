@@ -1,7 +1,7 @@
 import configparser
 
 from helper_scripts.os_helpers import create_dir
-from config_scripts import config_constants
+from arg_scripts.config_args import YUE_REQUIRED_OPTIONS, ARASH_REQUIRED_OPTIONS, OTHER_OPTIONS
 
 
 def _copy_dict_vals(dest_key: str, dictionary: dict):
@@ -77,7 +77,7 @@ def read_config(args_obj: dict):
     config = configparser.ConfigParser()
 
     try:
-        config.read('config_scripts/run_ini/config_scripts.ini')
+        config.read('config_scripts/run_ini/config.ini')
 
         if not config.has_section('s1') or not config.has_option('s1', 'sim_type'):
             create_dir('config_scripts/run_ini')
@@ -85,10 +85,10 @@ def read_config(args_obj: dict):
                              "Please ensure you have a file called config_scripts.ini in the run_ini directory.")
 
         if config['s1']['sim_type'] == 'arash':
-            required_options = config_constants.ARASH_REQUIRED_OPTIONS
+            required_options = ARASH_REQUIRED_OPTIONS
         else:
-            required_options = config_constants.YUE_REQUIRED_OPTIONS
-        other_options = config_constants.OTHER_OPTIONS
+            required_options = YUE_REQUIRED_OPTIONS
+        other_options = OTHER_OPTIONS
 
         for option in required_options:
             if not config.has_option('s1', option):
@@ -116,48 +116,6 @@ def read_config(args_obj: dict):
         # Ignoring index zero since we've already handled s1, the first simulation
         resp = _setup_threads(config=config, config_dict=config_dict, sections=config.sections()[1:],
                               option_types=required_options, other_options=other_options, args_obj=args_obj)
-
-        # TODO: Revert this to be correct
-        policy = resp['s1']['policy']
-        # resp['s1'].pop('policy')
-        #
-        # # New AI arguments structure
-        # ai_arguments_base = {
-        #     "is_training": "True",
-        #     "table_path": "None",
-        #     "epsilon": 0.05,
-        #     "epsilon_target": 0.01,
-        #     "policy": policy,
-        #     "learn_rate": 0.01,
-        #     "discount": 0.1
-        # }
-        #
-        # # Define the values for alpha, gamma, and epsilon
-        # alpha_values = [0.1, 0.01]
-        # gamma_values = [0.1, 0.2, 0.9, 0.8]
-        # epsilon_values = [0.1, 0.05]
-        #
-        # config_counter = 1  # Start counter for naming configurations
-        #
-        # for alpha in alpha_values:
-        #     for gamma in gamma_values:
-        #         for epsilon in epsilon_values:
-        #             # Update the ai_arguments with the new values
-        #             ai_arguments = ai_arguments_base.copy()
-        #             ai_arguments["learn_rate"] = alpha
-        #             ai_arguments["discount"] = gamma
-        #             ai_arguments["epsilon"] = epsilon
-        #
-        #             # Create a new configuration
-        #             new_config = resp['s1'].copy()
-        #             new_config["ai_arguments"] = ai_arguments
-        #
-        #             # Add to the dictionary with a unique key
-        #             key = f's{config_counter}'
-        #             resp[key] = new_config
-        #
-        #             # Increment the counter for the next key
-        #             config_counter += 1
 
         return resp
 
