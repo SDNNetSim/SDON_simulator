@@ -1,138 +1,139 @@
 from helper_scripts.sim_helpers import find_free_channels, find_free_slots, get_channel_overlaps
 
 
-# TODO: Convert these methods to a class
-def _check_free_spectrum(sdn_props: dict, link_tuple: tuple, rev_link_tuple: tuple, core_num: int, start_index: int,
-                         end_index: int):
-    spectrum_set = sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][core_num][start_index:end_index]
-    rev_spectrum_set = sdn_props['net_spec_dict'][rev_link_tuple]['cores_matrix'][core_num][start_index:end_index]
+# TODO: I don't think we need to return constructor variables
+class SpectrumHelpers:
+    def __init__(self, engine_props: dict, sdn_props: dict, spectrum_props: dict):
+        # TODO: Update these in spectrum assignment
+        self.engine_props = engine_props
+        self.spectrum_props = spectrum_props
+        self.sdn_props = sdn_props
 
-    if set(spectrum_set) == {0.0} and set(rev_spectrum_set) == {0.0}:
-        return True
+        self.start_index = None
+        self.end_index = None
+        self.core_num = None
 
-    return False
+    def _check_free_spectrum(self, link_tuple: tuple, rev_link_tuple: tuple):
+        core_arr = self.sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][self.core_num]
+        spectrum_set = core_arr[self.start_index:self.end_index]
+        rev_core_arr = self.sdn_props['net_spec_dict'][rev_link_tuple]['cores_matrix'][self.core_num]
+        rev_spectrum_set = rev_core_arr[self.start_index:self.end_index]
 
+        if set(spectrum_set) == {0.0} and set(rev_spectrum_set) == {0.0}:
+            return True
 
-def check_other_links(sdn_props: dict, spectrum_props: dict, core_num: int, start_index: int, end_index: int):
-    spectrum_props['is_free'] = True
-    for node in range(len(spectrum_props['path_list']) - 1):
-        link_tuple = (spectrum_props['path_list'][node], spectrum_props['path_list'][node + 1])
-        rev_link_tuple = (spectrum_props['path_list'][node + 1], spectrum_props['path_list'][node])
+        return False
 
-        if not _check_free_spectrum(sdn_props=sdn_props, link_tuple=link_tuple, rev_link_tuple=rev_link_tuple,
-                                    core_num=core_num, start_index=start_index, end_index=end_index):
-            spectrum_props['is_free'] = False
-            return
+    def check_other_links(self):
+        self.spectrum_props['is_free'] = True
+        for node in range(len(self.spectrum_props['path_list']) - 1):
+            link_tuple = (self.spectrum_props['path_list'][node], self.spectrum_props['path_list'][node + 1])
+            rev_link_tuple = (self.spectrum_props['path_list'][node + 1], self.spectrum_props['path_list'][node])
 
+            if not self._check_free_spectrum(link_tuple=link_tuple, rev_link_tuple=rev_link_tuple):
+                self.spectrum_props['is_free'] = False
+                return
 
-def _update_spec_props(spectrum_props: dict, engine_props: dict, start_index: int, end_index: int, core_num: int):
-    if spectrum_props['forced_core'] is not None:
-        core_num = spectrum_props['forced_core']
+    def _update_spec_props(self):
+        if self.spectrum_props['forced_core'] is not None:
+            self.core_num = self.spectrum_props['forced_core']
 
-    if engine_props['allocation_method'] == 'last_fit':
-        spectrum_props['start_slot'] = end_index
-        spectrum_props['end_slot'] = start_index + engine_props['guard_slots']
-    else:
-        spectrum_props['start_slot'] = start_index
-        spectrum_props['end_slot'] = end_index + engine_props['guard_slots']
+        if self.engine_props['allocation_method'] == 'last_fit':
+            self.spectrum_props['start_slot'] = self.end_index
+            self.spectrum_props['end_slot'] = self.start_index + self.engine_props['guard_slots']
+        else:
+            self.spectrum_props['start_slot'] = self.start_index
+            self.spectrum_props['end_slot'] = self.end_index + self.engine_props['guard_slots']
 
-    spectrum_props['core_num'] = core_num
-    return spectrum_props
+        self.spectrum_props['core_num'] = self.core_num
+        return self.spectrum_props
 
+    def check_super_channels(self, open_slots_matrix: list):
+        """
+        Given a matrix of available super-channels, find one that can allocate the current request.
 
-def check_super_channels(sdn_props: dict, spectrum_props: dict, engine_props: dict, open_slots_matrix: list,
-                         core_num: int):
-    """
-    Given a matrix of available super-channels, find one that can allocate the current request.
-
-    :param sdn_props: Properties of the SDN controller.
-    :param spectrum_props: Properties of the spectrum assignment class.
-    :param engine_props: Properties of the engine class.
-    :param open_slots_matrix: A matrix where each entry is an available super-channel's indexes.
-    :param core_num: The core number which is currently being checked.
-    :return: If the request can be successfully allocated.
-    :rtype: bool
-    """
-    for super_channel in open_slots_matrix:
-        if len(super_channel) >= (spectrum_props['slots_needed'] + engine_props['guard_slots']):
-            for start_index in super_channel:
-                if engine_props['allocation_method'] == 'last_fit':
-                    end_index = (start_index - spectrum_props['slots_needed'] - engine_props['guard_slots']) + 1
-                else:
-                    end_index = (start_index + spectrum_props['slots_needed'] + engine_props['guard_slots']) - 1
-                if end_index not in super_channel:
-                    break
-                else:
-                    spectrum_props['is_free'] = True
-
-                if len(spectrum_props['path_list']) > 2:
-                    if engine_props['allocation_method'] == 'last_fit':
-                        # Note that these are reversed since we search in descending, but allocate in ascending
-                        check_other_links(sdn_props, spectrum_props, core_num, end_index,
-                                          start_index + engine_props['guard_slots'])
+        :param sdn_props: Properties of the SDN controller.
+        :param spectrum_props: Properties of the spectrum assignment class.
+        :param engine_props: Properties of the engine class.
+        :param open_slots_matrix: A matrix where each entry is an available super-channel's indexes.
+        :param core_num: The core number which is currently being checked.
+        :return: If the request can be successfully allocated.
+        :rtype: bool
+        """
+        for super_channel in open_slots_matrix:
+            if len(super_channel) >= (self.spectrum_props['slots_needed'] + self.engine_props['guard_slots']):
+                for start_index in super_channel:
+                    if self.engine_props['allocation_method'] == 'last_fit':
+                        end_index = (start_index - self.spectrum_props['slots_needed'] - self.engine_props[
+                            'guard_slots']) + 1
                     else:
-                        check_other_links(sdn_props, spectrum_props, core_num, start_index,
-                                          end_index + engine_props['guard_slots'])
+                        end_index = (start_index + self.spectrum_props['slots_needed'] + self.engine_props[
+                            'guard_slots']) - 1
+                    if end_index not in super_channel:
+                        break
+                    else:
+                        self.spectrum_props['is_free'] = True
 
-                if spectrum_props['is_free'] is not False or len(spectrum_props['path_list']) <= 2:
-                    _update_spec_props(spectrum_props=spectrum_props, engine_props=engine_props,
-                                       start_index=start_index, end_index=end_index, core_num=core_num)
-                    return True
+                    if len(self.spectrum_props['path_list']) > 2:
+                        self.check_other_links()
 
-    return False
+                    if self.spectrum_props['is_free'] is not False or len(self.spectrum_props['path_list']) <= 2:
+                        self._update_spec_props()
+                        return True
 
+        return False
 
-# TODO: This should be two functions, also does NOT find overlapping
-def find_link_inters(sdn_props: dict, spectrum_props: dict):
-    """
-    Finds all slots and super-channels that have overlapping allocated requests. Also find free channels and slots.
+    # TODO: This should be two functions, also does NOT find overlapping
+    def find_link_inters(self):
+        """
+        Finds all slots and super-channels that have overlapping allocated requests. Also find free channels and slots.
 
-    :param sdn_props: The properties of the SDN class.
-    :param spectrum_props: The properties of the spectrum assignment class.
-    :return: The free slots and super-channels along with intersecting slots and super-channels.
-    :rtype: dict
-    """
-    resp = {'free_slots_dict': {}, 'free_channels_dict': {}, 'slots_inters_dict': {}, 'channel_inters_dict': {}}
+        :param sdn_props: The properties of the SDN class.
+        :param spectrum_props: The properties of the spectrum assignment class.
+        :return: The free slots and super-channels along with intersecting slots and super-channels.
+        :rtype: dict
+        """
+        resp = {'free_slots_dict': {}, 'free_channels_dict': {}, 'slots_inters_dict': {}, 'channel_inters_dict': {}}
 
-    for source_dest in zip(spectrum_props['path_list'], spectrum_props['path_list'][1:]):
-        free_slots = find_free_slots(net_spec_dict=sdn_props['net_spec_dict'], link_tuple=source_dest)
-        free_channels = find_free_channels(net_spec_dict=sdn_props['net_spec_dict'],
-                                           slots_needed=spectrum_props['slots_needed'],
-                                           link_tuple=source_dest)
+        for source_dest in zip(self.spectrum_props['path_list'], self.spectrum_props['path_list'][1:]):
+            free_slots = find_free_slots(net_spec_dict=self.sdn_props['net_spec_dict'], link_tuple=source_dest)
+            free_channels = find_free_channels(net_spec_dict=self.sdn_props['net_spec_dict'],
+                                               slots_needed=self.spectrum_props['slots_needed'],
+                                               link_tuple=source_dest)
 
-        resp['free_slots_dict'].update({source_dest: free_slots})
-        resp['free_channels_dict'].update({source_dest: free_channels})
+            resp['free_slots_dict'].update({source_dest: free_slots})
+            resp['free_channels_dict'].update({source_dest: free_channels})
 
-        for core_num in resp['free_slots_dict'][source_dest]:
-            if core_num not in resp['slots_inters_dict']:
-                resp['slots_inters_dict'].update({core_num: set(resp['free_slots_dict'][source_dest][core_num])})
+            for core_num in resp['free_slots_dict'][source_dest]:
+                if core_num not in resp['slots_inters_dict']:
+                    resp['slots_inters_dict'].update({core_num: set(resp['free_slots_dict'][source_dest][core_num])})
 
-                resp['channel_inters_dict'].update({core_num: resp['free_channels_dict'][source_dest][core_num]})
-            else:
-                intersection = resp['slots_inters_dict'][core_num] & set(resp['free_slots_dict'][source_dest][core_num])
-                resp['slots_inters_dict'][core_num] = intersection
-                resp['channel_inters_dict'][core_num] = [item for item in resp['channel_inters_dict'][core_num] if
-                                                         item in resp['free_channels_dict'][source_dest][core_num]]
+                    resp['channel_inters_dict'].update({core_num: resp['free_channels_dict'][source_dest][core_num]})
+                else:
+                    intersection = resp['slots_inters_dict'][core_num] & set(
+                        resp['free_slots_dict'][source_dest][core_num])
+                    resp['slots_inters_dict'][core_num] = intersection
+                    resp['channel_inters_dict'][core_num] = [item for item in resp['channel_inters_dict'][core_num] if
+                                                             item in resp['free_channels_dict'][source_dest][core_num]]
 
-    return resp
+        return resp
 
+    def find_best_core(self):
+        """
+        Finds the core with the least amount of overlapping super channels.
 
-def find_best_core(sdn_props: dict, spectrum_props: dict):
-    """
-    Finds the core with the least amount of overlapping super channels.
+        :param sdn_props: Properties of the SDN controller.
+        :param spectrum_props: Properties of the spectrum assignment class.
+        :return: The core with the least amount of overlapping channels.
+        :rtype: int
+        """
+        path_info = self.find_link_inters()
+        all_channels = get_channel_overlaps(path_info['channel_inters_dict'],
+                                            path_info['free_slots_dict'])
+        sorted_cores = sorted(all_channels['non_over_dict'], key=lambda k: len(all_channels['non_over_dict'][k]))
 
-    :param sdn_props: Properties of the SDN controller.
-    :param spectrum_props: Properties of the spectrum assignment class.
-    :return: The core with the least amount of overlapping channels.
-    :rtype: int
-    """
-    path_info = find_link_inters(sdn_props=sdn_props, spectrum_props=spectrum_props)
-    all_channels = get_channel_overlaps(path_info['channel_inters_dict'],
-                                        path_info['free_slots_dict'])
-    sorted_cores = sorted(all_channels['non_over_dict'], key=lambda k: len(all_channels['non_over_dict'][k]))
-
-    # TODO: Comment why
-    if len(sorted_cores) > 1:
-        if 6 in sorted_cores:
-            sorted_cores.remove(6)
-    return sorted_cores[0]
+        # TODO: Comment why
+        if len(sorted_cores) > 1:
+            if 6 in sorted_cores:
+                sorted_cores.remove(6)
+        return sorted_cores[0]
