@@ -64,7 +64,7 @@ class NetworkSimulator:
         network_dict = create_network(const_weight=engine_props['const_link_weight'],
                                       net_name=engine_props['network'])
         engine_props['topology_info'] = create_pt(cores_per_link=engine_props['cores_per_link'],
-                                                  network_data=network_dict)
+                                                  net_spec_dict=network_dict)
 
         return engine_props
 
