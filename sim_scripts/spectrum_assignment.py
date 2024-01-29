@@ -159,7 +159,7 @@ class SpectrumAssignment:
 
             if self.spectrum_props['is_free']:
                 self.spectrum_props['modulation'] = modulation
-                if self.engine_props['check_snr'] != 'None' and self.engine_props['check_snr'] is not None:
+                if self.engine_props['snr_type'] != 'None' and self.engine_props['snr_type'] is not None:
                     snr_check, xt_cost = self.snr_obj.handle_snr()
                     self.spectrum_props['xt_cost'] = xt_cost
                     if not snr_check:

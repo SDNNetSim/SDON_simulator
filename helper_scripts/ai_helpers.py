@@ -79,7 +79,7 @@ class AIMethods:
         if self.algorithm == 'q_learning':
             self.ai_obj = None
             self._init_q_learning()
-        elif self.algorithm == 'None':
+        elif self.algorithm == 'None' or self.algorithm is None:
             pass
         else:
             raise NotImplementedError(f'Algorithm: {self.algorithm} not recognized.')

@@ -312,13 +312,11 @@ class SnrMeasurements:
         :rtype: tuple
         """
         self.num_slots = self.spectrum_props['end_slot'] - self.spectrum_props['start_slot'] + 1
-        # TODO: Changed from snr_calculation_nli to snr_calc_nli
-        # TODO: This param should NOT be called check_snr
-        if self.engine_props['check_snr'] == "snr_calc_nli":
+        if self.engine_props['snr_type'] == "snr_calc_nli":
             snr_check, xt_cost = self.check_snr()
-        elif self.engine_props['check_snr'] == "xt_calculation":
+        elif self.engine_props['snr_type'] == "xt_calculation":
             snr_check, xt_cost = self.check_xt()
         else:
-            raise NotImplementedError(f"Unexpected check_snr flag got: {self.engine_props['check_snr']}")
+            raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
 
         return snr_check, xt_cost
