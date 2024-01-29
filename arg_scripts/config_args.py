@@ -68,6 +68,11 @@ ARASH_REQUIRED_OPTIONS = {
         'const_link_weight': str_to_bool,
     },
     'snr_settings': {
+        'requested_xt': ast.literal_eval,
+        'xt_noise': str_to_bool,
+        'theta': float,
+        'egn_model': str_to_bool,
+        'phi': ast.literal_eval,
         'snr_type': str,
         'xt_type': str,
         'beta': float,
