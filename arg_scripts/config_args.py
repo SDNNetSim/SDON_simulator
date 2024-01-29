@@ -71,6 +71,7 @@ ARASH_REQUIRED_OPTIONS = {
         'snr_type': str,
         'xt_type': str,
         'beta': float,
+        'input_power': float,
     },
     'file_settings': {
         'file_type': str,
