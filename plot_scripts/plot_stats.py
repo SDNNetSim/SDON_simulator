@@ -9,7 +9,6 @@ import numpy as np
 
 # Local application imports
 from helper_scripts.os_helpers import create_dir
-from interactive_plots import plot_q_table
 
 
 class PlotStats:
@@ -30,7 +29,7 @@ class PlotStats:
         self.base_dir = '../data/output'
         self.file_info = self._get_file_info()
 
-        # The final dictionary containing information for all plots
+        # The final dictionary containing information for all plot_scripts
         self.plot_dict = None
         self.time = None
         self.sim_num = None
