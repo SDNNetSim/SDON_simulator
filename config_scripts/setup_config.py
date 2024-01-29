@@ -20,6 +20,15 @@ def _copy_dict_vals(dest_key: str, dictionary: dict):
     return dictionary
 
 
+def _find_category(category_dict: dict, target_key: str):
+    for category, subdict in category_dict.items():
+        for sub_key in subdict:
+            if sub_key == target_key:
+                return category
+
+    return None
+
+
 def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section_list: list, types_dict: dict,
                    other_dict: dict, args_obj: dict):
     """
@@ -35,13 +44,17 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
     :rtype: dict
     """
     for new_thread in section_list:
+        if not new_thread.startswith('s') or new_thread == 'snr_settings':
+            continue
+
         config_dict = _copy_dict_vals(dest_key=new_thread, dictionary=config_dict)
         # Make desired changes for this thread
         for key, value in config.items(new_thread):
+            category = _find_category(category_dict=types_dict, target_key=key)
             try:
-                type_obj = types_dict[key]
+                type_obj = types_dict[category][key]
             except KeyError:
-                type_obj = other_dict[key]
+                type_obj = other_dict[category][key]
             config_dict[new_thread][key] = type_obj(value)
             # TODO: Only support for changing all s<values> as of now
             if args_obj[key] is not None:
@@ -63,7 +76,7 @@ def read_config(args_obj: dict):
     try:
         config.read('config_scripts/run_ini/config.ini')
 
-        if not config.has_section('s1') or not config.has_option('general_settings', 'sim_type'):
+        if not config.has_option('general_settings', 'sim_type'):
             create_dir('config_scripts/run_ini')
             raise ValueError("Missing 'general_settings' section in the configuration file. "
                              "Please ensure you have a file called config.ini in the run_ini directory.")
@@ -74,23 +87,20 @@ def read_config(args_obj: dict):
             required_dict = YUE_REQUIRED_OPTIONS
         other_dict = OTHER_OPTIONS
 
-        for option in required_dict:
-            if not config.has_option('s1', option):
-                raise ValueError(f"Missing '{option}' in the 's1' section.")
+        for category, options_dict in required_dict.items():
+            for option, type_obj in options_dict.items():
+                if not config.has_option(category, option):
+                    raise ValueError(f"Missing '{option}' in the {category} section.")
 
-        # Structure config_scripts value into a dictionary for the main simulation
-        for key, value in config.items('s1'):
-            # Convert the values in ini value to desired types since they default as strings
-            try:
-                type_obj = required_dict[key]
-                config_dict['s1'][key] = type_obj(value)
-            except KeyError:
-                type_obj = other_dict[key]
-                config_dict['s1'][key] = type_obj(value)
+                try:
+                    config_dict['s1'][option] = type_obj(config[category][option])
+                except KeyError:
+                    type_obj = other_dict[category][option]
+                    config_dict['s1'][option] = type_obj(config[category][option])
 
-            # TODO: Only support for changing all s<values> as of now
-            if args_obj[key] is not None:
-                config_dict['s1'][key] = args_obj[key]
+                # TODO: Only support for changing all s<values> as of now
+                if args_obj[option] is not None:
+                    config_dict['s1'][option] = args_obj[option]
 
         # Init other options to None if they haven't been specified
         for option in other_dict:
