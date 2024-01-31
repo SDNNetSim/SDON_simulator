@@ -17,7 +17,7 @@ ai/models/*
 ai/data/*
 ai/plots/*
 
-config_scripts/run_ini/config.ini
+ini/run_ini/config.ini
 bash_scripts/slurm/*
 
 useful_functions/__pycache__/*
