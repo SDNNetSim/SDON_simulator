@@ -1,3 +1,4 @@
+import os
 import configparser
 
 from helper_scripts.os_helpers import create_dir
@@ -74,10 +75,12 @@ def read_config(args_obj: dict):
     config = configparser.ConfigParser()
 
     try:
-        config.read('config_scripts/run_ini/config.ini')
+        config_path = os.path.join('ini', 'run_ini', 'config.ini')
+        config.read(config_path)
 
         if not config.has_option('general_settings', 'sim_type'):
-            create_dir('config_scripts/run_ini')
+            config_path = os.path.join('ini', 'run_ini')
+            create_dir(config_path)
             raise ValueError("Missing 'general_settings' section in the configuration file. "
                              "Please ensure you have a file called config.ini in the run_ini directory.")
 
