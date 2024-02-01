@@ -7,49 +7,43 @@ from helper_scripts.sim_helpers import dict_to_list
 from arg_scripts.plot_args import empty_plot_dict
 
 
-# TODO: Move needed variables to the constructor
 class PlotHelpers:
     def __init__(self, plot_props: dict):
         self.plot_props = plot_props
 
         self.file_info = None
+        self.erlang_dict = None
+        self.time = None
+        self.sim_num = None
 
-    # TODO: Definitely make this better
     def _find_misc_stats(self):
-        path_lens = self._dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['path_lengths'])
-        hops = self._dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['hops'])
-        times = self._dict_to_list(self.erlang_dict['misc_stats'], 'route_times') * 10 ** 3
+        average_length = np.mean(dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['path_lengths']))
+        average_hop = np.mean(dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['hops']))
+        average_time = np.mean(dict_to_list(self.erlang_dict['misc_stats'], 'route_times') * 10 ** 3)
 
-        cong_block = self._dict_to_list(self.erlang_dict['misc_stats'], 'congestion', ['block_reasons'])
-        dist_block = self._dict_to_list(self.erlang_dict['misc_stats'], 'distance', ['block_reasons'])
+        average_cong = np.mean(dict_to_list(self.erlang_dict['misc_stats'], 'congestion', ['block_reasons']))
+        average_dist = np.mean(dict_to_list(self.erlang_dict['misc_stats'], 'distance', ['block_reasons']))
 
-        average_len = np.mean(path_lens)
-        average_hop = np.mean(hops)
-        average_times = np.mean(times)
-        average_cong_block = np.mean(cong_block)
-        average_dist_block = np.mean(dist_block)
-
-        self.plot_dict[self.time][self.sim_num]['path_lengths'].append(average_len)
-        self.plot_dict[self.time][self.sim_num]['hops'].append(average_hop)
-        self.plot_dict[self.time][self.sim_num]['route_times'].append(average_times)
-        self.plot_dict[self.time][self.sim_num]['cong_block'].append(average_cong_block)
-        self.plot_dict[self.time][self.sim_num]['dist_block'].append(average_dist_block)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['path_lengths'].append(average_length)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['hops'].append(average_hop)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['route_times'].append(average_time)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['cong_block'].append(average_cong)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['dist_block'].append(average_dist)
 
     @staticmethod
     def _dict_to_np_array(snap_val_list: list, key: str):
-        return np.nan_to_num([d.get(key, np.nan) for d in snap_val_list])
+        return np.nan_to_num([np.nan if d.get(key) is None else d.get(key) for d in snap_val_list])
 
     def _process_snapshots(self, snap_val_list: list):
-        active_req_list, block_req_list, occ_slot_list = [], [], []
-        active_req_list.append(self._dict_to_np_array(snap_val_list=snap_val_list, key='active_requests'))
-        block_req_list.append(self._dict_to_np_array(snap_val_list=snap_val_list, key='blocking_prob'))
-        occ_slot_list.append(self._dict_to_np_array(snap_val_list=snap_val_list, key='occ_slots'))
+        active_req_list = self._dict_to_np_array(snap_val_list=snap_val_list, key='active_requests')
+        block_req_list = self._dict_to_np_array(snap_val_list=snap_val_list, key='blocking_prob')
+        occ_slot_list = self._dict_to_np_array(snap_val_list=snap_val_list, key='occ_slots')
 
         return active_req_list, block_req_list, occ_slot_list
 
-    def _find_snapshot_usage(self, erlang_dict: dict, time: str, sim_num: str):
+    def _find_snapshot_usage(self):
         req_num_list, active_req_matrix, block_req_matrix, occ_slot_matrix = [], [], [], []
-        for iteration, stats_dict in erlang_dict['iter_stats'].items():
+        for iteration, stats_dict in self.erlang_dict['iter_stats'].items():
             snapshots_dict = stats_dict['snapshots_dict']
             req_num_list = [int(req_num) for req_num in snapshots_dict.keys()]
 
@@ -59,48 +53,48 @@ class PlotHelpers:
             block_req_matrix.append(block_req_list)
             occ_slot_matrix.append(occ_slot_list)
 
-        self.plot_props['plot_dict'][time][sim_num]['req_num_list'] = req_num_list
-        self.plot_props['plot_dict'][time][sim_num]['active_req_matrix'].append(np.mean(active_req_matrix, axis=0))
-        self.plot_props['plot_dict'][time][sim_num]['block_req_matrix'].append(np.mean(block_req_matrix, axis=0))
-        self.plot_props['plot_dict'][time][sim_num]['occ_slot_matrix'].append(np.mean(occ_slot_matrix, axis=0))
+        self.plot_props['plot_dict'][self.time][self.sim_num]['req_num_list'] = req_num_list
+        self.plot_props['plot_dict'][self.time][self.sim_num]['active_req_matrix'] = np.mean(active_req_matrix, axis=0)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['block_req_matrix'] = np.mean(block_req_matrix, axis=0)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['occ_slot_matrix'] = np.mean(occ_slot_matrix, axis=0)
 
-    def _find_mod_info(self, time: str, sim_num: str, erlang_dict: dict):
-        mods_used_dict = erlang_dict['iter_stats']['0']['mods_used_dict']
+    def _find_mod_info(self):
+        mods_used_dict = self.erlang_dict['iter_stats']['0']['mods_used_dict']
         for bandwidth, mod_dict in mods_used_dict.items():
             for modulation in mod_dict:
                 filters = ['mods_used_dict', bandwidth]
-                mod_usages = dict_to_list(data_dict=erlang_dict['iter_stats'], nested_key=modulation, path=filters)
+                mod_usages = dict_to_list(data_dict=self.erlang_dict['iter_stats'], nested_key=modulation, path=filters)
 
-                modulations_dict = self.plot_props['plot_dict'][time][sim_num]['modulations_dict']
+                modulations_dict = self.plot_props['plot_dict'][self.time][self.sim_num]['modulations_dict']
                 modulations_dict.setdefault(bandwidth, {})
                 modulations_dict[bandwidth].setdefault(modulation, []).append(mean(mod_usages))
 
-    def _find_sim_info(self, time: str, sim_num: str, input_dict: dict):
+    def _find_sim_info(self, input_dict: dict):
         info_item_list = ['holding_time', 'cores_per_link', 'spectral_slots', 'network', 'num_requests',
                           'cores_per_link']
         for info_item in info_item_list:
-            self.plot_props['plot_dict'][time][sim_num][info_item] = input_dict[info_item]
+            self.plot_props['plot_dict'][self.time][self.sim_num][info_item] = input_dict[info_item]
 
-    def _update_plot_dict(self, time: str, sim_num: str):
+    def _update_plot_dict(self):
         if self.plot_props['plot_dict'] is None:
-            self.plot_props['plot_dict'] = {time: {}}
-        elif self.plot_props[time] not in self.plot_props['plot_dict']:
-            self.plot_props['plot_dict'][time] = {}
+            self.plot_props['plot_dict'] = {self.time: {}}
+        elif self.plot_props[self.time] not in self.plot_props['plot_dict']:
+            self.plot_props['plot_dict'][self.time] = {}
 
-        self.plot_props['plot_dict'][time][sim_num] = empty_plot_dict
+        self.plot_props['plot_dict'][self.time][self.sim_num] = empty_plot_dict
 
     @staticmethod
     def _read_json_file(file_path: str):
         with open(file_path, 'r', encoding='utf-8') as file_obj:
             return json.load(file_obj)
 
-    def _read_input_output(self, time: str, sim_num: str, data_dict: dict, erlang: float):
-        base_fp = os.path.join(data_dict['network'], data_dict['date'], time)
+    def _read_input_output(self, data_dict: dict, erlang: float):
+        base_fp = os.path.join(data_dict['network'], data_dict['date'], self.time)
         file_name = f'{erlang}_erlang.json'
-        output_fp = os.path.join(self.plot_props['output_dir'], base_fp, sim_num, file_name)
+        output_fp = os.path.join(self.plot_props['output_dir'], base_fp, self.sim_num, file_name)
         erlang_dict = self._read_json_file(file_path=output_fp)
 
-        file_name = f'sim_input_{sim_num}.json'
+        file_name = f'sim_input_{self.sim_num}.json'
         input_fp = os.path.join(self.plot_props['input_dir'], base_fp, file_name)
         input_dict = self._read_json_file(file_path=input_fp)
 
@@ -108,21 +102,22 @@ class PlotHelpers:
 
     def _get_data(self):
         for time, data_dict in self.file_info.items():
+            self.time = time
             for sim_num, erlang_list in data_dict['sim_dict'].items():
-                self._update_plot_dict(time=time, sim_num=sim_num)
+                self.sim_num = sim_num
+                self._update_plot_dict()
                 for erlang in erlang_list:
-                    input_dict, erlang_dict = self._read_input_output(time=time, sim_num=sim_num, data_dict=data_dict,
-                                                                      erlang=erlang)
+                    input_dict, self.erlang_dict = self._read_input_output(data_dict=data_dict, erlang=erlang)
                     erlang = int(erlang.split('.')[0])
                     self.plot_props['plot_dict'][time][sim_num]['erlang_list'].append(erlang)
 
-                    self.plot_props['erlang_dict'] = erlang_dict
+                    self.plot_props['erlang_dict'] = self.erlang_dict
                     blocking_mean = self.plot_props['erlang_dict']['blocking_mean']
                     self.plot_props['plot_dict'][time][sim_num]['blocking_list'].append(blocking_mean)
 
-                    self._find_sim_info(time=time, sim_num=sim_num, input_dict=input_dict)
-                    self._find_mod_info(time=time, sim_num=sim_num, erlang_dict=erlang_dict)
-                    self._find_snapshot_usage(time=time, sim_num=sim_num, erlang_dict=erlang_dict)
+                    self._find_sim_info(input_dict=input_dict)
+                    self._find_mod_info()
+                    self._find_snapshot_usage()
                     self._find_misc_stats()
 
     def get_file_info(self, sims_info_dict: dict):
