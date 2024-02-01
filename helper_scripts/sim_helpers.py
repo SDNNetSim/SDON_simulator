@@ -243,3 +243,47 @@ def find_taken_channels(net_spec_dict: dict, link_tuple: tuple):
         resp[core_num] = channels_list
 
     return resp
+
+
+# TODO: Doc strings, types, and optimization
+def snake_to_title(snake_str: str):
+    words = snake_str.split('_')
+    title_str = ' '.join(word.capitalize() for word in words)
+    return title_str
+
+
+def int_to_string(number):
+    return '{:,}'.format(number)  # pylint: disable=consider-using-f-string
+
+
+def dict_to_list(data_dict, nested_key, path=None, find_mean=False):
+    if path is None:
+        path = []
+
+    extracted_values = []
+    for value in data_dict.values():
+        for key in path:
+            value = value.get(key, {})
+        nested_value = value.get(nested_key)
+        if nested_value is not None:
+            extracted_values.append(nested_value)
+
+    if find_mean:
+        return np.mean(extracted_values)
+
+    return np.array(extracted_values)
+
+
+def list_to_title(input_list: list):
+    if not input_list:
+        return ""
+
+    unique_list = list()
+    for item in input_list:
+        if item[0] not in unique_list:
+            unique_list.append(item[0])
+
+    if len(unique_list) > 1:
+        return ", ".join(unique_list[:-1]) + " & " + unique_list[-1]
+
+    return unique_list[0]

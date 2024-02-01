@@ -59,7 +59,7 @@ class Engine:
         self.sdn_obj.handle_event(request_type='arrival')
         self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
 
-        self.update_ai_obj(sdn_dict=self.sdn_obj.sdn_props)
+        # self.update_ai_obj(sdn_dict=self.sdn_obj.sdn_props)
         self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=self.sdn_obj.sdn_props)
 
         if self.sdn_obj.sdn_props['was_routed']:

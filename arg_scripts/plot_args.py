@@ -1,13 +1,14 @@
+import os
+
 empty_props = {
+    'sim_info_dict': None,
     'plot_dict': None,
-    'time': None,
+    'output_dir': os.path.join('..', 'data', 'output'),
+    'input_dir': os.path.join('..', 'data', 'input'),
     'sim_num': None,
     'erlang_dict': None,
     'num_requests': None,
     'num_cores': None,
-    'erlang': None,
-    'network': None,
-    'date': None,
 
     'color_list': ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220'],
     'style_list': ['solid', 'dashed', 'dotted', 'dashdot'],
@@ -20,9 +21,9 @@ empty_plot_dict = {
     'blocking_list': [],
     'lengths_list': [],
     'hops_list': [],
-    'net_util_list': [],
-    'active_reqs_list': [],
-    'block_req_list': [],
+    'occ_slot_matrix': [],
+    'active_req_matrix': [],
+    'block_req_matrix': [],
     'req_num_list': [],
     'times_list': [],
     'modulations_dict': dict(),

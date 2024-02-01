@@ -1,12 +1,10 @@
 import os
-import json
 import re
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from helper_scripts.os_helpers import create_dir
-from arg_scripts.plot_args import empty_props, empty_plot_dict
+from arg_scripts.plot_args import empty_props
 from helper_scripts.plot_helpers import PlotHelpers, find_times
 
 
@@ -15,55 +13,11 @@ class PlotStats:
     A class for computing and plotting statistical analysis for simulations.
     """
 
-    def __init__(self, networks_list: list, dates_list: list, times_list: list, sims_list: list):
+    def __init__(self, sims_info_dict: dict):
         self.plot_props = empty_props
         self.plot_help_obj = PlotHelpers(plot_props=self.plot_props)
 
-        self.net_names = networks_list
-        self.title_names = self.plot_help_obj.list_to_title(input_list=self.net_names)
-        self.dates = dates_list
-        self.times_list = times_list
-        self.sims = sims_list
-        self.base_dir = os.path.join('..', 'data', 'output')
-        self.file_info = self.plot_help_obj.get_file_info()
-
-        self._get_data()
-
-    def _update_plot_dict(self):
-        if self.plot_props['plot_dict'] is None:
-            self.plot_props['plot_dict'] = {self.plot_props['time']: {}}
-        elif self.plot_props['time'] not in self.plot_props['plot_dict']:
-            self.plot_props['plot_dict'][self.plot_props['time']] = {}
-
-        self.plot_props['plot_dict'][self.plot_props['time']][self.sim_num] = empty_plot_dict
-
-    def _get_data(self):
-        for time, obj in self.file_info.items():
-            self.plot_props['time'] = time
-            for curr_sim, erlang_vals in obj['sims'].items():
-                self.sim_num = curr_sim
-                self._update_plot_dict()
-                for erlang in erlang_vals:
-                    self.erlang = erlang
-                    self.network = obj['network']
-                    self.date = obj['date']
-                    curr_fp = os.path.join(self.base_dir, obj['network'], obj['date'], time, curr_sim,
-                                           f'{erlang}_erlang.json')
-                    with open(curr_fp, 'r', encoding='utf-8') as file_obj:
-                        erlang_dict = json.load(file_obj)
-
-                    erlang = int(erlang.split('.')[0])
-                    self.plot_dict[self.plot_props['time']][self.sim_num]['erlang_vals'].append(erlang)
-
-                    self.erlang_dict = erlang_dict
-                    self._find_blocking()
-                    # self._find_algorithm()
-                    # self._find_sim_info(network=obj['network'])
-                    # self._find_modulation_info()
-                    # self._find_network_usage()
-                    # if self.erlang_dict['sim_params']['ai_algorithm'] != 'None':
-                    #     self._find_ai_stats()
-                    # self._find_misc_stats()
+        self.file_info = self.plot_help_obj.get_file_info(sims_info_dict=sims_info_dict)
 
     def _save_plot(self, file_name: str):
         pass
@@ -293,19 +247,16 @@ def main():
     """
     filter_dict = {
         'and_filter_list': [
-            # ['ai_arguments', 'policy', 'policy_one']
         ],
         'or_filter_list': [
-            # ['ai_arguments', 'policy', 'policy_one'],
-            # ['route_method', 'k_shortest_path'],
         ],
         'not_filter_list': [
             # ['route_method', 'k_shortest_path']
         ]
     }
 
-    sim_times, sim_nums, networks, dates = find_times(dates_dict={'0131': 'USNet'}, filter_dict=filter_dict)
-    plot_obj = PlotStats(net_names=networks, dates=dates, times=sim_times, sims=sim_nums)
+    sims_info_dict = find_times(dates_dict={'0201': 'USNet'}, filter_dict=filter_dict)
+    plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
     # TODO: Transfer to a loop or something creative
     plot_obj.plot_blocking()
