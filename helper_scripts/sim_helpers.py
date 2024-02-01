@@ -245,36 +245,66 @@ def find_taken_channels(net_spec_dict: dict, link_tuple: tuple):
     return resp
 
 
-# TODO: Doc strings, types, and optimization
 def snake_to_title(snake_str: str):
-    words = snake_str.split('_')
-    title_str = ' '.join(word.capitalize() for word in words)
+    """
+    Converts a snake string to a title string.
+
+    :param snake_str: The string to convert in snake case.
+    :return: Another string in title case.
+    :rtype: str
+    """
+    words_list = snake_str.split('_')
+    title_str = ' '.join(word.capitalize() for word in words_list)
     return title_str
 
 
-def int_to_string(number):
+def int_to_string(number: int):
+    """
+    Converts an integer to a string.
+
+    :param number: The number to convert.
+    :return: The original number as a string.
+    :rtype: str
+    """
     return '{:,}'.format(number)  # pylint: disable=consider-using-f-string
 
 
-def dict_to_list(data_dict, nested_key, path=None, find_mean=False):
-    if path is None:
-        path = []
+def dict_to_list(data_dict: dict, nested_key: str, path_list: list = None, find_mean: bool = False):
+    """
+    Creates a list from a dictionary taken values from a specified key.
 
-    extracted_values = []
-    for value in data_dict.values():
-        for key in path:
-            value = value.get(key, {})
-        nested_value = value.get(nested_key)
+    :param data_dict: The dictionary to search.
+    :param nested_key: Where to take values from.
+    :param path_list: If the key is nested, the path is to that nested key.
+    :param find_mean: Flag to return mean or not.
+    :return: A list or single value.
+    :rtype: list or float
+    """
+    if path_list is None:
+        path_list = []
+
+    extracted_list = []
+    for value_dict in data_dict.values():
+        for key in path_list:
+            value_dict = value_dict.get(key, {})
+        nested_value = value_dict.get(nested_key)
         if nested_value is not None:
-            extracted_values.append(nested_value)
+            extracted_list.append(nested_value)
 
     if find_mean:
-        return np.mean(extracted_values)
+        return np.mean(extracted_list)
 
-    return np.array(extracted_values)
+    return np.array(extracted_list)
 
 
 def list_to_title(input_list: list):
+    """
+    Converts a list to title case.
+
+    :param input_list: The input list to convert, each element is a word.
+    :return: A title string.
+    :rtype: str
+    """
     if not input_list:
         return ""
 
