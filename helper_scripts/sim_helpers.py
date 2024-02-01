@@ -299,7 +299,7 @@ def dict_to_list(data_dict: dict, nested_key: str, path_list: list = None, find_
 
 def list_to_title(input_list: list):
     """
-    Converts a list to title case.
+    Converts a list to a title case.
 
     :param input_list: The input list to convert, each element is a word.
     :return: A title string.
