@@ -42,20 +42,10 @@ class Engine:
     def update_ai_obj(self, sdn_dict: dict):
         """
         Updates the artificial intelligent object class after each request.
-        
+
         :param sdn_dict: The data that was retrieved from the SDN controller.
         """
-        if self.engine_props['route_method'] == 'ai':
-            if not sdn_dict['was_routed']:
-                routed = False
-                spectrum_dict = {}
-                path_mod = ''
-            else:
-                spectrum_dict = sdn_dict['spectrum_dict']
-                routed = True
-                path_mod = sdn_dict['spectrum_dict']['mod_format']
-
-            self.ai_obj.update(routed=routed, spectrum=spectrum_dict, path_mod=path_mod)
+        raise NotImplementedError
 
     def handle_arrival(self, curr_time: float):
         """
@@ -176,7 +166,7 @@ class Engine:
             self.stats_obj.get_blocking()
             self.stats_obj.end_iter_update()
             # Some form of ML/RL is being used, ignore confidence intervals for training and testing
-            if self.engine_props['ai_algorithm'] == 'None':
+            if self.engine_props['ai_algorithm'] == 'None' or self.engine_props['ai_algorithm'] is None:
                 if self.stats_obj.get_conf_inter():
                     self.ai_obj.save()
                     return

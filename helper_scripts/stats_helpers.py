@@ -243,7 +243,6 @@ class SimStats:
 
         blocking_variance = variance(self.stats_props['sim_block_list'])
         try:
-            # TODO: The desired CI rate should be in the configuration file (Ask Arash what they are again)
             block_ci_rate = 1.645 * (math.sqrt(blocking_variance) / math.sqrt(len(self.stats_props['sim_block_list'])))
             self.block_ci = block_ci_rate
             block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
