@@ -1,13 +1,18 @@
 import os
 import json
-import numpy as np
 from statistics import mean
+
+import numpy as np
 
 from helper_scripts.sim_helpers import dict_to_list
 from arg_scripts.plot_args import empty_plot_dict
 
 
-class PlotHelpers:
+class PlotHelpers:  # pylint: disable=too-few-public-methods
+    """
+    A class to assist with various tasks related when plotting statistics.
+    """
+
     def __init__(self, plot_props: dict):
         self.plot_props = plot_props
 
@@ -43,7 +48,7 @@ class PlotHelpers:
 
     def _find_snapshot_usage(self):
         req_num_list, active_req_matrix, block_req_matrix, occ_slot_matrix = [], [], [], []
-        for iteration, stats_dict in self.erlang_dict['iter_stats'].items():
+        for _, stats_dict in self.erlang_dict['iter_stats'].items():
             snapshots_dict = stats_dict['snapshots_dict']
             req_num_list = [int(req_num) for req_num in snapshots_dict.keys()]
 
@@ -62,8 +67,9 @@ class PlotHelpers:
         mods_used_dict = self.erlang_dict['iter_stats']['0']['mods_used_dict']
         for bandwidth, mod_dict in mods_used_dict.items():
             for modulation in mod_dict:
-                filters = ['mods_used_dict', bandwidth]
-                mod_usages = dict_to_list(data_dict=self.erlang_dict['iter_stats'], nested_key=modulation, path=filters)
+                filters_list = ['mods_used_dict', bandwidth]
+                mod_usages = dict_to_list(data_dict=self.erlang_dict['iter_stats'], nested_key=modulation,
+                                          path_list=filters_list)
 
                 modulations_dict = self.plot_props['plot_dict'][self.time][self.sim_num]['modulations_dict']
                 modulations_dict.setdefault(bandwidth, {})
@@ -121,6 +127,11 @@ class PlotHelpers:
                     self._find_misc_stats()
 
     def get_file_info(self, sims_info_dict: dict):
+        """
+        Retrieves all necessary file information to plot.
+
+        :param sims_info_dict: A dictionary of specified configurations to find.
+        """
         self.file_info = dict()
         matrix_count = 0
         networks_matrix = sims_info_dict['networks_matrix']
@@ -221,6 +232,14 @@ def _check_filters(file_dict: dict, filter_dict: dict):
 
 
 def find_times(dates_dict: dict, filter_dict: dict):
+    """
+    Searches output directories based on filters and retrieves simulation directory information.
+
+    :param dates_dict: The date directory to search.
+    :param filter_dict: A dictionary containing all search filters.
+    :return: A dictionary with all times, sim numbers, networks, and dates that matched the filter dict.
+    :rtype: dict
+    """
     resp = {
         'times_matrix': list(),
         'sims_matrix': list(),
@@ -238,7 +257,6 @@ def find_times(dates_dict: dict, filter_dict: dict):
             sim_num_list = [curr_dir for curr_dir in os.listdir(sims_path) if
                             os.path.isdir(os.path.join(sims_path, curr_dir))]
 
-            # TODO: Put this to a sub-function
             for sim in sim_num_list:
                 file_path = os.path.join(sims_path, sim)
                 files = [file for file in os.listdir(file_path)
