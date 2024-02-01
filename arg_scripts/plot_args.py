@@ -14,6 +14,7 @@ empty_props = {
     'style_list': ['solid', 'dashed', 'dotted', 'dashdot'],
     'marker_list': ['o', '^', 's', 'x'],
     'x_tick_list': [10, 100, 200, 300, 400],
+    'title_names': None,
 }
 
 empty_plot_dict = {

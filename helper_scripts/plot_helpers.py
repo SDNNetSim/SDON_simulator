@@ -1,10 +1,11 @@
 import os
+import copy
 import json
 from statistics import mean
 
 import numpy as np
 
-from helper_scripts.sim_helpers import dict_to_list
+from helper_scripts.sim_helpers import dict_to_list, list_to_title
 from arg_scripts.plot_args import empty_plot_dict
 
 
@@ -13,27 +14,28 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
     A class to assist with various tasks related when plotting statistics.
     """
 
-    def __init__(self, plot_props: dict):
+    def __init__(self, plot_props: dict, net_names_list: list):
         self.plot_props = plot_props
 
+        self.plot_props['title_names'] = list_to_title(input_list=net_names_list)
         self.file_info = None
         self.erlang_dict = None
         self.time = None
         self.sim_num = None
 
     def _find_misc_stats(self):
-        average_length = np.mean(dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['path_lengths']))
-        average_hop = np.mean(dict_to_list(self.erlang_dict['misc_stats'], 'mean', ['hops']))
-        average_time = np.mean(dict_to_list(self.erlang_dict['misc_stats'], 'route_times') * 10 ** 3)
+        average_length = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'mean', ['path_lengths']))
+        average_hop = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'mean', ['hops']))
+        average_time = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'route_times') * 10 ** 3)
 
-        average_cong = np.mean(dict_to_list(self.erlang_dict['misc_stats'], 'congestion', ['block_reasons']))
-        average_dist = np.mean(dict_to_list(self.erlang_dict['misc_stats'], 'distance', ['block_reasons']))
+        average_cong = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'congestion', ['block_reasons']))
+        average_dist = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'distance', ['block_reasons']))
 
-        self.plot_props['plot_dict'][self.time][self.sim_num]['path_lengths'].append(average_length)
-        self.plot_props['plot_dict'][self.time][self.sim_num]['hops'].append(average_hop)
-        self.plot_props['plot_dict'][self.time][self.sim_num]['route_times'].append(average_time)
-        self.plot_props['plot_dict'][self.time][self.sim_num]['cong_block'].append(average_cong)
-        self.plot_props['plot_dict'][self.time][self.sim_num]['dist_block'].append(average_dist)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['lengths_list'].append(average_length)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['hops_list'].append(average_hop)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['times_list'].append(average_time)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['cong_block_list'].append(average_cong)
+        self.plot_props['plot_dict'][self.time][self.sim_num]['dist_block_list'].append(average_dist)
 
     @staticmethod
     def _dict_to_np_array(snap_val_list: list, key: str):
@@ -84,10 +86,10 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
     def _update_plot_dict(self):
         if self.plot_props['plot_dict'] is None:
             self.plot_props['plot_dict'] = {self.time: {}}
-        elif self.plot_props[self.time] not in self.plot_props['plot_dict']:
+        elif self.time not in self.plot_props['plot_dict']:
             self.plot_props['plot_dict'][self.time] = {}
 
-        self.plot_props['plot_dict'][self.time][self.sim_num] = empty_plot_dict
+        self.plot_props['plot_dict'][self.time][self.sim_num] = copy.deepcopy(empty_plot_dict)
 
     @staticmethod
     def _read_json_file(file_path: str):
@@ -268,7 +270,7 @@ def find_times(dates_dict: dict, filter_dict: dict):
 
                 keep_config = _check_filters(file_dict=file_dict, filter_dict=filter_dict)
                 if keep_config:
-                    if curr_time not in dates_dict:
+                    if curr_time not in info_dict:
                         info_dict[curr_time] = {'sim_list': list(), 'network_list': list(), 'dates_list': list()}
                     info_dict[curr_time]['sim_list'].append(sim)
                     info_dict[curr_time]['network_list'].append(network)

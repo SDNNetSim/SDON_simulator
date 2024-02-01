@@ -1,10 +1,10 @@
-import os
 import re
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from arg_scripts.plot_args import empty_props
+from helper_scripts.os_helpers import create_dir
 from helper_scripts.plot_helpers import PlotHelpers, find_times
 
 
@@ -15,19 +15,19 @@ class PlotStats:
 
     def __init__(self, sims_info_dict: dict):
         self.plot_props = empty_props
-        self.plot_help_obj = PlotHelpers(plot_props=self.plot_props)
+        self.plot_help_obj = PlotHelpers(plot_props=self.plot_props, net_names_list=sims_info_dict['networks_matrix'])
 
-        self.file_info = self.plot_help_obj.get_file_info(sims_info_dict=sims_info_dict)
+        self.plot_help_obj.get_file_info(sims_info_dict=sims_info_dict)
 
     def _save_plot(self, file_name: str):
-        pass
-        # file_path = f'./output/{self.net_names[0][-1]}/{self.dates[0][-1]}/{self.plot_props['time']s[0][-1]}'
+        # file_path = f"./output/{self.net_names[0][-1]}/{self.dates[0][-1]}/{self.plot_props['time']s[0][-1]}"
         # create_dir(file_path)
         # plt.savefig(f'{file_path}/{file_name}_core{self.num_cores}.png')
+        pass
 
     def _setup_plot(self, title, y_label, x_label, grid=True, y_ticks=True, y_lim=False, x_ticks=True):
         plt.figure(figsize=(7, 5), dpi=300)
-        plt.title(f"{self.title_names} {title} R={self.num_requests}")
+        plt.title(f"{self.plot_props['title_names']} {title} R={self.plot_props['num_requests']}")
         plt.ylabel(y_label)
         plt.xlabel(x_label)
 
@@ -40,44 +40,13 @@ class PlotStats:
             plt.ylim(y_lim[0], y_lim[1])
 
         if x_ticks:
-            plt.xticks(self.x_ticks)
-            plt.xlim(self.x_ticks[0], self.x_ticks[-1])
+            plt.xticks(self.plot_props['x_tick_list'])
+            plt.xlim(self.plot_props['x_tick_list'][0], self.plot_props['x_tick_list'][-1])
 
         if grid:
             plt.grid()
 
-    def _plot_sub_plots(self, plot_info, title, x_ticks, x_lim, x_label, y_ticks, y_lim, y_label, legend, filename):
-        _, axes = plt.subplots(2, 2, figsize=(7, 5), dpi=300)
-        plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
-
-        index_list = [[0, 0], [0, 1], [1, 0], [1, 1]]
-
-        for idx, (_, obj) in enumerate(self.plot_dict.items()):
-            for (x_key, y_key, sub_key, colors) in plot_info:
-                curr_ax = axes[index_list[idx][0], index_list[idx][1]]
-                curr_ax.set_yticks(y_ticks)
-
-                if sub_key is None:
-                    curr_ax.plot(obj[x_key], obj[y_key], color=colors[0])
-                else:
-                    curr_ax.plot(obj[x_key], obj[y_key][sub_key], color=colors[0])
-
-                curr_ax.set_xlim(x_lim[0], x_lim[1])
-                curr_ax.set_ylim(y_lim[0], y_lim[1])
-                curr_ax.set_xticks(x_ticks)
-
-                if idx == 0:
-                    curr_ax.set_title(f"{title} LS = {obj['max_segments']}")
-                    curr_ax.legend(legend)
-                    curr_ax.set_ylabel(y_label)
-                    curr_ax.set_xlabel(x_label)
-                else:
-                    curr_ax.set_title(f"LS = {obj['max_segments']}")
-
-        for plot_coords in index_list:
-            axes[plot_coords[0], plot_coords[1]].grid()
-        self._save_plot(file_name=filename)
-
+    # TODO: Fix this up
     def _plot_helper_two(self, file_name: str, erlang_indexes: list):
         data = dict()
         policy = None
@@ -123,41 +92,17 @@ class PlotStats:
             self._save_plot(file_name=f"{file_name}_{alpha}_{gamma}_{erlangs[index]}")
             plt.show()
 
-    def _plot_helper_one(self, x_vals: str, y_vals: list, file_name: str, reward_flags=None, per_req_flag=None):
+    # TODO: Add a proper legend
+    def _plot_helper_one(self, x_vals: str, y_vals: str, file_name: str):
         legend_list = list()
-        for _, objs in self.plot_dict.items():
-            for _, sim_obj in objs.items():
-                # if sim_obj['algorithm'][0] == 'k':
-                #     style = 'dashed'
-                #     if x_vals == 'time_steps':
-                #         continue
-                # elif sim_obj['algorithm'][0:2] == 'Ba':
-                #     style = 'dashdot'
-                # else:
+        color_count = 0
+        for _, sims_dict in self.plot_props['plot_dict'].items():
+            for _, info_dict in sims_dict.items():
+                color = self.plot_props['color_list'][color_count]
                 style = 'solid'
-
-                for curr_value in y_vals:
-                    if reward_flags is not None:
-                        for index in reward_flags[0]:
-                            erlang = sim_obj['erlang_vals'][index]
-                            plt.plot(sim_obj[x_vals][index], sim_obj[curr_value][reward_flags[1][0]][index],
-                                     linestyle=style,
-                                     markersize=2.3)
-                            legend_list.append(f"E={erlang} | {sim_obj['algorithm']}")
-                    elif per_req_flag is not None:
-                        for index in per_req_flag:
-                            erlang = sim_obj['erlang_vals'][index]
-                            plt.plot(sim_obj[x_vals], sim_obj[curr_value][index],
-                                     linestyle=style,
-                                     markersize=2.3)
-                            legend_list.append(f"E={erlang} | {sim_obj['algorithm']}")
-                    else:
-                        if len(y_vals) > 1:
-                            legend_item = self._snake_to_title(curr_value)
-                            legend_list.append(f"{legend_item}")
-                        else:
-                            # legend_list.append(f"{sim_obj['algorithm']}")
-                            plt.plot(sim_obj[x_vals], sim_obj[curr_value], linestyle=style, markersize=2.3)
+                plt.plot(info_dict[x_vals], info_dict[y_vals], linestyle=style, markersize=2.3, color=color)
+                legend_list.append(color)
+                color_count += 1
 
         plt.legend(legend_list)
         self._save_plot(file_name=file_name)
@@ -193,25 +138,6 @@ class PlotStats:
         self._plot_helper_one(x_vals='erlang_vals', y_vals=['cong_block', 'dist_block'],
                               file_name='block_reasons')
 
-    def plot_rewards(self):
-        """
-        Plots the average rewards obtained by the agent.
-        """
-        self._setup_plot("Average Rewards requests", 'Average Reward', 'Time Steps (Request Numbers)',
-                         y_ticks=False, x_ticks=False)
-        self._plot_helper_one(x_vals='time_steps', y_vals=['average_rewards'], file_name='average_rewards_50',
-                              reward_flags=[[0], ['cores']])
-
-        self._setup_plot("Average Rewards requests", 'Average Reward', 'Time Steps (Request Numbers)',
-                         y_ticks=False, x_ticks=False)
-        self._plot_helper_one(x_vals='time_steps', y_vals=['average_rewards'], file_name='average_rewards_300',
-                              reward_flags=[[5], ['cores']])
-
-        self._setup_plot("Average Rewards requests", 'Average Reward', 'Time Steps (Request Numbers)',
-                         y_ticks=False, x_ticks=False)
-        self._plot_helper_one(x_vals='time_steps', y_vals=['average_rewards'], file_name='average_rewards_700',
-                              reward_flags=[[-1], ['cores']])
-
     def plot_times(self):
         """
         Plots the average time of routing in milliseconds.
@@ -238,7 +164,7 @@ class PlotStats:
         Plots the average blocking probability for each Erlang value.
         """
         self._setup_plot("Average Blocking Prob. vs. Erlang", 'Average Blocking Probability', 'Erlang', y_ticks=True)
-        self._plot_helper_one(x_vals='erlang_vals', y_vals=['blocking_vals'], file_name='average_bp')
+        self._plot_helper_one(x_vals='erlang_list', y_vals='blocking_list', file_name='average_bp')
 
 
 def main():
@@ -259,18 +185,15 @@ def main():
     plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
     # TODO: Transfer to a loop or something creative
+    # TODO: Double check that plot dict is actually correct
     plot_obj.plot_blocking()
     # plot_obj.plot_path_length()
     # plot_obj.plot_hops()
-    # plot_obj.plot_rewards()
     # plot_obj.plot_block_reasons()
     # plot_obj.plot_mod_formats()
     # plot_obj.plot_block_per_req()
     # plot_obj.plot_network_util()
     # plot_obj.plot_active_requests()
-    # plot_obj.plot_td_errors()
-    # plot_obj.plot_epsilon()
-    # plot_obj.plot_q_tables()
 
 
 if __name__ == '__main__':
