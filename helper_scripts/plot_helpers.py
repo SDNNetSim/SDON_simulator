@@ -24,12 +24,12 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         self.sim_num = None
 
     def _find_misc_stats(self):
-        average_length = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'mean', ['path_lengths']))
-        average_hop = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'mean', ['hops']))
-        average_time = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'route_times') * 10 ** 3)
+        average_length = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'lengths_mean'))
+        average_hop = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'hops_mean'))
+        average_time = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'route_times_mean') * 10 ** 3)
 
-        average_cong = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'congestion', ['block_reasons']))
-        average_dist = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'distance', ['block_reasons']))
+        average_cong = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'congestion', ['block_reasons_dict']))
+        average_dist = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'distance', ['block_reasons_dict']))
 
         self.plot_props['plot_dict'][self.time][self.sim_num]['lengths_list'].append(average_length)
         self.plot_props['plot_dict'][self.time][self.sim_num]['hops_list'].append(average_hop)
@@ -79,7 +79,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
     def _find_sim_info(self, input_dict: dict):
         info_item_list = ['holding_time', 'cores_per_link', 'spectral_slots', 'network', 'num_requests',
-                          'cores_per_link']
+                          'cores_per_link', 'max_segments']
         for info_item in info_item_list:
             self.plot_props['plot_dict'][self.time][self.sim_num][info_item] = input_dict[info_item]
 
@@ -169,14 +169,14 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 def _not_filters(filter_dict: dict, file_dict: dict):
     keep_config = True
     for flags_list in filter_dict['not_filter_list']:
-        params_dict = file_dict.get('sim_params')
         keys_list = flags_list[0:-1]
         check_value = flags_list[-1]
 
+        file_value = None
         for curr_key in keys_list:
-            params_dict = params_dict.get(curr_key)
+            file_value = file_dict.get(curr_key)
 
-        if params_dict == check_value:
+        if file_value == check_value:
             keep_config = False
             break
 
@@ -188,14 +188,14 @@ def _not_filters(filter_dict: dict, file_dict: dict):
 def _or_filters(filter_dict: dict, file_dict: dict):
     keep_config = True
     for flags_list in filter_dict['or_filter_list']:
-        params_dict = file_dict.get('sim_params')
         keys_list = flags_list[0:-1]
         check_value = flags_list[-1]
 
+        file_value = None
         for curr_key in keys_list:
-            params_dict = params_dict.get(curr_key)
+            file_value = file_dict.get(curr_key)
 
-        if params_dict == check_value:
+        if file_value == check_value:
             keep_config = True
             break
 
@@ -206,15 +206,15 @@ def _or_filters(filter_dict: dict, file_dict: dict):
 
 def _and_filters(filter_dict: dict, file_dict: dict):
     keep_config = True
-    params_dict = file_dict.get('sim_params')
     for flags_list in filter_dict['and_filter_list']:
         keys_list = flags_list[0:-1]
         check_value = flags_list[-1]
 
+        file_value = None
         for curr_key in keys_list:
-            params_dict = params_dict.get(curr_key)
+            file_value = file_dict.get(curr_key)
 
-        if params_dict != check_value:
+        if file_value != check_value:
             keep_config = False
             break
 
@@ -250,28 +250,27 @@ def find_times(dates_dict: dict, filter_dict: dict):
     }
     info_dict = dict()
     for date, network in dates_dict.items():
-        times_path = os.path.join('..', 'data', 'output', network, date)
+        times_path = os.path.join('..', 'data', 'input', network, date)
         times_list = [curr_dir for curr_dir in os.listdir(times_path)
                       if os.path.isdir(os.path.join(times_path, curr_dir))]
 
         for curr_time in times_list:
             sims_path = os.path.join(times_path, curr_time)
-            sim_num_list = [curr_dir for curr_dir in os.listdir(sims_path) if
-                            os.path.isdir(os.path.join(sims_path, curr_dir))]
+            input_file_list = [input_file for input_file in os.listdir(sims_path) if
+                               'sim' in input_file]
 
-            for sim in sim_num_list:
-                file_path = os.path.join(sims_path, sim)
-                files = [file for file in os.listdir(file_path)
-                         if os.path.isfile(os.path.join(file_path, file))]
-                # All Erlangs will have the same configuration, just take the first file's config
-                file_name = os.path.join(file_path, files[0])
-                with open(file_name, 'r', encoding='utf-8') as file_obj:
+            for input_file in input_file_list:
+                file_path = os.path.join(sims_path, input_file)
+                with open(file_path, 'r', encoding='utf-8') as file_obj:
                     file_dict = json.load(file_obj)
 
                 keep_config = _check_filters(file_dict=file_dict, filter_dict=filter_dict)
                 if keep_config:
                     if curr_time not in info_dict:
                         info_dict[curr_time] = {'sim_list': list(), 'network_list': list(), 'dates_list': list()}
+
+                    sim = input_file.split('_')[2]
+                    sim = sim.split('.')[0]
                     info_dict[curr_time]['sim_list'].append(sim)
                     info_dict[curr_time]['network_list'].append(network)
                     info_dict[curr_time]['dates_list'].append(date)
