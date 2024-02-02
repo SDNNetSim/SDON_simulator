@@ -1,7 +1,7 @@
 import ast
 
 
-def str_to_bool(string):
+def str_to_bool(string: str):
     """
     Convert any giving string to a boolean.
 
