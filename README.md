@@ -29,7 +29,7 @@ Then, navigate to ```_build/html/``` and open ```index.html``` in a browser of y
 1. Commits shall follow the format as specified [here](https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53)
 2. All code shall follow the [PEP 8](https://peps.python.org/pep-0008/) coding style
 3. Any git tag shall follow the [semantic versioning system](https://semver.org/)
-4. Other team specified coding guidelines and best practices (Not available at this time)
+4. Other team specified [coding guidelines and best practices](https://github.com/arashr88/SDN_Simulator/blob/yue_revamp/Team%20Coding%20Guidelines.md)
 5. Every test shall follow these guidelines (Not available at this time)
 
 **Contributors: Arash Rezaee, Ryan McCann, and Suvhasis Mukhopadhyay**
