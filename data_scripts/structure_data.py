@@ -14,7 +14,7 @@ def assign_link_lengths(network_fp: str, node_pairs_dict: dict, constant_weight:
             src, dest, link_len_str = line.strip().split('\t')
             link_len = int(link_len_str) if not constant_weight else 1
 
-            if node_pairs_dict is not None:
+            if node_pairs_dict != {}:
                 src_dest_tuple = (node_pairs_dict[src], node_pairs_dict[dest])
             else:
                 src_dest_tuple = (src, dest)
@@ -43,4 +43,4 @@ def create_network(net_name: str, const_weight: bool = False):
     else:
         raise NotImplementedError(f"Unknown network name. Expected USNet, NSFNet, or Pan-European. Got: {net_name}")
 
-    return assign_link_lengths(constant_weight=const_weight, network_fp=network_fp, node_pairs_dict=None)
+    return assign_link_lengths(constant_weight=const_weight, network_fp=network_fp, node_pairs_dict={})
