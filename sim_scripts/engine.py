@@ -134,7 +134,7 @@ class Engine:
             signal.signal(signal.SIGINT, self.stats_obj.save_stats)
             signal.signal(signal.SIGTERM, self.stats_obj.save_stats)
 
-            if self.engine_props['route_method'] == 'ai':
+            if self.engine_props['route_method'] == 'ai_scripts':
                 signal.signal(signal.SIGINT, self.ai_obj.save)
                 signal.signal(signal.SIGTERM, self.ai_obj.save)
 

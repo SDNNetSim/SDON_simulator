@@ -13,7 +13,7 @@ data/output/*
 data/input/*
 scripts/__pycache__
 
-ai/models/*
+ai_scripts/models/*
 
 data/plots/*
 
@@ -23,5 +23,5 @@ bash_scripts/slurm/*
 useful_functions/__pycache__/*
 handle_data/__pycache__/*
 config_scripts/__pycache__/*
-ai/__pycache__/*
+ai_scripts/__pycache__/*
 sim_scripts/__pycache__/*

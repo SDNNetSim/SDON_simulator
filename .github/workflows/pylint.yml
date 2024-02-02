@@ -38,10 +38,12 @@ jobs:
           pip install -r requirements.txt
       - name: Analysing the code with pylint
         run: |
+          pylint ./arg_scripts
           pylint ./sim_scripts
+          pylint ./data_scripts
           pylint ./tests
-          pylint ./handle_data
-          pylint ./plots
-          pylint ./useful_functions
-          pylint ./ai
-          pylint ./config
+          pylint ./plot_scripts
+          pylint ./helper_scripts
+          pylint ./ai_scripts
+          pylint ./config_scripts
+          pylint run_sim.py

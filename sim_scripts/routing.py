@@ -197,7 +197,7 @@ class Routing:
             self.find_least_weight(weight='length')
         elif self.engine_props['route_method'] == 'k_shortest_path':
             self.find_k_shortest()
-        elif self.engine_props['route_method'] == 'ai':
+        elif self.engine_props['route_method'] == 'ai_scripts':
             path, mod_format = ai_obj.route(sdn_props=self.sdn_props, route_props=self.route_props)
             self.route_props['paths_list'] = [path]
             self.route_props['mod_formats_list'] = [mod_format]

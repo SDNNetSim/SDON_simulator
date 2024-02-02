@@ -12,7 +12,7 @@ from helper_scripts.sim_helpers import find_path_congestion, find_core_frag_cong
 from sim_scripts.routing import Routing
 
 
-# TODO: Add SIGINT and SIGTERM to ai functions
+# TODO: Add SIGINT and SIGTERM to ai_scripts functions
 class QLearning:
     """
     Controls methods related to the Q-learning reinforcement learning algorithm.
