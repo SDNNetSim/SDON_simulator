@@ -1,0 +1,20 @@
+{
+  "topology_info": {
+    "nodes": [
+      "A",
+      "B"
+    ],
+    "links": {
+      "1": {
+        "source": "A",
+        "destination": "B",
+        "fiber": {
+          "num_cores": 2
+        },
+        "length": 100,
+        "spectral_slots": 320
+      }
+    }
+  },
+  "spectral_slots": 320
+}

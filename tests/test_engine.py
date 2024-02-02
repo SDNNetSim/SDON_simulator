@@ -1,4 +1,6 @@
 import unittest
+import os
+import json
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -17,17 +19,15 @@ class TestEngine(unittest.TestCase):
         self.engine.reqs_dict = {1.0: {'req_id': 10}}
 
         self.engine.sdn_obj = MagicMock()
-        self.engine.sdn_obj.sdn_props = {'net_spec_dict': {'updated': 'value'}, 'was_routed': True, 'num_trans': 5,
-                                         'spectrum_dict': {'modulation': 'QAM'}, 'path_list': ['A', 'B', 'C'],
-                                         'is_sliced': False}
+        sdn_path = os.path.join('fixtures', 'sdn_props.json')
+        with open(sdn_path, 'r', encoding='utf-8') as file_obj:
+            self.engine.sdn_obj.sdn_props = json.load(file_obj)
 
-        self.engine.engine_props = {'topology_info': {'nodes': ['A', 'B'],
-                                                      'links': {'1': {'source': 'A', 'destination': 'B',
-                                                                      'fiber': {'num_cores': 2}, 'length': 100,
-                                                                      'spectral_slots': 320}}},
-                                    'spectral_slots': 320}
+        engine_path = os.path.join('fixtures', 'engine_props.json')
+        with open(engine_path, 'r', encoding='utf-8') as file_obj:
+            self.engine.engine_props = json.load(file_obj)
+
         self.engine.topology = MagicMock()
-
         self.engine.net_spec_dict = {}
         self.engine.reqs_status_dict = {}
         self.engine.ai_obj = MagicMock()
