@@ -1,0 +1,17 @@
+{
+  "blocking_mean": 0.195,
+  "holding_time": 0.2,
+  "cores_per_link": 7,
+  "spectral_slots": 128,
+  "network": "USNet",
+  "num_requests": 10000,
+  "max_segments": 8,
+  "iter_stats": {
+    "0": {
+      "mods_used_dict": {
+        "QPSK": {}
+      },
+      "snapshots_dict": {}
+    }
+  }
+}
