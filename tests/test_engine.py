@@ -81,6 +81,10 @@ class TestEngine(unittest.TestCase):
         Tests the create topology method.
         """
         self.engine.topology = mock_graph.return_value
+        self.engine.engine_props['topology_info']['nodes'] = ['A', 'B']
+        self.engine.engine_props['topology_info']['links'] = {
+            1: {"source": "A", "destination": "B", "fiber": {"num_cores": 2}, "length": 100, "spectral_slots": 320}
+        }
         self.engine.create_topology()
 
         self.engine.topology.add_nodes_from.assert_called_once_with(['A', 'B'])
