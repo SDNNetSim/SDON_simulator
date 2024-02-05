@@ -54,8 +54,8 @@ class RoutingHelpers:
             # Power spectral density
             power_spec_dens = self.route_props['input_power'] / bandwidth
 
-            curr_mci = abs(center_freq - curr_freq) + (bandwidth / 2)
-            curr_mci = math.log(curr_mci / abs(center_freq - curr_freq) - (bandwidth / 2))
+            curr_mci = abs(center_freq - curr_freq) + (bandwidth / 2.0)
+            curr_mci = math.log(curr_mci / (abs(center_freq - curr_freq) - (bandwidth / 2.0)))
             curr_mci *= power_spec_dens ** 2
 
             total_mci += curr_mci
