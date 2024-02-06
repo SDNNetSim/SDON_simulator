@@ -129,3 +129,7 @@ class TestSDNController(unittest.TestCase):
 
         mock_allocate.assert_called_once()
         self.assertTrue(self.controller.sdn_props['was_routed'])
+
+
+if __name__ == '__main__':
+    unittest.main()
