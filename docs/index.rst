@@ -15,6 +15,7 @@ networking.
    bash/bash_modules.rst
    data/data_modules.rst
    helper/helper_modules.rst
+   plot/plot_modules.rst
 
 Indices and tables
 ==================
