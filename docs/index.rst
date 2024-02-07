@@ -12,6 +12,7 @@ networking.
    tutorials/tutorials_modules.rst
    config/config_modules.rst
    args/args_modules.rst
+   bash/bash_modules.rst
 
 Indices and tables
 ==================
