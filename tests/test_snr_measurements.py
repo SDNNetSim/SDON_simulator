@@ -6,8 +6,8 @@ import math
 import networkx as nx
 import numpy as np
 
-from fixtures.test_snr_args import engine_props, sdn_props, snr_props
 from sim_scripts.snr_measurements import SnrMeasurements
+from .fixtures.test_snr_args import engine_props, sdn_props, snr_props
 
 
 class TestSnrMeasurements(unittest.TestCase):
