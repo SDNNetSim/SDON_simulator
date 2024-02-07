@@ -3,6 +3,10 @@ from helper_scripts.random_helpers import set_seed, get_uniform_rv, get_exponent
 
 
 class TestRandomGenerators(unittest.TestCase):
+    """
+    Test random_helpers.py
+    """
+
     def test_set_seed(self):
         """
         Tests the set seed method.
