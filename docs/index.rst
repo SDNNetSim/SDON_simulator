@@ -18,6 +18,7 @@ networking.
    plot/plot_modules.rst
    sim/sim_modules.rst
    run_sim.rst
+   tests/tests_modules.rst
 
 Indices and tables
 ==================
