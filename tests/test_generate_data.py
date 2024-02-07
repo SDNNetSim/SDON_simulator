@@ -18,7 +18,7 @@ class TestGenerateData(unittest.TestCase):
         cores_per_link = 4
         net_spec_dict = {('A', 'B'): 100, ('B', 'C'): 150}
 
-        topology_path = os.path.join('fixtures', 'topology.json')
+        topology_path = os.path.join('.', 'fixtures', 'topology.json')
         with open(topology_path, 'r', encoding='utf-8') as file_obj:
             exp_top_dict = json.load(file_obj)
 

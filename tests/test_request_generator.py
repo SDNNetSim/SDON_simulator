@@ -13,7 +13,7 @@ class TestGetRequests(unittest.TestCase):
     def setUp(self):
         self.seed = 12345
 
-        file_path = os.path.join('fixtures', 'engine_props.json')
+        file_path = os.path.join('.', 'fixtures', 'engine_props.json')
         with open(file_path, 'r', encoding='utf-8') as file_obj:
             self.engine_props = json.load(file_obj)
 

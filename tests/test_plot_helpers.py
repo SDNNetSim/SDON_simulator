@@ -1,5 +1,6 @@
 import unittest
 import json
+import os
 from unittest.mock import patch, mock_open
 
 from helper_scripts.plot_helpers import PlotHelpers
@@ -39,7 +40,8 @@ class TestPlotHelpers(unittest.TestCase):
         """
         Opens a mock input file.
         """
-        with open('./fixtures/input_file.json', encoding='utf-8') as file_obj:
+        file_path = os.path.join('.', 'fixtures', 'input_file.json')
+        with open(file_path, encoding='utf-8') as file_obj:
             input_dict = json.load(file_obj)
         return input_dict
 
