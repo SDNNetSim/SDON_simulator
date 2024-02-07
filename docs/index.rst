@@ -9,14 +9,9 @@ networking.
    :maxdepth: 2
    :caption: Contents:
 
-   tutorials/tutorial_modules.rst
+   tutorials/tutorials_modules.rst
    config/config_modules.rst
-   sim_scripts/sim_scripts_modules.rst
-   useful_functions/useful_functions_modules.rst
-   ai/ai_modules.rst
-   tests/tests_modules.rst
-   handle_data/handle_data_modules.rst
-   plots/plot_modules.rst
+   args/args_modules.rst
 
 Indices and tables
 ==================
