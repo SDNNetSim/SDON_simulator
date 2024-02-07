@@ -1,0 +1,49 @@
+{
+  "nodes": {
+    "A": {
+      "type": "CDC"
+    },
+    "B": {
+      "type": "CDC"
+    },
+    "C": {
+      "type": "CDC"
+    }
+  },
+  "links": {
+    "1": {
+      "fiber": {
+        "attenuation": 4.605111673958094e-05,
+        "non_linearity": 0.0013,
+        "dispersion": 2.0393053374841523e-26,
+        "num_cores": 4,
+        "fiber_type": 0,
+        "bending_radius": 0.05,
+        "mode_coupling_co": 0.0004,
+        "propagation_const": 4000000.0,
+        "core_pitch": 4e-05
+      },
+      "length": 100,
+      "source": "A",
+      "destination": "B",
+      "span_length": 100
+    },
+    "2": {
+      "fiber": {
+        "attenuation": 4.605111673958094e-05,
+        "non_linearity": 0.0013,
+        "dispersion": 2.0393053374841523e-26,
+        "num_cores": 4,
+        "fiber_type": 0,
+        "bending_radius": 0.05,
+        "mode_coupling_co": 0.0004,
+        "propagation_const": 4000000.0,
+        "core_pitch": 4e-05
+      },
+      "length": 150,
+      "source": "B",
+      "destination": "C",
+      "span_length": 100
+    }
+  }
+}

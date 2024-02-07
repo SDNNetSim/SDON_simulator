@@ -1,0 +1,16 @@
+{
+  "net_spec_dict": {
+    "updated": "value"
+  },
+  "was_routed": true,
+  "num_trans": 5,
+  "spectrum_dict": {
+    "modulation": "QAM"
+  },
+  "path_list": [
+    "A",
+    "B",
+    "C"
+  ],
+  "is_sliced": false
+}

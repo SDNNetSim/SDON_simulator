@@ -155,7 +155,6 @@ disable=raw-checker-failed,
         deprecated-pragma,
         use-symbolic-message-instead,
         fixme,
-        missing-module-docstring,
         too-many-arguments,
         line-too-long,
         too-many-instance-attributes,
@@ -164,7 +163,8 @@ disable=raw-checker-failed,
         too-many-locals,
         too-many-branches,
         redefined-outer-name,
-        wildcard-import
+        missing-module-docstring,
+        unsubscriptable-object,
 
 
 # Enable the message, report, category or checker with the given id(s). You can
@@ -292,8 +292,8 @@ signature-mutators=
 [EXCEPTIONS]
 
 # Exceptions that will emit a warning when caught.
-overgeneral-exceptions=BaseException,
-                       Exception
+overgeneral-exceptions=builtins.BaseException,
+                       builtins.Exception
 
 
 [IMPORTS]

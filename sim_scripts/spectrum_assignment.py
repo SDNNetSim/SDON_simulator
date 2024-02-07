@@ -1,352 +1,176 @@
-# Standard library imports
 import itertools
-import warnings
-from typing import List
 from operator import itemgetter
 
-# Third-party library imports
 import numpy as np
 
-import useful_functions.sim_functions
+from arg_scripts.spectrum_args import empty_props
+from helper_scripts.spectrum_helpers import SpectrumHelpers
+from sim_scripts.snr_measurements import SnrMeasurements
 
 
-class SpectrumAssignment:  # pylint: disable=too-few-public-methods
+class SpectrumAssignment:
     """
-    Finds available spectrum slots for a given request.
+    Attempt to find the available spectrum for a given request.
     """
 
-    def __init__(self, print_warn: bool = None, path: List[int] = None, slots_needed: int = None,
-                 net_spec_db: dict = None, guard_slots: int = None, single_core: bool = False,
-                 is_sliced: bool = False, alloc_method: str = None):
-        """
-        Initializes the SpectrumAssignment class.
+    def __init__(self, engine_props: dict, sdn_props: dict):
+        self.spectrum_props = empty_props
+        self.engine_props = engine_props
+        self.sdn_props = sdn_props
 
-        :param print_warn: Determines if we want to print warnings or not.
-        :type print_warn: bool
+        self.snr_obj = SnrMeasurements(engine_props=self.engine_props, sdn_props=self.sdn_props,
+                                       spectrum_props=self.spectrum_props)
+        self.spec_help_obj = SpectrumHelpers(engine_props=self.engine_props, sdn_props=self.sdn_props,
+                                             spectrum_props=self.spectrum_props)
 
-        :param path: A list of integers representing the path for the request.
-        :type path: List[int]
+    def _allocate_best_fit(self, channels_list: list):
+        for channel_dict in channels_list:
+            for start_index in channel_dict['channel']:
+                end_index = (start_index + self.spectrum_props['slots_needed'] + self.engine_props['guard_slots']) - 1
+                if end_index not in channel_dict['channel']:
+                    break
 
-        :param slots_needed: An integer representing the number of spectral slots needed to allocate the request.
-        :type slots_needed: int
+                if len(self.spectrum_props['path_list']) > 2:
+                    self.spec_help_obj.start_index = start_index
+                    self.spec_help_obj.end_index = end_index
+                    self.spec_help_obj.core_num = channel_dict['core']
+                    self.spec_help_obj.check_other_links()
 
-        :param net_spec_db: A dictionary representing the network spectrum database.
-        :type net_spec_db: dict
+                if self.spectrum_props['is_free'] or len(self.spectrum_props['path_list']) <= 2:
+                    self.spectrum_props['start_slot'] = start_index
+                    self.spectrum_props['end_slot'] = end_index + self.engine_props['guard_slots']
+                    self.spectrum_props['core_num'] = channel_dict['core']
+                    return
 
-        :param guard_slots: An integer representing the number of slots dedicated to the guard band.
-        :type guard_slots: int
-
-        :param single_core: A boolean value indicating whether we are allowed to slice to only a single core or not.
-        :type single_core: bool
-
-        :param is_sliced: A boolean value indicating whether the request is allowed to be sliced.
-        :type is_sliced: bool
-
-        :param alloc_method: A string representing the allocation policy.
-        :type alloc_method: str
-        """
-        self.print_warn = print_warn
-        self.path = path
-        self.single_core = single_core
-        self.is_sliced = is_sliced
-        self.alloc_method = alloc_method
-        self.slots_needed = slots_needed
-        self.guard_slots = guard_slots
-        self.net_spec_db = net_spec_db
-
-        # The flag to determine whether the request can be allocated
-        self.is_free = True
-        # A matrix containing the cores for each link in the network
-        self.cores_matrix = None
-        # The reversed version of the cores matrix
-        self.rev_cores_matrix = None
-        # The total number of slots per core
-        self.slots_per_core = None
-        # The total number of cores per link
-        self.cores_per_link = None
-
-        # The final response from this class
-        self.response = {'core_num': None, 'start_slot': None, 'end_slot': None}
-
-        self.find_free_slots = useful_functions.sim_functions.find_free_slots
-        self.find_free_channels = useful_functions.sim_functions.find_free_channels
-        self.get_channel_overlaps = useful_functions.sim_functions.get_channel_overlaps
-
-    def _check_other_links(self, core_num, start_slot, end_slot):
-        """
-        Given that one link is available, check all other links in the path. Core and spectrum assignments
-        MUST be the same.
-
-        :param core_num: The core in which to look for the free spectrum
-        :type core_num: int
-
-        :param start_slot: The starting index of the potentially free spectrum
-        :type start_slot: int
-
-        :param end_slot: The ending index
-        :type end_slot: int
-
-        :return: None
-        """
-        self.is_free = True
-        for i in range(len(self.path) - 1):
-            link = (self.path[i], self.path[i + 1])
-            rev_link = (self.path[i + 1], self.path[i])
-
-            if not self._link_has_free_spectrum(link, core_num, start_slot, end_slot):
-                self.is_free = False
-                return
-
-            if not self._link_has_free_spectrum(rev_link, core_num, start_slot, end_slot):
-                self.is_free = False
-                return
-
-    def _link_has_free_spectrum(self, sub_path, core_num, start_slot, end_slot):
-        """
-        Check whether a link has the same spectrum assignment as the given core and whether the
-        spectrum in the given range is free.
-
-        :param sub_path: The sub-path to check
-        :type sub_path: Tuple[str, str]
-
-        :param core_num: The core in which to look for the free spectrum
-        :type core_num: int
-
-        :param start_slot: The starting index of the potentially free spectrum
-        :type start_slot: int
-
-        :param end_slot: The ending index
-        :type end_slot: int
-
-        :return: True if the spectrum is free and assigned to the given core, False otherwise
-        """
-        link = self.net_spec_db[sub_path]['cores_matrix'][core_num][start_slot:end_slot]
-        return set(link) == {0.0}
-
-    def _best_fit_allocation(self):
+    def find_best_fit(self):
         """
         Searches for and allocates the best-fit super channel on each link along the path.
-
-        :return: None
         """
-        res_list = []
+        channels_list = list()
 
         # Get all potential super channels
-        for (src, dest) in zip(self.path[:-1], self.path[1:]):
-            for core_num in range(self.cores_per_link):
-                core_arr = self.net_spec_db[(src, dest)]['cores_matrix'][core_num]
+        for (src, dest) in zip(self.spectrum_props['path_list'][:-1], self.spectrum_props['path_list'][1:]):
+            for core_num in range(self.engine_props['cores_per_link']):
+                core_arr = self.sdn_props['net_spec_dict'][(src, dest)]['cores_matrix'][core_num]
                 open_slots_arr = np.where(core_arr == 0)[0]
 
                 tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
                               itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-                for channel in tmp_matrix:
-                    if len(channel) >= self.slots_needed:
-                        res_list.append({'link': (src, dest), 'core': core_num, 'channel': channel})
+                for channel_list in tmp_matrix:
+                    if len(channel_list) >= self.spectrum_props['slots_needed']:
+                        channels_list.append({'link': (src, dest), 'core': core_num, 'channel': channel_list})
 
         # Sort the list of candidate super channels
-        sorted_list = sorted(res_list, key=lambda d: len(d['channel']))
+        channels_list = sorted(channels_list, key=lambda d: len(d['channel']))
+        self._allocate_best_fit(channels_list=channels_list)
 
-        for channel_dict in sorted_list:
-            for start_index in channel_dict['channel']:
-                end_index = (start_index + self.slots_needed + self.guard_slots) - 1
-                if end_index not in channel_dict['channel']:
-                    break
+    def _setup_first_last(self):
+        if self.spectrum_props['forced_core'] is not None:
+            core_matrix = [self.spectrum_props['cores_matrix'][self.spectrum_props['forced_core']]]
+            core_list = [self.spectrum_props['forced_core']]
+        elif self.engine_props['allocation_method'] in ('priority_first', 'priority_last'):
+            core_list = [0, 2, 4, 1, 3, 5, 6]
+            core_matrix = list()
+            for curr_core in core_list:
+                core_matrix.append(self.spectrum_props['cores_matrix'][curr_core])
+        else:
+            core_matrix = self.spectrum_props['cores_matrix']
+            core_list = list(range(0, self.engine_props['cores_per_link']))
 
-                if len(self.path) > 2:
-                    self._check_other_links(channel_dict['core'], start_index, end_index + self.guard_slots)
+        return core_matrix, core_list
 
-                if self.is_free is not False or len(self.path) <= 2:
-                    self.response = {'core_num': channel_dict['core'], 'start_slot': start_index,
-                                     'end_slot': end_index + self.guard_slots}
-                    return
-
-    def _check_open_slots(self, open_slots_matrix: list, flag: bool, core_num: int, des_core: int):
-        """
-        Given a matrix of unallocated spectral slots, attempt to find a channel for the request.
-
-        :param open_slots_matrix: A matrix containing each core and open spectral slots on them.
-        :type open_slots_matrix: list
-
-        :param flag: A flag to determine if we should allocate using first or last fit.
-        :type flag: bool
-
-        :param core_num: The core number in which to check other links for a potential allocation.
-        :type core_num: int
-
-        :param des_core: Tell us if we'd like to force allocation to a certain core.
-        :type des_core: int
-
-        :return: If we were able to successfully allocate or not.
-        :rtype: bool
-        """
-        for tmp_arr in open_slots_matrix:
-            if len(tmp_arr) >= (self.slots_needed + self.guard_slots):
-                for start_index in tmp_arr:
-                    if flag == 'last_fit':
-                        end_index = (start_index - self.slots_needed - self.guard_slots) + 1
-                    else:
-                        end_index = (start_index + self.slots_needed + self.guard_slots) - 1
-                    if end_index not in tmp_arr:
-                        break
-
-                    if len(self.path) > 2:
-                        if flag == 'last_fit':
-                            # Note that these are reversed since we search in decreasing order, but allocate in
-                            # increasing order
-                            self._check_other_links(core_num, end_index, start_index + self.guard_slots)
-                        else:
-                            self._check_other_links(core_num, start_index, end_index + self.guard_slots)
-
-                    if self.is_free is not False or len(self.path) <= 2:
-                        # Since we use enumeration prior and set the matrix equal to one core, the "core_num" will
-                        # always be zero even if our desired core index is different, is this lazy coding? Idek
-                        if des_core is not None:
-                            core_num = des_core
-
-                        if flag == 'last_fit':
-                            self.response = {'core_num': core_num, 'start_slot': end_index,
-                                             'end_slot': start_index + self.guard_slots}
-                        else:
-                            self.response = {'core_num': core_num, 'start_slot': start_index,
-                                             'end_slot': end_index + self.guard_slots}
-                        return True
-
-        return False
-
-    # TODO: Write tests for this method
-    def _handle_first_last(self, flag: str = None, des_core: int = None):
+    def handle_first_last(self, flag: str):
         """
         Handles either first-fit or last-fit spectrum allocation.
 
-        :param flag: A flag to determine which allocation method we'd like to use.
-        :type flag: str
-
-        :param des_core: Determine if we'd like to force allocation onto a certain core.
-        :type des_core: int
+        :param flag: A flag to determine which allocation method to be used.
         """
-        if des_core is not None:
-            matrix = [self.cores_matrix[des_core]]
-        else:
-            matrix = self.cores_matrix
-
-        for core_num, core_arr in enumerate(matrix):
-            # To account for ONLY single core light segment slicing
-            if core_num > 0 and self.single_core and self.is_sliced:
-                break
-
+        core_matrix, core_list = self._setup_first_last()
+        for core_arr, core_num in zip(core_matrix, core_list):
             open_slots_arr = np.where(core_arr == 0)[0]
 
             # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
-            if flag == 'last_fit':
+            if flag in ('last_fit', 'priority_last'):
                 open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
                                      itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-            else:
+            elif flag in ('first_fit', 'priority_first'):
                 open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
                                      itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+            else:
+                raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
 
-            resp = self._check_open_slots(open_slots_matrix=open_slots_matrix, flag=flag, core_num=core_num,
-                                          des_core=des_core)
-            # We successfully found allocation on this core, no need to check the others
-            if resp:
+            self.spec_help_obj.core_num = core_num
+            was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix)
+            if was_allocated:
                 return
 
-    def _check_cores_channels(self):
+    # fixme: Only works for 7 cores
+    def xt_aware(self):
         """
-        For a given path, find the free channel intersections (between cores on that path) and the free slots for
-        each link.
+        Attempts to allocate a request with the least amount of cross-talk interference on neighboring cores.
 
-        :return: The free slots, free channel intersections, free slots intersections, and free channels.
+        :return: The information of the request if allocated or False if not possible.
         :rtype: dict
         """
-        resp = {'free_slots': {}, 'free_channels': {}, 'slots_inters': {}, 'channel_inters': {}}
-
-        for source_dest in zip(self.path, self.path[1:]):
-            free_slots = self.find_free_slots(net_spec_db=self.net_spec_db, des_link=source_dest)
-            free_channels = self.find_free_channels(net_spec_db=self.net_spec_db, slots_needed=self.slots_needed,
-                                                    des_link=source_dest)
-
-            resp['free_slots'].update({source_dest: free_slots})
-            resp['free_channels'].update({source_dest: free_channels})
-
-            for core_num in resp['free_slots'][source_dest]:
-                if core_num not in resp['slots_inters']:
-                    resp['slots_inters'].update({core_num: set(resp['free_slots'][source_dest][core_num])})
-
-                    resp['channel_inters'].update({core_num: resp['free_channels'][source_dest][core_num]})
-                else:
-                    intersection = resp['slots_inters'][core_num] & set(resp['free_slots'][source_dest][core_num])
-                    resp['slots_inters'][core_num] = intersection
-                    resp['channel_inters'][core_num] = [item for item in resp['channel_inters'][core_num] if
-                                                        item in resp['free_channels'][source_dest][core_num]]
-
-        return resp
-
-    def _find_best_core(self):
-        """
-        Finds the core with the least amount of overlapping super channels for previously allocated requests.
-
-        :return: The core with the least amount of overlapping channels.
-        :rtype: int
-        """
-        path_info = self._check_cores_channels()
-        all_channels = self.get_channel_overlaps(path_info['channel_inters'],
-                                                 path_info['free_slots'])
-        sorted_cores = sorted(all_channels['other_channels'], key=lambda k: len(all_channels['other_channels'][k]))
-
-        # TODO: Comment why
-        if len(sorted_cores) > 1:
-            if 6 in sorted_cores:
-                sorted_cores.remove(6)
-        return sorted_cores[0]
-
-    def _xt_aware_allocation(self):
-        """
-        Cross-talk aware spectrum allocation. Attempts to allocate a request with the least amount of cross-talk
-        interference on neighboring cores.
-
-        :return: The information of the request if allocated, false otherwise.
-        :rtype dict
-        """
-        if self.print_warn:
-            warnings.warn('Method: xt_aware_allocation used in '
-                          'spectrum_assignment that only supports 7 cores per fiber.')
-        core = self._find_best_core()
-        # Graph coloring for cores
+        core = self.spec_help_obj.find_best_core()
+        # Graph coloring for cores will be in this order
         if core in [0, 2, 4, 6]:
-            return self._handle_first_last(des_core=core, flag='first_fit')
+            self.spectrum_props['forced_core'] = core
+            return self.handle_first_last(flag='first_fit')
 
-        return self._handle_first_last(des_core=core, flag='last_fit')
+        return self.handle_first_last(flag='last_fit')
 
-    def find_free_spectrum(self):
-        """
-        Finds available spectrum to allocate a request based on the chosen allocation policy.
-
-        :return: A dictionary with the available core, starting index, and ending index if available.
-                 Otherwise, returns False.
-        :rtype: dict or bool
-        """
-        # Ensure spectrum from 'A' to 'B' and 'B' to 'A' are free
-        self.cores_matrix = self.net_spec_db[(self.path[0], self.path[1])]['cores_matrix']
-        self.rev_cores_matrix = self.net_spec_db[(self.path[1], self.path[0])]['cores_matrix']
-
-        if self.cores_matrix is None or self.rev_cores_matrix is None:
-            raise ValueError('Bi-directional link not found in network spectrum database.')
-
-        self.slots_per_core = len(self.cores_matrix[0])
-        self.cores_per_link = len(self.cores_matrix)
-
-        # TODO: Add core num here!
-        if self.alloc_method == 'best_fit':
-            self._best_fit_allocation()
-        elif self.alloc_method in ('first_fit', 'last_fit'):
-            self._handle_first_last(flag=self.alloc_method)
-        elif self.alloc_method == 'cross_talk_aware':
-            self._xt_aware_allocation()
+    def _get_spectrum(self):
+        if self.engine_props['allocation_method'] == 'best_fit':
+            self.find_best_fit()
+        elif self.engine_props['allocation_method'] in ('first_fit', 'last_fit', 'priority_first', 'priority_last'):
+            self.handle_first_last(flag=self.engine_props['allocation_method'])
+        elif self.engine_props['allocation_method'] == 'xt_aware':
+            self.xt_aware()
         else:
-            raise NotImplementedError(f'Expected first_fit or best_fit, got: {self.alloc_method}')
+            raise NotImplementedError(f"Expected first_fit or best_fit, got: {self.engine_props['allocation_method']}")
 
-        # If the start slot is none, a request couldn't be allocated
-        if self.response['start_slot'] is None:
-            return False
+    def _init_spectrum_info(self):
+        link_tuple = (self.spectrum_props['path_list'][0], self.spectrum_props['path_list'][1])
+        rev_link_tuple = (self.spectrum_props['path_list'][1], self.spectrum_props['path_list'][0])
+        self.spectrum_props['cores_matrix'] = self.sdn_props['net_spec_dict'][link_tuple]['cores_matrix']
+        self.spectrum_props['rev_cores_matrix'] = self.sdn_props['net_spec_dict'][rev_link_tuple]['cores_matrix']
+        self.spectrum_props['is_free'] = False
 
-        return self.response
+    def get_spectrum(self, mod_format_list: list, slice_bandwidth: str = None):
+        """
+        Controls the class, attempts to find an available spectrum.
+
+        :param mod_format_list: A list of modulation formats to attempt allocation.
+        :param slice_bandwidth: A bandwidth used for light-segment slicing.
+        """
+        self._init_spectrum_info()
+        for modulation in mod_format_list:
+            if modulation is False:
+                self.sdn_props['block_reason'] = 'distance'
+                continue
+
+            if slice_bandwidth:
+                bandwidth_dict = self.engine_props['mod_per_bw'][slice_bandwidth]
+                self.spectrum_props['slots_needed'] = bandwidth_dict[modulation]['slots_needed']
+            else:
+                self.spectrum_props['slots_needed'] = self.sdn_props['mod_formats'][modulation]['slots_needed']
+            self._get_spectrum()
+
+            if self.spectrum_props['is_free']:
+                self.spectrum_props['modulation'] = modulation
+                if self.engine_props['snr_type'] != 'None' and self.engine_props['snr_type'] is not None:
+                    snr_check, xt_cost = self.snr_obj.handle_snr()
+                    self.spectrum_props['xt_cost'] = xt_cost
+                    if not snr_check:
+                        self.spectrum_props['is_free'] = False
+                        self.sdn_props['block_reason'] = 'xt_threshold'
+                        continue
+
+                    self.spectrum_props['is_free'] = True
+                    self.sdn_props['block_reason'] = None
+
+                return
+
+            self.spectrum_props['block_reason'] = 'congestion'
+            continue

@@ -1,96 +1,72 @@
-import warnings
-
-# Local application imports
-from useful_functions.random_generation import set_seed, uniform_rv, exponential_rv
+from helper_scripts.random_helpers import set_seed, get_uniform_rv, get_exponential_rv
 
 
-def generate(sim_type: str, seed: int, nodes: list, hold_time_mean: float, arr_rate_mean: float,
-             num_reqs: int, mod_per_bw: dict, req_dist: dict):
+def get_requests(seed: int, engine_props: dict):
     """
-    Generates requests for a simulation.
+    Generates requests for a single simulation.
 
-    :param sim_type: The simulation type.
-    :type sim_type: str
-
-    :param seed: Seed for random number generation.
-    :type seed: int
-
-    :param nodes: List of nodes in the network.
-    :type nodes: list
-
-    :param hold_time_mean: Mean hold time of a request.
-    :type hold_time_mean: float
-
-    :param arr_rate_mean: Mean arrival rate of requests.
-    :type arr_rate_mean: float
-
-    :param num_reqs: Number of requests to generate.
-    :type num_reqs: int
-
-    :param mod_per_bw: Dictionary with modulation formats for each bandwidth.
-    :type mod_per_bw: dict
-
-    :param req_dist: Dictionary with the distribution of requests among different bandwidths.
-    :type req_dist: dict
-
-    :return: A dictionary with the generated requests.
+    :param seed: Seed for random generation.
+    :param engine_props: Properties from the engine class.
+    :return: The generated requests and request information.
     :rtype: dict
     """
-    # Initialize variables
-    requests = {}
+    requests_dict = {}
     current_time = 0
-    counter_id = 1
+    request_id = 1
+
+    nodes_list = list(engine_props['topology_info']['nodes'].keys())
     set_seed(seed=seed)
-    warnings.warn('Request generation only works if the amount of requests can be evenly distributed.')
 
-    bandwidth_counts = {bandwidth: int(req_dist[bandwidth] * num_reqs) for bandwidth in
-                        mod_per_bw}
-    bandwidth_list = list(mod_per_bw.keys())
+    # Create request distribution
+    bw_counts_dict = {bandwidth: int(engine_props['request_distribution'][bandwidth] * engine_props['num_requests'])
+                      for bandwidth in engine_props['mod_per_bw']}
+    bandwidth_list = list(engine_props['mod_per_bw'].keys())
 
-    # Generate requests, multiply number of requests by two since we have arrival and departure types
-    while len(requests) < (num_reqs * 2):
-        current_time += exponential_rv(arr_rate_mean)
+    # Generate requests, multiply the number of requests by two since we have arrival and departure types
+    while len(requests_dict) < (engine_props['num_requests'] * 2):
+        current_time += get_exponential_rv(scale_param=engine_props['arrival_rate'])
 
-        if sim_type == 'arash':
-            depart_time = current_time + exponential_rv(1 / hold_time_mean)
+        if engine_props['sim_type'] == 'arash':
+            depart_time = current_time + get_exponential_rv(scale_param=1 / engine_props['holding_time'])
         else:
-            depart_time = current_time + exponential_rv(hold_time_mean)
+            depart_time = current_time + get_exponential_rv(scale_param=engine_props['holding_time'])
 
-        source = nodes[uniform_rv(len(nodes))]
-        dest = nodes[uniform_rv(len(nodes))]
+        source = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]
+        dest = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]
 
         while dest == source:
-            dest = nodes[uniform_rv(len(nodes))]
+            dest = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]
 
         while True:
-            chosen_bandwidth = bandwidth_list[uniform_rv(len(bandwidth_list))]
-            if bandwidth_counts[chosen_bandwidth] > 0:
-                bandwidth_counts[chosen_bandwidth] -= 1
+            chosen_bandwidth = bandwidth_list[get_uniform_rv(scale_param=len(bandwidth_list))]
+            if bw_counts_dict[chosen_bandwidth] > 0:
+                bw_counts_dict[chosen_bandwidth] -= 1
                 break
 
-        if current_time not in requests and depart_time not in requests:
-            requests.update({current_time: {
-                "id": counter_id,
+        if current_time not in requests_dict and depart_time not in requests_dict:
+            requests_dict.update({current_time: {
+                "req_id": request_id,
                 "source": source,
                 "destination": dest,
                 "arrive": current_time,
                 "depart": depart_time,
                 "request_type": "arrival",
                 "bandwidth": chosen_bandwidth,
-                "mod_formats": mod_per_bw[chosen_bandwidth],
+                "mod_formats": engine_props['mod_per_bw'][chosen_bandwidth],
             }})
-            requests.update({depart_time: {
-                "id": counter_id,
+            requests_dict.update({depart_time: {
+                "req_id": request_id,
                 "source": source,
                 "destination": dest,
                 "arrive": current_time,
                 "depart": depart_time,
                 "request_type": "release",
                 "bandwidth": chosen_bandwidth,
-                "mod_formats": mod_per_bw[chosen_bandwidth],
+                "mod_formats": engine_props['mod_per_bw'][chosen_bandwidth],
             }})
-            counter_id += 1
+            request_id += 1
+        # Bandwidth was not chosen due to either arrival or depart time already existing, add back to distribution
         else:
-            bandwidth_counts[chosen_bandwidth] += 1
+            bw_counts_dict[chosen_bandwidth] += 1
 
-    return requests
+    return requests_dict

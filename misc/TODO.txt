@@ -1,7 +1,0 @@
-
-Ryan:
-    - Complete all documentation and get sphinx running
-    - Complete all testing modules
-    - Remove or fix all TODOs
-    - Run simulation and plot results
-        - Setup plot scripts

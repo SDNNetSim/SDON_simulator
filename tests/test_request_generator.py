@@ -1,44 +1,55 @@
 import unittest
-from sim_scripts.request_generator import generate
+import os
+import json
+
+from sim_scripts.request_generator import get_requests
 
 
-class TestGenerateFunction(unittest.TestCase):
+class TestGetRequests(unittest.TestCase):
     """
-    This class contains unit tests for the `generate` function in the sim_scripts.request_generator module.
+    Test request_generator.py
     """
 
-    def test_generate_function(self):
+    def setUp(self):
+        self.seed = 12345
+
+        file_path = os.path.join('tests', 'fixtures', 'engine_props.json')
+        with open(file_path, 'r', encoding='utf-8') as file_obj:
+            self.engine_props = json.load(file_obj)
+
+    def test_requests_length(self):
         """
-        Test that the `generate` function returns a dictionary with the correct keys, lengths, and
-        number of requests for each bandwidth.
+        Test the number of requests generated.
         """
-        # Define inputs for generate function
-        sim_type = 'yue'
-        seed = 123
-        nodes = ['A', 'B', 'C', 'D']
-        hold_time_mean = 10.0
-        arr_rate_mean = 2.0
-        num_reqs = 100
-        mod_per_bw = {'10': ['QPSK'], '100': ['16QAM']}
-        req_dist = {'10': 0.2, '100': 0.8}
+        requests = get_requests(seed=self.seed, engine_props=self.engine_props)
+        self.assertEqual(len(requests), self.engine_props['num_requests'] * 2)
 
-        # Call generate function with inputs
-        result = generate(sim_type, seed, nodes, hold_time_mean, arr_rate_mean, num_reqs, mod_per_bw, req_dist)
+    def test_no_duplicate_source_destination(self):
+        """
+        Test source and destination pairs.
+        """
+        requests = get_requests(seed=self.seed, engine_props=self.engine_props)
+        for _, value in requests.items():
+            self.assertNotEqual(value['source'], value['destination'])
 
-        # Check that the output has the correct type
-        self.assertIsInstance(result, dict)
+    def test_correct_bandwidth_distribution(self):
+        """
+        Tests the bandwidth distribution.
+        """
+        requests = get_requests(seed=self.seed, engine_props=self.engine_props)
+        bw_distribution = {bw: 0 for bw in self.engine_props['mod_per_bw']}
+        for _, value in requests.items():
+            if value['request_type'] == 'arrival':
+                bw_distribution[value['bandwidth']] += 1
+        for bandwidth, count in self.engine_props['request_distribution'].items():
+            expected_count = int(count * self.engine_props['num_requests'])
+            self.assertEqual(bw_distribution[bandwidth], expected_count)
 
-        # Check that the output has the correct number of entries
-        self.assertEqual(len(result), num_reqs * 2)
-
-        # Check that each entry in the output has the correct keys
-        expected_keys = ['id', 'source', 'destination', 'arrive', 'depart', 'request_type', 'bandwidth', 'mod_formats']
-        for request in result.values():
-            self.assertCountEqual(request.keys(), expected_keys)
-
-        # Check that the number of requests for each bandwidth is correct
-        num_10g_reqs = sum(request['bandwidth'] == '10' for request in result.values())
-        self.assertEqual(num_10g_reqs / 2, int(num_reqs * req_dist['10']))
-
-        num_100g_reqs = sum(request['bandwidth'] == '100' for request in result.values())
-        self.assertEqual(num_100g_reqs / 2, int(num_reqs * req_dist['100']))
+    def test_arrival_departure_times(self):
+        """
+        Test arrival and departure times.
+        """
+        requests = get_requests(seed=self.seed, engine_props=self.engine_props)
+        for _, value in requests.items():
+            if value['request_type'] == 'arrival':
+                self.assertLess(value['arrive'], value['depart'])
