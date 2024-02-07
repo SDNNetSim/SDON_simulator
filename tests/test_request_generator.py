@@ -6,6 +6,9 @@ from sim_scripts.request_generator import get_requests
 
 
 class TestGetRequests(unittest.TestCase):
+    """
+    Test request_generator.py
+    """
 
     def setUp(self):
         self.seed = 12345
@@ -26,7 +29,7 @@ class TestGetRequests(unittest.TestCase):
         Test source and destination pairs.
         """
         requests = get_requests(seed=self.seed, engine_props=self.engine_props)
-        for key, value in requests.items():
+        for _, value in requests.items():
             self.assertNotEqual(value['source'], value['destination'])
 
     def test_correct_bandwidth_distribution(self):
@@ -35,22 +38,18 @@ class TestGetRequests(unittest.TestCase):
         """
         requests = get_requests(seed=self.seed, engine_props=self.engine_props)
         bw_distribution = {bw: 0 for bw in self.engine_props['mod_per_bw']}
-        for key, value in requests.items():
+        for _, value in requests.items():
             if value['request_type'] == 'arrival':
                 bw_distribution[value['bandwidth']] += 1
-        for bw, count in self.engine_props['request_distribution'].items():
+        for bandwidth, count in self.engine_props['request_distribution'].items():
             expected_count = int(count * self.engine_props['num_requests'])
-            self.assertEqual(bw_distribution[bw], expected_count)
+            self.assertEqual(bw_distribution[bandwidth], expected_count)
 
     def test_arrival_departure_times(self):
         """
         Test arrival and departure times.
         """
         requests = get_requests(seed=self.seed, engine_props=self.engine_props)
-        for key, value in requests.items():
+        for _, value in requests.items():
             if value['request_type'] == 'arrival':
                 self.assertLess(value['arrive'], value['depart'])
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -40,7 +40,3 @@ class TestCreateDir(unittest.TestCase):
         """
         with self.assertRaises(ValueError):
             create_dir(None)
-
-
-if __name__ == '__main__':
-    unittest.main()

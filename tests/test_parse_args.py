@@ -29,7 +29,3 @@ class TestParseArgs(unittest.TestCase):
 
         self.assertEqual(args, {'argument1': 'value1'})
         self.assertNotIn('argument2', args)
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -131,7 +131,3 @@ class TestSpectrumAssignment(unittest.TestCase):
         mod_format_list_with_false = [False, 'QPSK']
         self.spec_assign.get_spectrum(mod_format_list_with_false)
         self.assertEqual(self.spec_assign.sdn_props['block_reason'], 'distance')
-
-
-if __name__ == '__main__':
-    unittest.main()

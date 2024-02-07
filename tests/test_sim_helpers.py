@@ -187,7 +187,3 @@ class TestGetPathMod(unittest.TestCase):
         input_list = [["Alice"], ["Bob"], ["Charlie"]]
         result = list_to_title(input_list)
         self.assertEqual(result, "Alice, Bob & Charlie")
-
-
-if __name__ == '__main__':
-    unittest.main()

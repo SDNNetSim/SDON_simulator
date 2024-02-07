@@ -155,7 +155,3 @@ class TestRouting(unittest.TestCase):
             for link_list in list(self.sdn_props['net_spec_dict'].keys())[::2]:
                 source, destination = link_list
                 self.assertIn('xt_cost', self.sdn_props['topology'][source][destination], "XT cost not set for link")
-
-
-if __name__ == '__main__':
-    unittest.main()

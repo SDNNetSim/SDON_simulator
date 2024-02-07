@@ -89,7 +89,3 @@ class TestPlotStats(unittest.TestCase):
             mock_plt.plot.assert_called()
             mock_plt.legend.assert_called()
             mock_save_plot.assert_called_with(file_name=file_name)
-
-
-if __name__ == '__main__':
-    unittest.main()

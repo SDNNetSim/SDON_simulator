@@ -102,7 +102,3 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(self.engine.stats_obj.topology, self.engine.topology)
         self.assertEqual(self.engine.sdn_obj.sdn_props['net_spec_dict'], self.engine.net_spec_dict)
         self.assertEqual(self.engine.sdn_obj.sdn_props['topology'], self.engine.topology)
-
-
-if __name__ == '__main__':
-    unittest.main()

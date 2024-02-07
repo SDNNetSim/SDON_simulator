@@ -161,7 +161,3 @@ class TestPlotHelpers(unittest.TestCase):
 
         result = find_times(dates_dict, filter_dict)
         self.assertEqual(expected, result)
-
-
-if __name__ == '__main__':
-    unittest.main()

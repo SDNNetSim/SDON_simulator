@@ -38,7 +38,3 @@ class TestRandomGenerators(unittest.TestCase):
         scale_param = 5
         result = get_exponential_rv(scale_param)
         self.assertTrue(result >= 0, "The result should be non-negative.")
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -56,7 +56,3 @@ class TestGenerateData(unittest.TestCase):
         sim_type = 'invalid'
         with self.assertRaises(NotImplementedError):
             create_bw_info(sim_type)
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -189,7 +189,3 @@ class TestRoutingHelpers(unittest.TestCase):
 
             expected_nli_cost = (100 / 100) * 0.5 + ((1 - 0.5) * 10.0)
             self.assertAlmostEqual(nli_cost, expected_nli_cost, msg="NLI cost calculation is incorrect")
-
-
-if __name__ == '__main__':
-    unittest.main()

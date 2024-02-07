@@ -44,7 +44,3 @@ class TestReadConfig(unittest.TestCase):
         config_dict = read_config(self.args_obj, self.valid_conf)
 
         self.assertEqual(config_dict['s1']['holding_time'], 1000.0)
-
-
-if __name__ == '__main__':
-    unittest.main()
