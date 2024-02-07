@@ -16,6 +16,7 @@ networking.
    data/data_modules.rst
    helper/helper_modules.rst
    plot/plot_modules.rst
+   sim/sim_modules.rst
 
 Indices and tables
 ==================

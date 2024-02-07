@@ -110,7 +110,7 @@ class SpectrumAssignment:
         Attempts to allocate a request with the least amount of cross-talk interference on neighboring cores.
 
         :return: The information of the request if allocated or False if not possible.
-        :rtype dict
+        :rtype: dict
         """
         core = self.spec_help_obj.find_best_core()
         # Graph coloring for cores will be in this order
