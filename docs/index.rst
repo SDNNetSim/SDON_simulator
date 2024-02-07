@@ -17,6 +17,7 @@ networking.
    helper/helper_modules.rst
    plot/plot_modules.rst
    sim/sim_modules.rst
+   run_sim.rst
 
 Indices and tables
 ==================
