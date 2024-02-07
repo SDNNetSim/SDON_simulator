@@ -40,7 +40,7 @@ class TestPlotHelpers(unittest.TestCase):
         """
         Opens a mock input file.
         """
-        file_path = os.path.join('.', 'fixtures', 'input_file.json')
+        file_path = os.path.join('tests', 'fixtures', 'input_file.json')
         with open(file_path, encoding='utf-8') as file_obj:
             input_dict = json.load(file_obj)
         return input_dict

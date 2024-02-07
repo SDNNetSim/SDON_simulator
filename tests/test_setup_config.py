@@ -10,8 +10,8 @@ class TestReadConfig(unittest.TestCase):
     """
 
     def setUp(self):
-        self.valid_conf = os.path.join('..', 'tests', 'fixtures', 'valid_config.ini')
-        self.invalid_conf = os.path.join('..', 'tests', 'fixtures', 'invalid_config.ini')
+        self.valid_conf = os.path.join('tests', 'fixtures', 'valid_config.ini')
+        self.invalid_conf = os.path.join('tests', 'fixtures', 'invalid_config.ini')
         self.args_obj = parse_args()
 
     def test_successful_config_read(self):

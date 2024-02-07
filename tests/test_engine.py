@@ -19,11 +19,11 @@ class TestEngine(unittest.TestCase):
         self.engine.reqs_dict = {1.0: {'req_id': 10}}
 
         self.engine.sdn_obj = MagicMock()
-        sdn_path = os.path.join('.', 'fixtures', 'sdn_props.json')
+        sdn_path = os.path.join('tests', 'fixtures', 'sdn_props.json')
         with open(sdn_path, 'r', encoding='utf-8') as file_obj:
             self.engine.sdn_obj.sdn_props = json.load(file_obj)
 
-        engine_path = os.path.join('.', 'fixtures', 'engine_props.json')
+        engine_path = os.path.join('tests', 'fixtures', 'engine_props.json')
         with open(engine_path, 'r', encoding='utf-8') as file_obj:
             self.engine.engine_props = json.load(file_obj)
 
