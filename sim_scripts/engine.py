@@ -111,6 +111,7 @@ class Engine:
         self.sdn_obj.sdn_props['topology'] = self.topology
 
         self.ai_obj.setup()
+        self.sdn_obj.ai_obj = self.ai_obj
 
     def generate_requests(self, seed: int):
         """
@@ -135,7 +136,7 @@ class Engine:
             signal.signal(signal.SIGINT, self.stats_obj.save_stats)
             signal.signal(signal.SIGTERM, self.stats_obj.save_stats)
 
-            if self.engine_props['route_method'] == 'ai_scripts':
+            if self.engine_props['ai_algorithm'] is not None:
                 signal.signal(signal.SIGINT, self.ai_obj.save)
                 signal.signal(signal.SIGTERM, self.ai_obj.save)
 
