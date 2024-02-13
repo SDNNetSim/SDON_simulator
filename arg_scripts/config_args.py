@@ -107,7 +107,11 @@ OTHER_OPTIONS = {
     },
     'ai_settings': {
         'ai_algorithm': str,
-        'train_file': str,
+        'learn_rate': float,
+        'discount_factor': float,
+        'epsilon_start': float,
+        'epsilon_end': float,
+        'is_training': str,
     },
     'file_settings': {
     },
@@ -115,7 +119,11 @@ OTHER_OPTIONS = {
 
 COMMAND_LINE_PARAMS = [
     ['ai_algorithm', str, ''],
-    ['policy', str, ''],
+    ['epsilon_start', float, ''],
+    ['epsilon_end', float, ''],
+    ['learn_rate', float, ''],
+    ['discount_factor', float, ''],
+    ['is_training', float, ''],
     ['seeds', list, ''],
     ['beta', float, ''],
     ['train_file', str, ''],
