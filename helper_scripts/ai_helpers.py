@@ -1,3 +1,6 @@
+from ai_scripts.q_learning import QLearning
+
+
 class AIMethods:
     """
     Contains methods related to artificial intelligence for the simulator.
@@ -15,8 +18,6 @@ class AIMethods:
         self.seed = None
         # An object for the chosen AI algorithm
         self.ai_obj = None
-
-        self._setup()
 
     def _q_save(self):
         """
@@ -40,7 +41,16 @@ class AIMethods:
         """
         Initializes a QLearning class and sets up the initial environment and Q-table.
         """
-        raise NotImplementedError
+        self.ai_obj.curr_episode = self.episode
+        self.ai_obj.setup_env()
+
+        # Load a pre-trained table or start a new one
+        if self.engine_props['is_training']:
+            self.ai_obj.save_model()
+        else:
+            self.ai_obj.load_model()
+
+        self.ai_obj.set_seed(self.seed)
 
     def save(self):
         """
@@ -72,12 +82,12 @@ class AIMethods:
         if self.algorithm == 'q_learning':
             self._q_update_env()
 
-    def _setup(self):
+    def setup(self):
         """
         Responsible for setting up available AI algorithms and their methods.
         """
         if self.algorithm == 'q_learning':
-            self.ai_obj = None
+            self.ai_obj = QLearning(engine_props=self.engine_props)
             self._init_q_learning()
         elif self.algorithm == 'None' or self.algorithm is None:
             pass
