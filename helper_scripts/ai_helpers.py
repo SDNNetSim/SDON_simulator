@@ -10,9 +10,13 @@ class AIMethods:
         """
         Initializes the AIMethods class.
         """
+        # TODO: Utilize ai props? Only if constructor is too large...
         self.ai_props = None
         self.engine_props = engine_props
         self.algorithm = engine_props['ai_algorithm']
+        self.sdn_props = None
+        self.route_props = None
+        self.spectrum_props = None
 
         self.episode = 0
         self.seed = None
@@ -34,8 +38,11 @@ class AIMethods:
     def _q_spectrum(self):
         raise NotImplementedError
 
-    def _q_routing(self):
-        raise NotImplementedError
+    def _q_core(self):
+        return self.ai_obj.get_core(spectrum_props=self.spectrum_props)
+
+    def _q_routing(self, sdn_props: dict, route_props: dict):
+        return self.ai_obj.get_route(sdn_props=sdn_props, route_props=route_props)
 
     def _init_q_learning(self):
         """
@@ -59,21 +66,26 @@ class AIMethods:
         if self.algorithm == 'q_learning':
             self._q_save()
 
+    def assign_spectrum(self):
+        if self.algorithm == 'q_learning':
+            self._q_spectrum()
+
+    def assign_core(self):
+        if self.algorithm == 'q_learning':
+            self._q_core()
+
     def route(self):
         """
         Responsible for routing.
         """
-        resp = None
         if self.algorithm == 'q_learning':
-            resp = self._q_routing()
-
-        return resp
+            self._q_routing(sdn_props=self.sdn_props, route_props=self.route_props)
 
     def reset_epsilon(self):
         """
         Resets the epsilon parameter for an iteration or simulation.
         """
-        self.ai_obj.epsilon = self.engine_props['ai_arguments']['epsilon']
+        self.ai_obj.epsilon = self.engine_props['epsilon_start']
 
     def update(self):
         """
