@@ -2,12 +2,18 @@ empty_q_props = {
     'epsilon': None,
     'epsilon_start': None,
     'epsilon_end': None,
-    'epsilon_list': None,
+    'epsilon_list': list(),
     'is_training': None,
 
-    'rewards_dict': None,
-    'errors_dict': None,
-    'sum_rewards': None,
+    'rewards_dict': {
+        'routes_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}},
+        'cores_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}}
+    },
+    'errors_dict': {
+        'routes_dict': {'average': [], 'min': [], 'max': [], 'errors': {}},
+        'cores_dict': {'average': [], 'min': [], 'max': [], 'errors': {}}
+    },
+    'sum_rewards': dict(),
 
     'routes_matrix': None,
     'cores_matrix': None,

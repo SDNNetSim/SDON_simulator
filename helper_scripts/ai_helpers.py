@@ -27,13 +27,19 @@ class AIMethods:
         """
         Saves the current state of the Q-table.
         """
-        raise NotImplementedError
+        self.ai_obj.save_model()
 
     def _q_update_env(self, was_routed: bool):
         """
         Updates the Q-learning environment.
         """
+        self.ai_obj.curr_episode = self.episode
         self.ai_obj.update_env(was_routed=was_routed)
+        if self.engine_props['is_training']:
+            numerator = self.ai_obj.q_props['epsilon'] - self.engine_props['epsilon_end']
+            denominator = float(self.engine_props['num_requests'])
+            decay_amount = numerator / denominator
+            self.ai_obj.decay_epsilon(amount=decay_amount)
 
     def _q_spectrum(self):
         raise NotImplementedError

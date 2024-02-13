@@ -5,6 +5,7 @@
 # TODO: Test and update to team standards
 import os
 import json
+import copy
 
 import numpy as np
 import networkx as nx
@@ -17,7 +18,7 @@ from arg_scripts.ai_args import empty_q_props
 class QLearning:
 
     def __init__(self, engine_props: dict):
-        self.q_props = empty_q_props
+        self.q_props = copy.deepcopy(empty_q_props)
         self.engine_props = engine_props
 
         # TODO: Better way to do this? I think access in engine props instead
@@ -102,11 +103,11 @@ class QLearning:
 
         len_rewards = len(self.q_props['rewards_dict'][stats_flag]['rewards'][episode])
         if self.curr_episode == self.engine_props['max_iters'] - 1 and len_rewards == self.engine_props['num_requests']:
-            self.q_props[stats_flag] = calc_matrix_stats(input_dict=self.q_props[stats_flag]['rewards'])
-            self.q_props[stats_flag] = calc_matrix_stats(input_dict=self.q_props[stats_flag]['errors'])
+            self.q_props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=self.q_props['rewards_dict'][stats_flag]['rewards'])
+            self.q_props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=self.q_props['errors_dict'][stats_flag]['errors'])
 
-            self.q_props[stats_flag].pop('rewards')
-            self.q_props[stats_flag].pop('errors')
+            self.q_props['rewards_dict'][stats_flag].pop('rewards')
+            self.q_props['errors_dict'][stats_flag].pop('errors')
 
     def _update_routes_matrix(self, was_routed: bool):
         if was_routed:
@@ -119,9 +120,10 @@ class QLearning:
         max_future_q = self._get_max_future_q()
         delta = reward + self.engine_props['discount_factor'] * max_future_q
         td_error = current_q - (reward + self.engine_props['discount_factor'] * max_future_q)
-        self._update_stats(reward=reward, stats_flag='routes_matrix', td_error=td_error)
+        self._update_stats(reward=reward, stats_flag='routes_dict', td_error=td_error)
 
         new_q = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
+
         self.q_props['routes_matrix'][self.source][self.destination][self.path_index]['q_value'] = new_q
 
     def _update_cores_matrix(self, was_routed: bool):
@@ -135,7 +137,7 @@ class QLearning:
         # TODO: What to do with maximum future Q without spectrum assignment? Constant for now
         max_future_q = 1.0
         delta = reward + self.engine_props['discount_factor'] * max_future_q
-        self._update_stats(reward=reward, stats_flag='cores_matrix', td_error=delta)
+        self._update_stats(reward=reward, stats_flag='cores_dict', td_error=delta)
 
         new_q_core = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
         self.q_props['cores_matrix'][self.source][self.destination][self.path_index][self.core_index][
