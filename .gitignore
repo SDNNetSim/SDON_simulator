@@ -15,7 +15,10 @@ scripts/__pycache__
 
 ai_scripts/models/*
 
-data/*
+data/ai
+data/input
+data/output
+data/plots
 
 ini/run_ini/config.ini
 bash_scripts/slurm/*
