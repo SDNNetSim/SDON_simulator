@@ -1,11 +1,7 @@
-# TODO: Add SIGINT and SIGTERM to ai_scripts functions
 # TODO: Every function needs to be checked (debug prior then debug this one together)
 # TODO: Calculate TD averages (matrix average in another script?)
 # TODO: Calculate reward averages (matrix average in another script?)
 # TODO: Update stats?
-# TODO: "Finish this script", then move to ai_args, then move to engine, then config file
-# TODO: Goal is to know if there are bugs by today, initial results tomorrow
-# TODO: Get this working, then clean it up
 # TODO: Test and update to team standards
 import os
 import json
@@ -13,7 +9,7 @@ import json
 import numpy as np
 import networkx as nx
 
-from helper_scripts.sim_helpers import find_path_len, get_path_mod
+from helper_scripts.sim_helpers import find_path_len, get_path_mod, calc_matrix_stats
 from helper_scripts.os_helpers import create_dir
 from arg_scripts.ai_args import empty_q_props
 
@@ -21,7 +17,6 @@ from arg_scripts.ai_args import empty_q_props
 class QLearning:
 
     def __init__(self, engine_props: dict):
-        # TODO: Props needs to be initialized
         self.q_props = empty_q_props
         self.engine_props = engine_props
 
@@ -29,7 +24,7 @@ class QLearning:
         self.num_nodes = None
         self.k_paths = None
 
-        # TODO: Something else like sdn props?
+        # TODO: Something else like sdn props or q props?
         self.source = None
         self.destination = None
 
@@ -182,10 +177,20 @@ class QLearning:
 
         self._init_q_tables()
 
-    # TODO: Needs to change based on new formulation
-    def _get_max_q(self):
+    def _get_max_future_q(self):
         q_values = list()
-        for path_index, _ in self.paths_list:
+        cores_matrix = self.q_props['cores_matrix'][self.source][self.destination]
+        for core_index in range(self.engine_props['cores_per_link']):
+            curr_q = cores_matrix[core_index]['q_value'][0]
+            q_values.append(curr_q)
+
+        max_index = np.argmax(q_values)
+        resp_value = cores_matrix[max_index]['q_value'][0]
+        return resp_value
+
+    def _get_max_curr_q(self):
+        q_values = list()
+        for path_index in range(len(self.paths_list)):
             curr_q = self.q_props['routes_matrix'][self.source][self.destination][path_index]['q_value']
             q_values.append(curr_q)
 
@@ -201,13 +206,8 @@ class QLearning:
         route_props['mod_formats_list'].append([mod_format])
         route_props['weights_list'].append(path_len)
 
-    # TODO: Don't think we need route props
-    # TODO: Return route and modulation format in needed format
-    # TODO: Modify route props
     def get_route(self, sdn_props: dict, route_props: dict):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
-        # TODO: How is source and destination updated?
-
         # TODO: Not sure if I want to use these like this (source, destination)
         self.source = int(sdn_props['source'])
         self.destination = int(sdn_props['destination'])
@@ -220,23 +220,19 @@ class QLearning:
             self.path_index = np.random.choice(self.k_paths)
             self.chosen_path = self.paths_list[self.path_index]
         else:
-            # TODO: Remember get max q will change based on my proposal
-            best_path = self._get_max_q()
-            self.path_index, self.chosen_path = best_path
+            self.path_index, self.chosen_path = self._get_max_curr_q()
 
         if len(self.chosen_path) == 0:
             raise ValueError('The chosen path can not be None')
 
         self._update_route_props(sdn_props=sdn_props, route_props=route_props)
 
-    # TODO: Also modify max future Q here
     def get_core(self, spectrum_props: dict):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
 
         if random_float < self.q_props['epsilon']:
             self.core_index = np.random.randint(0, self.engine_props['cores_per_link'])
         else:
-            # TODO: Remember max future q will come from something different
             q_values = self.q_props['cores_matrix'][self.source][self.destination]['q_value']
             self.core_index = np.argmax(q_values)
 
