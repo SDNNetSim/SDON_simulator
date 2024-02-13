@@ -29,11 +29,11 @@ class AIMethods:
         """
         raise NotImplementedError
 
-    def _q_update_env(self):
+    def _q_update_env(self, was_routed: bool):
         """
         Updates the Q-learning environment.
         """
-        raise NotImplementedError
+        self.ai_obj.update_env(was_routed=was_routed)
 
     def _q_spectrum(self):
         raise NotImplementedError
@@ -87,12 +87,12 @@ class AIMethods:
         """
         self.ai_obj.epsilon = self.engine_props['epsilon_start']
 
-    def update(self):
+    def update(self, was_routed: bool):
         """
         Responsible for updating environment information.
         """
         if self.algorithm == 'q_learning':
-            self._q_update_env()
+            self._q_update_env(was_routed=was_routed)
 
     def setup(self):
         """

@@ -317,3 +317,18 @@ def list_to_title(input_list: list):
         return ", ".join(unique_list[:-1]) + " & " + unique_list[-1]
 
     return unique_list[0]
+
+
+def calc_matrix_stats(input_dict: dict):
+    tmp_arr = np.array([])
+    for episode, curr_list in input_dict.items():
+        if episode == '0':
+            tmp_arr = np.array([curr_list])
+        else:
+            tmp_arr = np.vstack((tmp_arr, curr_list))
+
+    input_dict['min'] = tmp_arr.min(axis=0, initial=np.inf).tolist()
+    input_dict['max'] = tmp_arr.max(axis=0, initial=np.inf * -1.0).tolist()
+    input_dict['average'] = tmp_arr.mean(axis=0).tolist()
+
+    return input_dict

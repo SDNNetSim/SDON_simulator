@@ -44,7 +44,7 @@ class Engine:
         Updates the artificial intelligent object class after each request.
         """
         if self.engine_props['ai_algorithm'] is not None:
-            self.ai_obj.update()
+            self.ai_obj.update(was_routed=self.sdn_obj.sdn_props['was_routed'])
 
     def handle_arrival(self, curr_time: float):
         """

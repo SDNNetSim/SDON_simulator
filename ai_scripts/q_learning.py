@@ -93,44 +93,62 @@ class QLearning:
     def load_model(self):
         raise NotImplementedError
 
-    def _update_routes_q_values(self, routed: bool):
-        policy = self.ai_arguments.get('policy')
-        if policy not in self.reward_policies:
-            raise NotImplementedError('Reward policy not recognized.')
+    def _update_stats(self, reward: float, td_error: float, stats_flag: str):
+        episode = str(self.curr_episode)
 
-        new_path_cong = find_path_congestion(path=self.chosen_path, network_db=self.net_spec_db)
-        current_q = self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['q_value']
-        max_future_q = self._get_max_future_q(new_cong=new_path_cong)
+        if episode not in self.q_props['rewards_dict'][stats_flag]['rewards'].keys():
+            self.q_props['rewards_dict'][stats_flag]['rewards'][episode] = [reward]
+            self.q_props['errors_dict'][stats_flag]['errors'][episode] = td_error
+            self.q_props['sum_rewards'][episode] = reward
+        else:
+            self.q_props['rewards_dict'][stats_flag]['rewards'][episode].append(reward)
+            self.q_props['errors_dict'][stats_flag]['errors'][episode] += td_error
+            self.q_props['sum_rewards'][episode] += reward
 
-        reward = self.reward_policies[policy](routed=routed)
-        delta = reward + self.ai_arguments['discount'] * max_future_q
+        len_rewards = len(self.q_props['rewards_dict'][stats_flag]['rewards'][episode])
+        if self.curr_episode == self.engine_props['max_iters'] - 1 and len_rewards == self.engine_props['num_requests']:
+            self.q_props[stats_flag] = calc_matrix_stats(input_dict=self.q_props[stats_flag]['rewards'])
+            self.q_props[stats_flag] = calc_matrix_stats(input_dict=self.q_props[stats_flag]['errors'])
 
-        td_error = current_q - (reward + self.ai_arguments['discount'] * max_future_q)
-        self._update_stats(reward=reward, reward_flag='routes', td_error=td_error)
+            self.q_props[stats_flag].pop('rewards')
+            self.q_props[stats_flag].pop('errors')
 
-        new_q = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + (self.ai_arguments['learn_rate'] * delta)
-        self.q_routes[self.source][self.destination][self.path_index][self.cong_index]['q_value'] = new_q
+    def _update_routes_matrix(self, was_routed: bool):
+        if was_routed:
+            reward = 1.0
+        else:
+            reward = -10.0
 
-    def _update_cores_q_values(self, routed: bool):
-        policy = self.ai_arguments.get('policy')
-        if policy not in self.reward_policies:
-            raise NotImplementedError('Reward policy not recognized.')
+        routes_matrix = self.q_props['routes_matrix'][self.source][self.destination][self.path_index]
+        current_q = routes_matrix['q_value']
+        max_future_q = self._get_max_future_q()
+        delta = reward + self.engine_props['discount_factor'] * max_future_q
+        td_error = current_q - (reward + self.engine_props['discount_factor'] * max_future_q)
+        self._update_stats(reward=reward, stats_flag='routes_matrix', td_error=td_error)
 
-        q_cores_matrix = self.q_cores[self.source][self.destination][self.path_index]
-        current_q = q_cores_matrix[self.cong_index][self.core_index]['q_value']
-        max_future_q = np.max(q_cores_matrix[self.new_cong_index]['q_value'])
+        new_q = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
+        self.q_props['routes_matrix'][self.source][self.destination][self.path_index]['q_value'] = new_q
 
-        reward = self.reward_policies[policy](routed=routed)
-        delta = reward + self.ai_arguments['discount'] * max_future_q
-        self._update_stats(reward=reward, reward_flag='cores', td_error=delta)
+    def _update_cores_matrix(self, was_routed: bool):
+        if was_routed:
+            reward = 1.0
+        else:
+            reward = -10.0
 
-        new_q_core = ((1.0 - self.ai_arguments['learn_rate']) * current_q) + (self.ai_arguments['learn_rate'] * delta)
-        self.q_cores[self.source][self.destination][self.path_index][self.cong_index][self.core_index][
+        q_cores_matrix = self.q_props['cores_matrix'][self.source][self.destination][self.path_index]
+        current_q = q_cores_matrix[self.core_index]['q_value']
+        # TODO: What to do with maximum future Q without spectrum assignment? Constant for now
+        max_future_q = 1.0
+        delta = reward + self.engine_props['discount_factor'] * max_future_q
+        self._update_stats(reward=reward, stats_flag='cores_matrix', td_error=delta)
+
+        new_q_core = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
+        self.q_props['cores_matrix'][self.source][self.destination][self.path_index][self.core_index][
             'q_value'] = new_q_core
 
-    def update_env(self):
-        self._update_routes()
-        self._update_cores()
+    def update_env(self, was_routed: bool):
+        self._update_routes_matrix(was_routed=was_routed)
+        self._update_cores_matrix(was_routed=was_routed)
 
     def _init_q_tables(self):
         for source in range(0, self.num_nodes):
