@@ -45,6 +45,11 @@ class QLearning:
         np.random.seed(seed)
 
     def decay_epsilon(self, amount: float):
+        """
+
+        :param amount:
+        :return:
+        """
         self.q_props['epsilon'] -= amount
         if self.curr_episode == 0:
             self.q_props['epsilon_list'].append(self.q_props['epsilon'])
