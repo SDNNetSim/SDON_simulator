@@ -36,7 +36,7 @@ class AIMethods:
         self.ai_obj.curr_episode = self.episode
         self.ai_obj.update_env(was_routed=was_routed)
         if self.engine_props['is_training']:
-            numerator = self.ai_obj.q_props['epsilon'] - self.engine_props['epsilon_end']
+            numerator = self.engine_props['epsilon_start'] - self.engine_props['epsilon_end']
             denominator = float(self.engine_props['num_requests'])
             decay_amount = numerator / denominator
             self.ai_obj.decay_epsilon(amount=decay_amount)
@@ -91,7 +91,8 @@ class AIMethods:
         """
         Resets the epsilon parameter for an iteration or simulation.
         """
-        self.ai_obj.epsilon = self.engine_props['epsilon_start']
+        if self.algorithm == 'q_learning':
+            self.ai_obj.q_props['epsilon'] = self.engine_props['epsilon_start']
 
     def update(self, was_routed: bool):
         """
