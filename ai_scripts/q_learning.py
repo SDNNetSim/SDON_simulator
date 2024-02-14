@@ -38,6 +38,10 @@ class QLearning:
 
     @staticmethod
     def set_seed(seed: int):
+        """
+        Sets the seed for the random generation.
+        :param seed: The input seed.
+        """
         np.random.seed(seed)
 
     def decay_epsilon(self, amount: float):
