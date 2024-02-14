@@ -32,9 +32,11 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         # TODO: Add in sum of errors
         ai_dict = self._read_json_file(file_path=ai_fp)
         # TODO: Fix names to be the same as plot args (sum_rewards_matrix for example)
-        for ai_key in ('learn_rate', 'discount_factor', 'epsilon_start', 'sum_rewards'):
-            if ai_key in 'sum_rewards':
-                self.plot_props['plot_dict'][self.time][self.sim_num][ai_key].append(list(ai_dict[ai_key].values()))
+        for ai_key in ('learn_rate', 'discount_factor', 'epsilon_start', 'sum_rewards_dict', 'sum_errors_dict'):
+            if ai_key in ('sum_rewards_dict', 'sum_errors_dict'):
+                label_list = ai_key.split('_')
+                label = f"{label_list[0]}_{label_list[1]}_list"
+                self.plot_props['plot_dict'][self.time][self.sim_num][label].append(list(ai_dict[ai_key].values()))
             else:
                 self.plot_props['plot_dict'][self.time][self.sim_num][ai_key] = ai_dict[ai_key]
 
