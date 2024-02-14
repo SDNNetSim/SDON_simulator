@@ -321,15 +321,15 @@ def list_to_title(input_list: list):
 
 def calc_matrix_stats(input_dict: dict):
     resp_dict = dict()
-    tmp_arr = np.array([])
+    tmp_matrix = np.array([])
     for episode, curr_list in input_dict.items():
         if episode == '0':
-            tmp_arr = np.array([curr_list])
+            tmp_matrix = np.array([curr_list])
         else:
-            tmp_arr = np.vstack((tmp_arr, curr_list))
+            tmp_matrix = np.vstack((tmp_matrix, curr_list))
 
-    resp_dict['min'] = tmp_arr.min(axis=0, initial=np.inf).tolist()
-    resp_dict['max'] = tmp_arr.max(axis=0, initial=np.inf * -1.0).tolist()
-    resp_dict['average'] = tmp_arr.mean(axis=0).tolist()
+    resp_dict['min'] = tmp_matrix.min(axis=0, initial=np.inf).tolist()
+    resp_dict['max'] = tmp_matrix.max(axis=0, initial=np.inf * -1.0).tolist()
+    resp_dict['average'] = tmp_matrix.mean(axis=0).tolist()
 
     return resp_dict
