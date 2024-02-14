@@ -52,6 +52,29 @@ class PlotStats:
         if grid:
             plt.grid()
 
+    def _plot_helper_two(self, y_vals_list: list, erlang: float, file_name: str):
+        """
+        Meant to plot iter stats with erlang each on its own plot.
+        """
+        color_count = 0
+        style_count = 0
+        for _, sims_dict in self.plot_props['plot_dict'].items():
+            for _, info_dict in sims_dict.items():
+                style = self.plot_props['style_list'][style_count]
+
+                for y_val in y_vals_list:
+                    color = self.plot_props['color_list'][color_count]
+                    index = [index for index, value in enumerate(info_dict['erlang_list']) if value == erlang][0]
+                    x_vals = [x_label for x_label in range(len(info_dict[y_val][index]))]
+                    plt.plot(x_vals, info_dict[y_val][index], linestyle=style, markersize=2.3, color=color)
+                    color_count += 1
+
+            color_count = 0
+            style_count += 1
+
+        self._save_plot(file_name=file_name)
+        plt.show()
+
     def _plot_helper_one(self, x_vals: str, y_vals_list: list, legend_val_list: list, legend_str: bool, file_name: str):
         legend_list = list()
         color_count = 0
@@ -75,6 +98,13 @@ class PlotStats:
         plt.legend(legend_list)
         self._save_plot(file_name=file_name)
         plt.show()
+
+    # TODO: Add errors to this script
+    def plot_rewards(self, erlang_list: list):
+        for erlang in erlang_list:
+            self._setup_plot(f"Sum of Rewards vs. Iteration Erlang {erlang}", y_label='Sum of Rewards',
+                             x_label='Iteration', y_ticks=False, x_ticks=False, y_lim=[])
+            self._plot_helper_two(y_vals_list=['sum_rewards'], erlang=float(erlang), file_name='sum_rewards')
 
     def plot_block_reasons(self):
         """
@@ -124,18 +154,21 @@ def main():
         'or_filter_list': [
         ],
         'not_filter_list': [
-            ['max_segments', 4],
-            ['max_segments', 8],
+            # ['max_segments', 4],
+            # ['max_segments', 8],
         ]
     }
 
-    sims_info_dict = find_times(dates_dict={'0201': 'USNet'}, filter_dict=filter_dict)
+    sims_info_dict = find_times(dates_dict={'0214': 'USNet'}, filter_dict=filter_dict)
     plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
-    plot_obj.plot_blocking()
-    plot_obj.plot_path_length()
-    plot_obj.plot_hops()
-    plot_obj.plot_block_reasons()
+    # plot_obj.plot_blocking()
+    # plot_obj.plot_path_length()
+    # plot_obj.plot_hops()
+    # plot_obj.plot_block_reasons()
+
+    # TODO: Add errors
+    plot_obj.plot_rewards(erlang_list=[10, 20, 30])
 
 
 if __name__ == '__main__':
