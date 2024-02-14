@@ -25,14 +25,11 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         self.sim_num = None
         self.data_dict = None
 
-    # TODO: Add sum of errors
     def _find_ai_stats(self, cores_per_link: int):
         ai_fp = os.path.join('..', 'data', 'ai', 'models', self.data_dict['network'], self.data_dict['date'], self.time)
         ai_fp = os.path.join(ai_fp, f"e{self.erlang}_params_c{cores_per_link}.json")
 
-        # TODO: Add in sum of errors
         ai_dict = self._read_json_file(file_path=ai_fp)
-        # TODO: Fix names to be the same as plot args (sum_rewards_matrix for example)
         for ai_key in ('learn_rate', 'discount_factor', 'epsilon_start', 'sum_rewards_dict', 'sum_errors_dict'):
             if ai_key in ('sum_rewards_dict', 'sum_errors_dict'):
                 label_list = ai_key.split('_')
