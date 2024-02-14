@@ -99,12 +99,17 @@ class PlotStats:
         self._save_plot(file_name=file_name)
         plt.show()
 
-    # TODO: Add errors to this script
+    def plot_errors(self, erlang_list: list):
+        for erlang in erlang_list:
+            self._setup_plot(f"Sum of Errors vs. Iteration Erlang {erlang}", y_label='Sum of Errors',
+                             x_label='Iteration', y_ticks=False, x_ticks=False, y_lim=[])
+            self._plot_helper_two(y_vals_list=['sum_errors_list'], erlang=float(erlang), file_name='sum_errors')
+
     def plot_rewards(self, erlang_list: list):
         for erlang in erlang_list:
             self._setup_plot(f"Sum of Rewards vs. Iteration Erlang {erlang}", y_label='Sum of Rewards',
                              x_label='Iteration', y_ticks=False, x_ticks=False, y_lim=[])
-            self._plot_helper_two(y_vals_list=['sum_rewards'], erlang=float(erlang), file_name='sum_rewards')
+            self._plot_helper_two(y_vals_list=['sum_rewards_list'], erlang=float(erlang), file_name='sum_rewards')
 
     def plot_block_reasons(self):
         """
@@ -162,13 +167,12 @@ def main():
     sims_info_dict = find_times(dates_dict={'0214': 'USNet'}, filter_dict=filter_dict)
     plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
-    # plot_obj.plot_blocking()
-    # plot_obj.plot_path_length()
-    # plot_obj.plot_hops()
-    # plot_obj.plot_block_reasons()
-
-    # TODO: Add errors
+    plot_obj.plot_blocking()
+    plot_obj.plot_path_length()
+    plot_obj.plot_hops()
+    plot_obj.plot_block_reasons()
     plot_obj.plot_rewards(erlang_list=[10, 20, 30])
+    plot_obj.plot_errors(erlang_list=[10, 20, 30])
 
 
 if __name__ == '__main__':

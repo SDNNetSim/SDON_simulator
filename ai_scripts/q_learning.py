@@ -90,11 +90,13 @@ class QLearning:
         if episode not in self.q_props['rewards_dict'][stats_flag]['rewards'].keys():
             self.q_props['rewards_dict'][stats_flag]['rewards'][episode] = [reward]
             self.q_props['errors_dict'][stats_flag]['errors'][episode] = [td_error]
-            self.q_props['sum_rewards'][episode] = reward
+            self.q_props['sum_rewards_dict'][episode] = reward
+            self.q_props['sum_errors_dict'][episode] = td_error
         else:
             self.q_props['rewards_dict'][stats_flag]['rewards'][episode].append(reward)
             self.q_props['errors_dict'][stats_flag]['errors'][episode].append(td_error)
-            self.q_props['sum_rewards'][episode] += reward
+            self.q_props['sum_rewards_dict'][episode] += reward
+            self.q_props['sum_errors_dict'][episode] += td_error
 
         len_rewards = len(self.q_props['rewards_dict'][stats_flag]['rewards'][episode])
         if self.curr_episode == self.engine_props['max_iters'] - 1 and len_rewards == self.engine_props['num_requests']:
