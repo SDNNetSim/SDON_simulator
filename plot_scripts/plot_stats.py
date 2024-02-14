@@ -65,7 +65,7 @@ class PlotStats:
                 for y_val in y_vals_list:
                     color = self.plot_props['color_list'][color_count]
                     index = [index for index, value in enumerate(info_dict['erlang_list']) if value == erlang][0]
-                    x_vals = [x_label for x_label in range(len(info_dict[y_val][index]))]
+                    x_vals = list(range(len(info_dict[y_val][index])))
                     plt.plot(x_vals, info_dict[y_val][index], linestyle=style, markersize=2.3, color=color)
                     color_count += 1
 
@@ -100,12 +100,22 @@ class PlotStats:
         plt.show()
 
     def plot_errors(self, erlang_list: list):
+        """
+        Plots temporal difference errors.
+
+        :param erlang_list: A list of desired erlangs to plot separately.
+        """
         for erlang in erlang_list:
             self._setup_plot(f"Sum of Errors vs. Iteration Erlang {erlang}", y_label='Sum of Errors',
                              x_label='Iteration', y_ticks=False, x_ticks=False, y_lim=[])
             self._plot_helper_two(y_vals_list=['sum_errors_list'], erlang=float(erlang), file_name='sum_errors')
 
     def plot_rewards(self, erlang_list: list):
+        """
+        Plot rewards.
+
+        :param erlang_list: A list of desired erlangs to plot separately.
+        """
         for erlang in erlang_list:
             self._setup_plot(f"Sum of Rewards vs. Iteration Erlang {erlang}", y_label='Sum of Rewards',
                              x_label='Iteration', y_ticks=False, x_ticks=False, y_lim=[])
