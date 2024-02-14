@@ -20,8 +20,23 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         self.plot_props['title_names'] = list_to_title(input_list=net_names_list)
         self.file_info = None
         self.erlang_dict = None
+        self.erlang = None
         self.time = None
         self.sim_num = None
+
+    # TODO: Add sum of errors
+    def _find_ai_stats(self, cores_per_link: int):
+        ai_fp = os.path.join('..', 'data', 'ai', 'models', self.data_dict['network'], self.data_dict['date'], self.time)
+        ai_fp = os.path.join(ai_fp, f"e{self.erlang}_params_c{cores_per_link}.json")
+
+        # TODO: Add in sum of errors
+        ai_dict = self._read_json_file(file_path=ai_fp)
+        # TODO: Fix names to be the same as plot args (sum_rewards_matrix for example)
+        for ai_key in ('learn_rate', 'discount_factor', 'epsilon_start', 'sum_rewards'):
+            if ai_key in 'sum_rewards':
+                self.plot_props['plot_dict'][self.time][self.sim_num][ai_key].append(list(ai_dict[ai_key].values()))
+            else:
+                self.plot_props['plot_dict'][self.time][self.sim_num][ai_key] = ai_dict[ai_key]
 
     def _find_misc_stats(self):
         average_length = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'lengths_mean'))
@@ -96,9 +111,9 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         with open(file_path, 'r', encoding='utf-8') as file_obj:
             return json.load(file_obj)
 
-    def _read_input_output(self, data_dict: dict, erlang: float):
-        base_fp = os.path.join(data_dict['network'], data_dict['date'], self.time)
-        file_name = f'{erlang}_erlang.json'
+    def _read_input_output(self):
+        base_fp = os.path.join(self.data_dict['network'], self.data_dict['date'], self.time)
+        file_name = f'{self.erlang}_erlang.json'
         output_fp = os.path.join(self.plot_props['output_dir'], base_fp, self.sim_num, file_name)
         erlang_dict = self._read_json_file(file_path=output_fp)
 
@@ -111,22 +126,28 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
     def _get_data(self):
         for time, data_dict in self.file_info.items():
             self.time = time
-            for sim_num, erlang_list in data_dict['sim_dict'].items():
+            self.data_dict = data_dict
+            for sim_num, erlang_list in self.data_dict['sim_dict'].items():
                 self.sim_num = sim_num
                 self._update_plot_dict()
                 for erlang in erlang_list:
-                    input_dict, self.erlang_dict = self._read_input_output(data_dict=data_dict, erlang=erlang)
-                    erlang = int(erlang.split('.')[0])
-                    self.plot_props['plot_dict'][time][sim_num]['erlang_list'].append(erlang)
+                    self.erlang = erlang
+                    input_dict, self.erlang_dict = self._read_input_output()
+                    self.plot_props['plot_dict'][time][sim_num]['erlang_list'].append(float(erlang))
 
                     self.plot_props['erlang_dict'] = self.erlang_dict
                     blocking_mean = self.plot_props['erlang_dict']['blocking_mean']
+                    if blocking_mean is None:
+                        last_iter = list(self.erlang_dict['iter_stats'].keys())[-1]
+                        blocking_mean = mean(self.erlang_dict['iter_stats'][last_iter]['sim_block_list'])
                     self.plot_props['plot_dict'][time][sim_num]['blocking_list'].append(blocking_mean)
 
                     self._find_sim_info(input_dict=input_dict)
                     self._find_mod_info()
                     self._find_snapshot_usage()
                     self._find_misc_stats()
+                    if input_dict['ai_algorithm'] is not None:
+                        self._find_ai_stats(cores_per_link=input_dict['cores_per_link'])
 
     def get_file_info(self, sims_info_dict: dict):
         """
