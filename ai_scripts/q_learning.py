@@ -1,8 +1,3 @@
-# TODO: Every function needs to be checked (debug prior then debug this one together)
-# TODO: Calculate TD averages (matrix average in another script?)
-# TODO: Calculate reward averages (matrix average in another script?)
-# TODO: Update stats?
-# TODO: Test and update to team standards
 import os
 import json
 import copy
@@ -94,20 +89,19 @@ class QLearning:
 
         if episode not in self.q_props['rewards_dict'][stats_flag]['rewards'].keys():
             self.q_props['rewards_dict'][stats_flag]['rewards'][episode] = [reward]
-            self.q_props['errors_dict'][stats_flag]['errors'][episode] = td_error
+            self.q_props['errors_dict'][stats_flag]['errors'][episode] = [td_error]
             self.q_props['sum_rewards'][episode] = reward
         else:
             self.q_props['rewards_dict'][stats_flag]['rewards'][episode].append(reward)
-            self.q_props['errors_dict'][stats_flag]['errors'][episode] += td_error
+            self.q_props['errors_dict'][stats_flag]['errors'][episode].append(td_error)
             self.q_props['sum_rewards'][episode] += reward
 
         len_rewards = len(self.q_props['rewards_dict'][stats_flag]['rewards'][episode])
         if self.curr_episode == self.engine_props['max_iters'] - 1 and len_rewards == self.engine_props['num_requests']:
-            self.q_props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=self.q_props['rewards_dict'][stats_flag]['rewards'])
-            self.q_props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=self.q_props['errors_dict'][stats_flag]['errors'])
-
-            self.q_props['rewards_dict'][stats_flag].pop('rewards')
-            self.q_props['errors_dict'][stats_flag].pop('errors')
+            self.q_props['rewards_dict'][stats_flag] = calc_matrix_stats(
+                input_dict=self.q_props['rewards_dict'][stats_flag]['rewards'])
+            self.q_props['errors_dict'][stats_flag] = calc_matrix_stats(
+                input_dict=self.q_props['errors_dict'][stats_flag]['errors'])
 
     def _update_routes_matrix(self, was_routed: bool):
         if was_routed:
@@ -181,13 +175,13 @@ class QLearning:
 
     def _get_max_future_q(self):
         q_values = list()
-        cores_matrix = self.q_props['cores_matrix'][self.source][self.destination]
+        cores_matrix = self.q_props['cores_matrix'][self.source][self.destination][self.path_index]
         for core_index in range(self.engine_props['cores_per_link']):
-            curr_q = cores_matrix[core_index]['q_value'][0]
+            curr_q = cores_matrix[core_index]['q_value']
             q_values.append(curr_q)
 
         max_index = np.argmax(q_values)
-        resp_value = cores_matrix[max_index]['q_value'][0]
+        resp_value = cores_matrix[max_index]['q_value']
         return resp_value
 
     def _get_max_curr_q(self):
@@ -235,7 +229,7 @@ class QLearning:
         if random_float < self.q_props['epsilon']:
             self.core_index = np.random.randint(0, self.engine_props['cores_per_link'])
         else:
-            q_values = self.q_props['cores_matrix'][self.source][self.destination]['q_value']
+            q_values = self.q_props['cores_matrix'][self.source][self.destination][self.path_index]['q_value']
             self.core_index = np.argmax(q_values)
 
         spectrum_props['forced_core'] = self.core_index
