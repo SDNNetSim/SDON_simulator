@@ -60,7 +60,7 @@ class TestPlotHelpers(unittest.TestCase):
             'networks_matrix': [['Network1']],
             'dates_matrix': [['2023-01-01']],
             'times_matrix': [['12:00']],
-            'sims_matrix': [['s1', 's2']]
+            'sims_matrix': [['s1', 's2']],
         }
 
         self.plot_helper.get_file_info(sims_info_dict)

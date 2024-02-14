@@ -101,33 +101,29 @@ class TestSpectrumAssignment(unittest.TestCase):
         Test get spectrum.
         """
         self.spec_assign._init_spectrum_info = MagicMock()
-        self.spec_assign._get_spectrum = MagicMock()
+        self.spec_assign._get_spectrum = MagicMock(return_value=True)
         self.spec_assign.snr_obj.handle_snr = MagicMock(return_value=(True, 0.5))
 
         mod_format_list = ['QPSK', '16QAM']
-        self.spec_assign.get_spectrum(mod_format_list)
+        self.spec_assign.get_spectrum(mod_format_list, ai_obj=None)
         self.assertTrue(self.spec_assign.spectrum_props['is_free'])
         self.assertEqual(self.spec_assign.spectrum_props['modulation'], 'QPSK')
 
         self.spec_assign.spectrum_props['is_free'] = False
-        self.spec_assign._get_spectrum.side_effect = lambda: self.spec_assign.spectrum_props.update({'is_free': False})
-        self.spec_assign.get_spectrum(mod_format_list)
+        self.spec_assign._get_spectrum.side_effect = lambda ai_obj=None: self.spec_assign.spectrum_props.update(
+            {'is_free': False})
+        self.spec_assign.get_spectrum(mod_format_list, ai_obj=None)
         self.assertFalse(self.spec_assign.spectrum_props['is_free'])
         self.assertEqual(self.spec_assign.spectrum_props['block_reason'], 'congestion')
 
         self.spec_assign.spectrum_props['is_free'] = False
         self.spec_assign._get_spectrum.reset_mock(side_effect=True)
         slice_bandwidth = '50GHz'
-        self.spec_assign.engine_props['mod_per_bw'] = {
-            '50GHz': {
-                'QPSK': {'slots_needed': 50},
-                '16QAM': {'slots_needed': 100}
-            }
-        }
-        self.spec_assign._get_spectrum.side_effect = lambda: self.spec_assign.spectrum_props.update({'is_free': True})
+        self.spec_assign._get_spectrum.side_effect = lambda ai_obj=None: self.spec_assign.spectrum_props.update(
+            {'is_free': True})
         self.spec_assign.get_spectrum(mod_format_list, slice_bandwidth)
         self.assertTrue(self.spec_assign.spectrum_props['is_free'])
-        self.assertEqual(self.spec_assign.spectrum_props['slots_needed'], 50)
+        self.assertEqual(self.spec_assign.spectrum_props['slots_needed'], 3)
         mod_format_list_with_false = [False, 'QPSK']
-        self.spec_assign.get_spectrum(mod_format_list_with_false)
+        self.spec_assign.get_spectrum(mod_format_list_with_false, ai_obj=None)
         self.assertEqual(self.spec_assign.sdn_props['block_reason'], 'distance')
