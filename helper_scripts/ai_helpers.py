@@ -73,10 +73,16 @@ class AIMethods:
             self._q_save()
 
     def assign_spectrum(self):
+        """
+        Assign a spectrum to an incoming request.
+        """
         if self.algorithm == 'q_learning':
             self._q_spectrum()
 
     def assign_core(self):
+        """
+        Assign a core to an incoming request.
+        """
         if self.algorithm == 'q_learning':
             self._q_core()
 

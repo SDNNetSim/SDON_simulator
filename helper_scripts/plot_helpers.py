@@ -23,6 +23,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         self.erlang = None
         self.time = None
         self.sim_num = None
+        self.data_dict = None
 
     # TODO: Add sum of errors
     def _find_ai_stats(self, cores_per_link: int):

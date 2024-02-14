@@ -320,6 +320,12 @@ def list_to_title(input_list: list):
 
 
 def calc_matrix_stats(input_dict: dict):
+    """
+    Creates a matrix based on dict values and takes the min, max, and average of columns.
+    :param input_dict: The input dict with values as lists.
+    :return: The min, max, and average of columns.
+    :rtype: dict
+    """
     resp_dict = dict()
     tmp_matrix = np.array([])
     for episode, curr_list in input_dict.items():
