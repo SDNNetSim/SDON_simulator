@@ -11,26 +11,23 @@ from arg_scripts.ai_args import empty_q_props
 
 
 class QLearning:
+    """
+    Contains methods related to the q-learning algorithm.
+    """
 
     def __init__(self, engine_props: dict):
         self.q_props = copy.deepcopy(empty_q_props)
         self.engine_props = engine_props
 
-        # TODO: Better way to do this? I think access in engine props instead
         self.num_nodes = None
         self.k_paths = None
-
-        # TODO: Something else like sdn props or q props?
         self.source = None
         self.destination = None
 
         self.chosen_path = None
         self.chosen_bw = None
         self.core_index = None
-        # TODO: What is this variable?
-        self.paths_info = None
 
-        # TODO: Double check these
         self.routing_obj = None
         self.curr_episode = None
         self.paths_list = None
@@ -46,9 +43,8 @@ class QLearning:
 
     def decay_epsilon(self, amount: float):
         """
-
-        :param amount:
-        :return:
+        Decays the epsilon parameter.
+        :param amount: The amount to decay by.
         """
         self.q_props['epsilon'] -= amount
         if self.curr_episode == 0:
@@ -72,6 +68,9 @@ class QLearning:
             json.dump(params_dict, file_obj)
 
     def save_model(self):
+        """
+        Saves the q-tables created and relevant parameter values.
+        """
         date_time = os.path.join(self.engine_props['network'], self.engine_props['date'],
                                  self.engine_props['sim_start'])
         save_dir = os.path.join('data', 'ai', 'models', date_time)
@@ -91,6 +90,9 @@ class QLearning:
         self._save_params(save_dir=save_dir)
 
     def load_model(self):
+        """
+        Loads a previously trained model.
+        """
         raise NotImplementedError
 
     def _update_stats(self, reward: float, td_error: float, stats_flag: str):
@@ -149,6 +151,11 @@ class QLearning:
             'q_value'] = new_q_core
 
     def update_env(self, was_routed: bool):
+        """
+        Updates q-tables.
+
+        :param was_routed: If the request was routed or blocked.
+        """
         self._update_routes_matrix(was_routed=was_routed)
         self._update_cores_matrix(was_routed=was_routed)
 
@@ -171,6 +178,9 @@ class QLearning:
                                                                                              0.0)
 
     def setup_env(self):
+        """
+        Sets up the q-tables and relevant parameters.
+        """
         self.q_props['epsilon'] = self.engine_props['epsilon_start']
         self.num_nodes = len(self.engine_props['topology_info']['nodes'].keys())
         self.k_paths = int(self.engine_props['k_paths'])
@@ -214,8 +224,13 @@ class QLearning:
         route_props['weights_list'].append(path_len)
 
     def get_route(self, sdn_props: dict, route_props: dict):
+        """
+        Assigns a route to an incoming request.
+
+        :param sdn_props: Holds SDN controller information.
+        :param route_props: Holds Routing information.
+        """
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
-        # TODO: Not sure if I want to use these like this (source, destination)
         self.source = int(sdn_props['source'])
         self.destination = int(sdn_props['destination'])
         self.paths_list = self.q_props['routes_matrix'][self.source][self.destination]['path']
@@ -235,6 +250,11 @@ class QLearning:
         self._update_route_props(sdn_props=sdn_props, route_props=route_props)
 
     def get_core(self, spectrum_props: dict):
+        """
+        Assigns a core to an incoming network request.
+
+        :param spectrum_props: Holds spectrum assignment information.
+        """
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
 
         if random_float < self.q_props['epsilon']:
