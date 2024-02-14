@@ -187,7 +187,12 @@ class Routing:
         """
         self._init_route_info()
 
-        if self.engine_props['route_method'] == 'nli_aware':
+        if self.engine_props['ai_algorithm'] is not None:
+            # TODO: Won't handle core here anymore, move to spectrum
+            ai_obj.sdn_props = self.sdn_props
+            ai_obj.route_props = self.route_props
+            ai_obj.route()
+        elif self.engine_props['route_method'] == 'nli_aware':
             self.find_least_nli()
         elif self.engine_props['route_method'] == 'xt_aware':
             self.find_least_xt()
@@ -197,9 +202,5 @@ class Routing:
             self.find_least_weight(weight='length')
         elif self.engine_props['route_method'] == 'k_shortest_path':
             self.find_k_shortest()
-        elif self.engine_props['route_method'] == 'ai_scripts':
-            path, mod_format = ai_obj.route(sdn_props=self.sdn_props, route_props=self.route_props)
-            self.route_props['paths_list'] = [path]
-            self.route_props['mod_formats_list'] = [mod_format]
         else:
             raise NotImplementedError(f"Routing method not recognized, got: {self.engine_props['route_method']}.")

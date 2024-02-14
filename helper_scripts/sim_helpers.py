@@ -317,3 +317,25 @@ def list_to_title(input_list: list):
         return ", ".join(unique_list[:-1]) + " & " + unique_list[-1]
 
     return unique_list[0]
+
+
+def calc_matrix_stats(input_dict: dict):
+    """
+    Creates a matrix based on dict values and takes the min, max, and average of columns.
+    :param input_dict: The input dict with values as lists.
+    :return: The min, max, and average of columns.
+    :rtype: dict
+    """
+    resp_dict = dict()
+    tmp_matrix = np.array([])
+    for episode, curr_list in input_dict.items():
+        if episode == '0':
+            tmp_matrix = np.array([curr_list])
+        else:
+            tmp_matrix = np.vstack((tmp_matrix, curr_list))
+
+    resp_dict['min'] = tmp_matrix.min(axis=0, initial=np.inf).tolist()
+    resp_dict['max'] = tmp_matrix.max(axis=0, initial=np.inf * -1.0).tolist()
+    resp_dict['average'] = tmp_matrix.mean(axis=0).tolist()
+
+    return resp_dict

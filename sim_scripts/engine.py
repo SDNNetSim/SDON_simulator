@@ -39,13 +39,12 @@ class Engine:
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
         self.ai_obj = AIMethods(engine_props=self.engine_props)
 
-    def update_ai_obj(self, sdn_dict: dict):
+    def update_ai_obj(self):
         """
         Updates the artificial intelligent object class after each request.
-
-        :param sdn_dict: The data that was retrieved from the SDN controller.
         """
-        raise NotImplementedError
+        if self.engine_props['ai_algorithm'] is not None:
+            self.ai_obj.update(was_routed=self.sdn_obj.sdn_props['was_routed'])
 
     def handle_arrival(self, curr_time: float):
         """
@@ -59,7 +58,7 @@ class Engine:
         self.sdn_obj.handle_event(request_type='arrival')
         self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
 
-        # self.update_ai_obj(sdn_dict=self.sdn_obj.sdn_props)
+        self.update_ai_obj()
         self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=self.sdn_obj.sdn_props)
 
         if self.sdn_obj.sdn_props['was_routed']:
@@ -111,6 +110,9 @@ class Engine:
         self.sdn_obj.sdn_props['net_spec_dict'] = self.net_spec_dict
         self.sdn_obj.sdn_props['topology'] = self.topology
 
+        self.ai_obj.setup()
+        self.sdn_obj.ai_obj = self.ai_obj
+
     def generate_requests(self, seed: int):
         """
         Calls the request generator to generate requests.
@@ -134,7 +136,7 @@ class Engine:
             signal.signal(signal.SIGINT, self.stats_obj.save_stats)
             signal.signal(signal.SIGTERM, self.stats_obj.save_stats)
 
-            if self.engine_props['route_method'] == 'ai_scripts':
+            if self.engine_props['ai_algorithm'] is not None:
                 signal.signal(signal.SIGINT, self.ai_obj.save)
                 signal.signal(signal.SIGTERM, self.ai_obj.save)
 

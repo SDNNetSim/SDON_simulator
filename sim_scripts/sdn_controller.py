@@ -93,7 +93,8 @@ class SDNController:
         self.spectrum_obj.spectrum_props['path_list'] = path_list
         mod_format_list = [mod_format]
         for _ in range(num_segments):
-            self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth)
+            self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth,
+                                           ai_obj=self.ai_obj)
             if self.spectrum_obj.spectrum_props['is_free']:
                 self.allocate()
                 self._update_req_stats(bandwidth=bandwidth)
@@ -168,7 +169,7 @@ class SDNController:
                             continue
                     else:
                         self.spectrum_obj.spectrum_props['path_list'] = path_list
-                        self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
+                        self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, ai_obj=self.ai_obj)
                         # Request was blocked for this path
                         if self.spectrum_obj.spectrum_props['is_free'] is not True:
                             self.sdn_props['block_reason'] = 'congestion'

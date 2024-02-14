@@ -76,7 +76,7 @@ class NetworkSimulator:
         engine_props['arrival_rate'] = arr_rate_mean
         self.create_input(engine_props=engine_props)
 
-        if arr_rate_mean == start:
+        if arr_rate_mean == (start * engine_props['cores_per_link']):
             file_name = f"sim_input_{self.properties['thread_num']}.json"
             self.save_input(file_name=file_name, data_dict=engine_props)
 

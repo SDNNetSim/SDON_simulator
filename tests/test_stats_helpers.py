@@ -2,6 +2,7 @@
 # pylint: disable=unused-argument
 
 import unittest
+import shutil
 from unittest.mock import MagicMock, patch, mock_open
 
 import numpy as np
@@ -32,6 +33,17 @@ class TestSimStats(unittest.TestCase):
             'route_times_list': [],
         }
         self.sim_stats = SimStats(engine_props=self.engine_props, sim_info=self.sim_info, stats_props=self.stats_props)
+
+    @classmethod
+    def tearDownClass(cls):
+        """
+        Deletes previously created directories for tests.
+        """
+        try:
+            remove_dir = 'mocked'
+            shutil.rmtree(remove_dir)
+        except FileNotFoundError:
+            pass
 
     def test_get_snapshot_info(self):
         """

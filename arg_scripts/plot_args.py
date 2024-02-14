@@ -33,4 +33,10 @@ empty_plot_dict = {
     'holding_time': None,
     'cores_per_link': None,
     'spectral_slots': None,
+    'learn_rate': None,
+    'discount_factor': None,
+
+    'sum_rewards_list': [],
+    'sum_errors_list': [],
+    'epsilon_list': [],
 }

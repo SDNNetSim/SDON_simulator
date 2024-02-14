@@ -14,6 +14,17 @@ class TestReadConfig(unittest.TestCase):
         self.invalid_conf = os.path.join('tests', 'fixtures', 'invalid_config.ini')
         self.args_obj = parse_args()
 
+    @classmethod
+    def tearDownClass(cls):
+        """
+        Removes previously created directory.
+        """
+        try:
+            remove_fp = os.path.join('tests', 'ini')
+            os.remove(remove_fp)
+        except FileNotFoundError:
+            pass
+
     def test_successful_config_read(self):
         """
         Test successful configuration file.
