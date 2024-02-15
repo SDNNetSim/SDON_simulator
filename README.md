@@ -20,26 +20,26 @@ We need your insight and creativity! The true strength of open-source lies in co
 To get started with the SDN Simulator, follow these steps to set up your environment:
 
 1. Navigate to the desired directory you'd like to clone the repo to:
-   \```
+   ```
    cd /your/desired/path
-   \```
+   ```
 2. Clone the repository:
-   \```
+   ```
    git clone git@github.com:arashr88/SDN_Simulator.git
-   \```
+   ```
 3. Change into the project directory:
-   \```
+   ```
    cd SDN_Simulator
-   \```
+   ```
 4. Install the required dependencies:
-   \```
+   ```
    pip install -r requirements.txt
-   \```
+   ```
 5. Navigate to the docs directory and generate the Sphinx documentation:
-   \```
+   ```
    cd docs
    make html
-   \```
+   ```
 6. Finally, navigate to `_build/html/` and open `index.html` in a browser of your choice to view the documentation.
 
 ## Standards and Guidelines
