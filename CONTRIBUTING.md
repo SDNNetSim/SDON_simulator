@@ -59,7 +59,7 @@ This simulator is an open-source initiative, and we welcome contributions from e
 
 ## Code of Conduct
 
-Our project adheres to a Code of Conduct that we expect all contributors to follow. Please read the [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) document before participating in our community.
+Our project adheres to a Code of Conduct that we expect all contributors to follow. Please read the [code of conduct](CODE_OF_CONDUCT.md) document before participating in our community.
 
 ## Questions or Comments
 
