@@ -43,7 +43,7 @@ class Engine:
         """
         Updates the artificial intelligent object class after each request.
         """
-        if self.engine_props['ai_algorithm'] is not None:
+        if self.engine_props['ai_algorithm'] is not None and self.engine_props['ai_algorithm'] != 'None':
             self.ai_obj.update(was_routed=self.sdn_obj.sdn_props['was_routed'])
 
     def handle_arrival(self, curr_time: float):
@@ -136,7 +136,7 @@ class Engine:
             signal.signal(signal.SIGINT, self.stats_obj.save_stats)
             signal.signal(signal.SIGTERM, self.stats_obj.save_stats)
 
-            if self.engine_props['ai_algorithm'] is not None:
+            if self.engine_props['ai_algorithm'] is not None and self.engine_props['ai_algorithm'] != 'None':
                 signal.signal(signal.SIGINT, self.ai_obj.save)
                 signal.signal(signal.SIGTERM, self.ai_obj.save)
 

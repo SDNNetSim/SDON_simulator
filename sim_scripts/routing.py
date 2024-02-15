@@ -187,7 +187,7 @@ class Routing:
         """
         self._init_route_info()
 
-        if self.engine_props['ai_algorithm'] is not None:
+        if self.engine_props['ai_algorithm'] is not None and self.engine_props['ai_algorithm'] != 'None':
             # TODO: Won't handle core here anymore, move to spectrum
             ai_obj.sdn_props = self.sdn_props
             ai_obj.route_props = self.route_props
