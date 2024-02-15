@@ -13,7 +13,7 @@ empty_props = {
     'color_list': ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220'],
     'style_list': ['solid', 'dashed', 'dotted', 'dashdot'],
     'marker_list': ['o', '^', 's', 'x'],
-    'x_tick_list': [10, 100, 200, 300, 400],
+    'x_tick_list': [50, 100, 200, 300, 400, 500, 600, 700],
     'title_names': None,
 }
 

@@ -146,7 +146,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                     self._find_mod_info()
                     self._find_snapshot_usage()
                     self._find_misc_stats()
-                    if input_dict['ai_algorithm'] is not None:
+                    if input_dict['ai_algorithm'] is not None and input_dict['ai_algorithm'] != 'None':
                         self._find_ai_stats(cores_per_link=input_dict['cores_per_link'])
 
     def get_file_info(self, sims_info_dict: dict):

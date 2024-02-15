@@ -75,7 +75,7 @@ class PlotStats:
         self._save_plot(file_name=file_name)
         plt.show()
 
-    def _plot_helper_one(self, x_vals: str, y_vals_list: list, legend_val_list: list, legend_str: bool, file_name: str):
+    def _plot_helper_one(self, x_vals: str, y_vals_list: list, legend_val_list: list, force_legend: bool, file_name: str):
         legend_list = list()
         color_count = 0
         style_count = 0
@@ -87,9 +87,11 @@ class PlotStats:
                     color = self.plot_props['color_list'][color_count]
                     plt.plot(info_dict[x_vals], info_dict[y_val], linestyle=style, markersize=2.3, color=color)
 
-                    if not legend_str:
+                    if not force_legend:
                         legend_val = info_dict[legend_val]
-                    legend_list.append(legend_val)
+                        legend_list.append(legend_val)
+                    else:
+                        legend_list = legend_val_list
                     color_count += 1
 
             color_count = 0
@@ -108,7 +110,8 @@ class PlotStats:
         for erlang in erlang_list:
             self._setup_plot(f"Sum of Errors vs. Iteration Erlang {erlang}", y_label='Sum of Errors',
                              x_label='Iteration', y_ticks=False, x_ticks=False, y_lim=[])
-            self._plot_helper_two(y_vals_list=['sum_errors_list'], erlang=float(erlang), file_name='sum_errors')
+            self._plot_helper_two(y_vals_list=['sum_errors_list'], erlang=float(erlang),
+                                  file_name=f'sum_errors_{erlang}')
 
     def plot_rewards(self, erlang_list: list):
         """
@@ -119,7 +122,8 @@ class PlotStats:
         for erlang in erlang_list:
             self._setup_plot(f"Sum of Rewards vs. Iteration Erlang {erlang}", y_label='Sum of Rewards',
                              x_label='Iteration', y_ticks=False, x_ticks=False, y_lim=[])
-            self._plot_helper_two(y_vals_list=['sum_rewards_list'], erlang=float(erlang), file_name='sum_rewards')
+            self._plot_helper_two(y_vals_list=['sum_rewards_list'], erlang=float(erlang),
+                                  file_name=f'sum_rewards_{erlang}')
 
     def plot_block_reasons(self):
         """
@@ -128,7 +132,7 @@ class PlotStats:
         self._setup_plot("Block Reasons w/ Segment Slicing", y_label='Blocking Percentage', x_label='Erlang',
                          y_ticks=False, x_ticks=False, y_lim=[-0.1, 1.1])
         self._plot_helper_one(x_vals='erlang_list', y_vals_list=['cong_block_list', 'dist_block_list'],
-                              legend_val_list=['Congestion', 'Distance'], legend_str=True,
+                              legend_val_list=['Congestion', 'Distance'], force_legend=True,
                               file_name='block_reasons')
 
     def plot_hops(self):
@@ -137,8 +141,8 @@ class PlotStats:
         """
         self._setup_plot("Average Hop Count w/ Segment Slicing", y_label='Average Hop Count', x_label='Erlang',
                          y_ticks=False, y_lim=[])
-        self._plot_helper_one(x_vals='erlang_list', y_vals_list=['hops_list'], legend_val_list=['max_segments'],
-                              legend_str=False, file_name='average_hops')
+        self._plot_helper_one(x_vals='erlang_list', y_vals_list=['hops_list'], legend_val_list=['QRC', 'k=3', 'k=1'],
+                              force_legend=True, file_name='average_hops')
 
     def plot_path_length(self):
         """
@@ -146,17 +150,17 @@ class PlotStats:
         """
         self._setup_plot("Average Path Length w/ Segment Slicing", y_label='Average Path Length (KM)', x_label='Erlang',
                          y_ticks=False, y_lim=[])
-        self._plot_helper_one(x_vals='erlang_list', y_vals_list=['lengths_list'], legend_val_list=['max_segments'],
-                              legend_str=False, file_name='average_lengths')
+        self._plot_helper_one(x_vals='erlang_list', y_vals_list=['lengths_list'], legend_val_list=['QRC', 'k=3', 'k=1'],
+                              force_legend=True, file_name='average_lengths')
 
     def plot_blocking(self):
         """
         Plots the average blocking probability for each Erlang value.
         """
-        self._setup_plot("Average Blocking Prob. vs. Erlang w/ Segment Slicing", y_label='Average Blocking Probability',
+        self._setup_plot("Average Blocking Prob. vs. Erlang", y_label='Average Blocking Probability',
                          x_label='Erlang', y_ticks=True, y_lim=[])
-        self._plot_helper_one(x_vals='erlang_list', y_vals_list=['blocking_list'], legend_val_list=['max_segments'],
-                              legend_str=False, file_name='average_bp')
+        self._plot_helper_one(x_vals='erlang_list', y_vals_list=['blocking_list'],
+                              legend_val_list=['QRC', 'k=3', 'k=1'], force_legend=True, file_name='average_bp')
 
 
 def main():
@@ -177,12 +181,12 @@ def main():
     sims_info_dict = find_times(dates_dict={'0214': 'USNet'}, filter_dict=filter_dict)
     plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
-    plot_obj.plot_blocking()
-    plot_obj.plot_path_length()
-    plot_obj.plot_hops()
-    plot_obj.plot_block_reasons()
-    plot_obj.plot_rewards(erlang_list=[10, 20, 30])
-    plot_obj.plot_errors(erlang_list=[10, 20, 30])
+    # plot_obj.plot_blocking()
+    # plot_obj.plot_path_length()
+    # plot_obj.plot_hops()
+    # plot_obj.plot_block_reasons()
+    plot_obj.plot_rewards(erlang_list=[50, 700])
+    plot_obj.plot_errors(erlang_list=[50, 700])
 
 
 if __name__ == '__main__':
