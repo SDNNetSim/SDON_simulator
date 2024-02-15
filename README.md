@@ -49,7 +49,7 @@ To maintain the quality and consistency of the codebase, we adhere to the follow
 1. **Commit Formatting**: Follow the commit format specified [here](https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53).
 2. **Code Style**: All code should follow the [PEP 8](https://peps.python.org/pep-0008/) coding style guidelines.
 3. **Versioning**: Use the [semantic versioning system](https://semver.org/) for all git tags.
-4. **Coding Guidelines**: Adhere to the team's [coding guidelines and best practices](https://github.com/arashr88/SDN_Simulator/blob/yue_revamp/Team%20Coding%20Guidelines.md).
+4. **Coding Guidelines**: Adhere to the team's [coding guidelines document](https://github.com/SDNNetSim/sdn_simulator/blob/main/CONTRIBUTING.md).
 5. **Unit Testing**: Each unit test should follow the [community unit testing guidelines](https://pylonsproject.org/community-unit-testing-guidelines.html).
 
 ## Contributors
