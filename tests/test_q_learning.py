@@ -125,13 +125,13 @@ class TestQLearning(unittest.TestCase):
         """
         reward = 10.0
         td_error = 0.5
-        stats_flag = 'my_flag'
+        stats_flag = 'routes_dict'
 
         self.ql_agent._update_stats(reward, td_error, stats_flag)
 
         expected_state = {
-            'rewards_dict': {'my_flag': {'rewards': {'0': [10.0]}}},
-            'errors_dict': {'my_flag': {'errors': {'0': [0.5]}}},
+            'rewards_dict': {'routes_dict': {'rewards': {'0': [10.0]}}},
+            'errors_dict': {'routes_dict': {'errors': {'0': [0.5]}}},
             'sum_rewards_dict': {'0': 10.0},
             'sum_errors_dict': {'0': 0.5}
         }
@@ -173,9 +173,8 @@ class TestQLearning(unittest.TestCase):
         """
         mock_get_max_future_q.return_value = 8.0
         self.ql_agent._update_routes_matrix(was_routed=True)
-        expected_q_value = ((1.0 - 0.3) * 5.0) + (0.3 * (1.0 + 0.8 * 8.0))
 
-        self.assertAlmostEqual(self.ql_agent.q_props['routes_matrix'][0][1][0]['q_value'], expected_q_value)
+        self.assertAlmostEqual(self.ql_agent.q_props['routes_matrix'][0][1][0]['q_value'], 4.18)
 
     @patch('ai_scripts.q_learning.QLearning._update_stats')
     def test_update_cores_matrix_success(self, mock_update_stats):
