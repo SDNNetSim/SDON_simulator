@@ -243,6 +243,9 @@ class QLearning:
 
         if random_float < self.q_props['epsilon']:
             self.path_index = np.random.choice(self.k_paths)
+
+            if self.path_index == 1 and self.k_paths == 1:
+                self.path_index = 0
             self.chosen_path = self.paths_list[self.path_index]
         else:
             self.path_index, self.chosen_path = self._get_max_curr_q()
