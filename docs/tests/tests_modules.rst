@@ -3,7 +3,7 @@ Test Scripts
 
 .. toctree::
 
-    test_ai_helpers
+    test_q_learning
     test_engine
     test_generate_data
     test_os_helpers
