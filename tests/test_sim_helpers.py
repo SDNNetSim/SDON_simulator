@@ -7,7 +7,7 @@ import numpy as np
 from helper_scripts.sim_helpers import get_path_mod, find_max_path_len, sort_dict_keys, sort_nested_dict_vals
 from helper_scripts.sim_helpers import find_path_len, find_path_cong, get_channel_overlaps, find_free_slots
 from helper_scripts.sim_helpers import find_free_channels, find_taken_channels, snake_to_title, int_to_string
-from helper_scripts.sim_helpers import dict_to_list, list_to_title
+from helper_scripts.sim_helpers import dict_to_list, list_to_title, calc_matrix_stats
 
 
 class TestGetPathMod(unittest.TestCase):
@@ -187,3 +187,19 @@ class TestGetPathMod(unittest.TestCase):
         input_list = [["Alice"], ["Bob"], ["Charlie"]]
         result = list_to_title(input_list)
         self.assertEqual(result, "Alice, Bob & Charlie")
+
+    def test_calc_matrix_stats(self):
+        input_dict = {
+            '0': [1.0, 5.0, 3.0],
+            '1': [2.0, 4.0, 8.0],
+            '2': [0.0, 3.0, 5.0]
+        }
+
+        expected_output = {
+            'min': [0, 3, 3],
+            'max': [2, 5, 8],
+            'average': [1.0, 4.0, 5.333333333333333]
+        }
+
+        result = calc_matrix_stats(input_dict)
+        self.assertDictEqual(result, expected_output)
