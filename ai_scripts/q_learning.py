@@ -99,7 +99,7 @@ class QLearning:
         len_rewards = len(self.q_props['rewards_dict'][stats_flag]['rewards'][episode])
         if self.curr_episode == self.engine_props['max_iters'] - 1 and len_rewards == self.engine_props['num_requests']:
             rewards_dict = self.q_props['rewards_dict'][stats_flag]['rewards']
-            errors_dict = self.q_props['rewards_dict'][stats_flag]['errors']
+            errors_dict = self.q_props['errors_dict'][stats_flag]['errors']
             self.q_props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
             self.q_props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=errors_dict)
 
