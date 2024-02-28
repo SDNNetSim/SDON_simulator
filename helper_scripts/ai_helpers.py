@@ -1,4 +1,5 @@
 from ai_scripts.q_learning import QLearning
+# from ai_scripts.deep_q import DeepQ
 
 
 class AIMethods:
@@ -23,12 +24,6 @@ class AIMethods:
         # An object for the chosen AI algorithm
         self.ai_obj = None
 
-    def _q_save(self):
-        """
-        Saves the current state of the Q-table.
-        """
-        self.ai_obj.save_model()
-
     def _q_update_env(self, was_routed: bool):
         """
         Updates the Q-learning environment.
@@ -44,11 +39,17 @@ class AIMethods:
     def _q_spectrum(self):
         raise NotImplementedError
 
+    def _deep_q_spectrum(self):
+        return self.ai_obj.get_spectrum()
+
     def _q_core(self):
         return self.ai_obj.get_core(spectrum_props=self.spectrum_props)
 
     def _q_routing(self, sdn_props: dict, route_props: dict):
         return self.ai_obj.get_route(sdn_props=sdn_props, route_props=route_props)
+
+    def _deep_q_routing(self):
+        return self.ai_obj.get_route()
 
     def _init_q_learning(self):
         """
@@ -69,15 +70,18 @@ class AIMethods:
         """
         Responsible for saving relevant information.
         """
-        if self.algorithm == 'q_learning':
-            self._q_save()
+        if self.ai_obj is not None:
+            self.ai_obj.save_model()
 
     def assign_spectrum(self):
         """
         Assign a spectrum to an incoming request.
         """
         if self.algorithm == 'q_learning':
-            self._q_spectrum()
+            # self._q_spectrum()
+            pass
+        elif self.algorithm == 'deep_q':
+            self._deep_q_spectrum()
 
     def assign_core(self):
         """
@@ -92,6 +96,8 @@ class AIMethods:
         """
         if self.algorithm == 'q_learning':
             self._q_routing(sdn_props=self.sdn_props, route_props=self.route_props)
+        elif self.algorithm == 'deep_q':
+            self._deep_q_routing()
 
     def reset_epsilon(self):
         """
@@ -114,6 +120,8 @@ class AIMethods:
         if self.algorithm == 'q_learning':
             self.ai_obj = QLearning(engine_props=self.engine_props)
             self._init_q_learning()
+        elif self.algorithm == 'deep_q':
+            self.ai_obj = DeepQ(engine_props=self.engine_props)
         elif self.algorithm == 'None' or self.algorithm is None:
             pass
         else:

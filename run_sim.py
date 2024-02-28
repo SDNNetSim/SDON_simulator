@@ -29,6 +29,7 @@ class NetworkSimulator:
         # Contains all the desired network simulator parameters for every simulation
         self.properties = None
 
+    # TODO: Move to run sim helpers or something similar?
     def save_input(self, file_name: str, data_dict: dict):
         """
         Saves simulation input data.
@@ -45,6 +46,7 @@ class NetworkSimulator:
         with open(save_path, 'w', encoding='utf-8') as file_path:
             json.dump(data_dict, file_path, indent=4)
 
+    # TODO: Move to run sim helpers? Or a script called that
     def create_input(self, engine_props: dict):
         """
         Create the input data for the simulation. The method generates bandwidth information, creates the physical
@@ -68,6 +70,7 @@ class NetworkSimulator:
 
         return engine_props
 
+    # TODO: Independent
     def _run_yue(self, arr_rate_mean: int, start: int):
         arr_rate_mean = float(arr_rate_mean)
         engine_props = copy.deepcopy(self.properties)
@@ -83,6 +86,7 @@ class NetworkSimulator:
         engine = Engine(engine_props=engine_props)
         engine.run()
 
+    # TODO: Independent
     def run_yue(self):
         """
         Runs a simulation using the Yue's simulation assumptions. Reference: Wang, Yue. Dynamic Traffic Scheduling
@@ -105,6 +109,7 @@ class NetworkSimulator:
             for arr_rate_mean in range(start, stop, step):
                 self._run_yue(arr_rate_mean=arr_rate_mean, start=start)
 
+    # TODO: Independent
     def _run_arash(self, erlang: float, first_erlang: float):
         engine_props = copy.deepcopy(self.properties)
         engine_props['arrival_rate'] = (engine_props['cores_per_link'] * erlang) / engine_props['holding_time']
@@ -117,6 +122,7 @@ class NetworkSimulator:
         engine = Engine(engine_props=engine_props)
         engine.run()
 
+    # TODO: Independent
     def run_arash(self):
         """
         Runs a simulation using the Arash's simulation assumptions.
@@ -142,6 +148,7 @@ class NetworkSimulator:
                 first_erlang = erlang == erlang_list[0]
                 self._run_arash(erlang=erlang, first_erlang=first_erlang)
 
+    # TODO: Independent
     def run_sim(self, **kwargs):
         """
         Runs all simulations.
@@ -163,6 +170,7 @@ class NetworkSimulator:
             self.run_arash()
 
 
+# TODO: Independent, uses run sim
 def run(sims_dict: dict):
     """
     Runs multiple simulations concurrently or a single simulation.
