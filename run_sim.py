@@ -1,18 +1,14 @@
 # Standard library imports
-import json
 import time
 import copy
-import os
 from datetime import datetime
 
 # Third-party library imports
 import concurrent.futures
 
 # Local application imports
-from data_scripts.structure_data import create_network
-from data_scripts.generate_data import create_bw_info, create_pt
+from helper_scripts.setup_helpers import create_input, save_input
 from sim_scripts.engine import Engine
-from helper_scripts.os_helpers import create_dir
 from config_scripts.setup_config import read_config
 from config_scripts.parse_args import parse_args
 
@@ -29,64 +25,21 @@ class NetworkSimulator:
         # Contains all the desired network simulator parameters for every simulation
         self.properties = None
 
-    # TODO: Move to run sim helpers or something similar?
-    def save_input(self, file_name: str, data_dict: dict):
-        """
-        Saves simulation input data.
-
-        :param file_name: The name of the file to save the input data to.
-        :param data_dict: Input data to save.
-        """
-        path = os.path.join('data', 'input', self.properties['network'], self.properties['date'],
-                            self.properties['sim_start'])
-        create_dir(path)
-        create_dir('data/output')
-
-        save_path = os.path.join(path, file_name)
-        with open(save_path, 'w', encoding='utf-8') as file_path:
-            json.dump(data_dict, file_path, indent=4)
-
-    # TODO: Move to run sim helpers? Or a script called that
-    def create_input(self, engine_props: dict):
-        """
-        Create the input data for the simulation. The method generates bandwidth information, creates the physical
-        topology of the network, and creates a dictionary containing all the necessary simulation parameters.
-
-        :param engine_props: Contains all input parameters for a single simulation/thread.
-        """
-        bw_info_dict = create_bw_info(sim_type=engine_props['sim_type'])
-        bw_file = f"bw_info_{engine_props['thread_num']}.json"
-        self.save_input(file_name=bw_file, data_dict=bw_info_dict)
-
-        save_path = os.path.join('data', 'input', engine_props['network'], engine_props['date'],
-                                 engine_props['sim_start'], bw_file)
-        with open(save_path, 'r', encoding='utf-8') as file_object:
-            engine_props['mod_per_bw'] = json.load(file_object)
-
-        network_dict = create_network(const_weight=engine_props['const_link_weight'],
-                                      net_name=engine_props['network'])
-        engine_props['topology_info'] = create_pt(cores_per_link=engine_props['cores_per_link'],
-                                                  net_spec_dict=network_dict)
-
-        return engine_props
-
-    # TODO: Independent
     def _run_yue(self, arr_rate_mean: int, start: int):
         arr_rate_mean = float(arr_rate_mean)
         engine_props = copy.deepcopy(self.properties)
         engine_props['erlang'] = arr_rate_mean / engine_props['holding_time']
         arr_rate_mean *= float(engine_props['cores_per_link'])
         engine_props['arrival_rate'] = arr_rate_mean
-        self.create_input(engine_props=engine_props)
+        create_input(engine_props=engine_props, base_fp='data')
 
         if arr_rate_mean == (start * engine_props['cores_per_link']):
             file_name = f"sim_input_{self.properties['thread_num']}.json"
-            self.save_input(file_name=file_name, data_dict=engine_props)
+            save_input(base_fp='data', properties=engine_props, file_name=file_name, data_dict=engine_props)
 
         engine = Engine(engine_props=engine_props)
         engine.run()
 
-    # TODO: Independent
     def run_yue(self):
         """
         Runs a simulation using the Yue's simulation assumptions. Reference: Wang, Yue. Dynamic Traffic Scheduling
@@ -109,20 +62,19 @@ class NetworkSimulator:
             for arr_rate_mean in range(start, stop, step):
                 self._run_yue(arr_rate_mean=arr_rate_mean, start=start)
 
-    # TODO: Independent
     def _run_arash(self, erlang: float, first_erlang: float):
         engine_props = copy.deepcopy(self.properties)
         engine_props['arrival_rate'] = (engine_props['cores_per_link'] * erlang) / engine_props['holding_time']
         engine_props['erlang'] = erlang
-        local_props = self.create_input(engine_props=engine_props)
+        local_props = create_input(base_fp='data', engine_props=engine_props)
 
         if first_erlang:
-            self.save_input(file_name=f"sim_input_{local_props['thread_num']}.json", data_dict=local_props)
+            save_input(base_fp='data', properties=engine_props, file_name=f"sim_input_{local_props['thread_num']}.json",
+                       data_dict=local_props)
 
         engine = Engine(engine_props=engine_props)
         engine.run()
 
-    # TODO: Independent
     def run_arash(self):
         """
         Runs a simulation using the Arash's simulation assumptions.
@@ -148,7 +100,6 @@ class NetworkSimulator:
                 first_erlang = erlang == erlang_list[0]
                 self._run_arash(erlang=erlang, first_erlang=first_erlang)
 
-    # TODO: Independent
     def run_sim(self, **kwargs):
         """
         Runs all simulations.
@@ -170,7 +121,6 @@ class NetworkSimulator:
             self.run_arash()
 
 
-# TODO: Independent, uses run sim
 def run(sims_dict: dict):
     """
     Runs multiple simulations concurrently or a single simulation.
