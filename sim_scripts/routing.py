@@ -178,7 +178,7 @@ class Routing:
         self.route_props['mod_formats_list'] = list()
         self.route_props['weights_list'] = list()
 
-    def get_route(self, ai_obj: object):
+    def get_route(self):
         """
         Controls the class by finding the appropriate routing function.
 
@@ -187,12 +187,7 @@ class Routing:
         """
         self._init_route_info()
 
-        if self.engine_props['ai_algorithm'] is not None and self.engine_props['ai_algorithm'] != 'None':
-            # TODO: Won't handle core here anymore, move to spectrum
-            ai_obj.sdn_props = self.sdn_props
-            ai_obj.route_props = self.route_props
-            ai_obj.route()
-        elif self.engine_props['route_method'] == 'nli_aware':
+        if self.engine_props['route_method'] == 'nli_aware':
             self.find_least_nli()
         elif self.engine_props['route_method'] == 'xt_aware':
             self.find_least_xt()
