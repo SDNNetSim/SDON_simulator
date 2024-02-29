@@ -2,20 +2,22 @@ import os
 from datetime import datetime
 
 import gymnasium as gym
-from gymnasium import spaces
 import numpy as np
+from gymnasium import spaces
+from stable_baselines3 import DQN
+from stable_baselines3.common.env_checker import check_env
 
-from data_scripts.generate_data import create_bw_info
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 from sim_scripts.engine import Engine
+from sim_scripts.routing import Routing
+# TODO: Do I need to use save input?
+from helper_scripts.setup_helpers import create_input
 
 
-# TODO: Goal is to have this script function like run_sim.py
-# TODO: After implementation, add this structure to standards
-#   and guidelines document.
-# TODO: This will take over SDN, make sure to move helper functions
-#   - Most likely needs it's own net spec db? or use engines
+# TODO: Threading not supported, will only use s1
+# TODO: Write tests for these methods
+# TODO: Update standards and guidelines document
 
 class DQNEnv(gym.Env):
     metadata = None
@@ -23,78 +25,218 @@ class DQNEnv(gym.Env):
     def __init__(self, render_mode: str = None):
         super().__init__()
 
+        self.dqn_sim_dict = None
         self.engine_obj = None
+        self.route_obj = None
+        self.mock_sdn = dict()
         self.setup()
-        # TODO: Adopt this in other scripts...?
         self.engine_props = self.engine_obj.engine_props
 
-        # TODO: Check the shape
-        # TODO: High set to 10?
-        self.observation_space = spaces.Box(low=0.0, high=10.0,
+        self.observation_space = spaces.Box(low=0.0, high=1.0,
                                             shape=(self.engine_props['cores_per_link'],
                                                    self.engine_props['spectral_slots']),
-                                            dtype=np.float32)
-        self.action_space = spaces.Discrete(self.engine_props['spectral_slots'])
+                                            dtype=np.float64)
+        self.action_space = spaces.Tuple([spaces.Discrete(self.engine_props['cores_per_link']),
+                                          spaces.Discrete(self.engine_props['spectral_slots'])])
 
-        # TODO: Handle this carefully
+        # TODO: Ensure each of these are updated correctly in step
+        #   - Also, how to update iteration (based on gym env maybe)
+        #   - After, integration with saving properly
         self.iteration = 1
+        self.req_num = 1
+        self.curr_time = None
 
-    # TODO: Need to save the model? I think RL Zoo will do that for me
-    @staticmethod
-    def _check_terminated():
-        terminated = None
+    def _check_terminated(self):
+        # TODO: Check to make sure this is correct (or if it's minus one)
+        if self.req_num == self.engine_props['num_requests']:
+            terminated = True
+            # TODO: Make sure this works
+            self.engine_obj.end_iter()
+        else:
+            terminated = False
+
         return terminated
 
     @staticmethod
-    def _calculate_reward(was_routed: bool):
-        return 1 if was_routed else -1
+    def _calculate_reward(was_allocated: bool):
+        if was_allocated:
+            reward = 1
+        else:
+            reward = -1
+
+        return reward
+
+    def _check_is_free(self, path_list: list, core_num: int, start_slot: int, end_slot: int):
+        is_free = True
+        for link_tuple in zip(path_list, path_list[1:]):
+            link_dict = self.engine_props.net_spec_dict[(link_tuple[0], link_tuple[1])]
+            rev_link_dict = self.engine_props.net_spec_dict[(link_tuple[1], link_tuple[0])]
+
+            tmp_set = set(link_dict['cores_matrix'][core_num][start_slot:end_slot])
+            rev_tmp_set = set(rev_link_dict['cores_matrix'][core_num][start_slot:end_slot])
+
+            if tmp_set != {0.0} or rev_tmp_set != {0.0}:
+                is_free = False
+
+        return is_free
+
+    # TODO: Modify network db, then, update it in engine
+    # TODO: Check to see if this works with multiple paths
+    def allocate(self, core_num: int, start_slot: int):
+        was_allocated = True
+        for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
+            mod_format = self.route_obj.route_props['mod_formats_list'][path_index]
+            bandwidth_dict = self.engine_props['mod_per_bw'][mod_format]
+            # TODO: Check to make sure this is correct with current sdn controller
+            end_slot = start_slot + bandwidth_dict[mod_format]['slots_needed']
+            is_free, link_dict, rev_link_dict = self._check_is_free(path_list=path_list, core_num=core_num,
+                                                                    start_slot=start_slot,
+                                                                    end_slot=end_slot)
+
+            if is_free:
+                # TODO: Make sure net spec db updates properly
+                core_matrix = link_dict['cores_matrix']
+                rev_core_matrix = rev_link_dict['cores_matrix']
+                core_matrix[core_num][start_slot:end_slot] = self.req_num
+                rev_core_matrix[core_num][start_slot:end_slot] = self.req_num
+                core_matrix[core_num][end_slot] = self.req_num * -1
+                rev_core_matrix[core_num][end_slot] = self.req_num * -1
+
+                was_allocated = True
+                return was_allocated
+
+        return was_allocated
 
     def step(self, action: int):
-        was_routed, new_state = None
-        success, new_state = self.simulator.allocate_request(action)
-        reward = self._calculate_reward(success)
+        # TODO: What to do with new observation (state)
+        core_num, start_slot = action
+        was_allocated, new_obs = self.allocate(core_num=core_num, start_slot=start_slot)
+        reward = self._calculate_reward(was_allocated=was_allocated)
 
-        terminated = self._check_terminated(new_state)
+        self.req_num += 1
+        terminated = self._check_terminated()
         truncated = False
         info = {}
 
-        return new_state, reward, terminated, truncated, info
+        return new_obs, reward, terminated, truncated, info
 
-    # TODO: Need initial observation, we don't have to use all of the observation!
-    # TODO: Don't forget about end iter!
+    @staticmethod
+    def _get_info():
+        return dict()
+
+    @staticmethod
+    def combine_and_one_hot(arr1, arr2):
+        if len(arr1) != len(arr2):
+            raise ValueError("Arrays must have the same length.")
+
+        one_hot_arr1 = (arr1 != 0).astype(int)
+        one_hot_arr2 = (arr2 != 0).astype(int)
+
+        result = one_hot_arr1 | one_hot_arr2
+        return result
+
+    def _get_spectrum(self, paths_matrix: list):
+        spectrum_matrix = np.zeros((self.engine_props['cores_per_link'], self.engine_props['spectral_slots']))
+        for paths_list in paths_matrix:
+            for link_tuple in zip(paths_list, paths_list[1:]):
+                link_dict = self.engine_obj.net_spec_dict[(link_tuple[0], link_tuple[1])]
+                rev_link_dict = self.engine_obj.net_spec_dict[(link_tuple[1], link_tuple[0])]
+
+                if link_dict != rev_link_dict:
+                    raise ValueError('Link is not bi-directionally equal.')
+
+                for core_index, core_arr in enumerate(link_dict['cores_matrix']):
+                    spectrum_matrix[core_index] = self.combine_and_one_hot(arr1=spectrum_matrix[core_index],
+                                                                           arr2=core_arr)
+
+        return spectrum_matrix
+
+    def _update_mock_sdn(self, curr_req: dict):
+        self.mock_sdn = {
+            'source': curr_req['source'],
+            'destination': curr_req['destination'],
+            'bandwidth': curr_req['bandwidth'],
+            'net_spec_dict': self.engine_obj.net_spec_dict,
+            'topology': self.engine_obj.topology,
+            'mod_formats': curr_req['mod_formats']
+        }
+
+    def _get_obs(self):
+        curr_req = self.engine_obj.reqs_dict[self.curr_time]
+        self._update_mock_sdn(curr_req=curr_req)
+
+        self.route_obj.sdn_props = self.mock_sdn
+        self.route_obj.get_route()
+
+        paths_matrix = self.route_obj.route_props['paths_list']
+        spectrum_obs = self._get_spectrum(paths_matrix=paths_matrix)
+        return spectrum_obs
+
     def reset(self, seed: int = None, options: dict = None):
         super().reset(seed=seed)
 
         self.engine_obj.init_iter(iteration=self.iteration)
         self.engine_obj.create_topology()
-        self.engine_obj.generate_requests()
-        # TODO: Input parameters
-        self.engine_obj.handle_request()
 
-        obs, info = None
+        if seed is None:
+            seed = self.iteration
+        self.engine_obj.generate_requests(seed=seed)
+        self.curr_time = list(self.engine_obj.reqs_dict.keys())[self.req_num - 1]
+
+        obs = self._get_obs()
+        info = self._get_info()
         return obs, info
 
-    # TODO: Make brake up into multiple methods
+    def _get_start_time(self):
+        sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+        self.dqn_sim_dict['s1']['date'] = sim_start.split('_')[0]
+        tmp_list = sim_start.split('_')
+
+        time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
+        self.dqn_sim_dict['s1']['sim_start'] = time_string
+
     def setup(self):
         args_obj = parse_args()
         config_path = os.path.join('..', 'ini', 'run_ini', 'config.ini')
-        dqn_sim_dict = read_config(args_obj=args_obj, config_path=config_path)
+        self.dqn_sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
-        sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
-        dqn_sim_dict['s1']['date'] = sim_start.split('_')[0]
-        tmp_list = sim_start.split('_')
-        time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
-        dqn_sim_dict['s1']['sim_start'] = time_string
-        # TODO: Threading not supported or advised by SB3
-        dqn_sim_dict['s1']['thread_num'] = 's1'
+        base_fp = os.path.join('..', 'data')
+        self.dqn_sim_dict['s1']['thread_num'] = 's1'
+        self._get_start_time()
+        self.dqn_sim_dict['s1'] = create_input(base_fp=base_fp, engine_props=self.dqn_sim_dict['s1'])
 
-        self.engine_obj = Engine(engine_props=dqn_sim_dict['s1'])
-        self.engine_obj.engine_props['mod_per_bw'] = create_bw_info(sim_type=dqn_sim_dict['s1']['sim_type'])
+        self.engine_obj = Engine(engine_props=self.dqn_sim_dict['s1'])
+        self.route_obj = Routing(engine_props=self.engine_obj.engine_props, sdn_props=self.mock_sdn)
+
+        # TODO: Save for initial arrival rate
+        # TODO: Figure out how to loop through inter arrival times
+        #   - Or, should we train on one type of traffic
+        #   - Maybe have a loop to create a list of arrival rates and then handle it by index
+        #   - This might get confusing since we can't just return back here...
+        # TODO: Utilize options if you can
+        start_arr_rate = float(self.dqn_sim_dict['s1']['arrival_rate']['start'])
+        self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.dqn_sim_dict['s1']['cores_per_link']
 
 
-# TODO: Probably will have a configuration method
-# TODO: Need to move functions from run sim to save and stuff
+# TODO: Still need to consider new obs...
+# TODO: Handle saving the model
 if __name__ == '__main__':
-    dqn_env = DQNEnv()
+    env = DQNEnv()
+    check_env(env)
 
-    obs, info = dqn_env.reset()
+    model = DQN("MlpPolicy", env, verbose=1)
+    # TODO: I think time steps is based on number of requests? Or maybe...use your iters to continue training
+    model.learn(total_timesteps=10, log_interval=5)
+    # model.save("dqn_model")
+
+    # del model  # remove to demonstrate saving and loading
+
+    # model = DQN.load("dqn_model")
+
+    obs, info = env.reset()
+    while True:
+        curr_action, _states = model.predict(obs, deterministic=True)
+
+        obs, curr_reward, is_terminated, is_truncated, curr_info = env.step(curr_action)
+        if is_terminated or is_truncated:
+            obs, info = env.reset()
