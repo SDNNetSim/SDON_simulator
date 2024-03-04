@@ -259,7 +259,7 @@ class SimStats:
 
         return False
 
-    def save_stats(self):
+    def save_stats(self, base_fp: str):
         """
         Saves simulations stats as either a json or csv file.
 
@@ -294,7 +294,9 @@ class SimStats:
             else:
                 self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(self.stats_props[stat_key])
 
-        save_fp = os.path.join('data', 'output', self.sim_info, self.engine_props['thread_num'])
+        if base_fp is None:
+            base_fp = 'data'
+        save_fp = os.path.join(base_fp, 'output', self.sim_info, self.engine_props['thread_num'])
         create_dir(save_fp)
         if self.engine_props['file_type'] == 'json':
             with open(f"{save_fp}/{self.engine_props['erlang']}_erlang.json", 'w', encoding='utf-8') as file_path:
@@ -302,12 +304,14 @@ class SimStats:
         else:
             raise NotImplementedError
 
-    def print_iter_stats(self, max_iters: int):
+    def print_iter_stats(self, max_iters: int, print_flag: bool):
         """
         Prints iteration stats, mostly used to ensure simulations are running fine.
 
         :param max_iters: The maximum number of iterations.
+        :param print_flag: Determines if we want to print or not.
         :return: None
         """
-        print(f"Iteration {self.iteration + 1} out of {max_iters} completed for Erlang: {self.engine_props['erlang']}")
-        print(f"Mean of blocking: {round(mean(self.stats_props['sim_block_list']), 4)}")
+        if print_flag:
+            print(f"Iteration {self.iteration + 1} out of {max_iters} completed for Erlang: {self.engine_props['erlang']}")
+            print(f"Mean of blocking: {round(mean(self.stats_props['sim_block_list']), 4)}")
