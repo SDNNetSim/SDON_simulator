@@ -48,26 +48,24 @@ class Engine:
             self.ai_obj.update(was_routed=self.sdn_obj.sdn_props['was_routed'])
 
     # TODO: Curr time to constructor
-    def update_arrival_params(self, curr_time: float):
-        # TODO: Remove or update (This needs to move to another function)
-        # self.update_ai_obj()
+    def update_arrival_params(self, curr_time: float, ai_flag: bool = False, mock_sdn: dict = None):
+        if not ai_flag:
+            sdn_props = self.sdn_obj.sdn_props
+        else:
+            sdn_props = mock_sdn
 
-        # TODO: Change this to not handle sdn data! Generalize
-        self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=self.sdn_obj.sdn_props)
+        self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props)
+        if sdn_props['was_routed']:
+            self.stats_obj.curr_trans = sdn_props['num_trans']
 
-        # TODO: Will not use sdn props anymore
-        if self.sdn_obj.sdn_props['was_routed']:
-            self.stats_obj.curr_trans = self.sdn_obj.sdn_props['num_trans']
-
-            # TODO: Will not use sdn props anymore, will have an option
             self.reqs_status_dict.update({self.reqs_dict[curr_time]['req_id']: {
-                "mod_format": self.sdn_obj.sdn_props['spectrum_dict']['modulation'],
-                "path": self.sdn_obj.sdn_props['path_list'],
-                "is_sliced": self.sdn_obj.sdn_props['is_sliced'],
-                "was_routed": self.sdn_obj.sdn_props['was_routed'],
+                "mod_format": sdn_props['spectrum_dict']['modulation'],
+                "path": sdn_props['path_list'],
+                "is_sliced": sdn_props['is_sliced'],
+                "was_routed": sdn_props['was_routed'],
             }})
 
-    def handle_arrival(self, curr_time: float, ai_flag: bool):
+    def handle_arrival(self, curr_time: float):
         """
         Updates the SDN controller to handle an arrival request and retrieves relevant request statistics.
 
@@ -76,11 +74,9 @@ class Engine:
         for req_key, req_value in self.reqs_dict[curr_time].items():
             self.sdn_obj.sdn_props[req_key] = req_value
 
-        if not ai_flag:
-            self.sdn_obj.handle_event(request_type='arrival')
-            self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
-
-        return self.net_spec_dict
+        self.sdn_obj.handle_event(request_type='arrival')
+        self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
+        self.update_arrival_params(curr_time=curr_time)
 
     def handle_release(self, curr_time: float):
         """
@@ -137,14 +133,16 @@ class Engine:
     def handle_request(self, curr_time: float, req_num: int, ai_flag: bool):
         req_type = self.reqs_dict[curr_time]["request_type"]
         if req_type == "arrival":
-            self.ai_obj.req_id = req_num
             self.handle_arrival(curr_time=curr_time, ai_flag=ai_flag)
+            # TODO: This should be outside of arrival or something
             self.update_arrival_params(curr_time=curr_time)
 
             if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
                 self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
 
             req_num += 1
+
+        # TODO: Will need to separate arrival and release
         elif req_type == "release":
             # TODO: This will need a similar structure to AI flag
             self.handle_release(curr_time=curr_time)
@@ -152,22 +150,19 @@ class Engine:
             raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '
                                       f'got: {req_type}')
 
-    # TODO: Iteration to constructor
-    def end_iter(self, iteration: int):
-        # TODO: Move this to end iter
+    # TODO: Iteration to constructor along with AI flag
+    def end_iter(self, iteration: int, print_flag: bool = True, ai_flag: bool = False, base_fp: str = None):
         self.stats_obj.get_blocking()
         self.stats_obj.end_iter_update()
         # Some form of ML/RL is being used, ignore confidence intervals for training and testing
-        if self.engine_props['ai_algorithm'] == 'None' or self.engine_props['ai_algorithm'] is None:
+        if not ai_flag:
             if self.stats_obj.get_conf_inter():
-                self.ai_obj.save()
                 return
 
         if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
-            self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'])
+            self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], print_flag=print_flag)
 
-        self.ai_obj.save()
-        self.stats_obj.save_stats()
+        self.stats_obj.save_stats(base_fp=base_fp)
 
     # TODO: May have a problem with iteration here
     def init_iter(self, iteration: int):
@@ -179,12 +174,6 @@ class Engine:
         signal.signal(signal.SIGINT, self.stats_obj.save_stats)
         signal.signal(signal.SIGTERM, self.stats_obj.save_stats)
 
-        if self.engine_props['ai_algorithm'] is not None and self.engine_props['ai_algorithm'] != 'None':
-            signal.signal(signal.SIGINT, self.ai_obj.save)
-            signal.signal(signal.SIGTERM, self.ai_obj.save)
-
-            self.ai_obj.reset_epsilon()
-            self.ai_obj.episode = iteration
         if iteration == 0:
             print(f"Simulation started for Erlang: {self.engine_props['erlang']} "
                   f"simulation number: {self.engine_props['thread_num']}.")
@@ -201,7 +190,7 @@ class Engine:
             self.init_iter(iteration=iteration)
             req_num = 1
             for curr_time in self.reqs_dict:
-                # TODO: This needs to return
+                # TODO: This needs to return always?
                 self.handle_request(curr_time=curr_time, req_num=req_num, ai_flag=False)
 
         print(f"Erlang: {self.engine_props['erlang']} finished for "
