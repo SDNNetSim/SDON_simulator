@@ -160,4 +160,16 @@ COMMAND_LINE_PARAMS = [
     ['file_type', str, ''],
     ['theta', float, ''],
     ['filter_mods', bool, ''],
+
+    # TODO: Modify? I'm not sure if my model's params are actually updating
+    # TODO: I believe this are meant to input into the script
+    ['algo', str, ''],
+    ['env', str, ''],
+    ['eval-freq', str, ''],
+    ['save-freq', str, ''],
+    ['n-trials', int, ''],
+    ['n-jobs', int, ''],
+    ['n', int, ''],
+    ['sampler', str, ''],
+    ['pruner', str, ''],
 ]
