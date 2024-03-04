@@ -7,6 +7,10 @@ from gymnasium import spaces
 from stable_baselines3 import DQN
 from stable_baselines3.common.env_checker import check_env
 
+print(os.getcwd())
+
+# print(os.chdir('..'))
+
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 from sim_scripts.engine import Engine
@@ -14,13 +18,15 @@ from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 
 
+# TODO: This script should move out of here if it's being ran
 # TODO: Threading not supported, will only use s1
 # TODO: Slicing is not supported
 # TODO: Write tests for these methods
 # TODO: Update standards and guidelines document
+# TODO: Req ID doesn't make much sense
 
-class DQNEnv(gym.Env):
-    metadata = None
+class DQNSimEnv(gym.Env):
+    metadata = dict()
 
     def __init__(self, render_mode: str = None):
         super().__init__()
@@ -181,9 +187,6 @@ class DQNEnv(gym.Env):
         start_slot = action % self.engine_props['spectral_slots']
 
         was_allocated = self.allocate(core_num=core_num, start_slot=start_slot)
-        if self.mock_sdn['was_routed'] and len(self.mock_sdn['modulation_list']) == 0:
-            print('Here')
-
         self.engine_obj.update_arrival_params(curr_time=self.curr_time, ai_flag=True, mock_sdn=self.mock_sdn)
 
         reward = self._calculate_reward(was_allocated=was_allocated)
@@ -272,6 +275,8 @@ class DQNEnv(gym.Env):
         return spectrum_obs
 
     def reset(self, seed: int = None, options: dict = None):
+        print('Made it to reset.')
+
         super().reset(seed=seed)
 
         self.req_num = 1
@@ -296,11 +301,12 @@ class DQNEnv(gym.Env):
         self.dqn_sim_dict['s1']['sim_start'] = time_string
 
     def setup(self):
+        # TODO: Base fp no longer needed?
         args_obj = parse_args()
-        config_path = os.path.join('..', 'ini', 'run_ini', 'config.ini')
+        config_path = os.path.join('ini', 'run_ini', 'config.ini')
         self.dqn_sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
-        base_fp = os.path.join('..', 'data')
+        base_fp = os.path.join('data')
         self.dqn_sim_dict['s1']['thread_num'] = 's1'
         self._get_start_time()
         self.dqn_sim_dict['s1'] = create_input(base_fp=base_fp, engine_props=self.dqn_sim_dict['s1'])
@@ -324,7 +330,7 @@ class DQNEnv(gym.Env):
 
 # TODO: Handle saving the model
 if __name__ == '__main__':
-    env = DQNEnv()
+    env = gym.make('DQNSimEnv')
     # check_env(env)
 
     model = DQN("MlpPolicy", env, verbose=1)
@@ -342,4 +348,5 @@ if __name__ == '__main__':
 
         obs, curr_reward, is_terminated, is_truncated, curr_info = env.step(curr_action)
         if is_terminated or is_truncated:
-            obs, info = env.reset()
+            break
+            # obs, info = env.reset()
