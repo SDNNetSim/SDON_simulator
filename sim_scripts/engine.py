@@ -133,9 +133,7 @@ class Engine:
     def handle_request(self, curr_time: float, req_num: int, ai_flag: bool):
         req_type = self.reqs_dict[curr_time]["request_type"]
         if req_type == "arrival":
-            self.handle_arrival(curr_time=curr_time, ai_flag=ai_flag)
-            # TODO: This should be outside of arrival or something
-            self.update_arrival_params(curr_time=curr_time)
+            self.handle_arrival(curr_time=curr_time)
 
             if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
                 self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
@@ -190,8 +188,10 @@ class Engine:
             self.init_iter(iteration=iteration)
             req_num = 1
             for curr_time in self.reqs_dict:
-                # TODO: This needs to return always?
                 self.handle_request(curr_time=curr_time, req_num=req_num, ai_flag=False)
+
+            # TODO: Move print flag to the constructor
+            self.end_iter(iteration=iteration)
 
         print(f"Erlang: {self.engine_props['erlang']} finished for "
               f"simulation number: {self.engine_props['thread_num']}.")

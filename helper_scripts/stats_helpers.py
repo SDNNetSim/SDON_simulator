@@ -254,7 +254,7 @@ class SimStats:
         if block_ci_percent <= 5:
             print(f"Confidence interval of {round(block_ci_percent, 2)}% reached. "
                   f"{self.iteration + 1}, ending and saving results for Erlang: {self.engine_props['erlang']}")
-            self.save_stats()
+            self.save_stats(base_fp='data')
             return True
 
         return False
