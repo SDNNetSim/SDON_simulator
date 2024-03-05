@@ -4,12 +4,6 @@ from datetime import datetime
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
-from stable_baselines3 import DQN
-from stable_baselines3.common.env_checker import check_env
-
-print(os.getcwd())
-
-# print(os.chdir('..'))
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
@@ -18,12 +12,16 @@ from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 
 
-# TODO: This script should move out of here if it's being ran
 # TODO: Threading not supported, will only use s1
 # TODO: Slicing is not supported
-# TODO: Write tests for these methods
-# TODO: Update standards and guidelines document
-# TODO: Req ID doesn't make much sense
+# TODO: req_num doesn't make much sense
+# TODO: Always uses shortest path first
+# TODO: Necessary parameters to constructor
+# TODO: May utilize options or command link input
+# TODO: Integrate with total time steps
+# TODO: Save and load model
+# TODO: Some of these methods will move to AI helpers
+#   - It will function as a wrapper for the simulator
 
 class DQNSimEnv(gym.Env):
     metadata = dict()
@@ -34,11 +32,10 @@ class DQNSimEnv(gym.Env):
         self.dqn_sim_dict = None
         self.engine_obj = None
         self.route_obj = None
-        # TODO: Make this better
         self.mock_sdn = dict()
         self.setup()
-        self.engine_props = self.engine_obj.engine_props
 
+        self.engine_props = self.engine_obj.engine_props
         self.observation_space = spaces.Box(low=0.0, high=1.0,
                                             shape=(self.engine_props['cores_per_link'],
                                                    self.engine_props['spectral_slots']),
@@ -46,19 +43,14 @@ class DQNSimEnv(gym.Env):
         self.action_space = spaces.Discrete(self.engine_props['cores_per_link'] *
                                             self.engine_props['spectral_slots'])
 
-        # TODO: Ensure each of these are updated correctly in step
-        #   - Also, how to update iteration (based on gym env maybe)
-        #   - After, integration with saving properly
         self.iteration = 0
         self.req_num = 1
         self.curr_time = None
 
     def _check_terminated(self):
-        # TODO: Check to make sure this is correct (or if it's minus one)
         if self.req_num == ((self.engine_props['num_requests'] * 2) + 1):
             terminated = True
-            base_fp = os.path.join('..', 'data')
-            self.engine_obj.end_iter(base_fp=base_fp, iteration=self.iteration, print_flag=False, ai_flag=True)
+            self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True)
             self.iteration += 1
         else:
             terminated = False
@@ -68,9 +60,9 @@ class DQNSimEnv(gym.Env):
     @staticmethod
     def _calculate_reward(was_allocated: bool):
         if was_allocated:
-            reward = 1
+            reward = 1.0
         else:
-            reward = -1
+            reward = -1.0
 
         return reward
 
@@ -82,27 +74,24 @@ class DQNSimEnv(gym.Env):
             "was_routed": was_routed,
         }})
 
-    # TODO: Move these params to props or something
-    # TODO: Neaten this method up
     def _update_net_spec_dict(self, path_list: list, core_num: int, start_slot: int, end_slot: int):
         for link_tuple in zip(path_list, path_list[1:]):
-            self.engine_obj.net_spec_dict[(link_tuple[0], link_tuple[1])]['cores_matrix'][core_num][
-            start_slot:end_slot] = self.req_num
-            self.engine_obj.net_spec_dict[(link_tuple[1], link_tuple[0])]['cores_matrix'][core_num][
-            start_slot:end_slot] = self.req_num
+            rev_link_tuple = (link_tuple[1], link_tuple[0])
 
-            self.engine_obj.net_spec_dict[(link_tuple[0], link_tuple[1])]['cores_matrix'][core_num][
-                end_slot] = self.req_num * -1
-            self.engine_obj.net_spec_dict[(link_tuple[1], link_tuple[0])]['cores_matrix'][core_num][
-                end_slot] = self.req_num * -1
+            self.engine_obj.net_spec_dict[link_tuple]['cores_matrix'][core_num][start_slot:end_slot] = self.req_num
+            self.engine_obj.net_spec_dict[rev_link_tuple]['cores_matrix'][core_num][start_slot:end_slot] = self.req_num
+
+            self.engine_obj.net_spec_dict[link_tuple]['cores_matrix'][core_num][end_slot] = self.req_num * -1
+            self.engine_obj.net_spec_dict[rev_link_tuple]['cores_matrix'][core_num][end_slot] = self.req_num * -1
 
     def _check_is_free(self, path_list: list, core_num: int, start_slot: int, end_slot: int):
         is_free = True
         link_dict = None
         rev_link_dict = None
         for link_tuple in zip(path_list, path_list[1:]):
-            link_dict = self.engine_obj.net_spec_dict[(link_tuple[0], link_tuple[1])]
-            rev_link_dict = self.engine_obj.net_spec_dict[(link_tuple[1], link_tuple[0])]
+            rev_link_tuple = link_tuple[1], link_tuple[0]
+            link_dict = self.engine_obj.net_spec_dict[link_tuple]
+            rev_link_dict = self.engine_obj.net_spec_dict[rev_link_tuple]
 
             tmp_set = set(link_dict['cores_matrix'][core_num][start_slot:end_slot + 1])
             rev_tmp_set = set(rev_link_dict['cores_matrix'][core_num][start_slot:end_slot + 1])
@@ -112,28 +101,58 @@ class DQNSimEnv(gym.Env):
 
         return is_free, link_dict, rev_link_dict
 
+    def _release(self, source_dest: tuple, dest_source: tuple, core_num: int, req_id_arr: np.array, gb_arr: np.array):
+        for req_index, gb_index in zip(req_id_arr, gb_arr):
+            self.engine_obj.net_spec_dict[source_dest]['cores_matrix'][core_num][req_index] = 0
+            self.engine_obj.net_spec_dict[dest_source]['cores_matrix'][core_num][req_index] = 0
+
+            self.engine_obj.net_spec_dict[source_dest]['cores_matrix'][core_num][gb_index] = 0
+            self.engine_obj.net_spec_dict[dest_source]['cores_matrix'][core_num][gb_index] = 0
+
     def release(self):
         arrival_id = self.engine_obj.reqs_dict[self.curr_time]['req_id']
         if self.engine_obj.reqs_status_dict[arrival_id]['was_routed']:
             path_list = self.engine_obj.reqs_status_dict[arrival_id]['path']
+
             for source, dest in zip(path_list, path_list[1:]):
+                source_dest = (source, dest)
+                dest_source = (dest, source)
+
                 for core_num in range(self.engine_props['cores_per_link']):
-                    core_arr = self.engine_obj.net_spec_dict[(source, dest)]['cores_matrix'][core_num]
+                    core_arr = self.engine_obj.net_spec_dict[source_dest]['cores_matrix'][core_num]
                     req_id_arr = np.where(core_arr == arrival_id)
                     gb_arr = np.where(core_arr == (arrival_id * -1))
 
-                    for req_index, gb_index in zip(req_id_arr, gb_arr):
-                        self.engine_obj.net_spec_dict[(source, dest)]['cores_matrix'][core_num][req_index] = 0
-                        self.engine_obj.net_spec_dict[(dest, source)]['cores_matrix'][core_num][req_index] = 0
-
-                        self.engine_obj.net_spec_dict[(source, dest)]['cores_matrix'][core_num][gb_index] = 0
-                        self.engine_obj.net_spec_dict[(dest, source)]['cores_matrix'][core_num][gb_index] = 0
+                    self._release(source_dest=source_dest, dest_source=dest_source, core_num=core_num,
+                                  req_id_arr=req_id_arr, gb_arr=gb_arr)
         # Request was blocked
         else:
             pass
 
-    # TODO: Check to see if this works with multiple paths
-    # TODO: Clean this function up
+    def _allocate(self, is_free: bool, path_list: list, start_slot: int, end_slot: int, core_num: int, mod_format: str,
+                  bandwidth: str, path_len: float):
+        if is_free:
+            self._update_net_spec_dict(path_list=path_list, core_num=core_num,
+                                       start_slot=start_slot,
+                                       end_slot=end_slot)
+            self._update_reqs_status(path_list=path_list, was_routed=True, mod_format=mod_format)
+
+            self.mock_sdn['bandwidth_list'].append(bandwidth)
+            self.mock_sdn['modulation_list'].append(mod_format)
+            self.mock_sdn['core_list'].append(core_num)
+            self.mock_sdn['path_weight'] = path_len
+            self.mock_sdn['spectrum_dict']['modulation'] = mod_format
+
+            self.mock_sdn['was_routed'] = True
+            was_allocated = True
+            return was_allocated
+
+        was_allocated = False
+        self.mock_sdn['block_reason'] = 'congestion'
+        self.mock_sdn['was_routed'] = False
+        return was_allocated
+
+    # TODO: Check for functionality with multiple paths
     def allocate(self, core_num: int, start_slot: int):
         was_allocated = True
         self.mock_sdn['was_routed'] = True
@@ -143,6 +162,7 @@ class DQNSimEnv(gym.Env):
             self.mock_sdn['path_list'] = path_list
             if not mod_format:
                 self.mock_sdn['was_routed'] = False
+                self.mock_sdn['block_reason'] = 'distance'
                 was_allocated = False
                 continue
 
@@ -151,44 +171,29 @@ class DQNSimEnv(gym.Env):
             end_slot = start_slot + bandwidth_dict[mod_format]['slots_needed']
             if end_slot >= self.engine_props['spectral_slots']:
                 self.mock_sdn['was_routed'] = False
+                self.mock_sdn['block_reason'] = 'congestion'
                 was_allocated = False
                 continue
 
             is_free, link_dict, rev_link_dict = self._check_is_free(path_list=path_list, core_num=core_num,
                                                                     start_slot=start_slot,
                                                                     end_slot=end_slot)
-
-            if is_free:
-                self._update_net_spec_dict(path_list=path_list, core_num=core_num,
-                                           start_slot=start_slot,
-                                           end_slot=end_slot)
-                self._update_reqs_status(path_list=path_list, was_routed=True, mod_format=mod_format)
-
-                self.mock_sdn['bandwidth_list'].append(bandwidth)
-                self.mock_sdn['modulation_list'].append(mod_format)
-                self.mock_sdn['core_list'].append(core_num)
-                self.mock_sdn['path_weight'] = path_len
-                self.mock_sdn['spectrum_dict']['modulation'] = mod_format
-
-                self.mock_sdn['was_routed'] = True
-                was_allocated = True
-                return was_allocated
-            else:
-                was_allocated = False
-                self.mock_sdn['was_routed'] = False
+            was_allocated = self._allocate(is_free=is_free, path_list=path_list, start_slot=start_slot,
+                                           end_slot=end_slot, core_num=core_num, mod_format=mod_format,
+                                           bandwidth=bandwidth, path_len=path_len)
 
         self._update_reqs_status(was_routed=False)
         return was_allocated
 
-    # TODO: What if second request is a departure?
+    # fixme: Failure if second request is a departure
     def step(self, action: int):
-        # TODO: Skeptical about this
+        print(f'== stepped with request number {self.req_num} ===')
+
         core_num = action // self.engine_props['spectral_slots']
         start_slot = action % self.engine_props['spectral_slots']
 
         was_allocated = self.allocate(core_num=core_num, start_slot=start_slot)
         self.engine_obj.update_arrival_params(curr_time=self.curr_time, ai_flag=True, mock_sdn=self.mock_sdn)
-
         reward = self._calculate_reward(was_allocated=was_allocated)
 
         while True:
@@ -211,10 +216,6 @@ class DQNSimEnv(gym.Env):
         return new_obs, reward, terminated, truncated, info
 
     @staticmethod
-    def _get_info():
-        return dict()
-
-    @staticmethod
     def combine_and_one_hot(arr1, arr2):
         if len(arr1) != len(arr2):
             raise ValueError("Arrays must have the same length.")
@@ -229,8 +230,9 @@ class DQNSimEnv(gym.Env):
         spectrum_matrix = np.zeros((self.engine_props['cores_per_link'], self.engine_props['spectral_slots']))
         for paths_list in paths_matrix:
             for link_tuple in zip(paths_list, paths_list[1:]):
-                link_dict = self.engine_obj.net_spec_dict[(link_tuple[0], link_tuple[1])]
-                rev_link_dict = self.engine_obj.net_spec_dict[(link_tuple[1], link_tuple[0])]
+                rev_link_tuple = link_tuple[1], link_tuple[0]
+                link_dict = self.engine_obj.net_spec_dict[link_tuple]
+                rev_link_dict = self.engine_obj.net_spec_dict[rev_link_tuple]
 
                 if link_dict != rev_link_dict:
                     raise ValueError('Link is not bi-directionally equal.')
@@ -241,6 +243,7 @@ class DQNSimEnv(gym.Env):
 
         return spectrum_matrix
 
+    # TODO: Route time and number of transistors static
     def _update_mock_sdn(self, curr_req: dict):
         self.mock_sdn = {
             'source': curr_req['source'],
@@ -249,10 +252,10 @@ class DQNSimEnv(gym.Env):
             'net_spec_dict': self.engine_obj.net_spec_dict,
             'topology': self.engine_obj.topology,
             'mod_formats': curr_req['mod_formats'],
-            # TODO: Route time, num trans, and block reason static temporarily
+            # TODO: This number isn't correct in output
             'num_trans': 1.0,
             'route_time': 0.0,
-            'block_reason': 'congestion',
+            'block_reason': None,
             'stat_key_list': ['modulation_list', 'xt_list', 'core_list'],
             'modulation_list': list(),
             'xt_list': list(),
@@ -262,6 +265,10 @@ class DQNSimEnv(gym.Env):
             'path_weight': list(),
             'spectrum_dict': {'modulation': None}
         }
+
+    @staticmethod
+    def _get_info():
+        return dict()
 
     def _get_obs(self):
         curr_req = self.engine_obj.reqs_dict[self.curr_time]
@@ -275,8 +282,7 @@ class DQNSimEnv(gym.Env):
         return spectrum_obs
 
     def reset(self, seed: int = None, options: dict = None):
-        print('Made it to reset.')
-
+        print('=== made it to reset ===')
         super().reset(seed=seed)
 
         self.req_num = 1
@@ -300,8 +306,10 @@ class DQNSimEnv(gym.Env):
         time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
         self.dqn_sim_dict['s1']['sim_start'] = time_string
 
+    # TODO: Have number of time steps be the number of reqs
     def setup(self):
-        # TODO: Base fp no longer needed?
+        print('=== made it to setup. ===')
+
         args_obj = parse_args()
         config_path = os.path.join('ini', 'run_ini', 'config.ini')
         self.dqn_sim_dict = read_config(args_obj=args_obj, config_path=config_path)
@@ -317,36 +325,6 @@ class DQNSimEnv(gym.Env):
         self.engine_obj = Engine(engine_props=self.dqn_sim_dict['s1'])
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props, sdn_props=self.mock_sdn)
 
-        # TODO: Save for initial arrival rate
-        # TODO: Figure out how to loop through inter arrival times
-        #   - Or, should we train on one type of traffic
-        #   - Maybe have a loop to create a list of arrival rates and then handle it by index
-        #   - This might get confusing since we can't just return back here...
-        # TODO: Utilize options if you can
         start_arr_rate = float(self.dqn_sim_dict['s1']['arrival_rate']['start'])
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.dqn_sim_dict['s1']['holding_time']
         self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.dqn_sim_dict['s1']['cores_per_link']
-
-
-# TODO: Handle saving the model
-if __name__ == '__main__':
-    env = gym.make('DQNSimEnv')
-    # check_env(env)
-
-    model = DQN("MlpPolicy", env, verbose=1)
-    # TODO: Manually use iters, time steps should be num requests times iters
-    model.learn(total_timesteps=10, log_interval=5)
-    # model.save("dqn_model")
-
-    # del model  # remove to demonstrate saving and loading
-
-    # model = DQN.load("dqn_model")
-
-    obs, info = env.reset()
-    while True:
-        curr_action, _states = model.predict(obs, deterministic=True)
-
-        obs, curr_reward, is_terminated, is_truncated, curr_info = env.step(curr_action)
-        if is_terminated or is_truncated:
-            break
-            # obs, info = env.reset()
