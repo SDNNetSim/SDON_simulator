@@ -36,7 +36,6 @@ class Engine:
         self.sdn_obj = SDNController(engine_props=self.engine_props)
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
 
-    # TODO: Curr time to constructor
     def update_arrival_params(self, curr_time: float, ai_flag: bool = False, mock_sdn: dict = None):
         """
         Updates parameters for a request after attempted allocation.
@@ -144,7 +143,6 @@ class Engine:
             raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '
                                       f'got: {req_type}')
 
-    # TODO: Iteration to constructor along with AI flag
     def end_iter(self, iteration: int, print_flag: bool = True, ai_flag: bool = False, base_fp: str = None):
         """
         Updates iteration statistics.
@@ -198,7 +196,6 @@ class Engine:
             for curr_time in self.reqs_dict:
                 self.handle_request(curr_time=curr_time, req_num=req_num)
 
-            # TODO: Move print flag to the constructor
             self.end_iter(iteration=iteration)
 
         print(f"Erlang: {self.engine_props['erlang']} finished for "

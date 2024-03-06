@@ -10,6 +10,7 @@ from helper_scripts.os_helpers import create_dir
 from arg_scripts.ai_args import empty_q_props
 
 
+# TODO: This script is no longer supported
 class QLearning:
     """
     Contains methods related to the q-learning algorithm.
