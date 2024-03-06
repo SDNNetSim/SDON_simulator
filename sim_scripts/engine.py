@@ -12,8 +12,6 @@ from sim_scripts.sdn_controller import SDNController
 from helper_scripts.stats_helpers import SimStats
 
 
-# TODO: No support for AI in all scripts for the time being
-# TODO: Update docstrings
 class Engine:
     """
     Controls a single simulation.
@@ -40,6 +38,13 @@ class Engine:
 
     # TODO: Curr time to constructor
     def update_arrival_params(self, curr_time: float, ai_flag: bool = False, mock_sdn: dict = None):
+        """
+        Updates parameters for a request after attempted allocation.
+
+        :param curr_time: The current simulated time.
+        :param ai_flag: Flag to determine use of mock sdn dictionary.
+        :param mock_sdn: An option mock sdn dictionary.
+        """
         if not ai_flag:
             sdn_props = self.sdn_obj.sdn_props
         else:
@@ -117,8 +122,13 @@ class Engine:
         self.reqs_dict = get_requests(seed=seed, engine_props=self.engine_props)
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
 
-    # TODO: ai flag to constructor
-    def handle_request(self, curr_time: float, req_num: int, ai_flag: bool):
+    def handle_request(self, curr_time: float, req_num: int):
+        """
+        Carries out arrival or departure functions for a given request.
+
+        :param curr_time: The current simulated time.
+        :param req_num: The request number.
+        """
         req_type = self.reqs_dict[curr_time]["request_type"]
         if req_type == "arrival":
             self.handle_arrival(curr_time=curr_time)
@@ -128,9 +138,7 @@ class Engine:
 
             req_num += 1
 
-        # TODO: Will need to separate arrival and release
         elif req_type == "release":
-            # TODO: This will need a similar structure to AI flag
             self.handle_release(curr_time=curr_time)
         else:
             raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '
@@ -138,6 +146,14 @@ class Engine:
 
     # TODO: Iteration to constructor along with AI flag
     def end_iter(self, iteration: int, print_flag: bool = True, ai_flag: bool = False, base_fp: str = None):
+        """
+        Updates iteration statistics.
+
+        :param iteration: The current iteration.
+        :param print_flag: Whether to print or not.
+        :param ai_flag: To determine if AI is used or not.
+        :param base_fp: The base file path to save output statistics.
+        """
         self.stats_obj.get_blocking()
         self.stats_obj.end_iter_update()
         # Some form of ML/RL is being used, ignore confidence intervals for training and testing
@@ -150,8 +166,12 @@ class Engine:
 
         self.stats_obj.save_stats(base_fp=base_fp)
 
-    # TODO: May have a problem with iteration here
     def init_iter(self, iteration: int):
+        """
+        Initializes an iteration.
+
+        :param iteration: The current iteration number.
+        """
         self.iteration = iteration
 
         self.stats_obj.iteration = iteration
@@ -176,7 +196,7 @@ class Engine:
             self.init_iter(iteration=iteration)
             req_num = 1
             for curr_time in self.reqs_dict:
-                self.handle_request(curr_time=curr_time, req_num=req_num, ai_flag=False)
+                self.handle_request(curr_time=curr_time, req_num=req_num)
 
             # TODO: Move print flag to the constructor
             self.end_iter(iteration=iteration)
