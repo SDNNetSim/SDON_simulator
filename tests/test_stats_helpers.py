@@ -307,7 +307,7 @@ class TestSimStats(unittest.TestCase):
             'trans_list': [3.5],
         }
 
-        self.sim_stats.save_stats()
+        self.sim_stats.save_stats(base_fp=None)
         mock_file.assert_called_once_with('mocked/path/to/simulation_results/10_erlang.json', 'w', encoding='utf-8')
 
         # Check if JSON data written to file is as expected
