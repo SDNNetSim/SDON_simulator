@@ -163,6 +163,7 @@ COMMAND_LINE_PARAMS = [
 
     # TODO: Modify? I'm not sure if my model's params are actually updating
     # TODO: I believe this are meant to input into the script
+    # TODO: Add all args
     ['algo', str, ''],
     ['env', str, ''],
     ['eval-freq', str, ''],
@@ -177,4 +178,5 @@ COMMAND_LINE_PARAMS = [
     ['train-freq', int, ''],
     ['num-threads', int, ''],
     ['max-total-trials', int, ''],
+    ['n-timesteps', int, ''],
 ]

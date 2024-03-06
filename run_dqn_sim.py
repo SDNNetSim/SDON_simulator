@@ -27,7 +27,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     metadata = dict()
 
-    # TODO: Engine props back to constructor
     def __init__(self, render_mode: str = None):
         super().__init__()
         self.dqn_props = copy.deepcopy(empty_dqn_props)
@@ -40,16 +39,12 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(1, 128), dtype=np.float64)
         self.action_space = spaces.Discrete(1 * 128)
         self.render_mode = render_mode
-
-        # TODO: Probably don't need iteration?
-        #   - Should I design this for saving how?
         self.iteration = 0
 
     def _check_terminated(self):
         if self.dqn_props['arrival_count'] == (self.dqn_props['engine_props']['num_requests']):
             terminated = True
-            # TODO: Change
-            base_fp = os.path.join('..', 'data')
+            base_fp = os.path.join('data')
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
             self.iteration += 1
         else:
@@ -129,8 +124,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         return spectrum_obs
 
     def _create_input(self):
-        # TODO: Change
-        base_fp = os.path.join('..', 'data')
+        base_fp = os.path.join('data')
         self.dqn_sim_dict['s1']['thread_num'] = 's1'
         get_start_time(sim_dict=self.dqn_sim_dict)
         file_name = "sim_input_s1.json"
@@ -147,8 +141,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         Sets up this class.
         """
         args_obj = parse_args()
-        # TODO: Change
-        config_path = os.path.join('..', 'ini', 'run_ini', 'config.ini')
+        config_path = os.path.join('ini', 'run_ini', 'config.ini')
         self.dqn_sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
         self._create_input()
