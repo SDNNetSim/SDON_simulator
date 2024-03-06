@@ -1,24 +1,30 @@
 import numpy as np
 
 
-# TODO: Remove AI object from all other sim scripts
-# TODO: Check on reqs_dict
-
-
 class AIHelpers:
+    """
+    Contains methods to assist with AI simulations.
+    """
+
     def __init__(self, ai_props: dict):
         self.ai_props = ai_props
 
-        # TODO: Make sure to update these in run_dqn_sim
         self.topology = None
         self.net_spec_dict = None
+        self.reqs_status_dict = None
+
         self.path_list = None
         self.core_num = None
         self.start_slot = None
         self.end_slot = None
-        self.reqs_status_dict = None
+        self.mod_format = None
+        self.path_len = None
+        self.bandwidth = None
 
     def update_net_spec_dict(self):
+        """
+        Updates the network spectrum database.
+        """
         for link_tuple in zip(self.path_list, self.path_list[1:]):
             rev_link_tuple = (link_tuple[1], link_tuple[0])
 
@@ -30,9 +36,10 @@ class AIHelpers:
             self.net_spec_dict[rev_link_tuple]['cores_matrix'][self.core_num][self.end_slot] = req_id * -1
 
     def check_is_free(self):
+        """
+        Checks if a spectrum is available along the given path.
+        """
         is_free = True
-        link_dict = None
-        rev_link_dict = None
         for link_tuple in zip(self.path_list, self.path_list[1:]):
             rev_link_tuple = link_tuple[1], link_tuple[0]
             link_dict = self.net_spec_dict[link_tuple]
@@ -44,7 +51,7 @@ class AIHelpers:
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 is_free = False
 
-        return is_free, link_dict, rev_link_dict
+        return is_free
 
     def _release(self, source_dest: tuple, dest_source: tuple, req_id_arr: np.array, gb_arr: np.array):
         for req_index, gb_index in zip(req_id_arr, gb_arr):
@@ -55,6 +62,10 @@ class AIHelpers:
             self.net_spec_dict[dest_source]['cores_matrix'][self.core_num][gb_index] = 0
 
     def release(self, depart_time: float):
+        """
+        Releases a given request.
+        :param depart_time: The departure time of the request.
+        """
         arrival_id = self.ai_props['reqs_dict'][depart_time]['req_id']
         if self.reqs_status_dict[arrival_id]['was_routed']:
             path_list = self.reqs_status_dict[arrival_id]['path']
@@ -75,6 +86,9 @@ class AIHelpers:
             pass
 
     def check_release(self):
+        """
+        Checks if a request or multiple requests need to be released.
+        """
         curr_time = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['arrive']
         index_list = list()
 
@@ -86,28 +100,33 @@ class AIHelpers:
         for index in index_list:
             self.ai_props['depart_list'].pop(index)
 
-    def update_reqs_status(self, was_routed: bool, mod_format: str = None):
+    def update_reqs_status(self, was_routed: bool):
+        """
+        Updates a given request's status.
+        :param was_routed: If the request was successfully routed or not.
+        """
         self.reqs_status_dict.update(
             {self.ai_props['arrival_list'][self.ai_props['arrival_count']]['req_id']: {
-                "mod_format": mod_format,
+                "mod_format": self.mod_format,
                 "path": self.path_list,
                 "is_sliced": False,
                 "was_routed": was_routed,
             }})
 
-    # TODO: Make this better after converting to a class (a loop?)
-    def _allocate(self, is_free: bool, mod_format: str, bandwidth: str, path_len: float):
+    def _allocate_mock_sdn(self):
+        self.ai_props['mock_sdn_dict']['bandwidth_list'].append(self.bandwidth)
+        self.ai_props['mock_sdn_dict']['modulation_list'].append(self.mod_format)
+        self.ai_props['mock_sdn_dict']['core_list'].append(self.core_num)
+        self.ai_props['mock_sdn_dict']['path_weight'] = self.path_len
+        self.ai_props['mock_sdn_dict']['spectrum_dict']['modulation'] = self.mod_format
+        self.ai_props['mock_sdn_dict']['was_routed'] = True
+
+    def _allocate(self, is_free: bool):
         if is_free:
             self.update_net_spec_dict()
-            self.update_reqs_status(was_routed=True, mod_format=mod_format)
+            self.update_reqs_status(was_routed=True)
+            self._allocate_mock_sdn()
 
-            self.ai_props['mock_sdn_dict']['bandwidth_list'].append(bandwidth)
-            self.ai_props['mock_sdn_dict']['modulation_list'].append(mod_format)
-            self.ai_props['mock_sdn_dict']['core_list'].append(self.core_num)
-            self.ai_props['mock_sdn_dict']['path_weight'] = path_len
-            self.ai_props['mock_sdn_dict']['spectrum_dict']['modulation'] = mod_format
-
-            self.ai_props['mock_sdn_dict']['was_routed'] = True
             was_allocated = True
             return was_allocated
 
@@ -116,47 +135,60 @@ class AIHelpers:
         self.ai_props['mock_sdn_dict']['was_routed'] = False
         return was_allocated
 
-    # TODO: Break to more functions after this is a class
+    def _get_end_slot(self):
+        self.bandwidth = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['bandwidth']
+        bandwidth_dict = self.ai_props['engine_props']['mod_per_bw'][self.bandwidth]
+        self.end_slot = self.start_slot + bandwidth_dict[self.mod_format]['slots_needed']
+
+    def _update_path_vars(self, route_obj: object, path_list: list, path_index: int):
+        self.path_list = path_list
+        self.path_len = route_obj.route_props['weights_list'][path_index]
+        self.mod_format = route_obj.route_props['mod_formats_list'][path_index][0]
+        self.ai_props['mock_sdn_dict']['path_list'] = path_list
+
     def allocate(self, route_obj: object):
+        """
+        Attempts to allocate a given request.
+
+        :param route_obj: The Routing class.
+        """
         was_allocated = True
         self.ai_props['mock_sdn_dict']['was_routed'] = True
         for path_index, path_list in enumerate(route_obj.route_props['paths_list']):
-            self.path_list = path_list
-            path_len = route_obj.route_props['weights_list'][path_index]
-            mod_format = route_obj.route_props['mod_formats_list'][path_index][0]
-            self.ai_props['mock_sdn_dict']['path_list'] = path_list
-            if not mod_format:
+            self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
+            if not self.mod_format:
                 self.ai_props['mock_sdn_dict']['was_routed'] = False
                 self.ai_props['mock_sdn_dict']['block_reason'] = 'distance'
                 was_allocated = False
                 continue
 
-            bandwidth = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['bandwidth']
-            bandwidth_dict = self.ai_props['engine_props']['mod_per_bw'][bandwidth]
-            self.end_slot = self.start_slot + bandwidth_dict[mod_format]['slots_needed']
+            self._get_end_slot()
             if self.end_slot >= self.ai_props['engine_props']['spectral_slots']:
                 self.ai_props['mock_sdn_dict']['was_routed'] = False
                 self.ai_props['mock_sdn_dict']['block_reason'] = 'congestion'
                 was_allocated = False
                 continue
 
-            is_free, link_dict, rev_link_dict = self.check_is_free()
-            was_allocated = self._allocate(is_free=is_free, mod_format=mod_format, bandwidth=bandwidth,
-                                           path_len=path_len)
+            is_free = self.check_is_free()
+            was_allocated = self._allocate(is_free=is_free)
 
         self.update_reqs_status(was_routed=False)
         return was_allocated
 
     # TODO: Route time and number of transistors static
-    def update_mock_sdn(self, mock_sdn: dict, curr_req: dict):
-        self.ai_props['mock_sdn_dict'] = {
+    #   - Check num transistors output
+    def update_mock_sdn(self, curr_req: dict):
+        """
+        Updates the mock sdn dictionary.
+        :param curr_req: The current request.
+        """
+        mock_sdn = {
             'source': curr_req['source'],
             'destination': curr_req['destination'],
             'bandwidth': curr_req['bandwidth'],
             'net_spec_dict': self.net_spec_dict,
             'topology': self.topology,
             'mod_formats': curr_req['mod_formats'],
-            # TODO: This number isn't correct in output?
             'num_trans': 1.0,
             'route_time': 0.0,
             'block_reason': None,
