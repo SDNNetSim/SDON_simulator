@@ -164,6 +164,7 @@ COMMAND_LINE_PARAMS = [
     # For StableBaselines3
     ['algo', str, ''],
     ['env-id', str, ''],
+    ['env', str, ''],
     ['log-folder', str, ''],
     ['tensorboard-log', str, ''],
     ['n-timesteps', int, ''],
@@ -171,7 +172,7 @@ COMMAND_LINE_PARAMS = [
     ['n-eval-episodes', int, ''],
     ['save-freq', int, ''],
     ['hyperparams', dict, ''],
-    ['env-kwargs', dict, ''],
+    ['env-kwargs', str, ''],
     ['eval-env-kwargs', dict, ''],
     ['trained-agent', str, ''],
     ['optimize-hyperparameters', bool, ''],

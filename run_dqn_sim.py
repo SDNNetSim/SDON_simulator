@@ -27,7 +27,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     metadata = dict()
 
-    def __init__(self, render_mode: str = None):
+    def __init__(self, render_mode: str = None, **kwargs):
         super().__init__()
         self.dqn_props = copy.deepcopy(empty_dqn_props)
         self.dqn_sim_dict = None
@@ -35,9 +35,13 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj = None
         self.helper_obj = AIHelpers(ai_props=self.dqn_props)
 
-        # fixme: Static
-        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(1, 128), dtype=np.float64)
-        self.action_space = spaces.Discrete(1 * 128)
+        self.cores_per_link = kwargs['arguments'][0]
+        self.spectral_slots = kwargs['arguments'][1]
+        self.num_requests = kwargs['arguments'][2]
+
+        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(self.cores_per_link, self.spectral_slots),
+                                            dtype=np.float64)
+        self.action_space = spaces.Discrete(self.cores_per_link * self.spectral_slots)
         self.render_mode = render_mode
         self.iteration = 0
 
@@ -144,6 +148,9 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         config_path = os.path.join('ini', 'run_ini', 'config.ini')
         self.dqn_sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
+        self.dqn_sim_dict['s1']['cores_per_link'] = self.cores_per_link
+        self.dqn_sim_dict['s1']['spectral_slots'] = self.spectral_slots
+        self.dqn_sim_dict['s1']['num_requests'] = self.num_requests
         self._create_input()
         start_arr_rate = float(self.dqn_sim_dict['s1']['arrival_rate']['start'])
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.dqn_sim_dict['s1']['holding_time']
