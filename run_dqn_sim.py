@@ -121,7 +121,7 @@ class DQNSimEnv(gym.Env):
         else:
             curr_req = self.dqn_props['arrival_list'][self.arrival_count]
         # TODO: MockSDN to the correct name
-        update_mock_sdn(mock_sdn=self.mock_sdn, engine_obj=self.engine_obj, curr_req=curr_req)
+        self.mock_sdn = update_mock_sdn(mock_sdn=self.mock_sdn, engine_obj=self.engine_obj, curr_req=curr_req)
 
         self.route_obj.sdn_props = self.mock_sdn
         self.route_obj.get_route()
@@ -148,6 +148,7 @@ class DQNSimEnv(gym.Env):
         config_path = os.path.join('..', 'ini', 'run_ini', 'config.ini')
         self.dqn_sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
+        self._create_input()
         start_arr_rate = float(self.dqn_sim_dict['s1']['arrival_rate']['start'])
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.dqn_sim_dict['s1']['holding_time']
         self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.dqn_sim_dict['s1']['cores_per_link']
