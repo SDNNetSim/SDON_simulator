@@ -30,4 +30,9 @@ empty_dqn_props = {
     'net_spec_dict': dict(),
     'arrival_list': list(),
     'depart_list': list(),
+    'arrival_count': 0,
+
+    'engine_props': None,
+    'reqs_dict': None,
+    'mock_sdn_dict': dict,
 }
