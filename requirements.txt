@@ -10,3 +10,4 @@ seaborn==0.13.2
 stable-baselines3==2.2.1
 gymnasium==0.29.1
 scikit-learn==1.4.0
+rl_zoo3==2.2.1

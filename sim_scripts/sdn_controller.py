@@ -152,7 +152,7 @@ class SDNController:
             return
 
         start_time = time.time()
-        self.route_obj.get_route(ai_obj=self.ai_obj)
+        self.route_obj.get_route()
         route_time = time.time() - start_time
 
         segment_slicing = False

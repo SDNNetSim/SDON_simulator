@@ -20,6 +20,8 @@ data/input
 data/output
 data/plots
 
+logs/*
+
 ini/run_ini/config.ini
 bash_scripts/slurm/*
 

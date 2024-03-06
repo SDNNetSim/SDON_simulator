@@ -121,10 +121,11 @@ class SpectrumAssignment:
         return self.handle_first_last(flag='last_fit')
 
     def _get_spectrum(self, ai_obj: object):
-        if self.engine_props['ai_algorithm'] is not None:
+        if self.engine_props['ai_algorithm'] is not None and self.engine_props['ai_algorithm'] != 'None':
             ai_obj.spectrum_props = self.spectrum_props
-            ai_obj.assign_core()
-            # ai_obj.get_spectrum()
+            # TODO: This needs to be addressed
+            # ai_obj.assign_core()
+            ai_obj.assign_spectrum()
         if self.engine_props['allocation_method'] == 'best_fit':
             self.find_best_fit()
         elif self.engine_props['allocation_method'] in ('first_fit', 'last_fit', 'priority_first', 'priority_last'):

@@ -55,6 +55,8 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
             try:
                 type_obj = types_dict[category][key]
             except KeyError:
+                if category is None:
+                    category = _find_category(category_dict=other_dict, target_key=key)
                 type_obj = other_dict[category][key]
             config_dict[new_thread][key] = type_obj(value)
             # TODO: Only support for changing all s<values> as of now

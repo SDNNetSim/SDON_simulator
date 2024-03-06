@@ -1,5 +1,6 @@
 import unittest
 import copy
+from datetime import datetime
 
 import networkx as nx
 import numpy as np
@@ -7,7 +8,8 @@ import numpy as np
 from helper_scripts.sim_helpers import get_path_mod, find_max_path_len, sort_dict_keys, sort_nested_dict_vals
 from helper_scripts.sim_helpers import find_path_len, find_path_cong, get_channel_overlaps, find_free_slots
 from helper_scripts.sim_helpers import find_free_channels, find_taken_channels, snake_to_title, int_to_string
-from helper_scripts.sim_helpers import dict_to_list, list_to_title
+from helper_scripts.sim_helpers import dict_to_list, list_to_title, calc_matrix_stats, combine_and_one_hot
+from helper_scripts.sim_helpers import get_start_time
 
 
 class TestGetPathMod(unittest.TestCase):
@@ -187,3 +189,49 @@ class TestGetPathMod(unittest.TestCase):
         input_list = [["Alice"], ["Bob"], ["Charlie"]]
         result = list_to_title(input_list)
         self.assertEqual(result, "Alice, Bob & Charlie")
+
+    def test_calc_matrix_stats(self):
+        """
+        Tests the calculation of matrix stats.
+        """
+        input_dict = {
+            '0': [1.0, 5.0, 3.0],
+            '1': [2.0, 4.0, 8.0],
+            '2': [0.0, 3.0, 5.0]
+        }
+
+        expected_output = {
+            'min': [0, 3, 3],
+            'max': [2, 5, 8],
+            'average': [1.0, 4.0, 5.333333333333333]
+        }
+
+        result = calc_matrix_stats(input_dict)
+        self.assertDictEqual(result, expected_output)
+
+    def test_combine_and_one_hot(self):
+        """
+        Tests the combine and one hot function.
+        """
+        arr1 = np.array([0, 1, 0, 1, 0])
+        arr2 = np.array([1, 0, 1, 0, 1])
+
+        expected_result = np.array([1, 1, 1, 1, 1])
+
+        result = combine_and_one_hot(arr1, arr2)
+
+        self.assertTrue(np.array_equal(result, expected_result), "Test case 1 failed")
+
+    def test_get_start_time(self):
+        """
+        Tests the get start time function.
+        """
+        sim_dict = {'s1': {'date': None, 'sim_start': None}}
+        expected_date = datetime.now().strftime("%m%d")
+        expected_sim_start = datetime.now().strftime("%H_%M_%S")
+
+        get_start_time(sim_dict)
+
+        self.assertEqual(sim_dict['s1']['date'], expected_date, "Date not set correctly")
+        self.assertTrue(sim_dict['s1']['sim_start'].startswith(expected_sim_start),
+                        "Simulation start time not set correctly")

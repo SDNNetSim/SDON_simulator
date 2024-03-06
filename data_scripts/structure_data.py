@@ -1,3 +1,6 @@
+import os
+
+
 def assign_link_lengths(network_fp: str, node_pairs_dict: dict, constant_weight: bool = False):
     """
     Assign a length to every link that exists in the topology.
@@ -25,21 +28,27 @@ def assign_link_lengths(network_fp: str, node_pairs_dict: dict, constant_weight:
     return response_dict
 
 
-def create_network(net_name: str, const_weight: bool = False):
+def create_network(net_name: str, base_fp: str = None, const_weight: bool = False):
     """
     The main structure data function.
 
     :param net_name: The desired network name, used to read the data file.
     :param const_weight: Set all links' weights to one if true.
+    :param base_fp: The base of the file path to read the network from.
     :return: The network spectrum database.
     :rtype: dict
     """
+    if base_fp is None:
+        base_fp = 'data/raw'
+    else:
+        base_fp = os.path.join(base_fp, 'raw')
+
     if net_name == 'USNet':
-        network_fp = 'data/raw/us_network.txt'
+        network_fp = os.path.join(base_fp, 'us_network.txt')
     elif net_name == 'NSFNet':
-        network_fp = 'data/raw/nsf_network.txt'
+        network_fp = os.path.join(base_fp, 'nsf_network.txt')
     elif net_name == 'Pan-European':
-        network_fp = 'data/raw/europe_network.txt'
+        network_fp = os.path.join(base_fp, 'europe_network.txt')
     else:
         raise NotImplementedError(f"Unknown network name. Expected USNet, NSFNet, or Pan-European. Got: {net_name}")
 

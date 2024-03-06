@@ -10,6 +10,7 @@ from helper_scripts.os_helpers import create_dir
 from arg_scripts.ai_args import empty_q_props
 
 
+# TODO: This script is no longer supported
 class QLearning:
     """
     Contains methods related to the q-learning algorithm.
@@ -95,6 +96,14 @@ class QLearning:
         """
         raise NotImplementedError
 
+    def _calc_averages(self, stats_flag: str, episode: str):
+        len_rewards = len(self.q_props['rewards_dict'][stats_flag]['rewards'][episode])
+        if self.curr_episode == self.engine_props['max_iters'] - 1 and len_rewards == self.engine_props['num_requests']:
+            rewards_dict = self.q_props['rewards_dict'][stats_flag]['rewards']
+            errors_dict = self.q_props['errors_dict'][stats_flag]['errors']
+            self.q_props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
+            self.q_props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=errors_dict)
+
     def _update_stats(self, reward: float, td_error: float, stats_flag: str):
         episode = str(self.curr_episode)
 
@@ -109,12 +118,7 @@ class QLearning:
             self.q_props['sum_rewards_dict'][episode] += reward
             self.q_props['sum_errors_dict'][episode] += td_error
 
-        len_rewards = len(self.q_props['rewards_dict'][stats_flag]['rewards'][episode])
-        if self.curr_episode == self.engine_props['max_iters'] - 1 and len_rewards == self.engine_props['num_requests']:
-            self.q_props['rewards_dict'][stats_flag] = calc_matrix_stats(
-                input_dict=self.q_props['rewards_dict'][stats_flag]['rewards'])
-            self.q_props['errors_dict'][stats_flag] = calc_matrix_stats(
-                input_dict=self.q_props['errors_dict'][stats_flag]['errors'])
+        self._calc_averages(stats_flag=stats_flag, episode=episode)
 
     def _update_routes_matrix(self, was_routed: bool):
         if was_routed:
@@ -240,6 +244,9 @@ class QLearning:
 
         if random_float < self.q_props['epsilon']:
             self.path_index = np.random.choice(self.k_paths)
+
+            if self.path_index == 1 and self.k_paths == 1:
+                self.path_index = 0
             self.chosen_path = self.paths_list[self.path_index]
         else:
             self.path_index, self.chosen_path = self._get_max_curr_q()
