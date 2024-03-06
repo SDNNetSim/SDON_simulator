@@ -11,9 +11,9 @@ from config_scripts.setup_config import read_config
 from sim_scripts.engine import Engine
 from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
-from arg_scripts.ai_args import empty_dqn_props
 from helper_scripts.ai_helpers import AIHelpers
 from helper_scripts.sim_helpers import combine_and_one_hot, get_start_time
+from arg_scripts.ai_args import empty_dqn_props
 
 
 # TODO: Not supported:
@@ -21,11 +21,10 @@ from helper_scripts.sim_helpers import combine_and_one_hot, get_start_time
 #   - Segment slicing
 #   - Path selection
 
-# TODO: Necessary parameters to constructor
-# TODO: Reorder functions and clean
-# TODO: Move some to props (guidelines for this too)
-
-class DQNSimEnv(gym.Env):
+class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
+    """
+    Simulates a deep q-learning environment with stable baselines3 integration.
+    """
     metadata = dict()
 
     # TODO: Engine props back to constructor
@@ -37,9 +36,10 @@ class DQNSimEnv(gym.Env):
         self.route_obj = None
         self.helper_obj = AIHelpers(ai_props=self.dqn_props)
 
-        # fixme: Static for now
+        # fixme: Static
         self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(1, 128), dtype=np.float64)
         self.action_space = spaces.Discrete(1 * 128)
+        self.render_mode = render_mode
 
         # TODO: Probably don't need iteration?
         #   - Should I design this for saving how?
@@ -48,7 +48,7 @@ class DQNSimEnv(gym.Env):
     def _check_terminated(self):
         if self.dqn_props['arrival_count'] == (self.dqn_props['engine_props']['num_requests']):
             terminated = True
-            # TODO: Here
+            # TODO: Change
             base_fp = os.path.join('..', 'data')
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
             self.iteration += 1
@@ -66,22 +66,24 @@ class DQNSimEnv(gym.Env):
 
         return reward
 
-    def step(self, action: int):
+    def _update_helper_obj(self, action: int):
         self.helper_obj.core_num = action // self.dqn_props['engine_props']['spectral_slots']
         self.helper_obj.start_slot = action % self.dqn_props['engine_props']['spectral_slots']
         self.helper_obj.check_release()
 
         self.helper_obj.net_spec_dict = self.engine_obj.net_spec_dict
         self.helper_obj.reqs_status_dict = self.engine_obj.reqs_status_dict
+
+    def step(self, action: int):
+        self._update_helper_obj(action=action)
         was_allocated = self.helper_obj.allocate(route_obj=self.route_obj)
         curr_time = self.dqn_props['arrival_list'][self.dqn_props['arrival_count']]['arrive']
         self.engine_obj.update_arrival_params(curr_time=curr_time, ai_flag=True,
                                               mock_sdn=self.dqn_props['mock_sdn_dict'])
-        reward = self._calculate_reward(was_allocated=was_allocated)
 
+        reward = self._calculate_reward(was_allocated=was_allocated)
         self.dqn_props['arrival_count'] += 1
         terminated = self._check_terminated()
-
         new_obs = self._get_obs()
         truncated = False
         info = self._get_info()
@@ -89,8 +91,8 @@ class DQNSimEnv(gym.Env):
         return new_obs, reward, terminated, truncated, info
 
     def _get_spectrum(self, paths_matrix: list):
-        spectrum_matrix = np.zeros(
-            (self.dqn_props['engine_props']['cores_per_link'], self.dqn_props['engine_props']['spectral_slots']))
+        spectrum_matrix = np.zeros((self.dqn_props['engine_props']['cores_per_link'],
+                                    self.dqn_props['engine_props']['spectral_slots']))
         for paths_list in paths_matrix:
             for link_tuple in zip(paths_list, paths_list[1:]):
                 rev_link_tuple = link_tuple[1], link_tuple[0]
@@ -117,8 +119,8 @@ class DQNSimEnv(gym.Env):
             curr_req = self.dqn_props['arrival_list'][self.dqn_props['arrival_count']]
 
         self.helper_obj.topology = self.dqn_props['engine_props']['topology']
-        self.mock_sdn_dict = self.helper_obj.update_mock_sdn(mock_sdn=self.dqn_props['mock_sdn_dict'],
-                                                             curr_req=curr_req)
+        self.dqn_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(mock_sdn=self.dqn_props['mock_sdn_dict'],
+                                                                          curr_req=curr_req)
 
         self.route_obj.sdn_props = self.dqn_props['mock_sdn_dict']
         self.route_obj.get_route()
@@ -131,7 +133,7 @@ class DQNSimEnv(gym.Env):
         base_fp = os.path.join('..', 'data')
         self.dqn_sim_dict['s1']['thread_num'] = 's1'
         get_start_time(sim_dict=self.dqn_sim_dict)
-        file_name = f"sim_input_s1.json"
+        file_name = "sim_input_s1.json"
 
         self.engine_obj = Engine(engine_props=self.dqn_sim_dict['s1'])
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props, sdn_props=self.dqn_props['mock_sdn_dict'])
@@ -141,6 +143,9 @@ class DQNSimEnv(gym.Env):
                    data_dict=self.dqn_sim_dict['s1'])
 
     def setup(self):
+        """
+        Sets up this class.
+        """
         args_obj = parse_args()
         config_path = os.path.join('..', 'ini', 'run_ini', 'config.ini')
         self.dqn_sim_dict = read_config(args_obj=args_obj, config_path=config_path)
@@ -160,7 +165,7 @@ class DQNSimEnv(gym.Env):
 
         self.dqn_props['reqs_dict'] = self.engine_obj.reqs_dict
 
-    def reset(self, seed: int = None, options: dict = None):
+    def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
         super().reset(seed=seed)
 
         self.setup()
