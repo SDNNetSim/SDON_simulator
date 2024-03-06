@@ -129,6 +129,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         return spectrum_obs
 
     def _create_input(self):
+        # TODO: Change
         base_fp = os.path.join('..', 'data')
         self.dqn_sim_dict['s1']['thread_num'] = 's1'
         get_start_time(sim_dict=self.dqn_sim_dict)
@@ -146,6 +147,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         Sets up this class.
         """
         args_obj = parse_args()
+        # TODO: Change
         config_path = os.path.join('..', 'ini', 'run_ini', 'config.ini')
         self.dqn_sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
@@ -166,8 +168,10 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
         super().reset(seed=seed)
-
+        self.dqn_props = copy.deepcopy(empty_dqn_props)
+        self.helper_obj.ai_props = self.dqn_props
         self.setup()
+        self.dqn_props['arrival_count'] = 0
         self.dqn_props['engine_props'] = self.engine_obj.engine_props
         self.engine_obj.init_iter(iteration=self.iteration)
         self.engine_obj.create_topology()
@@ -185,7 +189,7 @@ if __name__ == '__main__':
     env = DQNSimEnv()
 
     model = DQN("MlpPolicy", env, verbose=1)
-    model.learn(total_timesteps=20, log_interval=5)
+    model.learn(total_timesteps=40, log_interval=5)
 
     # obs, info = env.reset()
     # while True:
