@@ -28,7 +28,6 @@ def assign_link_lengths(network_fp: str, node_pairs_dict: dict, constant_weight:
     return response_dict
 
 
-# TODO: Update doc string
 def create_network(net_name: str, base_fp: str = None, const_weight: bool = False):
     """
     The main structure data function.
