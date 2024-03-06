@@ -25,3 +25,9 @@ empty_q_props = {
         'engine_params_list': ['epsilon_start', 'epsilon_end', 'max_iters', 'learn_rate', 'discount_factor']
     }
 }
+
+empty_dqn_props = {
+    'net_spec_dict': dict(),
+    'arrival_list': list(),
+    'depart_list': list(),
+}

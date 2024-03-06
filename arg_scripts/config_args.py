@@ -172,4 +172,9 @@ COMMAND_LINE_PARAMS = [
     ['n', int, ''],
     ['sampler', str, ''],
     ['pruner', str, ''],
+    ['eval-episodes', int, ''],
+    ['n-startup-trials', int, ''],
+    ['train-freq', int, ''],
+    ['num-threads', int, ''],
+    ['max-total-trials', int, ''],
 ]

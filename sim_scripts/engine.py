@@ -9,7 +9,6 @@ import numpy as np
 # Local application imports
 from sim_scripts.request_generator import get_requests
 from sim_scripts.sdn_controller import SDNController
-from helper_scripts.ai_helpers import AIMethods
 from helper_scripts.stats_helpers import SimStats
 
 
@@ -38,14 +37,6 @@ class Engine:
 
         self.sdn_obj = SDNController(engine_props=self.engine_props)
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
-        self.ai_obj = AIMethods(engine_props=self.engine_props)
-
-    def update_ai_obj(self):
-        """
-        Updates the artificial intelligent object class after each request.
-        """
-        if self.engine_props['ai_algorithm'] is not None and self.engine_props['ai_algorithm'] != 'None':
-            self.ai_obj.update(was_routed=self.sdn_obj.sdn_props['was_routed'])
 
     # TODO: Curr time to constructor
     def update_arrival_params(self, curr_time: float, ai_flag: bool = False, mock_sdn: dict = None):
@@ -116,9 +107,6 @@ class Engine:
         self.stats_obj.topology = self.topology
         self.sdn_obj.sdn_props['net_spec_dict'] = self.net_spec_dict
         self.sdn_obj.sdn_props['topology'] = self.topology
-
-        self.ai_obj.setup()
-        self.sdn_obj.ai_obj = self.ai_obj
 
     def generate_requests(self, seed: int):
         """

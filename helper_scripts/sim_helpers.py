@@ -1,4 +1,5 @@
 import copy
+from datetime import datetime
 
 import networkx as nx
 import numpy as np
@@ -339,3 +340,24 @@ def calc_matrix_stats(input_dict: dict):
     resp_dict['average'] = tmp_matrix.mean(axis=0).tolist()
 
     return resp_dict
+
+
+def combine_and_one_hot(arr1: np.array, arr2: np.array):
+    if len(arr1) != len(arr2):
+        raise ValueError("Arrays must have the same length.")
+
+    one_hot_arr1 = (arr1 != 0).astype(int)
+    one_hot_arr2 = (arr2 != 0).astype(int)
+
+    result = one_hot_arr1 | one_hot_arr2
+    return result
+
+
+# TODO: Use this in run_sim.py and generalize this function
+def get_start_time(sim_dict: dict):
+    sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+    sim_dict['s1']['date'] = sim_start.split('_')[0]
+    tmp_list = sim_start.split('_')
+
+    time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
+    sim_dict['s1']['sim_start'] = time_string
