@@ -34,5 +34,5 @@ empty_dqn_props = {
 
     'engine_props': None,
     'reqs_dict': None,
-    'mock_sdn_dict': dict,
+    'mock_sdn_dict': dict(),
 }

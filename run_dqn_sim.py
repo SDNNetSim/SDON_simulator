@@ -119,8 +119,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
             curr_req = self.dqn_props['arrival_list'][self.dqn_props['arrival_count']]
 
         self.helper_obj.topology = self.dqn_props['engine_props']['topology']
-        self.dqn_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(mock_sdn=self.dqn_props['mock_sdn_dict'],
-                                                                          curr_req=curr_req)
+        self.dqn_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
 
         self.route_obj.sdn_props = self.dqn_props['mock_sdn_dict']
         self.route_obj.get_route()
