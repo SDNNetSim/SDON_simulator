@@ -343,6 +343,13 @@ def calc_matrix_stats(input_dict: dict):
 
 
 def combine_and_one_hot(arr1: np.array, arr2: np.array):
+    """
+    Or operation of two arrays to find overlaps.
+    :param arr1: The first input array.
+    :param arr2: The second input array.
+    :return: The output of the or operation.
+    :rtype: np.array
+    """
     if len(arr1) != len(arr2):
         raise ValueError("Arrays must have the same length.")
 
@@ -355,6 +362,10 @@ def combine_and_one_hot(arr1: np.array, arr2: np.array):
 
 # TODO: Use this in run_sim.py and generalize this function
 def get_start_time(sim_dict: dict):
+    """
+    Gets the start time of a simulation.
+    :param sim_dict: Holds the simulation parameters.
+    """
     sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
     sim_dict['s1']['date'] = sim_start.split('_')[0]
     tmp_list = sim_start.split('_')
