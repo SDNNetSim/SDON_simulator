@@ -17,6 +17,8 @@ def parse_args():
         parser.add_argument(f'--{argument}', type=arg_type, help=arg_help)
         parser.add_argument(f'-{argument}', type=arg_type, help=arg_help)
 
+    # TODO: Address this
+    parser.add_argument('-optimize', action='store_true', help='Enable optimization')
     args = parser.parse_args()
 
     return vars(args)

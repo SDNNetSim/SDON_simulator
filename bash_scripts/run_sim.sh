@@ -9,6 +9,20 @@
 # shellcheck disable=SC2164
 cd
 # shellcheck disable=SC2164
-cd /work/pi_vinod_vokkarane_uml_edu/git/SDN_Simulator/
+cd /work/pi_vinod_vokkarane_uml_edu/git/sdn_simulator/
 
-python run_sim.py
+# Make and activate virtual environment
+./bash_scripts/make_venv.sh venvs/unity_venv python3.11
+source venvs/unity_venv/venv/bin/activate
+
+# Download requirements
+pip install -r requirements.txt
+
+# Modify StableBaselines3 to register custom environments
+./bash_scripts/register_rl_env.sh custom_dqn DQNSimEnv
+
+# Run AI simulation
+python -m rl_zoo3.train --algo dqn --env DQNSimEnv --conf-file ./ai_scripts/yml/custom_dqn.yml --env-kwargs arguments:1,128,10
+
+# Run regular simulation
+# python run_sim.py
