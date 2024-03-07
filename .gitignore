@@ -31,3 +31,6 @@ config_scripts/__pycache__/*
 ai_scripts/__pycache__/*
 sim_scripts/__pycache__/*
 .vscode/
+
+# Virtual environments
+venvs/unity_venv
