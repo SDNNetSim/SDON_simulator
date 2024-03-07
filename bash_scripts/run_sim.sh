@@ -18,7 +18,11 @@ source venvs/unity_venv/venv/bin/activate
 # Download requirements
 pip install -r requirements.txt
 
-# Run simulation
-python run_sim.py
+# Modify StableBaselines3 to register custom environments
+./bash_scripts/register_rl_env.sh custom_dqn DQNSimEnv
 
 # Run AI simulation
+python -m rl_zoo3.train --algo dqn --env DQNSimEnv --conf-file ./ai_scripts/yml/custom_dqn.yml --env-kwargs arguments:1,128,10
+
+# Run regular simulation
+# python run_sim.py
