@@ -15,6 +15,10 @@ We need your insight and creativity! The true strength of open-source lies in co
 - Fedora 37+
 - Windows 11
 
+### Supported Programming Languages
+
+- Python version 3.11+
+
 ### Installation
 
 To get started with the SDN Simulator, follow these steps to set up your environment:
@@ -25,11 +29,11 @@ To get started with the SDN Simulator, follow these steps to set up your environ
    ```
 2. Clone the repository:
    ```
-   git clone git@github.com:arashr88/SDN_Simulator.git
+   git clone git@github.com:SDNNetSim/sdn_simulator.git
    ```
 3. Change into the project directory:
    ```
-   cd SDN_Simulator
+   cd sdn_simulator
    ```
 4. Install the required dependencies:
    ```
