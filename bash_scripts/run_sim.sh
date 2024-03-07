@@ -9,6 +9,16 @@
 # shellcheck disable=SC2164
 cd
 # shellcheck disable=SC2164
-cd /work/pi_vinod_vokkarane_uml_edu/git/SDN_Simulator/
+cd /work/pi_vinod_vokkarane_uml_edu/git/sdn_simulator/
 
+# Make and activate virtual environment
+./bash_scripts/make_venv.sh venvs/unity_venv python3.11
+source venvs/unity_venv/venv/bin/activate
+
+# Download requirements
+pip install -r requirements.txt
+
+# Run simulation
 python run_sim.py
+
+# Run AI simulation
