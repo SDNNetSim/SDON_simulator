@@ -198,4 +198,5 @@ COMMAND_LINE_PARAMS = [
     ['device', str, ''],
     ['config', str, ''],
     ['show-progress', bool, ''],
+    ['conf-file', str, ''],
 ]
