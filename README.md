@@ -25,11 +25,11 @@ To get started with the SDN Simulator, follow these steps to set up your environ
    ```
 2. Clone the repository:
    ```
-   git clone git@github.com:arashr88/SDN_Simulator.git
+   git@github.com:SDNNetSim/sdn_simulator.git
    ```
 3. Change into the project directory:
    ```
-   cd SDN_Simulator
+   cd sdn_simulator
    ```
 4. Install the required dependencies:
    ```
