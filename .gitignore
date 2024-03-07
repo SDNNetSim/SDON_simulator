@@ -34,3 +34,7 @@ sim_scripts/__pycache__/*
 
 # Virtual environments
 venvs/unity_venv/venv
+
+# vscode
+*/__pycache__/
+__pycache__/
