@@ -199,4 +199,5 @@ COMMAND_LINE_PARAMS = [
     ['config', str, ''],
     ['show-progress', bool, ''],
     ['conf-file', str, ''],
+    ['eval-episodes', int, '']
 ]
