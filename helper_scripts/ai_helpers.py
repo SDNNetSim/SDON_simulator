@@ -14,6 +14,7 @@ class AIHelpers:
         self.reqs_status_dict = None
 
         self.path_list = None
+        self.path_index = None
         self.core_num = None
         self.start_slot = None
         self.end_slot = None
@@ -155,6 +156,9 @@ class AIHelpers:
         was_allocated = True
         self.ai_props['mock_sdn_dict']['was_routed'] = True
         for path_index, path_list in enumerate(route_obj.route_props['paths_list']):
+            if path_index != self.path_index:
+                continue
+
             self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
             if not self.mod_format:
                 self.ai_props['mock_sdn_dict']['was_routed'] = False
@@ -171,6 +175,9 @@ class AIHelpers:
 
             is_free = self.check_is_free()
             was_allocated = self._allocate(is_free=is_free)
+
+            if path_index == self.path_index:
+                break
 
         self.update_reqs_status(was_routed=False)
         return was_allocated
