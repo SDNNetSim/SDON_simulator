@@ -182,7 +182,6 @@ class Routing:
         """
         Controls the class by finding the appropriate routing function.
 
-        :param ai_obj: Artificial intelligence is handled in a separate class.
         :return: None
         """
         self._init_route_info()

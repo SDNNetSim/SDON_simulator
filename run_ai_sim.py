@@ -35,13 +35,15 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj = None
         self.helper_obj = AIHelpers(ai_props=self.dqn_props)
 
-        self.cores_per_link = kwargs['arguments'][0]
-        self.spectral_slots = kwargs['arguments'][1]
-        self.num_requests = kwargs['arguments'][2]
+        self.k_paths = kwargs['arguments'][0]
+        self.cores_per_link = kwargs['arguments'][1]
+        self.spectral_slots = kwargs['arguments'][2]
+        self.num_requests = kwargs['arguments'][3]
 
-        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(self.cores_per_link, self.spectral_slots),
+        self.observation_space = spaces.Box(low=0.0, high=1.0,
+                                            shape=(self.k_paths, self.cores_per_link, self.spectral_slots),
                                             dtype=np.float64)
-        self.action_space = spaces.Discrete(self.cores_per_link * self.spectral_slots)
+        self.action_space = spaces.Discrete(self.k_paths * self.cores_per_link * self.spectral_slots)
         self.render_mode = render_mode
         self.iteration = 0
 
@@ -66,8 +68,11 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         return reward
 
     def _update_helper_obj(self, action: int):
-        self.helper_obj.core_num = action // self.dqn_props['engine_props']['spectral_slots']
-        self.helper_obj.start_slot = action % self.dqn_props['engine_props']['spectral_slots']
+        self.helper_obj.path_index = action // (self.cores_per_link * self.spectral_slots)
+        remaining = action % (self.cores_per_link * self.spectral_slots)
+        self.helper_obj.core_num = remaining // self.spectral_slots
+        self.helper_obj.start_slot = remaining % self.spectral_slots
+
         self.helper_obj.check_release()
 
         self.helper_obj.net_spec_dict = self.engine_obj.net_spec_dict
@@ -90,9 +95,8 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         return new_obs, reward, terminated, truncated, info
 
     def _get_spectrum(self, paths_matrix: list):
-        spectrum_matrix = np.zeros((self.dqn_props['engine_props']['cores_per_link'],
-                                    self.dqn_props['engine_props']['spectral_slots']))
-        for paths_list in paths_matrix:
+        spectrum_matrix = np.zeros((self.k_paths, self.cores_per_link, self.spectral_slots))
+        for path_index, paths_list in enumerate(paths_matrix):
             for link_tuple in zip(paths_list, paths_list[1:]):
                 rev_link_tuple = link_tuple[1], link_tuple[0]
                 link_dict = self.engine_obj.net_spec_dict[link_tuple]
@@ -102,8 +106,10 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
                     raise ValueError('Link is not bi-directionally equal.')
 
                 for core_index, core_arr in enumerate(link_dict['cores_matrix']):
-                    spectrum_matrix[core_index] = combine_and_one_hot(arr1=spectrum_matrix[core_index],
-                                                                      arr2=core_arr)
+                    spectrum_matrix[path_index][core_index] = combine_and_one_hot(
+                        arr1=spectrum_matrix[path_index][core_index],
+                        arr2=core_arr
+                    )
 
         return spectrum_matrix
 
