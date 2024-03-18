@@ -135,8 +135,6 @@ class Engine:
             if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
                 self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
 
-            req_num += 1
-
         elif req_type == "release":
             self.handle_release(curr_time=curr_time)
         else:
@@ -195,6 +193,9 @@ class Engine:
             req_num = 1
             for curr_time in self.reqs_dict:
                 self.handle_request(curr_time=curr_time, req_num=req_num)
+
+                if self.reqs_dict[curr_time]['request_type'] == 'arrival':
+                    req_num += 1
 
             self.end_iter(iteration=iteration)
 
