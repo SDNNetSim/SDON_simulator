@@ -1,5 +1,6 @@
 import os
 import copy
+import math
 
 import gymnasium as gym
 import numpy as np
@@ -43,6 +44,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
+        self.max_distance = math.sqrt((self.cores_per_link - 1) ** 2 + (self.spectral_slots - 1) ** 2)
         max_slots_needed = 0
         for bandwidth, mod_obj in self.engine_obj.engine_props['mod_per_bw'].items():
             for modulation, data_obj in mod_obj.items():
@@ -68,7 +70,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
             terminated = True
             base_fp = os.path.join('data')
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
-            # self.iteration += 1
         else:
             terminated = False
 
@@ -76,7 +77,11 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
     @staticmethod
     def _calculate_reward(was_allocated: bool):
+        # TODO: Change to consider best-fit
         if was_allocated:
+            your_assignment = (0, 0)
+            best_fit_assignment = (0, 0)
+            euc_distance = math.sqrt((your_assignment[0] - best_fit_assignment[0]) ** 2 + (your_assignment[1] - best_fit_assignment[1]) ** 2)
             reward = 1.0
         else:
             reward = -1.0
@@ -103,9 +108,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
                                                       req_num=arrival_count + 1)
 
     def step(self, action: int):
-        if self.dqn_props['arrival_count'] == 900:
-            print('line 107 run ai sim')
-
         self._update_helper_obj(action=action)
         was_allocated = self.helper_obj.allocate(route_obj=self.route_obj)
         self._update_snapshots()
@@ -134,12 +136,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
                     raise ValueError('Link is not bi-directionally equal.')
 
                 for core_index, core_arr in enumerate(link_dict['cores_matrix']):
-                    # spectrum_matrix[path_index][core_index] = combine_and_one_hot(
-                    #     arr1=spectrum_matrix[path_index][core_index],
-                    #     arr2=core_arr
-                    # )
-                    #
-                    # TODO: Check this with a nth request
                     spectrum_matrix[path_index][core_index] = find_core_frag_cong(
                         net_spec_db=self.engine_obj.net_spec_dict, path=paths_list, core=core_index)
 
@@ -176,8 +172,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         obs_dict = {
             'source': int(curr_req['source']),
             'destination': int(curr_req['destination']),
-            # TODO: Encode the highest slots needed for now
-            'slots_needed': None,
+            'slots_needed': curr_req['mod_formats']['QPSK']['slots_needed'],
             'arrival': np.array(arrival_scaled),
             'departure': np.array(depart_scaled),
             'cores_matrix': spectrum_obs
@@ -270,7 +265,7 @@ if __name__ == '__main__':
     env = DQNSimEnv()
 
     model = DQN("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=1000, log_interval=1)
+    model.learn(total_timesteps=100000, log_interval=1)
 
     # obs, info = env.reset()
     # while True:
