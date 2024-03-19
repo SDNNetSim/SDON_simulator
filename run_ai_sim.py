@@ -55,6 +55,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.observation_space = spaces.Dict({
             'source': spaces.Discrete(self.num_nodes, start=0),
             'destination': spaces.Discrete(self.num_nodes, start=0),
+            # TODO: You may have to make this more accurate
             'slots_needed': spaces.Discrete(max_slots_needed + 1),
             'arrival': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
             'departure': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
@@ -75,14 +76,14 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return terminated
 
-    @staticmethod
-    def _calculate_reward(was_allocated: bool):
-        # TODO: Change to consider best-fit
+    def _calculate_reward(self, was_allocated: bool):
         if was_allocated:
-            your_assignment = (0, 0)
-            best_fit_assignment = (0, 0)
-            euc_distance = math.sqrt((your_assignment[0] - best_fit_assignment[0]) ** 2 + (your_assignment[1] - best_fit_assignment[1]) ** 2)
-            reward = 1.0
+            helper_obj = self.helper_obj
+            agent_tuple = (helper_obj.core_num, helper_obj.start_slot)
+            best_tuple = (helper_obj.best_fit_params['core_num'], helper_obj.best_fit_params['start_slot'])
+            euc_distance = math.sqrt((agent_tuple[0] - best_tuple[0]) ** 2 + (agent_tuple[1] - best_tuple[1]) ** 2)
+            euc_scaled = euc_distance / self.max_distance
+            reward = 1.0 - euc_scaled
         else:
             reward = -1.0
 

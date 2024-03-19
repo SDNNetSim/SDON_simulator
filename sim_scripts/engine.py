@@ -173,8 +173,12 @@ class Engine:
         self.stats_obj.iteration = iteration
         self.stats_obj.init_iter_stats()
         # To prevent incomplete saves
-        signal.signal(signal.SIGINT, self.stats_obj.save_stats)
-        signal.signal(signal.SIGTERM, self.stats_obj.save_stats)
+        try:
+            signal.signal(signal.SIGINT, self.stats_obj.save_stats)
+            signal.signal(signal.SIGTERM, self.stats_obj.save_stats)
+        # Signal only works in the main thread...
+        except ValueError:
+            pass
 
         if iteration == 0:
             print(f"Simulation started for Erlang: {self.engine_props['erlang']} "

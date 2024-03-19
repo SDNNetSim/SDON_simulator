@@ -24,7 +24,7 @@ source venvs/unity_venv/venv/bin/activate
 #./bash_scripts/register_rl_env.sh custom_dqn DQNSimEnv
 
 # Run AI simulation
-python -m rl_zoo3.train --algo dqn --env DQNSimEnv --conf-file ./ai_scripts/yml/custom_dqn.yml -optimize --n-trials 100 --n-timesteps 1000
+python -m rl_zoo3.train --algo dqn --env DQNSimEnv --conf-file ./ai_scripts/yml/custom_dqn.yml -optimize --n-trials 10 --n-timesteps 5000 --n-jobs 2
 #python -m rl_zoo3.train --algo dqn --env DQNSimEnv --conf-file ./ai_scripts/yml/custom_dqn.yml --n-timesteps 1000000
 
 # Run regular simulation

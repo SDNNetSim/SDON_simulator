@@ -26,8 +26,7 @@ class AIHelpers:
         self.path_len = None
         self.bandwidth = None
 
-        # TODO: Make sure to use this in run_ai_sim
-        self.best_fit_params = {'path_num': None, 'start_slot': None, 'core_num': None}
+        self.best_fit_params = {'start_slot': None, 'core_num': None}
 
     def update_net_spec_dict(self):
         """
@@ -129,20 +128,21 @@ class AIHelpers:
         self.ai_props['mock_sdn_dict']['spectrum_dict']['modulation'] = self.mod_format
         self.ai_props['mock_sdn_dict']['was_routed'] = True
 
-    # TODO: Update best-fit dict
     def _get_best_fit(self):
         mock_engine_props = copy.deepcopy(self.ai_props['engine_props'])
         mock_engine_props['allocation_method'] = 'best_fit'
         mock_engine_props['ai_algorithm'] = 'None'
         mock_sdn_props = {
             'net_spec_dict': self.net_spec_dict,
-            'mod_formats': None
+            'mod_formats': self.ai_props['engine_props']['mod_per_bw'][self.bandwidth]
         }
-        spectrum_obj = SpectrumAssignment(engine_props=self.ai_props['engine_props'], sdn_props=mock_sdn_props)
+        spectrum_obj = SpectrumAssignment(engine_props=mock_engine_props, sdn_props=mock_sdn_props)
         spectrum_obj.spectrum_props['path_list'] = self.path_list
         mod_format_list = [self.mod_format]
-        spectrum_resp = spectrum_obj.get_spectrum(mod_format_list=mod_format_list, ai_obj=None)
-        print('Made it.')
+        spectrum_obj.get_spectrum(mod_format_list=mod_format_list, ai_obj=None)
+
+        for spectrum_param in ('core_num', 'start_slot'):
+            self.best_fit_params[spectrum_param] = spectrum_obj.spectrum_props[spectrum_param]
 
     def _allocate(self, is_free: bool):
         if is_free:
