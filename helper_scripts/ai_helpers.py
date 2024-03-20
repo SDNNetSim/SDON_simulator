@@ -4,6 +4,7 @@ import numpy as np
 
 from sim_scripts.spectrum_assignment import SpectrumAssignment
 from sim_scripts.sdn_controller import SDNController
+from helper_scripts.sim_helpers import find_path_len
 
 
 class AIHelpers:
@@ -24,7 +25,6 @@ class AIHelpers:
         self.core_num = None
         self.start_slot = None
         self.end_slot = None
-        # TODO: Implement this
         self.slice_request = None
         self.mod_format = None
         self.path_len = None
@@ -36,6 +36,11 @@ class AIHelpers:
         """
         Updates the network spectrum database.
         """
+        if self.ai_props['engine_props']['guard_slots']:
+            self.end_slot = self.end_slot - 1
+        else:
+            raise NotImplementedError
+
         for link_tuple in zip(self.path_list, self.path_list[1:]):
             rev_link_tuple = (link_tuple[1], link_tuple[0])
 
@@ -142,14 +147,16 @@ class AIHelpers:
             'mod_formats': self.ai_props['engine_props']['mod_per_bw'][self.bandwidth]
         }
         spectrum_obj = SpectrumAssignment(engine_props=mock_engine_props, sdn_props=mock_sdn_props)
+        # TODO: Has forced core
+        spectrum_obj.spectrum_props['forced_core'] = self.core_num
+
         spectrum_obj.spectrum_props['path_list'] = self.path_list
         mod_format_list = [self.mod_format]
         spectrum_obj.get_spectrum(mod_format_list=mod_format_list, ai_obj=None)
 
-        for spectrum_param in ('core_num', 'start_slot'):
+        for spectrum_param in ('core_num', 'start_slot', 'end_slot'):
             self.best_fit_params[spectrum_param] = spectrum_obj.spectrum_props[spectrum_param]
 
-    # TODO: Consider this when slicing (something similar)
     def _allocate(self, is_free: bool):
         if is_free:
             self._get_best_fit()
@@ -171,14 +178,15 @@ class AIHelpers:
         self.end_slot = self.start_slot + bandwidth_dict[self.mod_format]['slots_needed']
 
     def _handle_slicing(self):
-        # TODO: You may get a circular import here
         sdn_obj = SDNController(engine_props=self.ai_props['engine_props'])
         sdn_obj._init_req_stats()
-        # TODO: Net spec dict is none
         sdn_obj.sdn_props = self.mock_sdn
         sdn_obj._handle_slicing(path_list=self.path_list)
 
         if sdn_obj.sdn_props['was_routed']:
+            path_weight = find_path_len(path_list=sdn_obj.sdn_props['path_list'],
+                                        topology=self.ai_props['engine_props']['topology'])
+            self.ai_props['mock_sdn_dict']['path_weight'] = path_weight
             was_allocated = True
             return was_allocated
 
@@ -186,7 +194,6 @@ class AIHelpers:
         self.ai_props['mock_sdn_dict']['block_reason'] = 'congestion'
         self.ai_props['mock_sdn_dict']['was_routed'] = False
         return was_allocated
-        # TODO: Make sure to update network spectrum db after allocation (or double check)
 
     def _update_path_vars(self, route_obj: object, path_list: list, path_index: int):
         self.path_list = path_list
@@ -204,35 +211,41 @@ class AIHelpers:
         self.ai_props['mock_sdn_dict']['was_routed'] = True
         for path_index, path_list in enumerate(route_obj.route_props['paths_list']):
             # Only consider the path selected by the agent
-            # TODO: Only three paths given and path index is five...
             if path_index != self.path_index:
                 continue
 
+            # TODO: Check net spec db for both cases
             self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
-            # TODO: Check, incorporate SDN Controller and call slicing
+
+            self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
             if self.ai_props['engine_props']['max_segments'] > 1 and self.slice_request:
-                # TODO: Need and updated network spectrum database with the slices somehow
-                #   - How to update that in run_ai_sim?
                 was_allocated = self._handle_slicing()
                 self.update_reqs_status(was_routed=was_allocated)
                 return was_allocated
-
-            self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
-            if not self.mod_format:
+            elif not self.mod_format:
                 self.ai_props['mock_sdn_dict']['was_routed'] = False
                 self.ai_props['mock_sdn_dict']['block_reason'] = 'distance'
                 was_allocated = False
                 continue
-
-            self._get_end_slot()
-            if self.end_slot >= self.ai_props['engine_props']['spectral_slots']:
-                self.ai_props['mock_sdn_dict']['was_routed'] = False
-                self.ai_props['mock_sdn_dict']['block_reason'] = 'congestion'
-                was_allocated = False
-                continue
-
-            is_free = self.check_is_free()
-            was_allocated = self._allocate(is_free=is_free)
+            else:
+                self.bandwidth = self.mock_sdn['bandwidth']
+                self._get_best_fit()
+                self.start_slot = self.best_fit_params['start_slot']
+                self.end_slot = self.best_fit_params['end_slot']
+                self.update_net_spec_dict()
+                self._allocate_mock_sdn()
+            #
+            # self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
+            #
+            # self._get_end_slot()
+            # if self.end_slot >= self.ai_props['engine_props']['spectral_slots']:
+            #     self.ai_props['mock_sdn_dict']['was_routed'] = False
+            #     self.ai_props['mock_sdn_dict']['block_reason'] = 'congestion'
+            #     was_allocated = False
+            #     continue
+            #
+            # is_free = self.check_is_free()
+            # was_allocated = self._allocate(is_free=is_free)
 
             if path_index == self.path_index:
                 break

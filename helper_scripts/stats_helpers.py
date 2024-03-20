@@ -208,7 +208,7 @@ class SimStats:
                     if len(data_list) == 1:
                         deviation = 0.0
                     else:
-                        # TODO: Weights dict not updates properly
+                        # TODO: Weights dict not updates properly (empty lists)
                         deviation = stdev(data_list)
                     mod_obj[modulation] = {'mean': mean(data_list), 'std': deviation,
                                            'min': min(data_list), 'max': max(data_list)}

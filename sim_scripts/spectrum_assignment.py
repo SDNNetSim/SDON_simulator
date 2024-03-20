@@ -51,6 +51,9 @@ class SpectrumAssignment:
         # Get all potential super channels
         for (src, dest) in zip(self.spectrum_props['path_list'][:-1], self.spectrum_props['path_list'][1:]):
             for core_num in range(self.engine_props['cores_per_link']):
+                if self.spectrum_props['forced_core'] is not None and self.spectrum_props['forced_core'] != core_num:
+                    continue
+
                 core_arr = self.sdn_props['net_spec_dict'][(src, dest)]['cores_matrix'][core_num]
                 open_slots_arr = np.where(core_arr == 0)[0]
 
