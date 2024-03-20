@@ -3,6 +3,7 @@ import copy
 import numpy as np
 
 from sim_scripts.spectrum_assignment import SpectrumAssignment
+from sim_scripts.sdn_controller import SDNController
 
 
 class AIHelpers:
@@ -17,11 +18,14 @@ class AIHelpers:
         self.net_spec_dict = None
         self.reqs_status_dict = None
 
+        self.mock_sdn = None
         self.path_list = None
         self.path_index = None
         self.core_num = None
         self.start_slot = None
         self.end_slot = None
+        # TODO: Implement this
+        self.slice_request = None
         self.mod_format = None
         self.path_len = None
         self.bandwidth = None
@@ -116,6 +120,7 @@ class AIHelpers:
             {self.ai_props['arrival_list'][self.ai_props['arrival_count']]['req_id']: {
                 "mod_format": self.mod_format,
                 "path": self.path_list,
+                # TODO: This is not true
                 "is_sliced": False,
                 "was_routed": was_routed,
             }})
@@ -144,6 +149,7 @@ class AIHelpers:
         for spectrum_param in ('core_num', 'start_slot'):
             self.best_fit_params[spectrum_param] = spectrum_obj.spectrum_props[spectrum_param]
 
+    # TODO: Consider this when slicing (something similar)
     def _allocate(self, is_free: bool):
         if is_free:
             self._get_best_fit()
@@ -164,6 +170,24 @@ class AIHelpers:
         bandwidth_dict = self.ai_props['engine_props']['mod_per_bw'][self.bandwidth]
         self.end_slot = self.start_slot + bandwidth_dict[self.mod_format]['slots_needed']
 
+    def _handle_slicing(self):
+        # TODO: You may get a circular import here
+        sdn_obj = SDNController(engine_props=self.ai_props['engine_props'])
+        sdn_obj._init_req_stats()
+        # TODO: Net spec dict is none
+        sdn_obj.sdn_props = self.mock_sdn
+        sdn_obj._handle_slicing(path_list=self.path_list)
+
+        if sdn_obj.sdn_props['was_routed']:
+            was_allocated = True
+            return was_allocated
+
+        was_allocated = False
+        self.ai_props['mock_sdn_dict']['block_reason'] = 'congestion'
+        self.ai_props['mock_sdn_dict']['was_routed'] = False
+        return was_allocated
+        # TODO: Make sure to update network spectrum db after allocation (or double check)
+
     def _update_path_vars(self, route_obj: object, path_list: list, path_index: int):
         self.path_list = path_list
         self.path_len = route_obj.route_props['weights_list'][path_index]
@@ -179,8 +203,19 @@ class AIHelpers:
         was_allocated = True
         self.ai_props['mock_sdn_dict']['was_routed'] = True
         for path_index, path_list in enumerate(route_obj.route_props['paths_list']):
+            # Only consider the path selected by the agent
+            # TODO: Only three paths given and path index is five...
             if path_index != self.path_index:
                 continue
+
+            self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
+            # TODO: Check, incorporate SDN Controller and call slicing
+            if self.ai_props['engine_props']['max_segments'] > 1 and self.slice_request:
+                # TODO: Need and updated network spectrum database with the slices somehow
+                #   - How to update that in run_ai_sim?
+                was_allocated = self._handle_slicing()
+                self.update_reqs_status(was_routed=was_allocated)
+                return was_allocated
 
             self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
             if not self.mod_format:
@@ -213,7 +248,8 @@ class AIHelpers:
         Updates the mock sdn dictionary.
         :param curr_req: The current request.
         """
-        mock_sdn = {
+        self.mock_sdn = {
+            'req_id': curr_req['req_id'],
             'source': curr_req['source'],
             'destination': curr_req['destination'],
             'bandwidth': curr_req['bandwidth'],
@@ -233,4 +269,4 @@ class AIHelpers:
             'spectrum_dict': {'modulation': None}
         }
 
-        return mock_sdn
+        return self.mock_sdn

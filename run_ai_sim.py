@@ -55,7 +55,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.observation_space = spaces.Dict({
             'source': spaces.Discrete(self.num_nodes, start=0),
             'destination': spaces.Discrete(self.num_nodes, start=0),
-            # TODO: You may have to make this more accurate
             'slots_needed': spaces.Discrete(max_slots_needed + 1),
             'arrival': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
             'departure': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
@@ -63,7 +62,11 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
             'cores_matrix': spaces.Box(low=0.01, high=1.01, shape=(self.k_paths, self.cores_per_link, 2)),
         })
 
-        self.action_space = spaces.Discrete(self.k_paths * self.cores_per_link * self.spectral_slots)
+        if self.dqn_sim_dict['s1']['max_segments'] > 1:
+            # Add flag for slicing
+            self.action_space = spaces.Discrete(self.k_paths * self.cores_per_link * self.spectral_slots * 2)
+        else:
+            self.action_space = spaces.Discrete(self.k_paths * self.cores_per_link * self.spectral_slots)
         self.render_mode = render_mode
 
     def _check_terminated(self):
@@ -78,22 +81,44 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _calculate_reward(self, was_allocated: bool):
         if was_allocated:
-            helper_obj = self.helper_obj
-            agent_tuple = (helper_obj.core_num, helper_obj.start_slot)
-            best_tuple = (helper_obj.best_fit_params['core_num'], helper_obj.best_fit_params['start_slot'])
-            euc_distance = math.sqrt((agent_tuple[0] - best_tuple[0]) ** 2 + (agent_tuple[1] - best_tuple[1]) ** 2)
-            euc_scaled = euc_distance / self.max_distance
-            reward = 1.0 - euc_scaled
+            # TODO: Change
+            # helper_obj = self.helper_obj
+            # agent_tuple = (helper_obj.core_num, helper_obj.start_slot)
+            # best_tuple = (helper_obj.best_fit_params['core_num'], helper_obj.best_fit_params['start_slot'])
+            # euc_distance = math.sqrt((agent_tuple[0] - best_tuple[0]) ** 2 + (agent_tuple[1] - best_tuple[1]) ** 2)
+            # euc_scaled = euc_distance / self.max_distance
+            # reward = 1.0 - euc_scaled
+            reward = 1.0
         else:
             reward = -1.0
 
         return reward
 
     def _update_helper_obj(self, action: int):
+        action_space_size = self.k_paths * self.cores_per_link * self.spectral_slots * 2
+        if action < 0 or action >= action_space_size:
+            raise ValueError(f'Action out of range: {action}')
+
+        # Determine slice_request flag
+        # TODO: Change, forcing slicing for debugging
+        action = (self.k_paths * self.cores_per_link * self.spectral_slots) + 5
+        self.helper_obj.slice_request = action >= (self.k_paths * self.cores_per_link * self.spectral_slots)
+
+        # Calculate resource indices if slice_request is True
+        if self.helper_obj.slice_request:
+            action -= (self.k_paths * self.cores_per_link * self.spectral_slots)
+
         self.helper_obj.path_index = action // (self.cores_per_link * self.spectral_slots)
         remaining = action % (self.cores_per_link * self.spectral_slots)
         self.helper_obj.core_num = remaining // self.spectral_slots
         self.helper_obj.start_slot = remaining % self.spectral_slots
+
+        if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.k_paths - 1):
+            raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
+        if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (self.cores_per_link - 1):
+            raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')
+        if self.helper_obj.start_slot < 0 or self.helper_obj.start_slot > (self.spectral_slots - 1):
+            raise ValueError(f'Start index out of range: {self.helper_obj.start_slot}')
 
         self.helper_obj.check_release()
 
@@ -158,6 +183,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
             curr_req = self.dqn_props['arrival_list'][self.dqn_props['arrival_count']]
 
         self.helper_obj.topology = self.dqn_props['engine_props']['topology']
+        self.helper_obj.net_spec_dict = self.engine_obj.net_spec_dict
         self.dqn_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
 
         self.route_obj.sdn_props = self.dqn_props['mock_sdn_dict']
@@ -265,8 +291,8 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 if __name__ == '__main__':
     env = DQNSimEnv()
 
-    model = DQN("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=100000, log_interval=1)
+    model = DQN("MultiInputPolicy", env, verbose=1, device='cpu')
+    model.learn(total_timesteps=1000, log_interval=1)
 
     # obs, info = env.reset()
     # while True:
