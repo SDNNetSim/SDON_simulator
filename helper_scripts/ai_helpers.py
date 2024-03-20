@@ -178,6 +178,7 @@ class AIHelpers:
         self.end_slot = self.start_slot + bandwidth_dict[self.mod_format]['slots_needed']
 
     def _handle_slicing(self):
+        # fixme Taking an allocated spectrum, I think there is a discrepancy between net spec dbs
         sdn_obj = SDNController(engine_props=self.ai_props['engine_props'])
         sdn_obj._init_req_stats()
         sdn_obj.sdn_props = self.mock_sdn
@@ -214,7 +215,6 @@ class AIHelpers:
             if path_index != self.path_index:
                 continue
 
-            # TODO: Check net spec db for both cases
             self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
 
             self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)

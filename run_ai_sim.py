@@ -41,15 +41,19 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.max_arrival = -1 * np.inf
         self.min_depart = np.inf
         self.max_depart = -1 * np.inf
+        self.bandwidth_list = list()
 
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
         self.max_distance = math.sqrt((self.cores_per_link - 1) ** 2 + (self.spectral_slots - 1) ** 2)
         max_slots_needed = 0
         max_length = 0
+
         for bandwidth, mod_obj in self.engine_obj.engine_props['mod_per_bw'].items():
+            bandwidth_percent = self.engine_obj.engine_props['request_distribution'][bandwidth]
+            if bandwidth_percent > 0:
+                self.bandwidth_list.append(bandwidth)
             for modulation, data_obj in mod_obj.items():
-                bandwidth_percent = self.engine_obj.engine_props['request_distribution'][bandwidth]
                 if data_obj['slots_needed'] > max_slots_needed and bandwidth_percent > 0:
                     max_slots_needed = data_obj['slots_needed']
                 if data_obj['max_length'] > max_length and bandwidth_percent > 0:
@@ -62,6 +66,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
             'arrival': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
             'departure': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
             'max_length': spaces.Discrete(max_length + 1),
+            'bandwidth': spaces.MultiBinary(len(self.bandwidth_list)),
             # By two to represent a core's current fragmentation and congestion scores
             'cores_matrix': spaces.Box(low=0.01, high=1.01, shape=(self.k_paths, self.cores_per_link, 2)),
         })
@@ -82,7 +87,10 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _calculate_reward(self, was_allocated: bool):
         if was_allocated:
-            reward = 1.0
+            if self.engine_obj.engine_props['max_segments'] > 1:
+                reward = 0.5
+            else:
+                reward = 1.0
         else:
             reward = -1.0
 
@@ -93,6 +101,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.path_index = int(action / total_core_actions)
         remaining_actions = action % total_core_actions
         self.helper_obj.core_num = int(remaining_actions / self.cores_per_link)
+
         self.helper_obj.slice_request = bool(remaining_actions % self.cores_per_link)
 
         if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.k_paths - 1):
@@ -131,6 +140,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         return new_obs, reward, terminated, truncated, info
 
     def _get_spectrum(self, paths_matrix: list):
+        # TODO: Why is it by two?
         spectrum_matrix = np.zeros((self.k_paths, self.cores_per_link, 2))
         for path_index, paths_list in enumerate(paths_matrix):
             for link_tuple in zip(paths_list, paths_list[1:]):
@@ -176,12 +186,18 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         depart_scaled = self._min_max_scale(value=curr_req['depart'], min_value=self.min_depart,
                                             max_value=self.max_depart)
 
+        bandwidth_encoded = [0, 0, 0, 0]
+        if len(self.bandwidth_list) != 0:
+            bandwidth_index = self.bandwidth_list.index(curr_req['bandwidth'])
+            bandwidth_encoded[bandwidth_index] = 1
+
         obs_dict = {
             'source': int(curr_req['source']),
             'destination': int(curr_req['destination']),
             # TODO: Update this to be more accurate
             'slots_needed': curr_req['mod_formats']['QPSK']['slots_needed'],
             'max_length': curr_req['mod_formats']['QPSK']['max_length'],
+            'bandwidth': bandwidth_encoded,
             'arrival': np.array(arrival_scaled),
             'departure': np.array(depart_scaled),
             'cores_matrix': spectrum_obs
@@ -270,10 +286,11 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
+# fixme attempted to allocate taken spectrum
 if __name__ == '__main__':
     env = DQNSimEnv()
 
-    model = DQN("MultiInputPolicy", env, verbose=1)
+    model = DQN("MultiInputPolicy", env, verbose=1, exploration_initial_eps=0.3)
     model.learn(total_timesteps=100000, log_interval=1)
 
     # obs, info = env.reset()
