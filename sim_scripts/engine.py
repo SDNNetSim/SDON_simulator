@@ -36,7 +36,7 @@ class Engine:
         self.sdn_obj = SDNController(engine_props=self.engine_props)
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
 
-    def update_arrival_params(self, curr_time: float, ai_flag: bool = False, mock_sdn: dict = None):
+    def update_arrival_params(self, curr_time: float):
         """
         Updates parameters for a request after attempted allocation.
 
@@ -44,12 +44,7 @@ class Engine:
         :param ai_flag: Flag to determine use of mock sdn dictionary.
         :param mock_sdn: An option mock sdn dictionary.
         """
-        # TODO: Maybe change this
-        if not ai_flag:
-            sdn_props = self.sdn_obj.sdn_props
-        else:
-            sdn_props = mock_sdn
-
+        sdn_props = self.sdn_obj.sdn_props
         self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props)
         if sdn_props['was_routed']:
             self.stats_obj.curr_trans = sdn_props['num_trans']
@@ -61,7 +56,8 @@ class Engine:
                 "was_routed": sdn_props['was_routed'],
             }})
 
-    def handle_arrival(self, curr_time: float):
+    # TODO: Update doc strings
+    def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_slicing: bool = False):
         """
         Updates the SDN controller to handle an arrival request and retrieves relevant request statistics.
 
@@ -70,7 +66,8 @@ class Engine:
         for req_key, req_value in self.reqs_dict[curr_time].items():
             self.sdn_obj.sdn_props[req_key] = req_value
 
-        self.sdn_obj.handle_event(request_type='arrival')
+        self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
+                                  force_slicing=force_slicing)
         self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
         self.update_arrival_params(curr_time=curr_time)
 

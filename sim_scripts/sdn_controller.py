@@ -189,7 +189,7 @@ class SDNController:
                     self.sdn_props['path_weight'] = self.route_obj.route_props['weights_list'][path_index]
                     self.sdn_props['spectrum_dict'] = self.spectrum_obj.spectrum_props
 
-                    if not segment_slicing:
+                    if not segment_slicing and not force_slicing:
                         self.sdn_props['is_sliced'] = False
                         self.allocate()
                     return
