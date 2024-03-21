@@ -72,7 +72,8 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         })
 
         # 0 for no slicing, 1 for slicing
-        self.action_space = spaces.Discrete(self.k_paths * self.cores_per_link * 2)
+        self.slice_space = 2
+        self.action_space = spaces.Discrete(self.k_paths * self.cores_per_link * self.slice_space)
         self.render_mode = render_mode
 
     def _check_terminated(self):
@@ -96,13 +97,11 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return reward
 
+    # TODO: Method is good to go
     def _update_helper_obj(self, action: int):
-        total_core_actions = self.k_paths * self.cores_per_link
-        self.helper_obj.path_index = int(action / total_core_actions)
-        remaining_actions = action % total_core_actions
-        self.helper_obj.core_num = int(remaining_actions / self.cores_per_link)
-
-        self.helper_obj.slice_request = bool(remaining_actions % self.cores_per_link)
+        self.helper_obj.slice_request = action % self.slice_space
+        self.helper_obj.core_num = (action // self.slice_space) % self.cores_per_link
+        self.helper_obj.path_index = action // (self.slice_space * self.cores_per_link)
 
         if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.k_paths - 1):
             raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
@@ -111,9 +110,11 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.helper_obj.check_release()
 
-        self.helper_obj.net_spec_dict = self.engine_obj.net_spec_dict
-        self.helper_obj.reqs_status_dict = self.engine_obj.reqs_status_dict
+        # TODO: Don't do this, just use net spec dict and reqs_status_dict when passed (in contructor now
+        # self.helper_obj.net_spec_dict = self.engine_obj.net_spec_dict
+        # self.helper_obj.reqs_status_dict = self.engine_obj.reqs_status_dict
 
+    # TODO: Method is good to go
     def _update_snapshots(self):
         arrival_count = self.dqn_props['arrival_count']
 
@@ -139,8 +140,9 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return new_obs, reward, terminated, truncated, info
 
+    # TODO: method is good to go
     def _get_spectrum(self, paths_matrix: list):
-        # TODO: Why is it by two?
+        # To add core and fragmentation scores, make a k_path by cores by two matrix (two metrics)
         spectrum_matrix = np.zeros((self.k_paths, self.cores_per_link, 2))
         for path_index, paths_list in enumerate(paths_matrix):
             for link_tuple in zip(paths_list, paths_list[1:]):
@@ -157,23 +159,34 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return spectrum_matrix
 
+    # TODO: Method is good to go
     @staticmethod
     def _get_info():
         return dict()
 
     # TODO: Move to sim functions
+    # TODO: Method is good to go
     @staticmethod
     def _min_max_scale(value: float, min_value: float, max_value: float):
         return (value - min_value) / (max_value - min_value)
 
+    # TODO: Method is good to go
     def _get_obs(self):
+        # Used when we reach a reset after a simulation has finished (reset automatically called by gymnasium, use
+        # placeholder variable)
         if self.dqn_props['arrival_count'] == self.dqn_props['engine_props']['num_requests']:
             curr_req = self.dqn_props['arrival_list'][self.dqn_props['arrival_count'] - 1]
         else:
             curr_req = self.dqn_props['arrival_list'][self.dqn_props['arrival_count']]
 
-        self.helper_obj.topology = self.dqn_props['engine_props']['topology']
-        self.helper_obj.net_spec_dict = self.engine_obj.net_spec_dict
+        self.helper_obj = self.helper_obj = AIHelpers(ai_props=self.dqn_props, engine_obj=self.engine_obj)
+        # TODO: Passing this as a param now
+        # self.helper_obj.topology = self.dqn_props['engine_props']['topology']
+        # TODO: Just pass engine object to helper object
+        # self.helper_obj.net_spec_dict = self.engine_obj.net_spec_dict
+
+        # TODO: Here, not sure if I need this anymore
+        #   It's only used for routing, should be fine
         self.dqn_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
 
         self.route_obj.sdn_props = self.dqn_props['mock_sdn_dict']
@@ -186,10 +199,13 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         depart_scaled = self._min_max_scale(value=curr_req['depart'], min_value=self.min_depart,
                                             max_value=self.max_depart)
 
-        bandwidth_encoded = [0, 0, 0, 0]
+        # TODO: Double check
+        encode_bw_list = list([])
+        for _ in range(len(self.bandwidth_list)):
+            encode_bw_list.append(0)
         if len(self.bandwidth_list) != 0:
             bandwidth_index = self.bandwidth_list.index(curr_req['bandwidth'])
-            bandwidth_encoded[bandwidth_index] = 1
+            encode_bw_list[bandwidth_index] = 1
 
         obs_dict = {
             'source': int(curr_req['source']),
@@ -197,13 +213,41 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
             # TODO: Update this to be more accurate
             'slots_needed': curr_req['mod_formats']['QPSK']['slots_needed'],
             'max_length': curr_req['mod_formats']['QPSK']['max_length'],
-            'bandwidth': bandwidth_encoded,
+            'bandwidth': encode_bw_list,
             'arrival': np.array(arrival_scaled),
             'departure': np.array(depart_scaled),
             'cores_matrix': spectrum_obs
         }
         return obs_dict
 
+    # TODO: This method is good to go
+    def _reset_reqs_dict(self, seed: int):
+        self.engine_obj.generate_requests(seed=seed)
+        self.min_arrival = np.inf
+        self.max_arrival = -1 * np.inf
+        self.min_depart = np.inf
+        self.max_depart = -1 * np.inf
+
+        for req_time in self.engine_obj.reqs_dict:
+            if self.engine_obj.reqs_dict[req_time]['request_type'] == 'arrival':
+                if req_time > self.max_arrival:
+                    self.max_arrival = req_time
+                if req_time < self.min_arrival:
+                    self.min_arrival = req_time
+
+                self.dqn_props['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
+            else:
+                if req_time > self.max_depart:
+                    self.max_depart = req_time
+                if req_time < self.min_depart:
+                    self.min_depart = req_time
+
+                self.dqn_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
+
+        # TODO: Only use reqs dict in engine object, two versions is confusing
+        # self.dqn_props['reqs_dict'] = self.engine_obj.reqs_dict
+
+    # TODO: This method is good to go
     def _create_input(self):
         base_fp = os.path.join('data')
         self.dqn_sim_dict['s1']['thread_num'] = 's1'
@@ -218,6 +262,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
             save_input(base_fp=base_fp, properties=self.dqn_sim_dict['s1'], file_name=file_name,
                        data_dict=self.dqn_sim_dict['s1'])
 
+    # TODO: This method is good to go
     def setup(self):
         """
         Sets up this class.
@@ -235,31 +280,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.dqn_sim_dict['s1']['holding_time']
         self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.dqn_sim_dict['s1']['cores_per_link']
 
-    def _reset_reqs_dict(self, seed: int):
-        self.engine_obj.generate_requests(seed=seed)
-
-        self.min_arrival = np.inf
-        self.max_arrival = -1 * np.inf
-        self.min_depart = np.inf
-        self.max_depart = -1 * np.inf
-        for req_time in self.engine_obj.reqs_dict:
-            if self.engine_obj.reqs_dict[req_time]['request_type'] == 'arrival':
-                if req_time > self.max_arrival:
-                    self.max_arrival = req_time
-                if req_time < self.min_arrival:
-                    self.min_arrival = req_time
-
-                self.dqn_props['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
-            else:
-                if req_time > self.max_depart:
-                    self.max_depart = req_time
-                if req_time < self.min_depart:
-                    self.min_depart = req_time
-
-                self.dqn_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
-
-        self.dqn_props['reqs_dict'] = self.engine_obj.reqs_dict
-
+    # TODO: This method is good to go
     def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
         # Default options
         if options is None:
@@ -269,10 +290,11 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         super().reset(seed=seed)
         self.dqn_props = copy.deepcopy(empty_dqn_props)
-        self.helper_obj.ai_props = self.dqn_props
+        # self.helper_obj = AIHelpers(ai_props=self.dqn_props)
         self.setup()
         self.dqn_props['arrival_count'] = 0
-        self.dqn_props['engine_props'] = self.engine_obj.engine_props
+        # TODO: Why is engine props in dqn props? Only have ONE version
+        # self.dqn_props['engine_props'] = self.engine_obj.engine_props
         self.engine_obj.init_iter(iteration=self.iteration)
         self.engine_obj.create_topology()
         self.num_nodes = len(self.engine_obj.topology.nodes)
@@ -286,12 +308,12 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
-# fixme attempted to allocate taken spectrum
+# TODO: This block is good to go
 if __name__ == '__main__':
     env = DQNSimEnv()
 
-    model = DQN("MultiInputPolicy", env, verbose=1, exploration_initial_eps=0.3)
-    model.learn(total_timesteps=100000, log_interval=1)
+    model = DQN("MultiInputPolicy", env, verbose=1)
+    model.learn(total_timesteps=1000, log_interval=1)
 
     # obs, info = env.reset()
     # while True:

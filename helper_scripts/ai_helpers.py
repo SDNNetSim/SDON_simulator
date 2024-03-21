@@ -12,15 +12,18 @@ class AIHelpers:
     Contains methods to assist with AI simulations.
     """
 
-    def __init__(self, ai_props: dict):
+    # TODO: Update all constructor params (ensure they are used)
+    def __init__(self, ai_props: dict, engine_obj: object):
         self.ai_props = ai_props
+        # TODO: Use this
+        self.engine_obj = engine_obj
 
         self.topology = None
         self.net_spec_dict = None
         self.reqs_status_dict = None
 
         self.mock_sdn = None
-        self.path_list = None
+        self.path_matrix = None
         self.path_index = None
         self.core_num = None
         self.start_slot = None
@@ -32,6 +35,9 @@ class AIHelpers:
 
         self.best_fit_params = {'start_slot': None, 'core_num': None}
 
+        # TODO: Use this, note that net spec db will probably be in here
+        self.sdn_obj = SDNController(engine_props=self.ai_props['engine_props'])
+
     def update_net_spec_dict(self):
         """
         Updates the network spectrum database.
@@ -41,7 +47,8 @@ class AIHelpers:
         else:
             raise NotImplementedError
 
-        for link_tuple in zip(self.path_list, self.path_list[1:]):
+        # TODO: here we don't actually check anything....Use sdn controller and nothing else
+        for link_tuple in zip(self.path_matrix, self.path_matrix[1:]):
             rev_link_tuple = (link_tuple[1], link_tuple[0])
 
             req_id = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['req_id']
@@ -56,7 +63,7 @@ class AIHelpers:
         Checks if a spectrum is available along the given path.
         """
         is_free = True
-        for link_tuple in zip(self.path_list, self.path_list[1:]):
+        for link_tuple in zip(self.path_matrix, self.path_matrix[1:]):
             rev_link_tuple = link_tuple[1], link_tuple[0]
             link_dict = self.net_spec_dict[link_tuple]
             rev_link_dict = self.net_spec_dict[rev_link_tuple]
@@ -77,6 +84,8 @@ class AIHelpers:
             self.net_spec_dict[source_dest]['cores_matrix'][self.core_num][gb_index] = 0
             self.net_spec_dict[dest_source]['cores_matrix'][self.core_num][gb_index] = 0
 
+    # TODO: Call release in engine instead, should have the correct net spec dict!
+    #   - Ensure net spec dict is updted properly
     def release(self, depart_time: float):
         """
         Releases a given request.
@@ -111,6 +120,7 @@ class AIHelpers:
         for i, req_obj in enumerate(self.ai_props['depart_list']):
             if req_obj['depart'] <= curr_time:
                 index_list.append(i)
+                # TODO:
                 self.release(depart_time=req_obj['depart'])
 
         for index in index_list:
@@ -124,7 +134,7 @@ class AIHelpers:
         self.reqs_status_dict.update(
             {self.ai_props['arrival_list'][self.ai_props['arrival_count']]['req_id']: {
                 "mod_format": self.mod_format,
-                "path": self.path_list,
+                "path": self.path_matrix,
                 # TODO: This is not true
                 "is_sliced": False,
                 "was_routed": was_routed,
@@ -150,7 +160,7 @@ class AIHelpers:
         # TODO: Has forced core
         spectrum_obj.spectrum_props['forced_core'] = self.core_num
 
-        spectrum_obj.spectrum_props['path_list'] = self.path_list
+        spectrum_obj.spectrum_props['path_list'] = self.path_matrix
         mod_format_list = [self.mod_format]
         spectrum_obj.get_spectrum(mod_format_list=mod_format_list, ai_obj=None)
 
@@ -181,8 +191,9 @@ class AIHelpers:
         # fixme Taking an allocated spectrum, I think there is a discrepancy between net spec dbs
         sdn_obj = SDNController(engine_props=self.ai_props['engine_props'])
         sdn_obj._init_req_stats()
+        # TODO: Here is where net spec db is
         sdn_obj.sdn_props = self.mock_sdn
-        sdn_obj._handle_slicing(path_list=self.path_list)
+        sdn_obj._handle_slicing(path_list=self.path_matrix)
 
         if sdn_obj.sdn_props['was_routed']:
             path_weight = find_path_len(path_list=sdn_obj.sdn_props['path_list'],
@@ -196,11 +207,11 @@ class AIHelpers:
         self.ai_props['mock_sdn_dict']['was_routed'] = False
         return was_allocated
 
-    def _update_path_vars(self, route_obj: object, path_list: list, path_index: int):
-        self.path_list = path_list
-        self.path_len = route_obj.route_props['weights_list'][path_index]
-        self.mod_format = route_obj.route_props['mod_formats_list'][path_index][0]
-        self.ai_props['mock_sdn_dict']['path_list'] = path_list
+    def _update_path_vars(self, route_obj: object, path_matrix: list):
+        self.path_matrix = path_matrix
+        self.path_len = route_obj.route_props['weights_list'][self.path_index]
+        self.mod_format = route_obj.route_props['mod_formats_list'][self.path_index][0]
+        self.ai_props['mock_sdn_dict']['path_list'] = path_matrix
 
     def allocate(self, route_obj: object):
         """
@@ -208,15 +219,28 @@ class AIHelpers:
 
         :param route_obj: The Routing class.
         """
-        was_allocated = True
-        self.ai_props['mock_sdn_dict']['was_routed'] = True
+        # TODO: Ensure path index is correct
+        # TODO: Ensure network spectrum is update properly
+        # TODO: Ensure request ID is correct
+        # TODO: Do not forget to use the SDN Controller to release, move release code here
+        # TODO: Need to update with respect to engine handle arrival
+        # TODO: Update arrival params like engine
+        path_matrix = [route_obj.route_props['paths_list'][self.path_index]]
+        # TODO: Not sure if I need this anymore
+        self._update_path_vars(route_obj=route_obj, path_matrix=path_matrix)
+
+        sdn_obj = SDNController(engine_props=self.ai_props['engine_props'])
+        # TODO: Need access to dqn props
+        for req_key, req_value in self.ai_props['reqs_dict'][curr_time].items():
+            self.sdn_obj.sdn_props[req_key] = req_value
+        sdn_obj.handle_event(request_type='arrival', force_slicing=self.slice_request, force_route_matrix=path_matrix)
+        self.net_spec_dict = sdn_obj.sdn_props['net_spec_dict']
+
+
         for path_index, path_list in enumerate(route_obj.route_props['paths_list']):
             # Only consider the path selected by the agent
             if path_index != self.path_index:
                 continue
-
-            self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
-
             self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
             if self.ai_props['engine_props']['max_segments'] > 1 and self.slice_request:
                 was_allocated = self._handle_slicing()
@@ -234,23 +258,9 @@ class AIHelpers:
                 self.end_slot = self.best_fit_params['end_slot']
                 self.update_net_spec_dict()
                 self._allocate_mock_sdn()
-            #
-            # self._update_path_vars(route_obj=route_obj, path_list=path_list, path_index=path_index)
-            #
-            # self._get_end_slot()
-            # if self.end_slot >= self.ai_props['engine_props']['spectral_slots']:
-            #     self.ai_props['mock_sdn_dict']['was_routed'] = False
-            #     self.ai_props['mock_sdn_dict']['block_reason'] = 'congestion'
-            #     was_allocated = False
-            #     continue
-            #
-            # is_free = self.check_is_free()
-            # was_allocated = self._allocate(is_free=is_free)
-
-            if path_index == self.path_index:
-                break
 
         # TODO: Changed this, always used to be false
+        # TODO: Probably don't need this and many other things due to using net spec dict
         self.update_reqs_status(was_routed=was_allocated)
         return was_allocated
 

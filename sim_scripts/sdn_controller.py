@@ -139,11 +139,13 @@ class SDNController:
         for stat_key in self.sdn_props['stat_key_list']:
             self.sdn_props[stat_key] = list()
 
-    def handle_event(self, request_type: str):
+    def handle_event(self, request_type: str, force_slicing: bool = False, force_route_matrix: list = None):
         """
         Handles any event that occurs in the simulation, controls this class.
 
         :param request_type: Whether the request is an arrival or departure.
+        :param force_slicing: Whether to force light segment slicing or not.
+        :param force_route_matrix: Whether to force a path or not.
         """
         self._init_req_stats()
         # Even if the request is blocked, we still consider one transponder
@@ -154,17 +156,21 @@ class SDNController:
             return
 
         start_time = time.time()
-        self.route_obj.get_route()
+
+        if force_route_matrix is None:
+            route_matrix = self.route_obj.get_route()
+        else:
+            route_matrix = force_route_matrix
         route_time = time.time() - start_time
 
         segment_slicing = False
         while True:
-            for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
+            for path_index, path_list in enumerate(route_matrix):
                 if path_list is not False:
                     self.sdn_props['path_list'] = path_list
                     mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
 
-                    if segment_slicing:
+                    if segment_slicing or force_slicing:
                         self._handle_slicing(path_list=path_list)
                         if not self.sdn_props['was_routed']:
                             self.sdn_props['num_trans'] = 1

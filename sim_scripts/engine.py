@@ -44,6 +44,7 @@ class Engine:
         :param ai_flag: Flag to determine use of mock sdn dictionary.
         :param mock_sdn: An option mock sdn dictionary.
         """
+        # TODO: Maybe change this
         if not ai_flag:
             sdn_props = self.sdn_obj.sdn_props
         else:
