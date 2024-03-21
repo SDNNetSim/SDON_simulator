@@ -1,14 +1,14 @@
 DQNSimEnv:
-  n_timesteps: !!float  100000
+  n_timesteps: !!float  10000
   policy: 'MultiInputPolicy'
-  learning_rate: !!float 0.008
+  learning_rate: !!float 0.00856
   batch_size: 64
-  buffer_size: 1000000
-  learning_starts: 5000
-  gamma: 0.999
-  target_update_interval: 1
-  train_freq: 1000
-  gradient_steps: -1
-  exploration_fraction:  0.369
-  exploration_final_eps: 0.164
+  buffer_size: 100000
+  learning_starts: 0
+  gamma: 0.98
+  target_update_interval: 20000
+  train_freq: 4
+  gradient_steps: 8
+  exploration_fraction:  0.397
+  exploration_final_eps: 0.146
   policy_kwargs: "dict(net_arch=[128, 128])"

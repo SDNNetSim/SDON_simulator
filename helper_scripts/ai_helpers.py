@@ -29,7 +29,7 @@ class AIHelpers:
         for i, req_obj in enumerate(self.ai_props['depart_list']):
             if req_obj['depart'] <= curr_time:
                 index_list.append(i)
-                self.engine_obj.handle_release(depart_time=req_obj['depart'])
+                self.engine_obj.handle_release(curr_time=req_obj['depart'])
 
         for index in index_list:
             self.ai_props['depart_list'].pop(index)

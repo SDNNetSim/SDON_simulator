@@ -51,10 +51,8 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.observation_space = spaces.Dict({
             'source': spaces.Discrete(self.num_nodes, start=0),
             'destination': spaces.Discrete(self.num_nodes, start=0),
-            'slots_needed': spaces.Discrete(self.max_slots_needed + 1),
             'arrival': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
             'departure': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
-            'max_length': spaces.Discrete(self.max_length + 1),
             'bandwidth': spaces.MultiBinary(len(self.bandwidth_list)),
             # By two to represent a core's current fragmentation and congestion scores
             'cores_matrix': spaces.Box(low=0.01, high=1.01, shape=(self.k_paths, self.cores_per_link, 2)),
@@ -88,17 +86,17 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _calculate_reward(self, was_allocated: bool):
         if was_allocated:
-            if self.engine_obj.engine_props['max_segments'] > 1:
-                reward = 0.5
-            else:
-                reward = 1.0
+            reward = 1.0
         else:
             reward = -1.0
 
         return reward
 
     def _update_helper_obj(self, action: int):
-        self.helper_obj.slice_request = action % self.slice_space
+        if self.engine_obj.engine_props['max_segments'] > 1:
+            self.helper_obj.slice_request = action % self.slice_space
+        else:
+            self.helper_obj.slice_request = 0
         self.helper_obj.core_num = (action // self.slice_space) % self.cores_per_link
         self.helper_obj.path_index = action // (self.slice_space * self.cores_per_link)
 
@@ -197,9 +195,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         obs_dict = {
             'source': int(curr_req['source']),
             'destination': int(curr_req['destination']),
-            # TODO: Update this to be more accurate
-            'slots_needed': curr_req['mod_formats']['QPSK']['slots_needed'],
-            'max_length': curr_req['mod_formats']['QPSK']['max_length'],
             'bandwidth': encode_bw_list,
             'arrival': np.array(arrival_scaled),
             'departure': np.array(depart_scaled),
@@ -270,7 +265,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         super().reset(seed=seed)
         self.dqn_props = copy.deepcopy(empty_dqn_props)
-        # self.helper_obj = AIHelpers(ai_props=self.dqn_props)
         self.setup()
         self.dqn_props['arrival_count'] = 0
         self.engine_obj.init_iter(iteration=self.iteration)
@@ -290,7 +284,7 @@ if __name__ == '__main__':
     env = DQNSimEnv()
 
     model = DQN("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=20, log_interval=1)
+    model.learn(total_timesteps=10000, log_interval=1)
 
     # obs, info = env.reset()
     # while True:

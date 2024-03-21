@@ -158,7 +158,8 @@ class SDNController:
         start_time = time.time()
 
         if force_route_matrix is None:
-            route_matrix = self.route_obj.get_route()
+            self.route_obj.get_route()
+            route_matrix = self.route_obj.route_props['paths_list']
         else:
             route_matrix = force_route_matrix
         route_time = time.time() - start_time
