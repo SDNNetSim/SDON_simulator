@@ -1,6 +1,5 @@
 import os
 import copy
-import math
 
 import gymnasium as gym
 import numpy as np
@@ -13,7 +12,7 @@ from sim_scripts.engine import Engine
 from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.ai_helpers import AIHelpers
-from helper_scripts.sim_helpers import combine_and_one_hot, get_start_time, find_core_frag_cong
+from helper_scripts.sim_helpers import get_start_time, find_core_frag_cong
 from arg_scripts.ai_args import empty_dqn_props
 
 
@@ -29,7 +28,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.dqn_sim_dict = dict()
         self.engine_obj = None
         self.route_obj = None
-        self.helper_obj = AIHelpers(ai_props=self.dqn_props)
+        self.helper_obj = AIHelpers(ai_props=self.dqn_props, engine_obj=self.engine_obj)
 
         self.iteration = 0
         self.options = None
@@ -45,27 +44,17 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
-        self.max_distance = math.sqrt((self.cores_per_link - 1) ** 2 + (self.spectral_slots - 1) ** 2)
-        max_slots_needed = 0
-        max_length = 0
-
-        for bandwidth, mod_obj in self.engine_obj.engine_props['mod_per_bw'].items():
-            bandwidth_percent = self.engine_obj.engine_props['request_distribution'][bandwidth]
-            if bandwidth_percent > 0:
-                self.bandwidth_list.append(bandwidth)
-            for modulation, data_obj in mod_obj.items():
-                if data_obj['slots_needed'] > max_slots_needed and bandwidth_percent > 0:
-                    max_slots_needed = data_obj['slots_needed']
-                if data_obj['max_length'] > max_length and bandwidth_percent > 0:
-                    max_length = data_obj['max_length']
+        self.max_slots_needed = 0
+        self.max_length = 0
+        self._find_maximums()
 
         self.observation_space = spaces.Dict({
             'source': spaces.Discrete(self.num_nodes, start=0),
             'destination': spaces.Discrete(self.num_nodes, start=0),
-            'slots_needed': spaces.Discrete(max_slots_needed + 1),
+            'slots_needed': spaces.Discrete(self.max_slots_needed + 1),
             'arrival': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
             'departure': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
-            'max_length': spaces.Discrete(max_length + 1),
+            'max_length': spaces.Discrete(self.max_length + 1),
             'bandwidth': spaces.MultiBinary(len(self.bandwidth_list)),
             # By two to represent a core's current fragmentation and congestion scores
             'cores_matrix': spaces.Box(low=0.01, high=1.01, shape=(self.k_paths, self.cores_per_link, 2)),
@@ -76,8 +65,19 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.action_space = spaces.Discrete(self.k_paths * self.cores_per_link * self.slice_space)
         self.render_mode = render_mode
 
+    def _find_maximums(self):
+        for bandwidth, mod_obj in self.engine_obj.engine_props['mod_per_bw'].items():
+            bandwidth_percent = self.engine_obj.engine_props['request_distribution'][bandwidth]
+            if bandwidth_percent > 0:
+                self.bandwidth_list.append(bandwidth)
+            for modulation, data_obj in mod_obj.items():
+                if data_obj['slots_needed'] > self.max_slots_needed and bandwidth_percent > 0:
+                    self.max_slots_needed = data_obj['slots_needed']
+                if data_obj['max_length'] > self.max_length and bandwidth_percent > 0:
+                    self.max_length = data_obj['max_length']
+
     def _check_terminated(self):
-        if self.dqn_props['arrival_count'] == (self.dqn_props['engine_props']['num_requests']):
+        if self.dqn_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
             base_fp = os.path.join('data')
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
@@ -97,7 +97,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return reward
 
-    # TODO: Method is good to go
     def _update_helper_obj(self, action: int):
         self.helper_obj.slice_request = action % self.slice_space
         self.helper_obj.core_num = (action // self.slice_space) % self.cores_per_link
@@ -108,13 +107,11 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (self.cores_per_link - 1):
             raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')
 
-        self.helper_obj.check_release()
+        # TODO: Temporary
+        self.helper_obj.ai_props = self.dqn_props
+        self.helper_obj.engine_obj = self.engine_obj
+        self.helper_obj.handle_releases()
 
-        # TODO: Don't do this, just use net spec dict and reqs_status_dict when passed (in contructor now
-        # self.helper_obj.net_spec_dict = self.engine_obj.net_spec_dict
-        # self.helper_obj.reqs_status_dict = self.engine_obj.reqs_status_dict
-
-    # TODO: Method is good to go
     def _update_snapshots(self):
         arrival_count = self.dqn_props['arrival_count']
 
@@ -127,9 +124,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self._update_helper_obj(action=action)
         was_allocated = self.helper_obj.allocate(route_obj=self.route_obj)
         self._update_snapshots()
-        curr_time = self.dqn_props['arrival_list'][self.dqn_props['arrival_count']]['arrive']
-        self.engine_obj.update_arrival_params(curr_time=curr_time, ai_flag=True,
-                                              mock_sdn=self.dqn_props['mock_sdn_dict'])
 
         reward = self._calculate_reward(was_allocated=was_allocated)
         self.dqn_props['arrival_count'] += 1
@@ -140,7 +134,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return new_obs, reward, terminated, truncated, info
 
-    # TODO: method is good to go
     def _get_spectrum(self, paths_matrix: list):
         # To add core and fragmentation scores, make a k_path by cores by two matrix (two metrics)
         spectrum_matrix = np.zeros((self.k_paths, self.cores_per_link, 2))
@@ -159,36 +152,24 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return spectrum_matrix
 
-    # TODO: Method is good to go
     @staticmethod
     def _get_info():
         return dict()
 
     # TODO: Move to sim functions
-    # TODO: Method is good to go
     @staticmethod
     def _min_max_scale(value: float, min_value: float, max_value: float):
         return (value - min_value) / (max_value - min_value)
 
-    # TODO: Method is good to go
     def _get_obs(self):
         # Used when we reach a reset after a simulation has finished (reset automatically called by gymnasium, use
         # placeholder variable)
-        if self.dqn_props['arrival_count'] == self.dqn_props['engine_props']['num_requests']:
+        if self.dqn_props['arrival_count'] == self.engine_obj.engine_props['num_requests']:
             curr_req = self.dqn_props['arrival_list'][self.dqn_props['arrival_count'] - 1]
         else:
             curr_req = self.dqn_props['arrival_list'][self.dqn_props['arrival_count']]
 
-        self.helper_obj = self.helper_obj = AIHelpers(ai_props=self.dqn_props, engine_obj=self.engine_obj)
-        # TODO: Passing this as a param now
-        # self.helper_obj.topology = self.dqn_props['engine_props']['topology']
-        # TODO: Just pass engine object to helper object
-        # self.helper_obj.net_spec_dict = self.engine_obj.net_spec_dict
-
-        # TODO: Here, not sure if I need this anymore
-        #   It's only used for routing, should be fine
         self.dqn_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
-
         self.route_obj.sdn_props = self.dqn_props['mock_sdn_dict']
         self.route_obj.get_route()
 
@@ -199,7 +180,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         depart_scaled = self._min_max_scale(value=curr_req['depart'], min_value=self.min_depart,
                                             max_value=self.max_depart)
 
-        # TODO: Double check
         encode_bw_list = list([])
         for _ in range(len(self.bandwidth_list)):
             encode_bw_list.append(0)
@@ -220,7 +200,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         }
         return obs_dict
 
-    # TODO: This method is good to go
     def _reset_reqs_dict(self, seed: int):
         self.engine_obj.generate_requests(seed=seed)
         self.min_arrival = np.inf
@@ -244,10 +223,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
                 self.dqn_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
 
-        # TODO: Only use reqs dict in engine object, two versions is confusing
-        # self.dqn_props['reqs_dict'] = self.engine_obj.reqs_dict
-
-    # TODO: This method is good to go
     def _create_input(self):
         base_fp = os.path.join('data')
         self.dqn_sim_dict['s1']['thread_num'] = 's1'
@@ -262,7 +237,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
             save_input(base_fp=base_fp, properties=self.dqn_sim_dict['s1'], file_name=file_name,
                        data_dict=self.dqn_sim_dict['s1'])
 
-    # TODO: This method is good to go
     def setup(self):
         """
         Sets up this class.
@@ -280,7 +254,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.dqn_sim_dict['s1']['holding_time']
         self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.dqn_sim_dict['s1']['cores_per_link']
 
-    # TODO: This method is good to go
     def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
         # Default options
         if options is None:
@@ -293,8 +266,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         # self.helper_obj = AIHelpers(ai_props=self.dqn_props)
         self.setup()
         self.dqn_props['arrival_count'] = 0
-        # TODO: Why is engine props in dqn props? Only have ONE version
-        # self.dqn_props['engine_props'] = self.engine_obj.engine_props
         self.engine_obj.init_iter(iteration=self.iteration)
         self.engine_obj.create_topology()
         self.num_nodes = len(self.engine_obj.topology.nodes)
@@ -308,12 +279,11 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
-# TODO: This block is good to go
 if __name__ == '__main__':
     env = DQNSimEnv()
 
     model = DQN("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=1000, log_interval=1)
+    model.learn(total_timesteps=10, log_interval=1)
 
     # obs, info = env.reset()
     # while True:
