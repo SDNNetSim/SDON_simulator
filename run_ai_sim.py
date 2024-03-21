@@ -122,7 +122,14 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def step(self, action: int):
         self._update_helper_obj(action=action)
-        was_allocated = self.helper_obj.allocate(route_obj=self.route_obj)
+        self.helper_obj.allocate(route_obj=self.route_obj)
+        reqs_status_dict = self.engine_obj.reqs_status_dict
+
+        req_id = self.dqn_props['arrival_list'][self.dqn_props['arrival_count']]['req_id']
+        if req_id in reqs_status_dict:
+            was_allocated = True
+        else:
+            was_allocated = False
         self._update_snapshots()
 
         reward = self._calculate_reward(was_allocated=was_allocated)
@@ -283,7 +290,7 @@ if __name__ == '__main__':
     env = DQNSimEnv()
 
     model = DQN("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=10, log_interval=1)
+    model.learn(total_timesteps=20, log_interval=1)
 
     # obs, info = env.reset()
     # while True:
