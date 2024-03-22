@@ -51,8 +51,8 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.observation_space = spaces.Dict({
             'source': spaces.Discrete(self.num_nodes, start=0),
             'destination': spaces.Discrete(self.num_nodes, start=0),
-            'arrival': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
-            'departure': spaces.Box(low=-0.01, high=1.00, dtype=np.float64),
+            'arrival': spaces.Box(low=-0.01, high=1.00, dtype=np.float64, shape=(1,)),
+            'departure': spaces.Box(low=-0.01, high=1.00, dtype=np.float64, shape=(1,)),
             'bandwidth': spaces.MultiBinary(len(self.bandwidth_list)),
             # By two to represent a core's current fragmentation and congestion scores
             'cores_matrix': spaces.Box(low=0.01, high=1.01, shape=(self.k_paths, self.cores_per_link, 2)),
@@ -185,9 +185,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         depart_scaled = self._min_max_scale(value=curr_req['depart'], min_value=self.min_depart,
                                             max_value=self.max_depart)
 
-        encode_bw_list = list([])
-        for _ in range(len(self.bandwidth_list)):
-            encode_bw_list.append(0)
+        encode_bw_list = np.zeros((3,))
         if len(self.bandwidth_list) != 0:
             bandwidth_index = self.bandwidth_list.index(curr_req['bandwidth'])
             encode_bw_list[bandwidth_index] = 1
@@ -196,8 +194,8 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
             'source': int(curr_req['source']),
             'destination': int(curr_req['destination']),
             'bandwidth': encode_bw_list,
-            'arrival': np.array(arrival_scaled),
-            'departure': np.array(depart_scaled),
+            'arrival': np.array([arrival_scaled]),
+            'departure': np.array([depart_scaled]),
             'cores_matrix': spectrum_obs
         }
         return obs_dict
@@ -283,14 +281,24 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 if __name__ == '__main__':
     env = DQNSimEnv()
 
-    model = DQN("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=10000, log_interval=1)
+    # model = DQN("MultiInputPolicy", env, verbose=1)
+    # model.learn(total_timesteps=10000, log_interval=1)
 
+    # model = DQN.load('./logs/dqn/DQNSimEnv_5/best_model.zip', env=env)
     # obs, info = env.reset()
+    # episode_reward = 0
+    # max_episodes = 5
+    # num_episodes = 0
     # while True:
-    #     curr_action, _states = model.predict(obs, deterministic=True)
+    #     curr_action, _states = model.predict(obs)
     #
     #     obs, curr_reward, is_terminated, is_truncated, curr_info = env.step(curr_action)
-    #     if is_terminated or is_truncated:
+    #     episode_reward += curr_reward
+    #     if num_episodes >= max_episodes:
     #         break
+    #     if is_terminated or is_truncated:
+    #         obs, info = env.reset()
+    #         num_episodes += 1
+    #
+    # print(episode_reward / max_episodes)
     # obs, info = env.reset()
