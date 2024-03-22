@@ -37,6 +37,7 @@ class SpectrumAssignment:
                     self.spec_help_obj.check_other_links()
 
                 if self.spectrum_props['is_free'] or len(self.spectrum_props['path_list']) <= 2:
+                    self.spectrum_props['is_free'] = True
                     self.spectrum_props['start_slot'] = start_index
                     self.spectrum_props['end_slot'] = end_index + self.engine_props['guard_slots']
                     self.spectrum_props['core_num'] = channel_dict['core']
