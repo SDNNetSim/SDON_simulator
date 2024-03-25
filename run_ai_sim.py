@@ -12,7 +12,7 @@ from sim_scripts.engine import Engine
 from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.ai_helpers import AIHelpers
-from helper_scripts.sim_helpers import get_start_time, find_core_frag_cong
+from helper_scripts.sim_helpers import get_start_time, find_core_frag_cong, find_path_len
 from arg_scripts.ai_args import empty_dqn_props
 
 
@@ -88,7 +88,11 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         if was_allocated:
             reward = 1.0
         else:
-            reward = -1.0
+            # Agent could have sliced
+            if not self.helper_obj.slice_request:
+                reward = -5.0
+            else:
+                reward = -1.0
 
         return reward
 
