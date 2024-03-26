@@ -4,7 +4,7 @@ import copy
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
-from stable_baselines3 import DQN
+from stable_baselines3 import DQN, A2C, PPO
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
@@ -16,7 +16,7 @@ from helper_scripts.sim_helpers import get_start_time, find_core_frag_cong, find
 from arg_scripts.ai_args import empty_dqn_props
 
 
-class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
+class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
     """
@@ -51,8 +51,6 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         self.observation_space = spaces.Dict({
             'source': spaces.Discrete(self.num_nodes, start=0),
             'destination': spaces.Discrete(self.num_nodes, start=0),
-            'arrival': spaces.Box(low=-0.01, high=1.00, dtype=np.float64, shape=(1,)),
-            'departure': spaces.Box(low=-0.01, high=1.00, dtype=np.float64, shape=(1,)),
             'bandwidth': spaces.MultiBinary(len(self.bandwidth_list)),
             # By two to represent a core's current fragmentation and congestion scores
             'cores_matrix': spaces.Box(low=0.01, high=1.01, shape=(self.k_paths, self.cores_per_link, 2)),
@@ -60,7 +58,8 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # 0 for no slicing, 1 for slicing
         self.slice_space = 2
-        self.action_space = spaces.Discrete(self.k_paths * self.cores_per_link * self.slice_space)
+        # self.action_space = spaces.Discrete(self.k_paths * self.cores_per_link * self.slice_space)
+        self.action_space = spaces.MultiDiscrete([self.k_paths, self.cores_per_link, self.slice_space])
         self.render_mode = render_mode
 
     def _find_maximums(self):
@@ -84,11 +83,28 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return terminated
 
+    # TODO: Modify and make better after baseline checked
+    #   - If blocked and could have sliced, -5
+    #   - If sliced and didn't have to, 0.5
+    #   - Afterwards, the difference in fragmentation score
     def _calculate_reward(self, was_allocated: bool):
         if was_allocated:
-            reward = 1.0
+            if self.helper_obj.slice_request:
+                req_dict = self.dqn_props['arrival_list'][self.dqn_props['arrival_count']]
+                max_reach = req_dict['mod_formats']['QPSK']['max_length']
+                path_list = self.route_obj.route_props['paths_list'][self.helper_obj.path_index]
+                path_len = find_path_len(topology=self.engine_obj.topology, path_list=path_list)
+
+                # Did not have to slice
+                # TODO: There may be blocking due to slots!
+                if max_reach > path_len:
+                    reward = 0.5
+                else:
+                    reward = 1.0
+            else:
+                reward = 1.0
         else:
-            # Agent could have sliced
+            # Could have sliced and we did not
             if not self.helper_obj.slice_request:
                 reward = -5.0
             else:
@@ -96,13 +112,10 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return reward
 
-    def _update_helper_obj(self, action: int):
-        if self.engine_obj.engine_props['max_segments'] > 1:
-            self.helper_obj.slice_request = action % self.slice_space
-        else:
-            self.helper_obj.slice_request = 0
-        self.helper_obj.core_num = (action // self.slice_space) % self.cores_per_link
-        self.helper_obj.path_index = action // (self.slice_space * self.cores_per_link)
+    def _update_helper_obj(self, action: list):
+        self.helper_obj.path_index = action[0]
+        self.helper_obj.core_num = action[1]
+        self.helper_obj.slice_request = action[2]
 
         if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.k_paths - 1):
             raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
@@ -122,7 +135,7 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
             self.engine_obj.stats_obj.update_snapshot(net_spec_dict=self.engine_obj.net_spec_dict,
                                                       req_num=arrival_count + 1)
 
-    def step(self, action: int):
+    def step(self, action: list):
         self._update_helper_obj(action=action)
         self.helper_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
@@ -198,8 +211,8 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
             'source': int(curr_req['source']),
             'destination': int(curr_req['destination']),
             'bandwidth': encode_bw_list,
-            'arrival': np.array([arrival_scaled]),
-            'departure': np.array([depart_scaled]),
+            # 'arrival': np.array([arrival_scaled]),
+            # 'departure': np.array([depart_scaled]),
             'cores_matrix': spectrum_obs
         }
         return obs_dict
@@ -282,13 +295,15 @@ class DQNSimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
+# TODO: Have multiple iterations save to one file for predictions
 if __name__ == '__main__':
-    env = DQNSimEnv()
+    env = SimEnv()
 
-    # model = DQN("MultiInputPolicy", env, verbose=1)
-    # model.learn(total_timesteps=10000, log_interval=1)
+    model = PPO("MultiInputPolicy", env, verbose=1)
+    model.learn(total_timesteps=1000000, log_interval=1)
 
-    # model = DQN.load('./logs/dqn/DQNSimEnv_5/best_model.zip', env=env)
+    model.save('./logs/best_ppo_model.zip')
+    # model = DQN.load('./logs/dqn/best_model.zip', env=env)
     # obs, info = env.reset()
     # episode_reward = 0
     # max_episodes = 5
@@ -304,5 +319,6 @@ if __name__ == '__main__':
     #         obs, info = env.reset()
     #         num_episodes += 1
     #
+    # # TODO: Save this to a file or plot
     # print(episode_reward / max_episodes)
     # obs, info = env.reset()
