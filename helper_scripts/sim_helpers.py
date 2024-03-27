@@ -123,8 +123,8 @@ def find_core_frag_cong(net_spec_db, path: list, core: int):
         src_dest = (src, dest)
         core_arr = net_spec_db[src_dest]['cores_matrix'][core]
 
-        if len(core_arr) != 128:
-            raise NotImplementedError('Only works for 128 spectral slots.')
+        if len(core_arr) != 256:
+            raise NotImplementedError('Only works for 256 spectral slots.')
 
         cong_resp += len(np.where(core_arr != 0)[0])
 
@@ -145,8 +145,8 @@ def find_core_frag_cong(net_spec_db, path: list, core: int):
     num_links = len(path) - 1
     # The lowest number of slots a request can take is 2, the max number of times [1, 1, 0, 2, 2, 0, ..., 5, 5, 0]
     # fragmentation can happen is 43 for 128 spectral slots and 86 for 256 spectral slots (Rounded)
-    frag_resp = (frag_resp / 43.0 / num_links)
-    cong_resp = (cong_resp / 128.0 / num_links)
+    frag_resp = (frag_resp / 86.0 / num_links)
+    cong_resp = (cong_resp / 256.0 / num_links)
     return frag_resp, cong_resp
 
 
