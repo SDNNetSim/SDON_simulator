@@ -1,9 +1,10 @@
 #!/bin/bash
 
-#SBATCH -p cpu-preempt
+#SBATCH -p gpu-preempt
 #SBATCH -c 1
-#SBATCH --mem=20000
-#SBATCH -t 1-00:00:00
+#SBATCH -G 1
+#SBATCH --mem=80000
+#SBATCH -t 2-00:00:00
 #SBATCH -o slurm-%j.out
 
 # shellcheck disable=SC2164
@@ -12,20 +13,20 @@
 #cd /work/pi_vinod_vokkarane_uml_edu/git/sdn_simulator/
 
 # Make and activate virtual environment
-#rm -rf venvs/unity_venv/venv
-#module load python/3.11.0
+# rm -rf venvs/unity_venv/venv
+# module load python/3.11.0
 #./bash_scripts/make_venv.sh venvs/unity_venv python3.11
-source venvs/unity_venv/venv/bin/activate
+#source venvs/unity_venv/venv/bin/activate
 
 # Download requirements
 #pip install -r requirements.txt
 
 # Modify StableBaselines3 to register custom environments
-#./bash_scripts/register_rl_env.sh custom_dqn DQNSimEnv
+#./bash_scripts/register_rl_env.sh ppo SimEnv
 
 # Run AI simulation
-#python -m rl_zoo3.train --algo dqn --env DQNSimEnv --conf-file ./ai_scripts/yml/custom_dqn.yml -optimize --n-trials 10 --n-timesteps 10000
-python -m rl_zoo3.train --algo dqn --env DQNSimEnv --conf-file ./ai_scripts/yml/custom_dqn.yml --n-timesteps 100000
+#python -m rl_zoo3.train --algo dqn --env SimEnv --conf-file ./ai_scripts/yml/custom_dqn.yml -optimize --n-trials 20 --n-timesteps 500000
+#python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file ./ai_scripts/yml/ppo.yml --n-timesteps 10000
 
 # Run regular simulation
-# python run_sim.py
+ python run_sim.py --max_segments 1 --k_paths 3
