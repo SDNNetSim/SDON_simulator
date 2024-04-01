@@ -406,3 +406,7 @@ def get_start_time(sim_dict: dict):
 
     time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
     sim_dict['s1']['sim_start'] = time_string
+
+
+def min_max_scale(value: float, min_value: float, max_value: float):
+    return (value - min_value) / (max_value - min_value)

@@ -1,6 +1,7 @@
+import numpy as np
 from gymnasium import spaces
 
-from helper_scripts.sim_helpers import find_path_len
+from helper_scripts.sim_helpers import find_path_len, find_core_frag_cong
 
 
 class AIHelpers:
@@ -22,6 +23,24 @@ class AIHelpers:
         self.slice_request = None
         self.mod_format = None
         self.bandwidth = None
+
+    def get_spectrum(self, paths_matrix: list):
+        # To add core and fragmentation scores, make a k_path by cores by two matrix (two metrics)
+        spectrum_matrix = np.zeros((self.ai_props['k_paths'], self.ai_props['cores_per_link'], 2))
+        for path_index, paths_list in enumerate(paths_matrix):
+            for link_tuple in zip(paths_list, paths_list[1:]):
+                rev_link_tuple = link_tuple[1], link_tuple[0]
+                link_dict = self.engine_obj.net_spec_dict[link_tuple]
+                rev_link_dict = self.engine_obj.net_spec_dict[rev_link_tuple]
+
+                if link_dict != rev_link_dict:
+                    raise ValueError('Link is not bi-directionally equal.')
+
+                for core_index, core_arr in enumerate(link_dict['cores_matrix']):
+                    spectrum_matrix[path_index][core_index] = find_core_frag_cong(
+                        net_spec_db=self.engine_obj.net_spec_dict, path=paths_list, core=core_index)
+
+        return spectrum_matrix
 
     def _calc_deep_reward(self, was_allocated: bool):
         if was_allocated:
