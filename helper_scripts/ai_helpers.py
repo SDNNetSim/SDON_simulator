@@ -1,3 +1,6 @@
+from gymnasium import spaces
+
+
 class AIHelpers:
     """
     Contains methods to assist with AI simulations.
@@ -18,6 +21,35 @@ class AIHelpers:
         self.mod_format = None
         # TODO: Probably need to use this
         self.bandwidth = None
+
+    def get_obs_space(self, algorithm: str):
+        # TODO: May need to change this to A2C, PPO, etc...
+        if algorithm in ('dqn', 'ppo'):
+            resp_obs = spaces.Dict({
+                'source': spaces.Discrete(self.ai_props['num_nodes'], start=0),
+                'destination': spaces.Discrete(self.ai_props['num_nodes'], start=0),
+                'bandwidth': spaces.MultiBinary(len(self.ai_props['bandwidth_list'])),
+                'cores_matrix': spaces.Box(low=0.01, high=1.01, shape=(self.ai_props['k_paths'],
+                                                                       self.ai_props['cores_per_link'], 2)),
+            })
+        elif algorithm == 'q_learning':
+            resp_obs = None
+        else:
+            raise NotImplementedError
+
+        return resp_obs
+
+    def get_action_space(self, algorithm: str):
+        # TODO: May need to change this to A2C, PPO, etc...
+        if algorithm in ('dqn', 'ppo'):
+            action_space = spaces.MultiDiscrete([self.ai_props['k_paths'], self.ai_props['cores_per_link'],
+                                                 self.ai_props['slice_space']])
+        elif algorithm == 'q_learning':
+            action_space = None
+        else:
+            raise NotImplementedError
+
+        return action_space
 
     def handle_releases(self):
         """

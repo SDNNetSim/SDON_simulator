@@ -1,3 +1,7 @@
+# TODO: If any variable is used in both algorithms you could argue they should be in the
+#   run_ai_sim constructor
+import numpy as np
+
 empty_q_props = {
     'epsilon': None,
     'epsilon_start': None,
@@ -27,12 +31,19 @@ empty_q_props = {
 }
 
 empty_dqn_props = {
-    'net_spec_dict': dict(),
+    'k_paths': None,
+    'cores_per_link': None,
+    'spectral_slots': None,
+    'num_nodes': -1,
+    'min_arrival': np.inf,
+    'max_arrival': -1 * np.inf,
+    'min_depart': np.inf,
+    'max_depart': -1 * np.inf,
+    'bandwidth_list': list(),
+    'max_slots_needed': 0,
+    'max_length': 0,
+    'slice_space': 2,
+    'mock_sdn_dict': dict(),
     'arrival_list': list(),
     'depart_list': list(),
-    'arrival_count': 0,
-
-    'engine_props': None,
-    'reqs_dict': None,
-    'mock_sdn_dict': dict(),
 }
