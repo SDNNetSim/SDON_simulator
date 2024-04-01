@@ -137,6 +137,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         }
         return obs_dict
 
+    # TODO: This will change but better to wait for Q-Learning integration
     def _reset_reqs_dict(self, seed: int):
         self.engine_obj.generate_requests(seed=seed)
         self.min_arrival = np.inf
