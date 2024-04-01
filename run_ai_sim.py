@@ -299,10 +299,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 if __name__ == '__main__':
     env = SimEnv()
 
-    model = PPO("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=1000000, log_interval=1)
+    model = A2C("MultiInputPolicy", env, verbose=1)
+    model.learn(total_timesteps=100000, log_interval=1)
 
-    model.save('./logs/best_ppo_model.zip')
+    model.save('./logs/best_a2c_model.zip')
     # model = DQN.load('./logs/dqn/best_model.zip', env=env)
     # obs, info = env.reset()
     # episode_reward = 0

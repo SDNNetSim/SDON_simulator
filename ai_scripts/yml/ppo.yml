@@ -1,24 +1,22 @@
 SimEnv:
-  normalize: true
-  n_envs: 32
+#  normalize: true
+#  n_envs: 32
   n_timesteps: 10000
-  policy: 'MlpLstmPolicy'
-  n_steps: 256
-  batch_size: 256
-  gae_lambda: 0.95
-  gamma: 0.999
-  n_epochs: 10
-  vf_coef: 0.5
-  ent_coef: 0.001
-  use_sde: True
-  max_grad_norm: 0.5
-  learning_rate: lin_3e-4
-  sde_sample_freq: 4
-  clip_range: lin_0.2
+  policy: 'MultiInputPolicy'
+  n_steps: 128
+  batch_size: 16
+  gae_lambda: 0.92
+  gamma: 0.95
+  n_epochs: 5
+  vf_coef: 0.91
+  ent_coef: 0.0056
+#  use_sde: True
+  max_grad_norm: 0.8
+  learning_rate: 0.0006
+#  sde_sample_freq: 4
+  clip_range: 0.3
   policy_kwargs: "dict(
                     ortho_init=False,
                     activation_fn=nn.ReLU,
-                    lstm_hidden_size=64,
-                    enable_critic_lstm=True,
                     net_arch=dict(pi=[64], vf=[64])
                   )"

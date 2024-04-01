@@ -97,6 +97,7 @@ class SDNController:
             # TODO: Make sure this uses the right network spectrum database
             self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth,
                                            ai_obj=self.ai_obj)
+            # TODO: Bug in spectrum assignment, said it was not free?
             if self.spectrum_obj.spectrum_props['is_free']:
                 self.allocate()
                 self._update_req_stats(bandwidth=bandwidth)

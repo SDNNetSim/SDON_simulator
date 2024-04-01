@@ -8,8 +8,8 @@ fi
 python ai_scripts/register_env.py --algo "$1" --env-name "$2"
 cat >> venvs/unity_venv/venv/lib/python3.11/site-packages/rl_zoo3/import_envs.py <<EOL
 
-from run_ai_sim import DQNSimEnv
+from run_ai_sim import SimEnv
 
-register(id='DQNSimEnv', entry_point='run_ai_sim:DQNSimEnv')
+register(id='SimEnv', entry_point='run_ai_sim:SimEnv')
 EOL
 
