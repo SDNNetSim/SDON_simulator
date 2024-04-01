@@ -11,7 +11,7 @@ from sim_scripts.engine import Engine
 from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.ai_helpers import AIHelpers
-from helper_scripts.sim_helpers import get_start_time, find_core_frag_cong, find_path_len
+from helper_scripts.sim_helpers import get_start_time, find_core_frag_cong
 from arg_scripts.ai_args import empty_dqn_props, empty_q_props
 
 
@@ -30,32 +30,22 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.ai_props = copy.deepcopy(empty_q_props)
         else:
             raise NotImplementedError
+        self.algorithm = kwargs['algorithm']
 
         self.sim_dict = dict()
         self.iteration = 0
         self.options = None
         self.engine_obj = None
         self.route_obj = None
-        self.helper_obj = AIHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj)
+        self.helper_obj = AIHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj, route_obj=self.route_obj)
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
         if kwargs['algorithm'] in ('dqn', 'ppo'):
-            self._find_maximums()
+            self.helper_obj.find_maximums()
 
         self.observation_space = self.helper_obj.get_obs_space(algorithm=kwargs['algorithm'])
         self.action_space = self.helper_obj.get_action_space(algorithm=kwargs['algorithm'])
         self.render_mode = render_mode
-
-    def _find_maximums(self):
-        for bandwidth, mod_obj in self.engine_obj.engine_props['mod_per_bw'].items():
-            bandwidth_percent = self.engine_obj.engine_props['request_distribution'][bandwidth]
-            if bandwidth_percent > 0:
-                self.ai_props['bandwidth_list'].append(bandwidth)
-            for modulation, data_obj in mod_obj.items():
-                if data_obj['slots_needed'] > self.ai_props['max_slots_needed'] and bandwidth_percent > 0:
-                    self.ai_props['max_slots_needed'] = data_obj['slots_needed']
-                if data_obj['max_length'] > self.ai_props['max_length'] and bandwidth_percent > 0:
-                    self.ai_props['max_length'] = data_obj['max_length']
 
     def _check_terminated(self):
         if self.ai_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
@@ -67,30 +57,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return terminated
 
-    def _calculate_reward(self, was_allocated: bool):
-        if was_allocated:
-            if self.helper_obj.slice_request:
-                req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
-                max_reach = req_dict['mod_formats']['QPSK']['max_length']
-                path_list = self.route_obj.route_props['paths_list'][self.helper_obj.path_index]
-                path_len = find_path_len(topology=self.engine_obj.topology, path_list=path_list)
-
-                # Did not have to slice
-                if max_reach > path_len:
-                    reward = 0.5
-                else:
-                    reward = 1.0
-            else:
-                reward = 1.0
-        else:
-            # Could have sliced and we did not
-            if not self.helper_obj.slice_request:
-                reward = -5.0
-            else:
-                reward = -1.0
-
-        return reward
-
+    # TODO: Here
     def _update_helper_obj(self, action: list):
         self.helper_obj.path_index = action[0]
         self.helper_obj.core_num = action[1]
@@ -125,7 +92,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             was_allocated = False
         self._update_snapshots()
 
-        reward = self._calculate_reward(was_allocated=was_allocated)
+        # TODO: Change algorithm to use props instead of passing every time
+        reward = self.helper_obj.calculate_reward(was_allocated=was_allocated, algorithm=self.algorithm)
         self.ai_props['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()
@@ -265,6 +233,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.ai_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
         self.helper_obj.ai_props = self.ai_props
+        self.helper_obj.engine_obj = self.engine_obj
+        self.helper_obj.route_obj = self.route_obj
 
         if seed is None:
             seed = self.iteration
@@ -280,7 +250,7 @@ if __name__ == '__main__':
     env = SimEnv(algorithm='ppo')
 
     model = PPO("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=30000, log_interval=1)
+    model.learn(total_timesteps=20000, log_interval=1)
 
     # model.save('./logs/best_ppo_model.zip')
     # model = DQN.load('./logs/dqn/best_model.zip', env=env)

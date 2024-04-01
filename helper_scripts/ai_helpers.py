@@ -1,14 +1,17 @@
 from gymnasium import spaces
 
+from helper_scripts.sim_helpers import find_path_len
+
 
 class AIHelpers:
     """
     Contains methods to assist with AI simulations.
     """
 
-    def __init__(self, ai_props: dict, engine_obj: object):
+    def __init__(self, ai_props: dict, engine_obj: object, route_obj: object):
         self.ai_props = ai_props
         self.engine_obj = engine_obj
+        self.route_obj = route_obj
 
         self.topology = None
         self.net_spec_dict = None
@@ -17,13 +20,53 @@ class AIHelpers:
         self.path_index = None
         self.core_num = None
         self.slice_request = None
-        # TODO: Probably need to use this
         self.mod_format = None
-        # TODO: Probably need to use this
         self.bandwidth = None
 
+    def _calc_deep_reward(self, was_allocated: bool):
+        if was_allocated:
+            if self.slice_request:
+                req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
+                max_reach = req_dict['mod_formats']['QPSK']['max_length']
+                path_list = self.route_obj.route_props['paths_list'][self.path_index]
+                path_len = find_path_len(topology=self.engine_obj.topology, path_list=path_list)
+
+                # Did not have to slice
+                if max_reach > path_len:
+                    reward = 0.5
+                else:
+                    reward = 1.0
+            else:
+                reward = 1.0
+        else:
+            # Could have sliced and we did not
+            if not self.slice_request:
+                reward = -5.0
+            else:
+                reward = -1.0
+
+        return reward
+
+    def calculate_reward(self, was_allocated: bool, algorithm: str):
+        if algorithm in ('dqn', 'ppo'):
+            return self._calc_deep_reward(was_allocated=was_allocated)
+        elif algorithm == 'q_learning':
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+
+    def find_maximums(self):
+        for bandwidth, mod_obj in self.engine_obj.engine_props['mod_per_bw'].items():
+            bandwidth_percent = self.engine_obj.engine_props['request_distribution'][bandwidth]
+            if bandwidth_percent > 0:
+                self.ai_props['bandwidth_list'].append(bandwidth)
+            for modulation, data_obj in mod_obj.items():
+                if data_obj['slots_needed'] > self.ai_props['max_slots_needed'] and bandwidth_percent > 0:
+                    self.ai_props['max_slots_needed'] = data_obj['slots_needed']
+                if data_obj['max_length'] > self.ai_props['max_length'] and bandwidth_percent > 0:
+                    self.ai_props['max_length'] = data_obj['max_length']
+
     def get_obs_space(self, algorithm: str):
-        # TODO: May need to change this to A2C, PPO, etc...
         if algorithm in ('dqn', 'ppo'):
             resp_obs = spaces.Dict({
                 'source': spaces.Discrete(self.ai_props['num_nodes'], start=0),
@@ -40,7 +83,6 @@ class AIHelpers:
         return resp_obs
 
     def get_action_space(self, algorithm: str):
-        # TODO: May need to change this to A2C, PPO, etc...
         if algorithm in ('dqn', 'ppo'):
             action_space = spaces.MultiDiscrete([self.ai_props['k_paths'], self.ai_props['cores_per_link'],
                                                  self.ai_props['slice_space']])
