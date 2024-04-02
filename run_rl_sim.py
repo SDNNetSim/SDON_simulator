@@ -15,6 +15,7 @@ from helper_scripts.sim_helpers import get_start_time
 from arg_scripts.ai_args import empty_drl_props, empty_q_props
 
 
+# TODO: Make common props in ai props common!
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
@@ -23,35 +24,27 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def __init__(self, render_mode: str = None, **kwargs):
         super().__init__()
-        if kwargs['algorithm'].__name__ == 'PPO':
-            self.algorithm = 'ppo'
-            self.ai_props = copy.deepcopy(empty_drl_props)
-        elif kwargs['algorithm'].__name__ == 'DQN':
-            self.algorithm = 'dqn'
-            self.ai_props = copy.deepcopy(empty_drl_props)
-        elif kwargs['algorithm'] == 'q_learning':
-            self.algorithm = 'q_learning'
-            self.ai_props = copy.deepcopy(empty_q_props)
-        else:
-            raise NotImplementedError
+        self.ai_props = dict()
+        # TODO: Make sure these are updated in this script and ai helpers
+        self.ai_props['q_props'] = copy.deepcopy(empty_q_props)
+        self.ai_props['drl_props'] = copy.deepcopy(empty_drl_props)
+
         self.sim_dict = dict()
         self.iteration = 0
         self.options = None
         self.engine_obj = None
         self.route_obj = None
         self.helper_obj = AIHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj, route_obj=self.route_obj)
-        self.helper_obj.algorithm = self.algorithm
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
-        if self.algorithm in ('dqn', 'ppo'):
-            self.helper_obj.find_maximums()
+        self.helper_obj.find_maximums()
 
         self.observation_space = self.helper_obj.get_obs_space()
         self.action_space = self.helper_obj.get_action_space()
         self.render_mode = render_mode
 
     def _check_terminated(self):
-        if self.ai_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
+        if self.ai_props['drl_props']['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
             base_fp = os.path.join('data')
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
@@ -61,16 +54,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return terminated
 
     def _update_helper_obj(self, action: list):
-        if self.algorithm in ('dqn', 'ppo'):
-            self.helper_obj.path_index = action[0]
-            self.helper_obj.core_num = action[1]
-            self.helper_obj.slice_request = action[2]
-        else:
-            raise NotImplementedError
+        self.helper_obj.path_index = action[0]
+        self.helper_obj.core_num = action[1]
+        self.helper_obj.slice_request = action[2]
 
-        if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['k_paths'] - 1):
+        if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['drl_props']['k_paths'] - 1):
             raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
-        if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (self.ai_props['cores_per_link'] - 1):
+        if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (self.ai_props['drl_props']['cores_per_link'] - 1):
             raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')
 
         self.helper_obj.ai_props = self.ai_props
@@ -78,7 +68,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.handle_releases()
 
     def _update_snapshots(self):
-        arrival_count = self.ai_props['arrival_count']
+        arrival_count = self.ai_props['drl_props']['arrival_count']
 
         snapshot_step = self.engine_obj.engine_props['snapshot_step']
         if self.engine_obj.engine_props['save_snapshots'] and (arrival_count + 1) % snapshot_step == 0:
@@ -90,22 +80,21 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
 
-        req_id = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['req_id']
+        req_id = self.ai_props['drl_props']['arrival_list'][self.ai_props['drl_props']['arrival_count']]['req_id']
         if req_id in reqs_status_dict:
             was_allocated = True
         else:
             was_allocated = False
         self._update_snapshots()
 
-        # TODO: Change algorithm to use props instead of passing every time
-        reward = self.helper_obj.calculate_reward(was_allocated=was_allocated)
-        self.ai_props['arrival_count'] += 1
+        drl_reward, ql_reward = self.helper_obj.calculate_reward(was_allocated=was_allocated)
+        self.ai_props['drl_props']['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()
         truncated = False
         info = self._get_info()
 
-        return new_obs, reward, terminated, truncated, info
+        return new_obs, drl_reward, terminated, truncated, info
 
     @staticmethod
     def _get_info():
@@ -115,21 +104,21 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _get_obs(self):
         # Used when we reach a reset after a simulation has finished (reset automatically called by gymnasium, use
         # placeholder variable)
-        if self.ai_props['arrival_count'] == self.engine_obj.engine_props['num_requests']:
-            curr_req = self.ai_props['arrival_list'][self.ai_props['arrival_count'] - 1]
+        if self.ai_props['drl_props']['arrival_count'] == self.engine_obj.engine_props['num_requests']:
+            curr_req = self.ai_props['drl_props']['arrival_list'][self.ai_props['drl_props']['arrival_count'] - 1]
         else:
-            curr_req = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
+            curr_req = self.ai_props['drl_props']['arrival_list'][self.ai_props['drl_props']['arrival_count']]
 
-        self.ai_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
-        self.route_obj.sdn_props = self.ai_props['mock_sdn_dict']
+        self.ai_props['drl_props']['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
+        self.route_obj.sdn_props = self.ai_props['drl_props']['mock_sdn_dict']
         self.route_obj.get_route()
 
         paths_matrix = self.route_obj.route_props['paths_list']
         spectrum_obs = self.helper_obj.get_spectrum(paths_matrix=paths_matrix)
 
         encode_bw_list = np.zeros((3,))
-        if len(self.ai_props['bandwidth_list']) != 0:
-            bandwidth_index = self.ai_props['bandwidth_list'].index(curr_req['bandwidth'])
+        if len(self.ai_props['drl_props']['bandwidth_list']) != 0:
+            bandwidth_index = self.ai_props['drl_props']['bandwidth_list'].index(curr_req['bandwidth'])
             encode_bw_list[bandwidth_index] = 1
 
         obs_dict = {
@@ -140,7 +129,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         }
         return obs_dict
 
-    # TODO: This will change but better to wait for Q-Learning integration
     def _reset_reqs_dict(self, seed: int):
         self.engine_obj.generate_requests(seed=seed)
         self.min_arrival = np.inf
@@ -155,14 +143,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 if req_time < self.min_arrival:
                     self.min_arrival = req_time
 
-                self.ai_props['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
+                self.ai_props['drl_props']['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
             else:
                 if req_time > self.max_depart:
                     self.max_depart = req_time
                 if req_time < self.min_depart:
                     self.min_depart = req_time
 
-                self.ai_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
+                self.ai_props['drl_props']['depart_list'].append(self.engine_obj.reqs_dict[req_time])
 
     def _create_input(self):
         base_fp = os.path.join('data')
@@ -171,7 +159,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         file_name = "sim_input_s1.json"
 
         self.engine_obj = Engine(engine_props=self.sim_dict['s1'])
-        self.route_obj = Routing(engine_props=self.engine_obj.engine_props, sdn_props=self.ai_props['mock_sdn_dict'])
+        self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
+                                 sdn_props=self.ai_props['drl_props']['mock_sdn_dict'])
         self.sim_dict['s1'] = create_input(base_fp=base_fp, engine_props=self.sim_dict['s1'])
 
         if self.options['save_sim']:
@@ -186,9 +175,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         config_path = os.path.join('ini', 'run_ini', 'config.ini')
         self.sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
-        self.ai_props['k_paths'] = self.sim_dict['s1']['k_paths']
-        self.ai_props['cores_per_link'] = self.sim_dict['s1']['cores_per_link']
-        self.ai_props['spectral_slots'] = self.sim_dict['s1']['spectral_slots']
+        self.ai_props['drl_props']['k_paths'] = self.sim_dict['s1']['k_paths']
+        self.ai_props['drl_props']['cores_per_link'] = self.sim_dict['s1']['cores_per_link']
+        self.ai_props['drl_props']['spectral_slots'] = self.sim_dict['s1']['spectral_slots']
 
         self._create_input()
         start_arr_rate = float(self.sim_dict['s1']['arrival_rate']['start'])
@@ -203,13 +192,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.options = options
 
         super().reset(seed=seed)
-        # TODO: Change
-        self.ai_props = copy.deepcopy(empty_drl_props)
+        self.ai_props['q_props'] = copy.deepcopy(empty_q_props)
+        self.ai_props['drl_props'] = copy.deepcopy(empty_drl_props)
         self.setup()
-        self.ai_props['arrival_count'] = 0
+        self.ai_props['drl_props']['arrival_count'] = 0
         self.engine_obj.init_iter(iteration=self.iteration)
         self.engine_obj.create_topology()
-        self.ai_props['num_nodes'] = len(self.engine_obj.topology.nodes)
+        self.ai_props['drl_props']['num_nodes'] = len(self.engine_obj.topology.nodes)
 
         self.helper_obj.ai_props = self.ai_props
         self.helper_obj.engine_obj = self.engine_obj
