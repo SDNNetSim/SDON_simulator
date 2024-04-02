@@ -17,6 +17,7 @@ class AIHelpers:
         self.topology = None
         self.net_spec_dict = None
         self.reqs_status_dict = None
+        self.algorithm = None
 
         self.path_index = None
         self.core_num = None
@@ -66,10 +67,10 @@ class AIHelpers:
 
         return reward
 
-    def calculate_reward(self, was_allocated: bool, algorithm: str):
-        if algorithm in ('dqn', 'ppo'):
+    def calculate_reward(self, was_allocated: bool):
+        if self.algorithm in ('dqn', 'ppo'):
             return self._calc_deep_reward(was_allocated=was_allocated)
-        elif algorithm == 'q_learning':
+        elif self.algorithm == 'q_learning':
             raise NotImplementedError
         else:
             raise NotImplementedError
@@ -85,8 +86,8 @@ class AIHelpers:
                 if data_obj['max_length'] > self.ai_props['max_length'] and bandwidth_percent > 0:
                     self.ai_props['max_length'] = data_obj['max_length']
 
-    def get_obs_space(self, algorithm: str):
-        if algorithm in ('dqn', 'ppo'):
+    def get_obs_space(self):
+        if self.algorithm in ('dqn', 'ppo'):
             resp_obs = spaces.Dict({
                 'source': spaces.Discrete(self.ai_props['num_nodes'], start=0),
                 'destination': spaces.Discrete(self.ai_props['num_nodes'], start=0),
@@ -94,18 +95,18 @@ class AIHelpers:
                 'cores_matrix': spaces.Box(low=0.01, high=1.01, shape=(self.ai_props['k_paths'],
                                                                        self.ai_props['cores_per_link'], 2)),
             })
-        elif algorithm == 'q_learning':
+        elif self.algorithm == 'q_learning':
             resp_obs = None
         else:
             raise NotImplementedError
 
         return resp_obs
 
-    def get_action_space(self, algorithm: str):
-        if algorithm in ('dqn', 'ppo'):
+    def get_action_space(self):
+        if self.algorithm in ('dqn', 'ppo'):
             action_space = spaces.MultiDiscrete([self.ai_props['k_paths'], self.ai_props['cores_per_link'],
                                                  self.ai_props['slice_space']])
-        elif algorithm == 'q_learning':
+        elif self.algorithm == 'q_learning':
             action_space = None
         else:
             raise NotImplementedError

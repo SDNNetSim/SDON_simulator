@@ -3,7 +3,7 @@ import copy
 
 import gymnasium as gym
 import numpy as np
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, DQN
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
@@ -12,7 +12,7 @@ from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.ai_helpers import AIHelpers
 from helper_scripts.sim_helpers import get_start_time
-from arg_scripts.ai_args import empty_dqn_props, empty_q_props
+from arg_scripts.ai_args import empty_drl_props, empty_q_props
 
 
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
@@ -23,28 +23,31 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def __init__(self, render_mode: str = None, **kwargs):
         super().__init__()
-        # TODO: Kwargs needs to be updated (env args by command line)
-        if kwargs['algorithm'] in ('dqn', 'ppo'):
-            self.ai_props = copy.deepcopy(empty_dqn_props)
+        if kwargs['algorithm'].__name__ == 'PPO':
+            self.algorithm = 'ppo'
+            self.ai_props = copy.deepcopy(empty_drl_props)
+        elif kwargs['algorithm'].__name__ == 'DQN':
+            self.algorithm = 'dqn'
+            self.ai_props = copy.deepcopy(empty_drl_props)
         elif kwargs['algorithm'] == 'q_learning':
+            self.algorithm = 'q_learning'
             self.ai_props = copy.deepcopy(empty_q_props)
         else:
             raise NotImplementedError
-        self.algorithm = kwargs['algorithm']
-
         self.sim_dict = dict()
         self.iteration = 0
         self.options = None
         self.engine_obj = None
         self.route_obj = None
         self.helper_obj = AIHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj, route_obj=self.route_obj)
+        self.helper_obj.algorithm = self.algorithm
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
-        if kwargs['algorithm'] in ('dqn', 'ppo'):
+        if self.algorithm in ('dqn', 'ppo'):
             self.helper_obj.find_maximums()
 
-        self.observation_space = self.helper_obj.get_obs_space(algorithm=kwargs['algorithm'])
-        self.action_space = self.helper_obj.get_action_space(algorithm=kwargs['algorithm'])
+        self.observation_space = self.helper_obj.get_obs_space()
+        self.action_space = self.helper_obj.get_action_space()
         self.render_mode = render_mode
 
     def _check_terminated(self):
@@ -95,7 +98,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self._update_snapshots()
 
         # TODO: Change algorithm to use props instead of passing every time
-        reward = self.helper_obj.calculate_reward(was_allocated=was_allocated, algorithm=self.algorithm)
+        reward = self.helper_obj.calculate_reward(was_allocated=was_allocated)
         self.ai_props['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()
@@ -200,7 +203,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.options = options
 
         super().reset(seed=seed)
-        self.ai_props = copy.deepcopy(empty_dqn_props)
+        # TODO: Change
+        self.ai_props = copy.deepcopy(empty_drl_props)
         self.setup()
         self.ai_props['arrival_count'] = 0
         self.engine_obj.init_iter(iteration=self.iteration)
@@ -221,14 +225,15 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
 
 # TODO: Have multiple iterations save to one file for predictions
+#   - Only if optimize is false
 if __name__ == '__main__':
-    env = SimEnv(algorithm='ppo')
+    env = SimEnv(algorithm='PPO')
 
     model = PPO("MultiInputPolicy", env, verbose=1)
     model.learn(total_timesteps=20000, log_interval=1)
 
-    # model.save('./logs/best_ppo_model.zip')
-    # model = DQN.load('./logs/dqn/best_model.zip', env=env)
+    # model.save('./logs/best_PPO_model.zip')
+    # model = DQN.load('./logs/DQN/best_model.zip', env=env)
     # obs, info = env.reset()
     # episode_reward = 0
     # max_episodes = 5

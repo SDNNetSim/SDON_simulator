@@ -30,7 +30,7 @@ empty_q_props = {
     }
 }
 
-empty_dqn_props = {
+empty_drl_props = {
     'k_paths': None,
     'cores_per_link': None,
     'spectral_slots': None,
