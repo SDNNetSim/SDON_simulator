@@ -8,6 +8,7 @@ from helper_scripts.os_helpers import create_dir
 from helper_scripts.sim_helpers import find_path_len, find_core_frag_cong, calc_matrix_stats, get_path_mod
 
 
+# TODO: Change script name to RL helpers?
 class AIHelpers:
     """
     Contains methods to assist with AI simulations.

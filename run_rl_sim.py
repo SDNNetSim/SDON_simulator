@@ -148,7 +148,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             base_fp = os.path.join('data')
             # TODO: Update amount
             amount = 0
-            self.helper_obj.decay_epsilon(amount=amount, iteration=self.iteration)
+            # self.helper_obj.decay_epsilon(amount=amount, iteration=self.iteration)
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
             self.iteration += 1
         else:
@@ -194,8 +194,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self._update_snapshots()
 
         drl_reward = self.helper_obj.calculate_drl_reward(was_allocated=was_allocated)
-        self._update_routes_matrix(was_routed=was_allocated)
-        self._update_cores_matrix(was_routed=was_allocated)
+        # self._update_routes_matrix(was_routed=was_allocated)
+        # self._update_cores_matrix(was_routed=was_allocated)
         self.ai_props['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()
@@ -327,7 +327,7 @@ if __name__ == '__main__':
     env = SimEnv(algorithm='PPO')
 
     model = PPO("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=10000, log_interval=1)
+    model.learn(total_timesteps=20000, log_interval=1)
 
     # model.save('./logs/best_PPO_model.zip')
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
