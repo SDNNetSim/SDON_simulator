@@ -9,8 +9,11 @@ class AIHelpers:
     Contains methods to assist with AI simulations.
     """
 
-    def __init__(self, ai_props: dict, engine_obj: object, route_obj: object):
+    def __init__(self, ai_props: dict, engine_obj: object, route_obj: object, q_props: dict, drl_props: dict):
         self.ai_props = ai_props
+        self.q_props = q_props
+        self.drl_props = drl_props
+
         self.engine_obj = engine_obj
         self.route_obj = route_obj
 
@@ -25,9 +28,18 @@ class AIHelpers:
         self.mod_format = None
         self.bandwidth = None
 
+    def decay_epsilon(self, amount: float, iteration: int):
+        self.q_props['epsilon'] -= amount
+        if iteration == 0:
+            self.q_props['epsilon_list'].append(self.q_props['epsilon'])
+
+        if self.q_props['epsilon'] < 0.0:
+            raise ValueError(f"Epsilon should be greater than 0 but it is {self.q_props['epsilon']}")
+
     def get_spectrum(self, paths_matrix: list):
         # To add core and fragmentation scores, make a k_path by cores by two matrix (two metrics)
-        spectrum_matrix = np.zeros((self.ai_props['drl_props']['k_paths'], self.ai_props['drl_props']['cores_per_link'], 2))
+        spectrum_matrix = np.zeros(
+            (self.ai_props['drl_props']['k_paths'], self.ai_props['drl_props']['cores_per_link'], 2))
         for path_index, paths_list in enumerate(paths_matrix):
             for link_tuple in zip(paths_list, paths_list[1:]):
                 rev_link_tuple = link_tuple[1], link_tuple[0]

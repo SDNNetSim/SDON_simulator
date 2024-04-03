@@ -23,19 +23,21 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def __init__(self, render_mode: str = None, **kwargs):
         super().__init__()
+        # TODO: These need to be updated in setup or something
         self.ai_props = copy.deepcopy(empty_ai_props)
         self.q_props = copy.deepcopy(empty_q_props)
         self.drl_props = copy.deepcopy(empty_drl_props)
 
         self.sim_dict = dict()
         self.iteration = 0
-
         self.options = None
         self.optimize = None
         self.render_mode = render_mode
+
         self.engine_obj = None
         self.route_obj = None
-        self.helper_obj = AIHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj, route_obj=self.route_obj)
+        self.helper_obj = AIHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj, route_obj=self.route_obj,
+                                    q_props=self.q_props, drl_props=self.drl_props)
 
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
@@ -45,9 +47,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.action_space = self.helper_obj.get_action_space()
 
     def _check_terminated(self):
-        if self.ai_props['drl_props']['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
+        if self.ai_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
             base_fp = os.path.join('data')
+            # TODO: Update amount
+            amount = 0
+            self.helper_obj.decay_epsilon(amount=amount, iteration=self.iteration)
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
             self.iteration += 1
         else:
@@ -66,6 +71,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 self.ai_props['drl_props']['cores_per_link'] - 1):
             raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')
 
+        # TODO: Double check these updates
         self.helper_obj.ai_props = self.ai_props
         self.helper_obj.engine_obj = self.engine_obj
         self.helper_obj.handle_releases()
