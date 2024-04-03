@@ -5,7 +5,7 @@ import numpy as np
 from gymnasium import spaces
 
 from helper_scripts.os_helpers import create_dir
-from helper_scripts.sim_helpers import find_path_len, find_core_frag_cong
+from helper_scripts.sim_helpers import find_path_len, find_core_frag_cong, calc_matrix_stats
 
 
 class AIHelpers:
@@ -31,6 +31,32 @@ class AIHelpers:
         self.slice_request = None
         self.mod_format = None
         self.bandwidth = None
+
+    def _calc_q_averages(self, stats_flag: str, episode: str, iteration: int):
+        len_rewards = len(self.q_props['rewards_dict'][stats_flag]['rewards'][episode])
+
+        max_iters = self.engine_obj.engine_props['max_iters'] - 1
+        num_requests = self.engine_obj.engine_props['num_requests']
+        if iteration == max_iters and len_rewards == num_requests:
+            rewards_dict = self.q_props['rewards_dict'][stats_flag]['rewards']
+            errors_dict = self.q_props['errors_dict'][stats_flag]['errors']
+            self.q_props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
+            self.q_props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=errors_dict)
+
+    def update_q_stats(self, reward: float, td_error: float, stats_flag: str, iteration):
+        episode = str(iteration)
+        if episode not in self.q_props['rewards_dict'][stats_flag]['rewards'].keys():
+            self.q_props['rewards_dict'][stats_flag]['rewards'][episode] = [reward]
+            self.q_props['errors_dict'][stats_flag]['errors'][episode] = [td_error]
+            self.q_props['sum_rewards_dict'][episode] = reward
+            self.q_props['sum_errors_dict'][episode] = td_error
+        else:
+            self.q_props['rewards_dict'][stats_flag]['rewards'][episode].append(reward)
+            self.q_props['errors_dict'][stats_flag]['errors'][episode].append(td_error)
+            self.q_props['sum_rewards_dict'][episode] += reward
+            self.q_props['sum_errors_dict'][episode] += td_error
+
+        self._calc_q_averages(stats_flag=stats_flag, episode=episode, iteration=iteration)
 
     def _save_params(self, save_dir: str):
         params_dict = dict()
