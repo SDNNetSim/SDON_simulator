@@ -46,6 +46,64 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.observation_space = self.helper_obj.get_obs_space()
         self.action_space = self.helper_obj.get_action_space()
 
+    # TODO: Routes should still depend on cores, but cores will now depend on spectrum
+    def _get_max_future_q(self):
+        q_values = list()
+        # TODO: Do NOT forget to update ai props somewhere after each request
+        cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']]
+        cores_matrix = cores_matrix[self.ai_props['destination']][self.ai_props['path_index']]
+        for core_index in range(self.engine_obj.engine_props['cores_per_link']):
+            curr_q = cores_matrix[core_index]['q_value']
+            q_values.append(curr_q)
+
+        max_index = np.argmax(q_values)
+        resp_value = cores_matrix[max_index]['q_value']
+        return resp_value
+
+    def _update_routes_matrix(self, was_routed: bool):
+        if was_routed:
+            reward = 1.0
+        else:
+            reward = -1.0
+
+        routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
+        current_q = routes_matrix[self.ai_props['path_index']]['q_value']
+        max_future_q = self._get_max_future_q()
+        delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
+        td_error = current_q - (reward + self.engine_obj.engine_props['discount_factor'] * max_future_q)
+        # TODO: Remove this call from before, it's called here!
+        self.helper_obj.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error,
+                                       iteration=self.iteration)
+
+        engine_props = self.engine_obj.engine_props
+        new_q = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
+
+        # TODO: Make sure this works
+        routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
+        routes_matrix[self.ai_props['path_index']]['q_value'] = new_q
+
+    def _update_cores_matrix(self, was_routed: bool):
+        if was_routed:
+            reward = 1.0
+        else:
+            reward = -1.0
+
+        q_cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']]
+        q_cores_matrix = q_cores_matrix[self.ai_props['destination']][self.ai_props['path_index']]
+        current_q = q_cores_matrix[self.ai_props['core_index']]['q_value']
+        # TODO: Change
+        max_future_q = 1.0
+        delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
+        self.helper_obj.update_q_stats(reward=reward, stats_flag='cores_dict', td_error=delta, iteration=self.iteration)
+
+        engine_props = self.engine_obj.engine_props
+        new_q_core = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
+
+        # TODO: Make sure this works
+        # TODO: Ensure all these variables are being updates properly
+        cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']][self.ai_props['destination']]
+        cores_matrix[self.ai_props['path_index']][self.ai_props['core_index']]['q_value'] = new_q_core
+
     def _check_terminated(self):
         if self.ai_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
@@ -96,13 +154,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             was_allocated = False
         self._update_snapshots()
 
-        drl_reward, ql_reward = self.helper_obj.calculate_reward(was_allocated=was_allocated)
-        # TODO: Update td error
-        # TODO: Rewards and errors for core and paths!
-        td_error = 0
-        # TODO: This method needs to be called twice (routes and cores update)
-        self.helper_obj.update_q_stats(reward=ql_reward, td_error=td_error, stats_flag='routes',
-                                       iteration=self.iteration)
+        drl_reward = self.helper_obj.calculate_drl_reward(was_allocated=was_allocated)
+        self._update_routes_matrix(was_routed=was_allocated)
+        self._update_cores_matrix(was_routed=was_allocated)
         self.ai_props['drl_props']['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()

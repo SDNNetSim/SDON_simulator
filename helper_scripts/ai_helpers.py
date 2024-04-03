@@ -150,11 +150,11 @@ class AIHelpers:
 
         return reward
 
-    def calculate_reward(self, was_allocated: bool):
+    # TODO: Combine this function
+    def calculate_drl_reward(self, was_allocated: bool):
         drl_reward = self._calc_deep_reward(was_allocated=was_allocated)
-        ql_reward = None
 
-        return drl_reward, ql_reward
+        return drl_reward
 
     def find_maximums(self):
         for bandwidth, mod_obj in self.engine_obj.engine_props['mod_per_bw'].items():
