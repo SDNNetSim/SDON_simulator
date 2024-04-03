@@ -43,7 +43,7 @@ class AIHelpers:
             self.q_props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
             self.q_props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=errors_dict)
 
-    def update_q_stats(self, reward: float, td_error: float, stats_flag: str, iteration):
+    def update_q_stats(self, reward: float, td_error: float, stats_flag: str, iteration: int):
         episode = str(iteration)
         if episode not in self.q_props['rewards_dict'][stats_flag]['rewards'].keys():
             self.q_props['rewards_dict'][stats_flag]['rewards'][episode] = [reward]

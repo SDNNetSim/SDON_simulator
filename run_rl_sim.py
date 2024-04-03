@@ -97,6 +97,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self._update_snapshots()
 
         drl_reward, ql_reward = self.helper_obj.calculate_reward(was_allocated=was_allocated)
+        # TODO: Update td error
+        # TODO: Rewards and errors for core and paths!
+        td_error = 0
+        # TODO: This method needs to be called twice (routes and cores update)
+        self.helper_obj.update_q_stats(reward=ql_reward, td_error=td_error, stats_flag='routes',
+                                       iteration=self.iteration)
         self.ai_props['drl_props']['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()
