@@ -5,7 +5,7 @@ import numpy as np
 from gymnasium import spaces
 
 from helper_scripts.os_helpers import create_dir
-from helper_scripts.sim_helpers import find_path_len, find_core_frag_cong, calc_matrix_stats
+from helper_scripts.sim_helpers import find_path_len, find_core_frag_cong, calc_matrix_stats, get_path_mod
 
 
 class AIHelpers:
@@ -31,6 +31,25 @@ class AIHelpers:
         self.slice_request = None
         self.mod_format = None
         self.bandwidth = None
+
+    def get_max_curr_q(self):
+        q_values = list()
+        for path_index in range(len(self.ai_props['paths_list'])):
+            routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
+            curr_q = routes_matrix[path_index]['q_value']
+            q_values.append(curr_q)
+
+        max_index = np.argmax(q_values)
+        max_path = self.ai_props['paths_list'][max_index]
+        return max_index, max_path
+
+    def update_route_props(self, sdn_props: dict, route_props: dict, chosen_path):
+        route_props['paths_list'].append(chosen_path)
+        path_len = find_path_len(path_list=chosen_path, topology=self.engine_obj.engine_props['topology'])
+        chosen_bw = sdn_props['bandwidth']
+        mod_format = get_path_mod(mods_dict=self.engine_obj.engine_props['mod_per_bw'][chosen_bw], path_len=path_len)
+        route_props['mod_formats_list'].append([mod_format])
+        route_props['weights_list'].append(path_len)
 
     def _calc_q_averages(self, stats_flag: str, episode: str, iteration: int):
         len_rewards = len(self.q_props['rewards_dict'][stats_flag]['rewards'][episode])

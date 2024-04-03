@@ -104,6 +104,44 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']][self.ai_props['destination']]
         cores_matrix[self.ai_props['path_index']][self.ai_props['core_index']]['q_value'] = new_q_core
 
+    def get_route(self, sdn_props: dict, route_props: dict):
+        random_float = np.round(np.random.uniform(0, 1), decimals=1)
+        self.ai_props['source'] = int(sdn_props['source'])
+        self.ai_props['destination'] = int(sdn_props['destination'])
+        routes_matrix = self.q_props['routes_matrix']
+        self.ai_props['paths_list'] = routes_matrix[self.ai_props['source']][self.ai_props['source']]['path']
+
+        if self.ai_props['paths_list'].ndim != 1:
+            self.ai_props['paths_list'] = self.ai_props['paths_list'][:, 0]
+
+        if random_float < self.q_props['epsilon']:
+            self.ai_props['path_index'] = np.random.choice(self.ai_props['k_paths'])
+
+            if self.ai_props['path_index'] == 1 and self.ai_props['k_paths'] == 1:
+                self.ai_props['path_index'] = 0
+            # TODO: Defined outside constructor
+            self.chosen_path = self.ai_props['paths_list'][self.ai_props['path_index']]
+        else:
+            # TODO: I don't think chosen path is within props
+            self.ai_props['path_index'], self.ai_props['chosen_path'] = self.helper_obj.get_max_curr_q()
+
+        if len(self.chosen_path) == 0:
+            raise ValueError('The chosen path can not be None')
+
+        # TODO: Not sure about sdn props either...
+        self.helper_obj.update_route_props(sdn_props=sdn_props, route_props=route_props, chosen_path=self.chosen_path)
+
+    def get_core(self, spectrum_props: dict):
+        random_float = np.round(np.random.uniform(0, 1), decimals=1)
+
+        if random_float < self.q_props['epsilon']:
+            self.core_index = np.random.randint(0, self.engine_props['cores_per_link'])
+        else:
+            q_values = self.q_props['cores_matrix'][self.source][self.destination][self.path_index]['q_value']
+            self.core_index = np.argmax(q_values)
+
+        spectrum_props['forced_core'] = self.core_index
+
     def _check_terminated(self):
         if self.ai_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
