@@ -1,9 +1,10 @@
 import os
 import copy
 
+import networkx as nx
 import gymnasium as gym
 import numpy as np
-from stable_baselines3 import PPO, DQN
+from stable_baselines3 import PPO
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
@@ -15,6 +16,7 @@ from helper_scripts.sim_helpers import get_start_time
 from arg_scripts.ai_args import empty_drl_props, empty_q_props, empty_ai_props
 
 
+# TODO: Account for script name change in bash scripts (run_rl_sim)
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
@@ -24,6 +26,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def __init__(self, render_mode: str = None, **kwargs):
         super().__init__()
         # TODO: These need to be updated in setup or something
+        #   - I don't think I should reset
         self.ai_props = copy.deepcopy(empty_ai_props)
         self.q_props = copy.deepcopy(empty_q_props)
         self.drl_props = copy.deepcopy(empty_drl_props)
@@ -142,6 +145,37 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         spectrum_props['forced_core'] = self.core_index
 
+    def _init_q_tables(self):
+        for source in range(0, self.ai_props['num_nodes']):
+            for destination in range(0, self.ai_props['num_nodes']):
+                # A node cannot be attached to itself
+                if source == destination:
+                    continue
+
+                shortest_paths = nx.shortest_simple_paths(G=self.engine_obj.engine_props['topology'],
+                                                          source=str(source), target=str(destination), weight='length')
+                for k, curr_path in enumerate(shortest_paths):
+                    if k >= self.ai_props['k_paths']:
+                        break
+                    self.q_props['routes_matrix'][source, destination, k] = (curr_path, 0.0)
+
+                    for core_action in range(self.engine_obj.engine_props['cores_per_link']):
+                        self.q_props['cores_matrix'][source, destination, k, core_action] = (curr_path, core_action,
+                                                                                             0.0)
+
+    def setup_q_env(self):
+        self.q_props['epsilon'] = self.engine_obj.engine_props['epsilon_start']
+        route_types = [('path', 'O'), ('q_value', 'f8')]
+        core_types = [('path', 'O'), ('core_action', 'i8'), ('q_value', 'f8')]
+
+        self.q_props['routes_matrix'] = np.empty((self.ai_props['num_nodes'], self.ai_props['num_nodes'],
+                                                  self.ai_props['k_paths']), dtype=route_types)
+        self.q_props['cores_matrix'] = np.empty((self.ai_props['num_nodes'], self.ai_props['num_nodes'],
+                                                 self.ai_props['k_paths'],
+                                                 self.engine_obj.engine_props['cores_per_link']), dtype=core_types)
+
+        self._init_q_tables()
+
     def _check_terminated(self):
         if self.ai_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
@@ -194,8 +228,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self._update_snapshots()
 
         drl_reward = self.helper_obj.calculate_drl_reward(was_allocated=was_allocated)
-        # self._update_routes_matrix(was_routed=was_allocated)
-        # self._update_cores_matrix(was_routed=was_allocated)
+        self._update_routes_matrix(was_routed=was_allocated)
+        self._update_cores_matrix(was_routed=was_allocated)
         self.ai_props['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()
@@ -307,6 +341,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj.create_topology()
         self.ai_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
+        self.setup_q_env()
         # TODO: QL and DRL props set up correctly?
         self.helper_obj.ai_props = self.ai_props
         self.helper_obj.engine_obj = self.engine_obj
