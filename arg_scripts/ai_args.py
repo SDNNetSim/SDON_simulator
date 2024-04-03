@@ -1,6 +1,21 @@
-# TODO: If any variable is used in both algorithms you could argue they should be in the
-#   run_ai_sim constructor
 import numpy as np
+
+empty_ai_props = {
+    'k_paths': None,
+    'cores_per_link': None,
+    'spectral_slots': None,
+    'num_nodes': None,
+
+    'bandwidth_list': list(),
+    'arrival_list': list(),
+    'depart_list': list(),
+
+    'mock_sdn_dict': dict(),
+    'source': None,
+    'destination': None,
+    # This may already be in the routing object
+    'paths_list': list(),
+}
 
 empty_q_props = {
     'epsilon': None,
@@ -31,19 +46,11 @@ empty_q_props = {
 }
 
 empty_drl_props = {
-    'k_paths': None,
-    'cores_per_link': None,
-    'spectral_slots': None,
-    'num_nodes': -1,
     'min_arrival': np.inf,
     'max_arrival': -1 * np.inf,
     'min_depart': np.inf,
     'max_depart': -1 * np.inf,
-    'bandwidth_list': list(),
     'max_slots_needed': 0,
     'max_length': 0,
     'slice_space': 2,
-    'mock_sdn_dict': dict(),
-    'arrival_list': list(),
-    'depart_list': list(),
 }

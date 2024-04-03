@@ -12,10 +12,9 @@ from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.ai_helpers import AIHelpers
 from helper_scripts.sim_helpers import get_start_time
-from arg_scripts.ai_args import empty_drl_props, empty_q_props
+from arg_scripts.ai_args import empty_drl_props, empty_q_props, empty_ai_props
 
 
-# TODO: Make common props in ai props common!
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
@@ -24,30 +23,33 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def __init__(self, render_mode: str = None, **kwargs):
         super().__init__()
-        self.ai_props = dict()
-        # TODO: Make sure these are updated in this script and ai helpers
-        self.ai_props['q_props'] = copy.deepcopy(empty_q_props)
-        self.ai_props['drl_props'] = copy.deepcopy(empty_drl_props)
+        self.ai_props = copy.deepcopy(empty_ai_props)
+        self.q_props = copy.deepcopy(empty_q_props)
+        self.drl_props = copy.deepcopy(empty_drl_props)
 
         self.sim_dict = dict()
         self.iteration = 0
+
         self.options = None
+        self.optimize = None
+        self.render_mode = render_mode
         self.engine_obj = None
         self.route_obj = None
         self.helper_obj = AIHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj, route_obj=self.route_obj)
+
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
         self.helper_obj.find_maximums()
 
         self.observation_space = self.helper_obj.get_obs_space()
         self.action_space = self.helper_obj.get_action_space()
-        self.render_mode = render_mode
 
     def _check_terminated(self):
         if self.ai_props['drl_props']['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
             base_fp = os.path.join('data')
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
+            self.iteration += 1
         else:
             terminated = False
 
@@ -60,7 +62,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['drl_props']['k_paths'] - 1):
             raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
-        if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (self.ai_props['drl_props']['cores_per_link'] - 1):
+        if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (
+                self.ai_props['drl_props']['cores_per_link'] - 1):
             raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')
 
         self.helper_obj.ai_props = self.ai_props
@@ -100,7 +103,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _get_info():
         return dict()
 
-    # TODO: This will change but better to wait for Q-Learning integration
     def _get_obs(self):
         # Used when we reach a reset after a simulation has finished (reset automatically called by gymnasium, use
         # placeholder variable)
@@ -162,10 +164,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
                                  sdn_props=self.ai_props['drl_props']['mock_sdn_dict'])
         self.sim_dict['s1'] = create_input(base_fp=base_fp, engine_props=self.sim_dict['s1'])
-
-        if self.options['save_sim']:
-            save_input(base_fp=base_fp, properties=self.sim_dict['s1'], file_name=file_name,
-                       data_dict=self.sim_dict['s1'])
+        save_input(base_fp=base_fp, properties=self.sim_dict['s1'], file_name=file_name,
+                   data_dict=self.sim_dict['s1'])
 
     def setup(self):
         """
@@ -175,6 +175,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         config_path = os.path.join('ini', 'run_ini', 'config.ini')
         self.sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
+        self.optimize = args_obj['optimize']
         self.ai_props['drl_props']['k_paths'] = self.sim_dict['s1']['k_paths']
         self.ai_props['drl_props']['cores_per_link'] = self.sim_dict['s1']['cores_per_link']
         self.ai_props['drl_props']['spectral_slots'] = self.sim_dict['s1']['spectral_slots']
@@ -184,17 +185,16 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.sim_dict['s1']['holding_time']
         self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.sim_dict['s1']['cores_per_link']
 
+    # TODO: If not in optimize mode, don't create new obj and increment iter
+    #   - Make sure to force the seed
     def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
-        # Default options
-        if options is None:
-            self.options = {'save_sim': True}
-        else:
-            self.options = options
-
         super().reset(seed=seed)
-        self.ai_props['q_props'] = copy.deepcopy(empty_q_props)
-        self.ai_props['drl_props'] = copy.deepcopy(empty_drl_props)
-        self.setup()
+        if self.optimize or self.optimize is None:
+            self.ai_props['q_props'] = copy.deepcopy(empty_q_props)
+            self.ai_props['drl_props'] = copy.deepcopy(empty_drl_props)
+            self.iteration = 0
+            self.setup()
+
         self.ai_props['drl_props']['arrival_count'] = 0
         self.engine_obj.init_iter(iteration=self.iteration)
         self.engine_obj.create_topology()
@@ -205,7 +205,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.route_obj = self.route_obj
 
         if seed is None:
-            seed = self.iteration
+            # TODO: Change
+            # seed = self.iteration
+            seed = 0
         self._reset_reqs_dict(seed=seed)
 
         obs = self._get_obs()
@@ -213,8 +215,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
-# TODO: Have multiple iterations save to one file for predictions
-#   - Only if optimize is false
 if __name__ == '__main__':
     env = SimEnv(algorithm='PPO')
 
