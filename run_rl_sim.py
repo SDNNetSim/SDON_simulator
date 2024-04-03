@@ -46,7 +46,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.observation_space = self.helper_obj.get_obs_space()
         self.action_space = self.helper_obj.get_action_space()
 
-    # TODO: Routes should still depend on cores, but cores will now depend on spectrum
+    # TODO: Routes should still depend on cores, but cores will now depend on spectrum (implement)
     def _get_max_future_q(self):
         q_values = list()
         # TODO: Do NOT forget to update ai props somewhere after each request
@@ -157,23 +157,24 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return terminated
 
     def _update_helper_obj(self, action: list):
+        # TODO: Make sure these are used in the new q learning functions
         self.helper_obj.path_index = action[0]
         self.helper_obj.core_num = action[1]
         self.helper_obj.slice_request = action[2]
 
-        if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['drl_props']['k_paths'] - 1):
+        if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['k_paths'] - 1):
             raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
         if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (
-                self.ai_props['drl_props']['cores_per_link'] - 1):
+                self.ai_props['cores_per_link'] - 1):
             raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')
 
-        # TODO: Double check these updates
+        # TODO: Double check these updates (ql and drl props)
         self.helper_obj.ai_props = self.ai_props
         self.helper_obj.engine_obj = self.engine_obj
         self.helper_obj.handle_releases()
 
     def _update_snapshots(self):
-        arrival_count = self.ai_props['drl_props']['arrival_count']
+        arrival_count = self.ai_props['arrival_count']
 
         snapshot_step = self.engine_obj.engine_props['snapshot_step']
         if self.engine_obj.engine_props['save_snapshots'] and (arrival_count + 1) % snapshot_step == 0:
@@ -185,7 +186,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
 
-        req_id = self.ai_props['drl_props']['arrival_list'][self.ai_props['drl_props']['arrival_count']]['req_id']
+        req_id = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['req_id']
         if req_id in reqs_status_dict:
             was_allocated = True
         else:
@@ -195,7 +196,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         drl_reward = self.helper_obj.calculate_drl_reward(was_allocated=was_allocated)
         self._update_routes_matrix(was_routed=was_allocated)
         self._update_cores_matrix(was_routed=was_allocated)
-        self.ai_props['drl_props']['arrival_count'] += 1
+        self.ai_props['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()
         truncated = False
@@ -210,21 +211,22 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _get_obs(self):
         # Used when we reach a reset after a simulation has finished (reset automatically called by gymnasium, use
         # placeholder variable)
-        if self.ai_props['drl_props']['arrival_count'] == self.engine_obj.engine_props['num_requests']:
-            curr_req = self.ai_props['drl_props']['arrival_list'][self.ai_props['drl_props']['arrival_count'] - 1]
+        if self.ai_props['arrival_count'] == self.engine_obj.engine_props['num_requests']:
+            curr_req = self.ai_props['arrival_list'][self.ai_props['arrival_count'] - 1]
         else:
-            curr_req = self.ai_props['drl_props']['arrival_list'][self.ai_props['drl_props']['arrival_count']]
+            curr_req = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
 
-        self.ai_props['drl_props']['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
-        self.route_obj.sdn_props = self.ai_props['drl_props']['mock_sdn_dict']
+        self.ai_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
+        self.route_obj.sdn_props = self.ai_props['mock_sdn_dict']
+        # TODO: Q-Learning to take over getting the route
         self.route_obj.get_route()
 
         paths_matrix = self.route_obj.route_props['paths_list']
         spectrum_obs = self.helper_obj.get_spectrum(paths_matrix=paths_matrix)
 
         encode_bw_list = np.zeros((3,))
-        if len(self.ai_props['drl_props']['bandwidth_list']) != 0:
-            bandwidth_index = self.ai_props['drl_props']['bandwidth_list'].index(curr_req['bandwidth'])
+        if len(self.ai_props['bandwidth_list']) != 0:
+            bandwidth_index = self.ai_props['bandwidth_list'].index(curr_req['bandwidth'])
             encode_bw_list[bandwidth_index] = 1
 
         obs_dict = {
@@ -249,14 +251,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 if req_time < self.min_arrival:
                     self.min_arrival = req_time
 
-                self.ai_props['drl_props']['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
+                self.ai_props['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
             else:
                 if req_time > self.max_depart:
                     self.max_depart = req_time
                 if req_time < self.min_depart:
                     self.min_depart = req_time
 
-                self.ai_props['drl_props']['depart_list'].append(self.engine_obj.reqs_dict[req_time])
+                self.ai_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
 
     def _create_input(self):
         base_fp = os.path.join('data')
@@ -265,8 +267,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         file_name = "sim_input_s1.json"
 
         self.engine_obj = Engine(engine_props=self.sim_dict['s1'])
+        # TODO: Routing will change to q-learning so make sure to double check that
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
-                                 sdn_props=self.ai_props['drl_props']['mock_sdn_dict'])
+                                 sdn_props=self.ai_props['mock_sdn_dict'])
         self.sim_dict['s1'] = create_input(base_fp=base_fp, engine_props=self.sim_dict['s1'])
         save_input(base_fp=base_fp, properties=self.sim_dict['s1'], file_name=file_name,
                    data_dict=self.sim_dict['s1'])
@@ -280,9 +283,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
         self.optimize = args_obj['optimize']
-        self.ai_props['drl_props']['k_paths'] = self.sim_dict['s1']['k_paths']
-        self.ai_props['drl_props']['cores_per_link'] = self.sim_dict['s1']['cores_per_link']
-        self.ai_props['drl_props']['spectral_slots'] = self.sim_dict['s1']['spectral_slots']
+        self.ai_props['k_paths'] = self.sim_dict['s1']['k_paths']
+        self.ai_props['cores_per_link'] = self.sim_dict['s1']['cores_per_link']
+        self.ai_props['spectral_slots'] = self.sim_dict['s1']['spectral_slots']
 
         self._create_input()
         start_arr_rate = float(self.sim_dict['s1']['arrival_rate']['start'])
@@ -299,11 +302,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.iteration = 0
             self.setup()
 
-        self.ai_props['drl_props']['arrival_count'] = 0
+        self.ai_props['arrival_count'] = 0
         self.engine_obj.init_iter(iteration=self.iteration)
         self.engine_obj.create_topology()
-        self.ai_props['drl_props']['num_nodes'] = len(self.engine_obj.topology.nodes)
+        self.ai_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
+        # TODO: QL and DRL props set up correctly?
         self.helper_obj.ai_props = self.ai_props
         self.helper_obj.engine_obj = self.engine_obj
         self.helper_obj.route_obj = self.route_obj
@@ -323,7 +327,7 @@ if __name__ == '__main__':
     env = SimEnv(algorithm='PPO')
 
     model = PPO("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=20000, log_interval=1)
+    model.learn(total_timesteps=10000, log_interval=1)
 
     # model.save('./logs/best_PPO_model.zip')
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
