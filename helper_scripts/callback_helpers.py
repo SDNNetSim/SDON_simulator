@@ -6,7 +6,7 @@ class GetModelParams(BaseCallback):
         super(GetModelParams, self).__init__(verbose)
 
         self.model_params = None
-        self.value_estimate = None
+        self.value_estimate = 0.0
 
     def _on_step(self) -> bool:
         self.model_params = self.model.get_parameters()

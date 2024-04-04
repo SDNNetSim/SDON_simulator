@@ -181,7 +181,6 @@ class RLHelpers:
 
         return reward
 
-    # TODO: Combine this function
     def calculate_drl_reward(self, was_allocated: bool):
         drl_reward = self._calc_deep_reward(was_allocated=was_allocated)
 

@@ -26,8 +26,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def __init__(self, render_mode: str = None, custom_callback: object = None, **kwargs):
         super().__init__()
-        # TODO: These need to be updated in setup or something
-        #   - I don't think I should reset
+        # TODO: Ensure these are update properly
         self.ai_props = copy.deepcopy(empty_ai_props)
         self.q_props = copy.deepcopy(empty_q_props)
         self.drl_props = copy.deepcopy(empty_drl_props)
@@ -49,13 +48,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.find_maximums()
 
         self.observation_space = self.helper_obj.get_obs_space()
-        # TODO: Implement, first 4 available super-channels, and the algorithm picks one
         self.action_space = self.helper_obj.get_action_space()
 
-    # TODO: Routes should still depend on cores, but cores will now depend on spectrum (implement)
     def _get_max_future_q(self):
         q_values = list()
-        # TODO: Do NOT forget to update ai props somewhere after each request
+        # TODO: Make sure ai_props is updated after each request
         cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']]
         cores_matrix = cores_matrix[self.ai_props['destination']][self.ai_props['path_index']]
         for core_index in range(self.engine_obj.engine_props['cores_per_link']):
@@ -83,7 +80,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         engine_props = self.engine_obj.engine_props
         new_q = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
 
-        # TODO: Make sure this works
+        # TODO: Ensure this is updated properly
         routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
         routes_matrix[self.ai_props['path_index']]['q_value'] = new_q
 
@@ -96,8 +93,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         q_cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']]
         q_cores_matrix = q_cores_matrix[self.ai_props['destination']][self.ai_props['path_index']]
         current_q = q_cores_matrix[self.ai_props['core_index']]['q_value']
-        # TODO: Change
-        max_future_q = 1.0
+        max_future_q = (self.callback.value_estimate * 100.0)
         delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
         self.helper_obj.update_q_stats(reward=reward, stats_flag='cores_dict', td_error=delta, iteration=self.iteration)
 
