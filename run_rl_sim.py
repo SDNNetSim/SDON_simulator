@@ -11,7 +11,8 @@ from config_scripts.setup_config import read_config
 from sim_scripts.engine import Engine
 from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
-from helper_scripts.ai_helpers import AIHelpers
+from helper_scripts.rl_helpers import RLHelpers
+from helper_scripts.callback_helpers import GetModelParams
 from helper_scripts.sim_helpers import get_start_time
 from arg_scripts.ai_args import empty_drl_props, empty_q_props, empty_ai_props
 
@@ -23,7 +24,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     metadata = dict()
 
-    def __init__(self, render_mode: str = None, **kwargs):
+    def __init__(self, render_mode: str = None, custom_callback: object = None, **kwargs):
         super().__init__()
         # TODO: These need to be updated in setup or something
         #   - I don't think I should reset
@@ -35,11 +36,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.iteration = 0
         self.options = None
         self.optimize = None
+        self.callback = custom_callback
         self.render_mode = render_mode
 
         self.engine_obj = None
         self.route_obj = None
-        self.helper_obj = AIHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj, route_obj=self.route_obj,
+        self.helper_obj = RLHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj, route_obj=self.route_obj,
                                     q_props=self.q_props, drl_props=self.drl_props)
 
         # Used to get config variables into the observation space
@@ -47,6 +49,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.find_maximums()
 
         self.observation_space = self.helper_obj.get_obs_space()
+        # TODO: Implement, first 4 available super-channels, and the algorithm picks one
         self.action_space = self.helper_obj.get_action_space()
 
     # TODO: Routes should still depend on cores, but cores will now depend on spectrum (implement)
@@ -74,7 +77,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         max_future_q = self._get_max_future_q()
         delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
         td_error = current_q - (reward + self.engine_obj.engine_props['discount_factor'] * max_future_q)
-        # TODO: Remove this call from before, it's called here!
         self.helper_obj.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error,
                                        iteration=self.iteration)
 
@@ -107,12 +109,17 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']][self.ai_props['destination']]
         cores_matrix[self.ai_props['path_index']][self.ai_props['core_index']]['q_value'] = new_q_core
 
-    def get_route(self, sdn_props: dict, route_props: dict):
+    def get_route(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
-        self.ai_props['source'] = int(sdn_props['source'])
-        self.ai_props['destination'] = int(sdn_props['destination'])
+        # TODO: sdn_props just has source, destination, and bandwidth of the request (we already have these)
+        #   - Get access to original request
+        # TODO: Route props is just the routing object
+        # TODO: If this is used in multiple spots make sure to account for that
+        req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
+        self.ai_props['source'] = int(req_dict['source'])
+        self.ai_props['destination'] = int(req_dict['destination'])
         routes_matrix = self.q_props['routes_matrix']
-        self.ai_props['paths_list'] = routes_matrix[self.ai_props['source']][self.ai_props['source']]['path']
+        self.ai_props['paths_list'] = routes_matrix[self.ai_props['source']][self.ai_props['destination']]['path']
 
         if self.ai_props['paths_list'].ndim != 1:
             self.ai_props['paths_list'] = self.ai_props['paths_list'][:, 0]
@@ -123,27 +130,24 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             if self.ai_props['path_index'] == 1 and self.ai_props['k_paths'] == 1:
                 self.ai_props['path_index'] = 0
             # TODO: Defined outside constructor
-            self.chosen_path = self.ai_props['paths_list'][self.ai_props['path_index']]
+            self.ai_props['chosen_path'] = self.ai_props['paths_list'][self.ai_props['path_index']]
         else:
             # TODO: I don't think chosen path is within props
             self.ai_props['path_index'], self.ai_props['chosen_path'] = self.helper_obj.get_max_curr_q()
 
-        if len(self.chosen_path) == 0:
+        if len(self.ai_props['chosen_path']) == 0:
             raise ValueError('The chosen path can not be None')
 
-        # TODO: Not sure about sdn props either...
-        self.helper_obj.update_route_props(sdn_props=sdn_props, route_props=route_props, chosen_path=self.chosen_path)
+        self.helper_obj.update_route_props(bandwidth=req_dict['bandwidth'], chosen_path=self.ai_props['chosen_path'])
 
-    def get_core(self, spectrum_props: dict):
+    def get_core(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
-
         if random_float < self.q_props['epsilon']:
-            self.core_index = np.random.randint(0, self.engine_props['cores_per_link'])
+            self.ai_props['core_index'] = np.random.randint(0, self.engine_obj.engine_props['cores_per_link'])
         else:
-            q_values = self.q_props['cores_matrix'][self.source][self.destination][self.path_index]['q_value']
-            self.core_index = np.argmax(q_values)
-
-        spectrum_props['forced_core'] = self.core_index
+            cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']][self.ai_props['destination']]
+            q_values = cores_matrix[self.ai_props['path_index']]['q_value']
+            self.ai_props['core_index'] = np.argmax(q_values)
 
     def _init_q_tables(self):
         for source in range(0, self.ai_props['num_nodes']):
@@ -191,10 +195,16 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return terminated
 
     def _update_helper_obj(self, action: list):
-        # TODO: Make sure these are used in the new q learning functions
-        self.helper_obj.path_index = action[0]
-        self.helper_obj.core_num = action[1]
-        self.helper_obj.slice_request = action[2]
+        self.get_route()
+        self.get_core()
+        # TODO: Probably can use this in the helper object (ai props)
+        self.helper_obj.path_index = self.ai_props['path_index']
+        self.helper_obj.core_num = self.ai_props['core_index']
+
+        # TODO: Add support for only slicing a request, then later on, pick a super channel
+        #   - I plan to make the observation space very similar to the ONDM baseline
+        #   - Maybe start out with picking super channels and then later on slicing
+        self.helper_obj.slice_request = action
 
         if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['k_paths'] - 1):
             raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
@@ -216,6 +226,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                                                       req_num=arrival_count + 1)
 
     def step(self, action: list):
+        model_params = self.callback.model_params
+
         self._update_helper_obj(action=action)
         self.helper_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
@@ -264,10 +276,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             encode_bw_list[bandwidth_index] = 1
 
         obs_dict = {
-            'source': int(curr_req['source']),
-            'destination': int(curr_req['destination']),
-            'bandwidth': encode_bw_list,
-            'cores_matrix': spectrum_obs
+            'cores_matrix': spectrum_obs,
         }
         return obs_dict
 
@@ -359,10 +368,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
 
 if __name__ == '__main__':
-    env = SimEnv(algorithm='PPO')
-
+    callback = GetModelParams()
+    env = SimEnv(algorithm='PPO', custom_callback=callback)
     model = PPO("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=20000, log_interval=1)
+    model.learn(total_timesteps=20000, log_interval=1, callback=callback)
 
     # model.save('./logs/best_PPO_model.zip')
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)

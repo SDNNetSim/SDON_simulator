@@ -1,5 +1,6 @@
 import numpy as np
 
+# TODO: Double check for repeated or not needed variables
 empty_ai_props = {
     'k_paths': None,
     'cores_per_link': None,
@@ -15,6 +16,9 @@ empty_ai_props = {
     'destination': None,
     # This may already be in the routing object
     'paths_list': list(),
+    'path_index': None,
+    'chosen_path': list(),
+    'core_index': None,
 }
 
 empty_q_props = {
