@@ -53,7 +53,7 @@ class SpectrumHelpers:
         self.spectrum_props['core_num'] = self.core_num
         return self.spectrum_props
 
-    def check_super_channels(self, open_slots_matrix: list):
+    def check_super_channels(self, open_slots_matrix: list, flag: str):
         """
         Given a matrix of available super-channels, find one that can allocate the current request.
 
@@ -64,6 +64,8 @@ class SpectrumHelpers:
         for super_channel in open_slots_matrix:
             if len(super_channel) >= (self.spectrum_props['slots_needed'] + self.engine_props['guard_slots']):
                 for start_index in super_channel:
+                    if flag == 'forced_index' and start_index != self.spectrum_props['forced_index']:
+                        continue
                     self.start_index = start_index
                     if self.engine_props['allocation_method'] == 'last_fit':
                         self.end_index = (self.start_index - self.spectrum_props['slots_needed'] - self.engine_props[
