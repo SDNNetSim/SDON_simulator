@@ -170,7 +170,7 @@ class RLHelpers:
     def get_obs_space(self):
         self.find_maximums()
         resp_obs = spaces.Dict({
-            'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed']),
+            'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed'] + 1),
             'spectrum': spaces.MultiBinary(self.engine_obj.engine_props['spectral_slots'])
         })
 
