@@ -5,7 +5,7 @@ import numpy as np
 from gymnasium import spaces
 
 from helper_scripts.os_helpers import create_dir
-from helper_scripts.sim_helpers import find_path_len, find_core_frag_cong, calc_matrix_stats, get_path_mod
+from helper_scripts.sim_helpers import find_path_len, combine_and_one_hot, calc_matrix_stats, get_path_mod
 
 
 class RLHelpers:
@@ -131,24 +131,16 @@ class RLHelpers:
         if self.q_props['epsilon'] < 0.0:
             raise ValueError(f"Epsilon should be greater than 0 but it is {self.q_props['epsilon']}")
 
-    def get_spectrum(self, paths_matrix: list):
-        # To add core and fragmentation scores, make a k_path by cores by two matrix (two metrics)
-        spectrum_matrix = np.zeros(
-            (self.ai_props['k_paths'], self.ai_props['cores_per_link'], 2))
-        for path_index, paths_list in enumerate(paths_matrix):
-            for link_tuple in zip(paths_list, paths_list[1:]):
-                rev_link_tuple = link_tuple[1], link_tuple[0]
-                link_dict = self.engine_obj.net_spec_dict[link_tuple]
-                rev_link_dict = self.engine_obj.net_spec_dict[rev_link_tuple]
+    def get_spectrum(self):
+        resp_spec_arr = np.zeros(self.engine_obj.engine_props['spectral_slots'])
+        path_list = self.ai_props['paths_list'][self.ai_props['path_index']]
+        core_index = self.ai_props['core_index']
+        net_spec_dict = self.engine_obj.net_spec_dict
+        for source, dest in zip(path_list, path_list[1:]):
+            core_arr = net_spec_dict[(source, dest)]['cores_matrix'][core_index]
+            resp_spec_arr = combine_and_one_hot(resp_spec_arr, core_arr)
 
-                if link_dict != rev_link_dict:
-                    raise ValueError('Link is not bi-directionally equal.')
-
-                for core_index, core_arr in enumerate(link_dict['cores_matrix']):
-                    spectrum_matrix[path_index][core_index] = find_core_frag_cong(
-                        net_spec_db=self.engine_obj.net_spec_dict, path=paths_list, core=core_index)
-
-        return spectrum_matrix
+        return resp_spec_arr
 
     @staticmethod
     def _calc_deep_reward(was_allocated: bool):
@@ -212,10 +204,7 @@ class RLHelpers:
         """
         path_matrix = [route_obj.route_props['paths_list'][self.path_index]]
         curr_time = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['arrive']
-        # TODO: New allocation method, picks the first super channel available?
-        #   - Read action space of other paper again
-        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=path_matrix,
-                                       force_slicing=self.slice_request)
+        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=path_matrix)
 
     def update_mock_sdn(self, curr_req: dict):
         """

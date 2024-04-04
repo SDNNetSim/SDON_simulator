@@ -180,11 +180,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return terminated
 
     def _update_helper_obj(self, action: list):
-        self.get_route()
-        self.get_core()
         self.helper_obj.path_index = self.ai_props['path_index']
         self.helper_obj.core_num = self.ai_props['core_index']
-        # TODO: Debug this like below?
+        # TODO: Not sure if this is what I want to do
         self.helper_obj.super_channel = action
 
         if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['k_paths'] - 1):
@@ -242,20 +240,17 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             curr_req = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
 
+        # TODO: Not sure if we need this any longer
         self.ai_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
-        self.route_obj.sdn_props = self.ai_props['mock_sdn_dict']
-        self.route_obj.get_route()
+        self.get_route()
+        self.get_core()
+        # TODO: Make sure ai props is updated properly in this method
+        self.helper_obj.get_spectrum()
 
-        paths_matrix = self.route_obj.route_props['paths_list']
-        spectrum_obs = self.helper_obj.get_spectrum(paths_matrix=paths_matrix)
-
-        encode_bw_list = np.zeros((3,))
-        if len(self.ai_props['bandwidth_list']) != 0:
-            bandwidth_index = self.ai_props['bandwidth_list'].index(curr_req['bandwidth'])
-            encode_bw_list[bandwidth_index] = 1
-
+        # TODO: Update here and when initializing
         obs_dict = {
-            'cores_matrix': spectrum_obs,
+            'slots_needed': None,
+            'spectrum_matrix': None,
         }
         return obs_dict
 
