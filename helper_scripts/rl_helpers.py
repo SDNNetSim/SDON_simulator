@@ -30,6 +30,7 @@ class RLHelpers:
         self.path_index = None
         self.core_num = None
         self.slice_request = None
+        self.super_channel = None
         self.mod_format = None
         self.bandwidth = None
 
@@ -174,6 +175,7 @@ class RLHelpers:
                 if data_obj['max_length'] > self.drl_props['max_length'] and bandwidth_percent > 0:
                     self.drl_props['max_length'] = data_obj['max_length']
 
+    # TODO: Mimic observation space from another paper?
     def get_obs_space(self):
         resp_obs = spaces.Dict({
             'cores_matrix': spaces.Box(low=0.01, high=1.01, shape=(self.ai_props['k_paths'],
@@ -210,6 +212,8 @@ class RLHelpers:
         """
         path_matrix = [route_obj.route_props['paths_list'][self.path_index]]
         curr_time = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['arrive']
+        # TODO: New allocation method, picks the first super channel available?
+        #   - Read action space of other paper again
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=path_matrix,
                                        force_slicing=self.slice_request)
 

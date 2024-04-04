@@ -184,9 +184,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.get_core()
         self.helper_obj.path_index = self.ai_props['path_index']
         self.helper_obj.core_num = self.ai_props['core_index']
-
-        # TODO: Modify this to pick an available super channel
-        self.helper_obj.slice_request = action
+        # TODO: Debug this like below?
+        self.helper_obj.super_channel = action
 
         if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['k_paths'] - 1):
             raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
@@ -346,6 +345,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
 
 if __name__ == '__main__':
+    # TODO: How to add callbacks in bash scripts
     callback = GetModelParams()
     env = SimEnv(algorithm='PPO', custom_callback=callback)
     model = PPO("MultiInputPolicy", env, verbose=1)
