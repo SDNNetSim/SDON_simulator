@@ -8,8 +8,6 @@ from helper_scripts.os_helpers import create_dir
 from helper_scripts.sim_helpers import find_path_len, find_core_frag_cong, calc_matrix_stats, get_path_mod
 
 
-# TODO: Have a save flag for number of time steps or iteration before saving
-# TODO: Change script name to RL helpers?
 class RLHelpers:
     """
     Contains methods to assist with AI simulations.
@@ -43,12 +41,11 @@ class RLHelpers:
             q_values.append(curr_q)
 
         max_index = np.argmax(q_values)
-        # TODO: Path's list not updated, is it needed?
         max_path = self.ai_props['paths_list'][max_index]
         return max_index, max_path
 
     def update_route_props(self, bandwidth, chosen_path):
-        # TODO: Make sure route props isn't updated elsewhere
+        # TODO: Check route props
         self.route_obj.route_props['paths_list'].append(chosen_path)
         path_len = find_path_len(path_list=chosen_path, topology=self.engine_obj.engine_props['topology'])
         chosen_bw = bandwidth
@@ -75,7 +72,6 @@ class RLHelpers:
             return
 
         episode = str(iteration)
-        # TODO: Problem is here
         if episode not in self.q_props['rewards_dict'][stats_flag]['rewards'].keys():
             self.q_props['rewards_dict'][stats_flag]['rewards'][episode] = [reward]
             self.q_props['errors_dict'][stats_flag]['errors'][episode] = [td_error]
@@ -98,7 +94,6 @@ class RLHelpers:
                 else:
                     params_dict[curr_param] = self.q_props[curr_param]
 
-        # TODO: This should be accessible in props
         erlang = self.engine_obj.engine_props['erlang']
         cores_per_link = self.engine_obj.engine_props['cores_per_link']
         param_fp = f"e{erlang}_params_c{cores_per_link}.json"
@@ -106,15 +101,12 @@ class RLHelpers:
         with open(param_fp, 'w', encoding='utf-8') as file_obj:
             json.dump(params_dict, file_obj)
 
-    # TODO: Change save directory
-    # TODO: When to call save model
-    #   - Save every x iters?
+    # TODO: Save every x iters
     def save_model(self):
         date_time = os.path.join(self.engine_obj.engine_props['network'], self.engine_obj.engine_props['sim_start'])
         save_dir = os.path.join('logs', 'ql', date_time)
         create_dir(file_path=save_dir)
 
-        # TODO: Again these should be accessible in another props, it's done twice
         erlang = self.engine_obj.engine_props['erlang']
         cores_per_link = self.engine_obj.engine_props['cores_per_link']
         route_fp = f"e{erlang}_routes_c{cores_per_link}.npy"
@@ -157,27 +149,12 @@ class RLHelpers:
 
         return spectrum_matrix
 
-    def _calc_deep_reward(self, was_allocated: bool):
+    @staticmethod
+    def _calc_deep_reward(was_allocated: bool):
         if was_allocated:
-            if self.slice_request:
-                req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
-                max_reach = req_dict['mod_formats']['QPSK']['max_length']
-                path_list = self.route_obj.route_props['paths_list'][self.path_index]
-                path_len = find_path_len(topology=self.engine_obj.topology, path_list=path_list)
-
-                # Did not have to slice
-                if max_reach > path_len:
-                    reward = 0.5
-                else:
-                    reward = 1.0
-            else:
-                reward = 1.0
+            reward = 1.0
         else:
-            # Could have sliced and we did not
-            if not self.slice_request:
-                reward = -5.0
-            else:
-                reward = -1.0
+            reward = -1.0
 
         return reward
 
