@@ -8,6 +8,7 @@ empty_props = {
     'cores_matrix': None,
     'rev_cores_matrix': None,
     'core_num': None,
+    'forced_index': None,
     'start_slot': None,
     'end_slot': None,
 }

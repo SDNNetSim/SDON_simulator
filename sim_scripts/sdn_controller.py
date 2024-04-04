@@ -140,7 +140,8 @@ class SDNController:
         for stat_key in self.sdn_props['stat_key_list']:
             self.sdn_props[stat_key] = list()
 
-    def handle_event(self, request_type: str, force_slicing: bool = False, force_route_matrix: list = None):
+    def handle_event(self, request_type: str, force_slicing: bool = False, force_route_matrix: list = None,
+                     forced_index: int = None):
         """
         Handles any event that occurs in the simulation, controls this class.
 
@@ -178,6 +179,7 @@ class SDNController:
                             self.sdn_props['num_trans'] = 1
                             continue
                     else:
+                        self.spectrum_obj.spectrum_props['forced_index'] = forced_index
                         self.spectrum_obj.spectrum_props['path_list'] = path_list
                         self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, ai_obj=self.ai_obj)
                         # Request was blocked for this path

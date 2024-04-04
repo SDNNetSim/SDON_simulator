@@ -182,8 +182,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _update_helper_obj(self, action: list):
         self.helper_obj.path_index = self.ai_props['path_index']
         self.helper_obj.core_num = self.ai_props['core_index']
-        # TODO: Not sure if this is what I want to do
-        self.helper_obj.super_channel = action
+        self.helper_obj.start_index = action
 
         if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['k_paths'] - 1):
             raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')

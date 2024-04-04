@@ -57,7 +57,8 @@ class Engine:
             }})
 
     # TODO: Update doc strings
-    def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_slicing: bool = False):
+    def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_slicing: bool = False,
+                       forced_index: int = None):
         """
         Updates the SDN controller to handle an arrival request and retrieves relevant request statistics.
 
@@ -67,7 +68,7 @@ class Engine:
             self.sdn_obj.sdn_props[req_key] = req_value
 
         self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
-                                  force_slicing=force_slicing)
+                                  force_slicing=force_slicing, forced_index=forced_index)
         self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
         self.update_arrival_params(curr_time=curr_time)
 
