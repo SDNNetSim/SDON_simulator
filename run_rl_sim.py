@@ -342,12 +342,17 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
+# TODO: Max iters bug for q-learning
+#   - If DRL blocks, should we really penalize ql?
+#   - Ramp up time for DRL
+#   - Train DRL separately?
+#   - Max iters should actually be set with respect to time steps?
 if __name__ == '__main__':
     # TODO: How to add callbacks in bash scripts
     callback = GetModelParams()
     env = SimEnv(algorithm='PPO', custom_callback=callback)
     model = PPO("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=20000, log_interval=1, callback=callback)
+    model.learn(total_timesteps=100000000, log_interval=1, callback=callback)
 
     # model.save('./logs/best_PPO_model.zip')
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
