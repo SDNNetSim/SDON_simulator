@@ -167,11 +167,11 @@ class RLHelpers:
                 if data_obj['max_length'] > self.drl_props['max_length'] and bandwidth_percent > 0:
                     self.drl_props['max_length'] = data_obj['max_length']
 
-    # TODO: Mimic observation space from another paper?
     def get_obs_space(self):
+        self.find_maximums()
         resp_obs = spaces.Dict({
-            'cores_matrix': spaces.Box(low=0.01, high=1.01, shape=(self.ai_props['k_paths'],
-                                                                   self.ai_props['cores_per_link'], 2)),
+            'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed']),
+            'spectrum': spaces.MultiBinary(self.engine_obj.engine_props['spectral_slots'])
         })
 
         return resp_obs

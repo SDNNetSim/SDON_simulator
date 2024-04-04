@@ -13,7 +13,7 @@ from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
-from helper_scripts.sim_helpers import get_start_time
+from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod
 from arg_scripts.ai_args import empty_drl_props, empty_q_props, empty_ai_props
 
 
@@ -245,12 +245,16 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.get_route()
         self.get_core()
         # TODO: Make sure ai props is updated properly in this method
-        self.helper_obj.get_spectrum()
+        spectrum = self.helper_obj.get_spectrum()
 
-        # TODO: Update here and when initializing
+        path_len = find_path_len(path_list=self.ai_props['paths_list'][self.ai_props['path_index']],
+                                 topology=self.engine_obj.topology)
+        path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
+        slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
+
         obs_dict = {
-            'slots_needed': None,
-            'spectrum_matrix': None,
+            'slots_needed': slots_needed,
+            'spectrum': spectrum,
         }
         return obs_dict
 
