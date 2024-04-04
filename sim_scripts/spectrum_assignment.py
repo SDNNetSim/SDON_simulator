@@ -127,7 +127,7 @@ class SpectrumAssignment:
     def _get_spectrum(self, ai_obj: object):
         if self.spectrum_props['forced_index'] is not None:
             self.handle_first_last(flag='forced_index')
-        if self.engine_props['allocation_method'] == 'best_fit':
+        elif self.engine_props['allocation_method'] == 'best_fit':
             self.find_best_fit()
         elif self.engine_props['allocation_method'] in ('first_fit', 'last_fit', 'priority_first', 'priority_last'):
             self.handle_first_last(flag=self.engine_props['allocation_method'])
