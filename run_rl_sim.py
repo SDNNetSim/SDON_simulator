@@ -26,7 +26,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def __init__(self, render_mode: str = None, custom_callback: object = None, **kwargs):
         super().__init__()
-        # TODO: Ensure these are update properly
         self.ai_props = copy.deepcopy(empty_ai_props)
         self.q_props = copy.deepcopy(empty_q_props)
         self.drl_props = copy.deepcopy(empty_drl_props)
@@ -52,7 +51,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _get_max_future_q(self):
         q_values = list()
-        # TODO: Make sure ai_props is updated after each request
         cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']]
         cores_matrix = cores_matrix[self.ai_props['destination']][self.ai_props['path_index']]
         for core_index in range(self.engine_obj.engine_props['cores_per_link']):
@@ -80,7 +78,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         engine_props = self.engine_obj.engine_props
         new_q = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
 
-        # TODO: Ensure this is updated properly
         routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
         routes_matrix[self.ai_props['path_index']]['q_value'] = new_q
 
@@ -100,17 +97,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         engine_props = self.engine_obj.engine_props
         new_q_core = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
 
-        # TODO: Make sure this works
-        # TODO: Ensure all these variables are being updates properly
         cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']][self.ai_props['destination']]
         cores_matrix[self.ai_props['path_index']][self.ai_props['core_index']]['q_value'] = new_q_core
 
     def get_route(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
-        # TODO: sdn_props just has source, destination, and bandwidth of the request (we already have these)
-        #   - Get access to original request
-        # TODO: Route props is just the routing object
-        # TODO: If this is used in multiple spots make sure to account for that
         req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
         self.ai_props['source'] = int(req_dict['source'])
         self.ai_props['destination'] = int(req_dict['destination'])
@@ -125,10 +116,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
             if self.ai_props['path_index'] == 1 and self.ai_props['k_paths'] == 1:
                 self.ai_props['path_index'] = 0
-            # TODO: Defined outside constructor
             self.ai_props['chosen_path'] = self.ai_props['paths_list'][self.ai_props['path_index']]
         else:
-            # TODO: I don't think chosen path is within props
             self.ai_props['path_index'], self.ai_props['chosen_path'] = self.helper_obj.get_max_curr_q()
 
         if len(self.ai_props['chosen_path']) == 0:
@@ -193,13 +182,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _update_helper_obj(self, action: list):
         self.get_route()
         self.get_core()
-        # TODO: Probably can use this in the helper object (ai props)
         self.helper_obj.path_index = self.ai_props['path_index']
         self.helper_obj.core_num = self.ai_props['core_index']
 
-        # TODO: Add support for only slicing a request, then later on, pick a super channel
-        #   - I plan to make the observation space very similar to the ONDM baseline
-        #   - Maybe start out with picking super channels and then later on slicing
+        # TODO: Modify this to pick an available super channel
         self.helper_obj.slice_request = action
 
         if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['k_paths'] - 1):
@@ -208,7 +194,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 self.ai_props['cores_per_link'] - 1):
             raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')
 
-        # TODO: Double check these updates (ql and drl props)
+        self.helper_obj.q_props = self.q_props
+        self.helper_obj.drl_props = self.drl_props
         self.helper_obj.ai_props = self.ai_props
         self.helper_obj.engine_obj = self.engine_obj
         self.helper_obj.handle_releases()
@@ -222,8 +209,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                                                       req_num=arrival_count + 1)
 
     def step(self, action: list):
-        model_params = self.callback.model_params
-
         self._update_helper_obj(action=action)
         self.helper_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
@@ -260,7 +245,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.ai_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
         self.route_obj.sdn_props = self.ai_props['mock_sdn_dict']
-        # TODO: Q-Learning to take over getting the route
         self.route_obj.get_route()
 
         paths_matrix = self.route_obj.route_props['paths_list']
@@ -306,7 +290,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         file_name = "sim_input_s1.json"
 
         self.engine_obj = Engine(engine_props=self.sim_dict['s1'])
-        # TODO: Routing will change to q-learning so make sure to double check that
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
                                  sdn_props=self.ai_props['mock_sdn_dict'])
         self.sim_dict['s1'] = create_input(base_fp=base_fp, engine_props=self.sim_dict['s1'])
@@ -331,8 +314,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.sim_dict['s1']['holding_time']
         self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.sim_dict['s1']['cores_per_link']
 
-    # TODO: If not in optimize mode, don't create new obj and increment iter
-    #   - Make sure to force the seed
     def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
         super().reset(seed=seed)
         if self.optimize or self.optimize is None:
@@ -347,7 +328,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.ai_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
         self.setup_q_env()
-        # TODO: QL and DRL props set up correctly?
+        self.helper_obj.q_props = self.q_props
+        self.helper_obj.drl_props = self.drl_props
         self.helper_obj.ai_props = self.ai_props
         self.helper_obj.engine_obj = self.engine_obj
         self.helper_obj.route_obj = self.route_obj
