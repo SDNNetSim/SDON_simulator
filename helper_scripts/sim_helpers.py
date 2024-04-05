@@ -419,4 +419,10 @@ def get_shannon_frag(path_list: list, core_num: int):
     #       - For each array, calculate frag
     #       - Sum with numpy and return
     #   - Don't forget infinity
+    #   - It always considers with enough spectrum slots
+    #       - Put to infinity the one that cannot fit it
+    #       - I think this is after allocation?
+    #       - ONLY updates the starting frequency slot IF allocated there
+    #       - We may have to use the shifting window algorithm used in spectrum assignment
+    #       - Only focus on starting indexes though
     pass
