@@ -35,11 +35,14 @@ class RLHelpers:
         self.mod_format = None
         self.bandwidth = None
 
-    def get_super_channels(self, slots_needed: int):
+    def get_super_channels(self, slots_needed: int, num_channels: int):
         path_list = self.ai_props['paths_list'][self.ai_props['path_index']]
-        hfrag_arr = get_hfrag(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict,
-                              spectral_slots=self.ai_props['spectral_slots'], core_num=self.core_num,
-                              slots_needed=slots_needed)
+        sc_index_mat, hfrag_arr = get_hfrag(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict,
+                                            spectral_slots=self.ai_props['spectral_slots'], core_num=self.core_num,
+                                            slots_needed=slots_needed)
+
+        self.super_channel_indexes = sc_index_mat[0:num_channels]
+        print('Here')
 
     def get_max_curr_q(self):
         q_values = list()

@@ -31,6 +31,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.q_props = copy.deepcopy(empty_q_props)
         self.drl_props = copy.deepcopy(empty_drl_props)
 
+        self.super_channel_space = 4
         self.sim_dict = dict()
         self.train_algorithm = kwargs['train_algorithm']
         self.iteration = 0
@@ -48,8 +49,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.reset(options={'save_sim': False})
         self.helper_obj.find_maximums()
 
-        self.observation_space = self.helper_obj.get_obs_space()
-        self.action_space = self.helper_obj.get_action_space(super_channel_space=4)
+        self.observation_space = self.helper_obj.get_obs_space(super_channel_space=self.super_channel_space)
+        self.action_space = self.helper_obj.get_action_space(super_channel_space=self.super_channel_space)
 
     def _get_max_future_q(self):
         q_values = list()
@@ -268,7 +269,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                                  topology=self.engine_obj.topology)
         path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
         slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
-        super_channels = self.helper_obj.get_super_channels(slots_needed=slots_needed)
+        super_channels = self.helper_obj.get_super_channels(slots_needed=slots_needed,
+                                                            num_channels=self.super_channel_space)
 
         source_obs = np.zeros(self.ai_props['num_nodes'])
         source_obs[self.ai_props['source']] = 1.0
