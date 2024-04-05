@@ -412,23 +412,32 @@ def min_max_scale(value: float, min_value: float, max_value: float):
     return (value - min_value) / (max_value - min_value)
 
 
-def _get_super_channels(spectrum_arr: np.array, slots_needed: int):
-    super_channels = []
-    start = None
-    for i in range(len(spectrum_arr) - slots_needed + 1):
-        if all(spectrum_arr[i + j] == 1 for j in range(slots_needed)):
-            start = i
-        elif start is not None:
-            super_channels.append([start, start + slots_needed])
-            start = None
-    return super_channels
+def get_super_channels(input_arr: np.array, slots_needed: int):
+    potential_super_channels = []
+    current_start = 0
+    consecutive_zeros = 0
+
+    for i in range(len(input_arr)):
+        if input_arr[i] == 0:
+            consecutive_zeros += 1
+        else:
+            consecutive_zeros = 0
+            current_start = i + 1
+
+        if consecutive_zeros >= slots_needed:
+            potential_super_channels.append([current_start, i])
+            consecutive_zeros -= 1
+            current_start += 1
+
+    return np.array(potential_super_channels)
 
 
-def _get_h_frag(arr: np.array):
-    pass
+def _get_h_frag(spectrum_arr: np.array, slots_needed: int, total_slots: int):
+    # Super channel index matrix
+    sc_index_mat = get_super_channels(input_arr=spectrum_arr, slots_needed=slots_needed)
 
 
-def get_hfrag(path_list: list, core_num: int, spectral_slots: int, net_spec_dict: dict):
+def get_hfrag(path_list: list, core_num: int, slots_needed: int, spectral_slots: int, net_spec_dict: dict):
     # TODO:
     #   - Plan:
     #       - Sliding window of available super-channels of that size
@@ -443,5 +452,5 @@ def get_hfrag(path_list: list, core_num: int, spectral_slots: int, net_spec_dict
         core_arr = net_spec_dict[(source, dest)]['cores_matrix'][core_num]
         path_alloc_arr = combine_and_one_hot(path_alloc_arr, core_arr)
 
-    before_hfrag_arr = _get_h_frag(arr=path_alloc_arr)
+    before_hfrag_arr = _get_h_frag(spectrum_arr=path_alloc_arr, slots_needed=slots_needed, total_slots=spectral_slots)
     print('Here')
