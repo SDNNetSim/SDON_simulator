@@ -188,7 +188,8 @@ class RLHelpers:
             'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed'] + 1),
             'source': spaces.MultiBinary(self.ai_props['num_nodes']),
             'destination': spaces.MultiBinary(self.ai_props['num_nodes']),
-            'super_channels': spaces.MultiDiscrete([super_channel_space, 3])
+            # TODO: Scale from 0-1, change observation space
+            'super_channels': spaces.Discrete(super_channel_space)
         })
 
         return resp_obs

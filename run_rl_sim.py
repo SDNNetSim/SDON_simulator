@@ -278,6 +278,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         source_obs[self.ai_props['source']] = 1.0
         dest_obs = np.zeros(self.ai_props['num_nodes'])
         dest_obs[self.ai_props['destination']] = 1.0
+
+        print(super_channels)
         obs_dict = {
             'slots_needed': slots_needed,
             'source': source_obs,
