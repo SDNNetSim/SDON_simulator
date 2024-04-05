@@ -412,16 +412,22 @@ def min_max_scale(value: float, min_value: float, max_value: float):
     return (value - min_value) / (max_value - min_value)
 
 
-def get_shannon_frag(path_list: list, core_num: int):
+def _get_h_frag():
+    raise NotImplementedError
+
+
+def get_hfrag(path_list: list, core_num: int, spectral_slots: int, net_spec_dict: dict):
     # TODO:
     #   - Plan:
-    #       - Calculate H_frag with equation
+    #       - Calculate H_frag with equation (bitwise or)
     #       - Sliding window of available super-channels of that size
     #       - Pretend to allocate, then calculate h_frag again (new function)
     #       - The return array will update that starting index with the delta h-frag
     #       - All zero values (from initialization) probably won't be used later on but return it anyways
-
-    # TODO: Make this a matrix
-    resp_frag_arr = np.array([])
-
-    return resp_frag_arr
+    path_alloc_list = np.zeros(spectral_slots)
+    for source, dest in zip(path_list, path_list[1:]):
+        # TODO: Why is this 0 and then 0?
+        core_arr = net_spec_dict[(source, dest)]['cores_matrix'][core_num][0][0]
+        core_arr[9] = -2
+        core_arr[22] = 15
+        path_alloc_list = combine_and_one_hot(path_alloc_list, core_arr)

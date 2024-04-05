@@ -5,7 +5,7 @@ import numpy as np
 from gymnasium import spaces
 
 from helper_scripts.os_helpers import create_dir
-from helper_scripts.sim_helpers import find_path_len, combine_and_one_hot, calc_matrix_stats, get_path_mod
+from helper_scripts.sim_helpers import find_path_len, combine_and_one_hot, calc_matrix_stats, get_path_mod, get_hfrag
 
 
 class RLHelpers:
@@ -36,7 +36,9 @@ class RLHelpers:
         self.bandwidth = None
 
     def get_super_channels(self):
-        raise NotImplementedError
+        path_list = self.ai_props['paths_list'][self.ai_props['path_index']]
+        hfrag_arr = get_hfrag(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict,
+                              spectral_slots=self.ai_props['spectral_slots'], core_num=self.core_num)
 
     def get_max_curr_q(self):
         q_values = list()
