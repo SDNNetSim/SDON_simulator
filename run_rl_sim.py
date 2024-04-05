@@ -264,11 +264,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.get_route()
             self.get_core()
 
-        super_channels = self.helper_obj.get_super_channels()
         path_len = find_path_len(path_list=self.ai_props['paths_list'][self.ai_props['path_index']],
                                  topology=self.engine_obj.topology)
         path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
         slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
+        super_channels = self.helper_obj.get_super_channels(slots_needed=slots_needed)
 
         source_obs = np.zeros(self.ai_props['num_nodes'])
         source_obs[self.ai_props['source']] = 1.0

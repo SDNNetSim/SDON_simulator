@@ -432,18 +432,20 @@ def get_super_channels(input_arr: np.array, slots_needed: int):
     return np.array(potential_super_channels)
 
 
-def _get_h_frag(spectrum_arr: np.array, slots_needed: int, total_slots: int):
-    # Super channel index matrix
-    sc_index_mat = get_super_channels(input_arr=spectrum_arr, slots_needed=slots_needed)
+# TODO: Add reference
+# Please refer to this paper for the formulation:
+# TODO: Don't forget to set inf values (taken slots and starting indexes we can't allcoate)
+def _get_hfrag_score(sc_mat: np.array, total_slots: int):
+    big_n = len(sc_mat) * -1.0
+    # TODO: Handle this correctly
+    if big_n == 0.0:
+        return np.inf
+
+    channel_len = len(sc_mat[0])
+    resp_score = big_n * (channel_len / total_slots) * np.log((channel_len / total_slots))
 
 
 def get_hfrag(path_list: list, core_num: int, slots_needed: int, spectral_slots: int, net_spec_dict: dict):
-    # TODO:
-    #   - Plan:
-    #       - Sliding window of available super-channels of that size
-    #       - Pretend to allocate, then calculate h_frag again (new function)
-    #       - The return array will update that starting index with the delta h-frag
-    #       - All zero values (from initialization) probably won't be used later on but return it anyways
     path_alloc_arr = np.zeros(spectral_slots)
     if core_num is None:
         core_num = 0
@@ -452,5 +454,17 @@ def get_hfrag(path_list: list, core_num: int, slots_needed: int, spectral_slots:
         core_arr = net_spec_dict[(source, dest)]['cores_matrix'][core_num]
         path_alloc_arr = combine_and_one_hot(path_alloc_arr, core_arr)
 
-    before_hfrag_arr = _get_h_frag(spectrum_arr=path_alloc_arr, slots_needed=slots_needed, total_slots=spectral_slots)
-    print('Here')
+    sc_index_mat = get_super_channels(input_arr=path_alloc_arr, slots_needed=slots_needed)
+    hfrag_before = _get_hfrag_score()
+    for super_channel in sc_index_mat:
+        mock_alloc_arr = copy.deepcopy(path_alloc_arr)
+        for index in super_channel:
+            mock_alloc_arr[index] = 1
+
+        tmp_sc_mat = get_super_channels(input_arr=mock_alloc_arr, slots_needed=slots_needed)
+        hfrag_after = _get_hfrag_score()
+        delta_hfrag = hfrag_before - hfrag_after
+        start_index = super_channel[0]
+        path_alloc_arr[start_index] = delta_hfrag
+
+    return path_alloc_arr
