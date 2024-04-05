@@ -18,6 +18,7 @@ from arg_scripts.ai_args import empty_drl_props, empty_q_props, empty_ai_props
 
 
 # TODO: Account for script name change in bash scripts (run_rl_sim)
+# TODO: Also need to account for the algorithms working together
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
@@ -31,7 +32,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.drl_props = copy.deepcopy(empty_drl_props)
 
         self.sim_dict = dict()
-        self.algorithm = kwargs['algorithm']
+        self.train_algorithm = kwargs['train_algorithm']
         self.iteration = 0
         self.options = None
         self.optimize = None
@@ -48,7 +49,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.find_maximums()
 
         self.observation_space = self.helper_obj.get_obs_space()
-        self.action_space = self.helper_obj.get_action_space()
+        self.action_space = self.helper_obj.get_action_space(super_channel_space=4)
 
     def _get_max_future_q(self):
         q_values = list()
@@ -171,7 +172,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             terminated = True
             base_fp = os.path.join('data')
             # TODO: Update amount
-            if self.algorithm == 'q_learning':
+            if self.train_algorithm == 'q_learning':
                 amount = 0
                 # self.helper_obj.decay_epsilon(amount=amount, iteration=self.iteration)
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
@@ -192,18 +193,18 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.path_index = self.ai_props['path_index']
         self.helper_obj.core_num = self.ai_props['core_index']
 
-        # TODO: First or best fit. Depends on configuration file
-        if self.algorithm == 'q_learning':
+        # TODO: First or best fit, depends on configuration file
+        if self.train_algorithm == 'q_learning':
             raise NotImplementedError
         else:
             # TODO: Change this to pick a super channel
             #   - Only valid super-channels
             #   - If None, block
-            #       - Reward will be zero here
+            #       - Reward will be zero in this case
             self.helper_obj.start_index = action
         self._error_check_actions()
 
-        if self.algorithm == 'q_learning':
+        if self.train_algorithm == 'q_learning':
             self.helper_obj.q_props = self.q_props
         else:
             self.helper_obj.drl_props = self.drl_props
@@ -258,9 +259,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # TODO: Not sure if we need this any longer
         self.ai_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
-        self.get_route()
-        self.get_core()
+
+        if self.train_algorithm == 'q_learning':
+            self.get_route()
+            self.get_core()
+
         # TODO: Make sure ai props is updated properly in this method
+        #   - Also change to pick valid super-channels
         spectrum = self.helper_obj.get_spectrum()
 
         path_len = find_path_len(path_list=self.ai_props['paths_list'][self.ai_props['path_index']],
@@ -268,6 +273,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
         slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
 
+        # TODO: Observation space will change to:
+        #   - Slots needed, a matrix of: super channel size, fragmentation score (last paper), then source, destination
+        #   - Make it more complex if needed
         obs_dict = {
             'slots_needed': slots_needed,
             'spectrum': spectrum,
@@ -341,7 +349,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj.create_topology()
         self.ai_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
-        if self.algorithm == 'q_learning':
+        if self.train_algorithm == 'q_learning':
             self.setup_q_env()
             self.helper_obj.q_props = self.q_props
         else:
@@ -368,7 +376,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 if __name__ == '__main__':
     # TODO: How to add callbacks in bash scripts
     callback = GetModelParams()
-    env = SimEnv(algorithm='PPO', custom_callback=callback)
+    env = SimEnv(render_mode=None, algorithm='PPO', custom_callback=callback, train_algorithm='q_learning')
     model = PPO("MultiInputPolicy", env, verbose=1)
     model.learn(total_timesteps=10000, log_interval=1, callback=callback)
 

@@ -167,18 +167,21 @@ class RLHelpers:
                 if data_obj['max_length'] > self.drl_props['max_length'] and bandwidth_percent > 0:
                     self.drl_props['max_length'] = data_obj['max_length']
 
-    def get_obs_space(self):
-        self.find_maximums()
+    def get_obs_space(self, super_channel_space: int):
+        # self.find_maximums()
         resp_obs = spaces.Dict({
             'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed'] + 1),
-            'spectrum': spaces.MultiBinary(self.engine_obj.engine_props['spectral_slots'])
+            'source': spaces.Discrete(self.ai_props['num_nodes']),
+            'destination': spaces.Discrete(self.ai_props['num_nodes']),
+            'super_channels': spaces.MultiDiscrete([super_channel_space, 3])
         })
 
         return resp_obs
 
     @staticmethod
-    def get_action_space():
-        action_space = spaces.Discrete(5)
+    def get_action_space(super_channel_space: int):
+        super_channel_space = super_channel_space
+        action_space = spaces.Discrete(super_channel_space)
         return action_space
 
     def handle_releases(self):
