@@ -31,6 +31,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.drl_props = copy.deepcopy(empty_drl_props)
 
         self.sim_dict = dict()
+        self.algorithm = kwargs['algorithm']
         self.iteration = 0
         self.options = None
         self.optimize = None
@@ -170,8 +171,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             terminated = True
             base_fp = os.path.join('data')
             # TODO: Update amount
-            amount = 0
-            # self.helper_obj.decay_epsilon(amount=amount, iteration=self.iteration)
+            if self.algorithm == 'q_learning':
+                amount = 0
+                # self.helper_obj.decay_epsilon(amount=amount, iteration=self.iteration)
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
             self.iteration += 1
         else:
@@ -182,7 +184,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _update_helper_obj(self, action: list):
         self.helper_obj.path_index = self.ai_props['path_index']
         self.helper_obj.core_num = self.ai_props['core_index']
-        self.helper_obj.start_index = action
+
+        if self.algorithm in ('dqn', 'ppo', 'a2c'):
+            self.helper_obj.start_index = action
+        # TODO: First or best fit. Depends on configuration file.
+        else:
+            raise NotImplementedError
 
         if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['k_paths'] - 1):
             raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
@@ -324,9 +331,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj.create_topology()
         self.ai_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
-        self.setup_q_env()
-        self.helper_obj.q_props = self.q_props
-        self.helper_obj.drl_props = self.drl_props
+        if self.algorithm == 'q_learning':
+            self.setup_q_env()
+            self.helper_obj.q_props = self.q_props
+        else:
+            self.helper_obj.drl_props = self.drl_props
+
         self.helper_obj.ai_props = self.ai_props
         self.helper_obj.engine_obj = self.engine_obj
         self.helper_obj.route_obj = self.route_obj
@@ -343,16 +353,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
 
 # TODO: Max iters bug for q-learning
-#   - If DRL blocks, should we really penalize ql?
-#   - Ramp up time for DRL
-#   - Train DRL separately?
-#   - Max iters should actually be set with respect to time steps?
+# TODO: To be completed today:
+#   -
 if __name__ == '__main__':
     # TODO: How to add callbacks in bash scripts
     callback = GetModelParams()
     env = SimEnv(algorithm='PPO', custom_callback=callback)
     model = PPO("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=100000000, log_interval=1, callback=callback)
+    model.learn(total_timesteps=10000, log_interval=1, callback=callback)
 
     # model.save('./logs/best_PPO_model.zip')
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
