@@ -411,18 +411,17 @@ def get_start_time(sim_dict: dict):
 def min_max_scale(value: float, min_value: float, max_value: float):
     return (value - min_value) / (max_value - min_value)
 
+
 def get_shannon_frag(path_list: list, core_num: int):
     # TODO:
-    #   - Find the number of super-channels
-    #   - Find the number of free slots
-    #   - Init an array:
-    #       - For each array, calculate frag
-    #       - Sum with numpy and return
-    #   - Don't forget infinity
-    #   - It always considers with enough spectrum slots
-    #       - Put to infinity the one that cannot fit it
-    #       - I think this is after allocation?
-    #       - ONLY updates the starting frequency slot IF allocated there
-    #       - We may have to use the shifting window algorithm used in spectrum assignment
-    #       - Only focus on starting indexes though
-    pass
+    #   - Plan:
+    #       - Calculate H_frag with equation
+    #       - Sliding window of available super-channels of that size
+    #       - Pretend to allocate, then calculate h_frag again (new function)
+    #       - The return array will update that starting index with the delta h-frag
+    #       - All zero values (from initialization) probably won't be used later on but return it anyways
+
+    # TODO: Make this a matrix
+    resp_frag_arr = np.array([])
+
+    return resp_frag_arr
