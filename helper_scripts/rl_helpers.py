@@ -34,6 +34,9 @@ class RLHelpers:
         self.mod_format = None
         self.bandwidth = None
 
+    def get_super_channels(self):
+        raise NotImplementedError
+
     def get_max_curr_q(self):
         q_values = list()
         for path_index in range(len(self.ai_props['paths_list'])):
@@ -168,11 +171,11 @@ class RLHelpers:
                     self.drl_props['max_length'] = data_obj['max_length']
 
     def get_obs_space(self, super_channel_space: int):
-        # self.find_maximums()
+        self.find_maximums()
         resp_obs = spaces.Dict({
             'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed'] + 1),
-            'source': spaces.Discrete(self.ai_props['num_nodes']),
-            'destination': spaces.Discrete(self.ai_props['num_nodes']),
+            'source': spaces.MultiBinary(self.ai_props['num_nodes']),
+            'destination': spaces.MultiBinary(self.ai_props['num_nodes']),
             'super_channels': spaces.MultiDiscrete([super_channel_space, 3])
         })
 

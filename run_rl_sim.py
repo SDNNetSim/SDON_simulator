@@ -264,10 +264,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.get_route()
             self.get_core()
 
-        # TODO: Make sure ai props is updated properly in this method
-        #   - Also change to pick valid super-channels
-        spectrum = self.helper_obj.get_spectrum()
-
+        super_channels = self.helper_obj.get_super_channels()
         path_len = find_path_len(path_list=self.ai_props['paths_list'][self.ai_props['path_index']],
                                  topology=self.engine_obj.topology)
         path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
@@ -276,9 +273,15 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: Observation space will change to:
         #   - Slots needed, a matrix of: super channel size, fragmentation score (last paper), then source, destination
         #   - Make it more complex if needed
+        source_obs = np.zeros(self.ai_props['num_nodes'])
+        source_obs[self.ai_props['source']] = 1.0
+        dest_obs = np.zeros(self.ai_props['num_nodes'])
+        dest_obs[self.ai_props['destination']] = 1.0
         obs_dict = {
             'slots_needed': slots_needed,
-            'spectrum': spectrum,
+            'source': source_obs,
+            'destination': dest_obs,
+            'super_channels': super_channels,
         }
         return obs_dict
 
