@@ -410,3 +410,13 @@ def get_start_time(sim_dict: dict):
 
 def min_max_scale(value: float, min_value: float, max_value: float):
     return (value - min_value) / (max_value - min_value)
+
+def get_shannon_frag(path_list: list, core_num: int):
+    # TODO:
+    #   - Find the number of super-channels
+    #   - Find the number of free slots
+    #   - Init an array:
+    #       - For each array, calculate frag
+    #       - Sum with numpy and return
+    #   - Don't forget infinity
+    pass
