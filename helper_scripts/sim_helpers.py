@@ -412,22 +412,24 @@ def min_max_scale(value: float, min_value: float, max_value: float):
     return (value - min_value) / (max_value - min_value)
 
 
-def _get_h_frag():
+def _get_h_frag(arr: np.array):
     raise NotImplementedError
 
 
 def get_hfrag(path_list: list, core_num: int, spectral_slots: int, net_spec_dict: dict):
     # TODO:
     #   - Plan:
-    #       - Calculate H_frag with equation (bitwise or)
     #       - Sliding window of available super-channels of that size
     #       - Pretend to allocate, then calculate h_frag again (new function)
     #       - The return array will update that starting index with the delta h-frag
     #       - All zero values (from initialization) probably won't be used later on but return it anyways
-    path_alloc_list = np.zeros(spectral_slots)
+    path_alloc_arr = np.zeros(spectral_slots)
+    if core_num is None:
+        core_num = 0
+
     for source, dest in zip(path_list, path_list[1:]):
-        # TODO: Why is this 0 and then 0?
-        core_arr = net_spec_dict[(source, dest)]['cores_matrix'][core_num][0][0]
-        core_arr[9] = -2
-        core_arr[22] = 15
-        path_alloc_list = combine_and_one_hot(path_alloc_list, core_arr)
+        core_arr = net_spec_dict[(source, dest)]['cores_matrix'][core_num]
+        path_alloc_arr = combine_and_one_hot(path_alloc_arr, core_arr)
+
+    before_hfrag_arr = _get_h_frag(arr=path_alloc_arr)
+    print('Here')
