@@ -42,7 +42,12 @@ class RLHelpers:
                                             slots_needed=slots_needed)
 
         self.super_channel_indexes = sc_index_mat[0:num_channels]
-        print('Here')
+        resp_frag_mat = list()
+        for channel in self.super_channel_indexes:
+            start_index = channel[0]
+            resp_frag_mat.append(hfrag_arr[start_index])
+
+        return resp_frag_mat
 
     def get_max_curr_q(self):
         q_values = list()

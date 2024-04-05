@@ -20,7 +20,7 @@ from arg_scripts.ai_args import empty_drl_props, empty_q_props, empty_ai_props
 # TODO: Account for script name change in bash scripts (run_rl_sim)
 # TODO: Also need to account for the algorithms working together
 # TODO: Using Q-Learning for routing and core assignment allows us to scale the super-channel space
-#   - And decrease blocking
+#   - And decrease blocking?
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
