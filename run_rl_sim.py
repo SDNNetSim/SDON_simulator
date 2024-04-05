@@ -201,7 +201,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             #   - Only valid super-channels
             #   - If None, block
             #       - Reward will be zero in this case
-            self.helper_obj.start_index = action
+            self.helper_obj.super_channel = action
         self._error_check_actions()
 
         if self.train_algorithm == 'q_learning':
@@ -270,9 +270,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
         slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
 
-        # TODO: Observation space will change to:
-        #   - Slots needed, a matrix of: super channel size, fragmentation score (last paper), then source, destination
-        #   - Make it more complex if needed
         source_obs = np.zeros(self.ai_props['num_nodes'])
         source_obs[self.ai_props['source']] = 1.0
         dest_obs = np.zeros(self.ai_props['num_nodes'])

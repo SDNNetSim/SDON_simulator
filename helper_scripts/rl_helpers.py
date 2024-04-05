@@ -30,7 +30,8 @@ class RLHelpers:
         self.path_index = None
         self.core_num = None
         self.slice_request = None
-        self.start_index = None
+        self.super_channel = None
+        self.super_channel_indexes = list()
         self.mod_format = None
         self.bandwidth = None
 
