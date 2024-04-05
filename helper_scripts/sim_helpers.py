@@ -412,8 +412,20 @@ def min_max_scale(value: float, min_value: float, max_value: float):
     return (value - min_value) / (max_value - min_value)
 
 
+def _get_super_channels(spectrum_arr: np.array, slots_needed: int):
+    super_channels = []
+    start = None
+    for i in range(len(spectrum_arr) - slots_needed + 1):
+        if all(spectrum_arr[i + j] == 1 for j in range(slots_needed)):
+            start = i
+        elif start is not None:
+            super_channels.append([start, start + slots_needed])
+            start = None
+    return super_channels
+
+
 def _get_h_frag(arr: np.array):
-    raise NotImplementedError
+    pass
 
 
 def get_hfrag(path_list: list, core_num: int, spectral_slots: int, net_spec_dict: dict):
