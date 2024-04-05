@@ -181,24 +181,33 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return terminated
 
-    def _update_helper_obj(self, action: list):
-        self.helper_obj.path_index = self.ai_props['path_index']
-        self.helper_obj.core_num = self.ai_props['core_index']
-
-        if self.algorithm in ('dqn', 'ppo', 'a2c'):
-            self.helper_obj.start_index = action
-        # TODO: First or best fit. Depends on configuration file.
-        else:
-            raise NotImplementedError
-
+    def _error_check_actions(self):
         if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['k_paths'] - 1):
             raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
         if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (
                 self.ai_props['cores_per_link'] - 1):
             raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')
 
-        self.helper_obj.q_props = self.q_props
-        self.helper_obj.drl_props = self.drl_props
+    def _update_helper_obj(self, action: list):
+        self.helper_obj.path_index = self.ai_props['path_index']
+        self.helper_obj.core_num = self.ai_props['core_index']
+
+        # TODO: First or best fit. Depends on configuration file
+        if self.algorithm == 'q_learning':
+            raise NotImplementedError
+        else:
+            # TODO: Change this to pick a super channel
+            #   - Only valid super-channels
+            #   - If None, block
+            #       - Reward will be zero here
+            self.helper_obj.start_index = action
+        self._error_check_actions()
+
+        if self.algorithm == 'q_learning':
+            self.helper_obj.q_props = self.q_props
+        else:
+            self.helper_obj.drl_props = self.drl_props
+
         self.helper_obj.ai_props = self.ai_props
         self.helper_obj.engine_obj = self.engine_obj
         self.helper_obj.handle_releases()
@@ -213,6 +222,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def step(self, action: list):
         self._update_helper_obj(action=action)
+        # TODO: Make sure route object has the selected path for q-learning
         self.helper_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
 
