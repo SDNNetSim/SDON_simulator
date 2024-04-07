@@ -206,7 +206,7 @@ class RLHelpers:
             'source': spaces.MultiBinary(self.ai_props['num_nodes']),
             'destination': spaces.MultiBinary(self.ai_props['num_nodes']),
             # TODO: Need to scale still
-            'super_channels': spaces.Box(-0.01, 100.0, shape=(4,), dtype=np.float32)
+            'super_channels': spaces.Box(-0.01, 100.0, shape=(self.ai_props['super_channel_space'],), dtype=np.float32)
         })
 
         return resp_obs
