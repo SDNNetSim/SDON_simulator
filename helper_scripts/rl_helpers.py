@@ -27,7 +27,7 @@ class RLHelpers:
         self.algorithm = None
         self.completed_sim = False
 
-        self.no_penalty
+        self.no_penalty = None
         self.path_index = None
         self.core_num = None
         self.slice_request = None
