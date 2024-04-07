@@ -41,6 +41,7 @@ class RLHelpers:
                                             spectral_slots=self.ai_props['spectral_slots'], core_num=self.core_num,
                                             slots_needed=slots_needed)
 
+        # TODO: What to do if there are less than 4 super channels or link is fully congested (all inf)
         self.super_channel_indexes = sc_index_mat[0:num_channels]
         resp_frag_mat = list()
         for channel in self.super_channel_indexes:
@@ -223,7 +224,10 @@ class RLHelpers:
         """
         path_matrix = [route_obj.route_props['paths_list'][self.path_index]]
         curr_time = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['arrive']
-        start_index = self.super_channel_indexes[self.super_channel][0]
+        try:
+            start_index = self.super_channel_indexes[self.super_channel][0]
+        except:
+            print('Here')
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=path_matrix,
                                        forced_index=start_index)
 

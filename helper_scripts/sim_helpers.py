@@ -470,4 +470,5 @@ def get_hfrag(path_list: list, core_num: int, slots_needed: int, spectral_slots:
         resp_frag_arr[start_index] = np.round(delta_hfrag, 3)
 
     resp_frag_arr = np.where(resp_frag_arr == 1, np.inf, resp_frag_arr)
+
     return sc_index_mat, resp_frag_arr
