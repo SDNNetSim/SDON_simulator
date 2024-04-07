@@ -27,6 +27,7 @@ class RLHelpers:
         self.algorithm = None
         self.completed_sim = False
 
+        self.no_penalty
         self.path_index = None
         self.core_num = None
         self.slice_request = None
@@ -42,6 +43,12 @@ class RLHelpers:
                                             slots_needed=slots_needed)
 
         self.super_channel_indexes = sc_index_mat[0:num_channels]
+        # There were not enough super-channels, do not penalize the agent
+        if len(self.super_channel_indexes) < self.ai_props['super_channel_space']:
+            self.no_penalty = True
+        else:
+            self.no_penalty = False
+
         resp_frag_mat = list()
         for channel in self.super_channel_indexes:
             start_index = channel[0]
@@ -174,7 +181,10 @@ class RLHelpers:
         return reward
 
     def calculate_drl_reward(self, was_allocated: bool):
-        drl_reward = self._calc_deep_reward(was_allocated=was_allocated)
+        if self.no_penalty:
+            drl_reward = 0.0
+        else:
+            drl_reward = self._calc_deep_reward(was_allocated=was_allocated)
 
         return drl_reward
 
