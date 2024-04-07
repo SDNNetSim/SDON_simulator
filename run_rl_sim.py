@@ -392,7 +392,7 @@ if __name__ == '__main__':
     callback = GetModelParams()
     env = SimEnv(render_mode=None, algorithm='PPO', custom_callback=callback, train_algorithm='ppo')
     model = PPO("MultiInputPolicy", env, verbose=1, device='cpu')
-    model.learn(total_timesteps=5000, log_interval=1, callback=callback)
+    model.learn(total_timesteps=20000, log_interval=1, callback=callback)
 
     # model.save('./logs/best_PPO_model.zip')
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)

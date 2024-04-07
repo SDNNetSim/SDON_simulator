@@ -54,7 +54,7 @@ class RLHelpers:
             resp_frag_mat = np.where(np.isinf(resp_frag_mat), 1.0, resp_frag_mat)
             difference = 4 - len(resp_frag_mat)
             for i in range(difference):
-                resp_frag_mat[4 - i] = 1.0
+                resp_frag_mat = np.append(resp_frag_mat, 1.0)
 
         return resp_frag_mat
 
