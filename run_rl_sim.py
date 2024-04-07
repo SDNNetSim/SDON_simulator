@@ -107,9 +107,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def get_route(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
-        req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
-        self.ai_props['source'] = int(req_dict['source'])
-        self.ai_props['destination'] = int(req_dict['destination'])
         routes_matrix = self.q_props['routes_matrix']
         self.ai_props['paths_list'] = routes_matrix[self.ai_props['source']][self.ai_props['destination']]['path']
 
@@ -229,7 +226,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: Make sure route object has the selected path for q-learning
         self.helper_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
-
         req_id = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['req_id']
         if req_id in reqs_status_dict:
             was_allocated = True
@@ -260,16 +256,24 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             curr_req = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
 
-        # TODO: Not sure if we need this any longer
+        req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
+        self.ai_props['source'] = int(req_dict['source'])
+        self.ai_props['destination'] = int(req_dict['destination'])
         self.ai_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
-
         if self.train_algorithm == 'q_learning':
             self.get_route()
             self.get_core()
+            path_len = find_path_len(path_list=self.ai_props['paths_list'][self.ai_props['path_index']],
+                                     topology=self.engine_obj.topology)
+            path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
+        # TODO: At the moment only works for SPF
+        else:
+            self.route_obj.sdn_props = self.ai_props['mock_sdn_dict']
+            self.route_obj.get_route()
+            self.ai_props['paths_list'] = self.route_obj.route_props['paths_list']
+            self.ai_props['path_index'] = 0
+            path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
 
-        path_len = find_path_len(path_list=self.ai_props['paths_list'][self.ai_props['path_index']],
-                                 topology=self.engine_obj.topology)
-        path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
         slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
         super_channels = self.helper_obj.get_super_channels(slots_needed=slots_needed,
                                                             num_channels=self.super_channel_space)
@@ -279,7 +283,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         dest_obs = np.zeros(self.ai_props['num_nodes'])
         dest_obs[self.ai_props['destination']] = 1.0
 
-        print(super_channels)
         obs_dict = {
             'slots_needed': slots_needed,
             'source': source_obs,
@@ -382,7 +385,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 if __name__ == '__main__':
     # TODO: How to add callbacks in bash scripts
     callback = GetModelParams()
-    env = SimEnv(render_mode=None, algorithm='PPO', custom_callback=callback, train_algorithm='q_learning')
+    env = SimEnv(render_mode=None, algorithm='PPO', custom_callback=callback, train_algorithm='ppo')
     model = PPO("MultiInputPolicy", env, verbose=1)
     model.learn(total_timesteps=10000, log_interval=1, callback=callback)
 
