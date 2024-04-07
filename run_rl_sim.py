@@ -34,7 +34,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.q_props = copy.deepcopy(empty_q_props)
         self.drl_props = copy.deepcopy(empty_drl_props)
 
-        self.super_channel_space = 2
+        self.super_channel_space = 4
+        self.ai_props['super_channel_space'] = 4
         self.sim_dict = dict()
         self.train_algorithm = kwargs['train_algorithm']
         self.iteration = 0

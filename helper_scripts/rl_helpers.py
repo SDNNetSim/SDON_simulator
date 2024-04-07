@@ -41,19 +41,18 @@ class RLHelpers:
                                             spectral_slots=self.ai_props['spectral_slots'], core_num=self.core_num,
                                             slots_needed=slots_needed)
 
-        # TODO: What to do if there are less than 4 (or requested) super channels or link is fully congested (all inf)
-        # TODO: What to do if we didn't even find enough indexes?
-        #   - The problems are related, so we need to account for this
-        #   - It shouldn't necessarily hurt the model when this happens, so let's give it a reward of '0'
         self.super_channel_indexes = sc_index_mat[0:num_channels]
         resp_frag_mat = list()
         for channel in self.super_channel_indexes:
             start_index = channel[0]
             resp_frag_mat.append(hfrag_arr[start_index])
 
-        # TODO: Don't forget to scale!
+        resp_frag_mat = np.where(np.isinf(resp_frag_mat), 100.0, resp_frag_mat)
+        difference = self.ai_props['super_channel_space'] - len(resp_frag_mat)
+
         if len(resp_frag_mat) < self.ai_props['super_channel_space'] or np.any(np.isinf(resp_frag_mat)):
-            return None
+            for i in range(difference):
+                resp_frag_mat = np.append(resp_frag_mat, 100.0)
 
         return resp_frag_mat
 
@@ -197,7 +196,7 @@ class RLHelpers:
             'source': spaces.MultiBinary(self.ai_props['num_nodes']),
             'destination': spaces.MultiBinary(self.ai_props['num_nodes']),
             # TODO: Need to scale still
-            'super_channels': spaces.Box(-0.01, 1.01, shape=(4,), dtype=np.float32)
+            'super_channels': spaces.Box(-0.01, 100.0, shape=(4,), dtype=np.float32)
         })
 
         return resp_obs
