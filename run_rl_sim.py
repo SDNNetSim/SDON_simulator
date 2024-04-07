@@ -21,6 +21,7 @@ from arg_scripts.ai_args import empty_drl_props, empty_q_props, empty_ai_props
 # TODO: Also need to account for the algorithms working together
 # TODO: Using Q-Learning for routing and core assignment allows us to scale the super-channel space
 #   - And decrease blocking?
+# TODO: These still have to work together, do not complete separate them...
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
@@ -234,8 +235,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self._update_snapshots()
 
         drl_reward = self.helper_obj.calculate_drl_reward(was_allocated=was_allocated)
-        self._update_routes_matrix(was_routed=was_allocated)
-        self._update_cores_matrix(was_routed=was_allocated)
+
+        if self.train_algorithm == 'q_learning':
+            self._update_routes_matrix(was_routed=was_allocated)
+            self._update_cores_matrix(was_routed=was_allocated)
         self.ai_props['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()
