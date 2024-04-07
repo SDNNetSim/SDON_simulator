@@ -241,6 +241,9 @@ class RLHelpers:
         path_matrix = [route_obj.route_props['paths_list'][self.path_index]]
         curr_time = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['arrive']
 
+        if self.no_penalty:
+            return
+
         start_index = self.super_channel_indexes[self.super_channel][0]
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=path_matrix,
                                        forced_index=start_index)
