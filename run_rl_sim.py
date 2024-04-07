@@ -266,12 +266,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             path_len = find_path_len(path_list=self.ai_props['paths_list'][self.ai_props['path_index']],
                                      topology=self.engine_obj.topology)
             path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
-        # TODO: At the moment only works for SPF
+        # TODO: At the moment only works for SPF-FF
         else:
             self.route_obj.sdn_props = self.ai_props['mock_sdn_dict']
             self.route_obj.get_route()
             self.ai_props['paths_list'] = self.route_obj.route_props['paths_list']
             self.ai_props['path_index'] = 0
+            self.ai_props['core_index'] = 0
             path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
 
         slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']

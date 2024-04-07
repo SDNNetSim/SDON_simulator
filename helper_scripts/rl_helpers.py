@@ -188,8 +188,8 @@ class RLHelpers:
             'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed'] + 1),
             'source': spaces.MultiBinary(self.ai_props['num_nodes']),
             'destination': spaces.MultiBinary(self.ai_props['num_nodes']),
-            # TODO: Scale from 0-1, change observation space
-            'super_channels': spaces.Discrete(super_channel_space)
+            # TODO: Need to scale still
+            'super_channels': spaces.Box(-0.01, 1.01, shape=(4,), dtype=np.float32)
         })
 
         return resp_obs
@@ -223,8 +223,9 @@ class RLHelpers:
         """
         path_matrix = [route_obj.route_props['paths_list'][self.path_index]]
         curr_time = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['arrive']
+        start_index = self.super_channel_indexes[self.super_channel][0]
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=path_matrix,
-                                       forced_index=self.start_index)
+                                       forced_index=start_index)
 
     def update_mock_sdn(self, curr_req: dict):
         """
