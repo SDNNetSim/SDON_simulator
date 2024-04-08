@@ -348,8 +348,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.ai_props['k_paths'] = self.sim_dict['s1']['k_paths']
         self.ai_props['cores_per_link'] = self.sim_dict['s1']['cores_per_link']
         self.ai_props['spectral_slots'] = self.sim_dict['s1']['spectral_slots']
-        self.ai_props['arrival_list'] = list()
-        self.ai_props['depart_list'] = list()
 
         self._create_input()
         start_arr_rate = float(self.sim_dict['s1']['arrival_rate']['start'])
@@ -358,6 +356,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
         super().reset(seed=seed)
+        self.ai_props['arrival_list'] = list()
+        self.ai_props['depart_list'] = list()
 
         # if self.optimize or self.optimize is None:
         self.ai_props['q_props'] = copy.deepcopy(empty_q_props)
