@@ -240,6 +240,7 @@ class RLHelpers:
         # Put the start index to zero (which will block regardless of what it is), but don't penalize the agent
         # TODO: We may no longer need this, there was a bug in the prior formulation
         if self.no_penalty:
+            print('================== No penalty added =================')
             start_index = 0
         else:
             start_index = self.super_channel_indexes[self.super_channel][0]

@@ -358,11 +358,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.ai_props['arrival_list'] = list()
         self.ai_props['depart_list'] = list()
 
-        # if self.optimize or self.optimize is None:
-        self.ai_props['q_props'] = copy.deepcopy(empty_q_props)
-        self.ai_props['drl_props'] = copy.deepcopy(empty_drl_props)
-        self.iteration = 0
-        self.setup()
+        if self.optimize or self.optimize is None:
+            self.ai_props['q_props'] = copy.deepcopy(empty_q_props)
+            self.ai_props['drl_props'] = copy.deepcopy(empty_drl_props)
+            self.iteration = 0
+            self.setup()
 
         self.ai_props['arrival_count'] = 0
         self.engine_obj.init_iter(iteration=self.iteration)
@@ -399,7 +399,7 @@ if __name__ == '__main__':
     callback = GetModelParams()
     env = SimEnv(render_mode=None, algorithm='PPO', custom_callback=callback, train_algorithm='ppo')
     model = PPO("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=20000, log_interval=1, callback=callback)
+    model.learn(total_timesteps=500000, log_interval=1, callback=callback)
 
     # model.save('./logs/best_PPO_model.zip')
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
