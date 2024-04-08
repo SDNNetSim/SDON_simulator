@@ -236,11 +236,14 @@ class RLHelpers:
         path_matrix = [route_obj.route_props['paths_list'][self.path_index]]
         curr_time = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['arrive']
 
+        # The spectrum was almost to maximum capacity, there will be blocking but it's not the agent's fault
+        # Put the start index to zero (which will block regardless of what it is), but don't penalize the agent
         if self.no_penalty:
             start_index = 0
         else:
             start_index = self.super_channel_indexes[self.super_channel][0]
 
+        # TODO: I think the requests were created before and then "created" again and not updated in the agent
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=path_matrix,
                                        forced_index=start_index)
 

@@ -64,7 +64,6 @@ class Engine:
 
         :param curr_time: The arrival time of the request.
         """
-        print(self.reqs_dict)
         for req_key, req_value in self.reqs_dict[curr_time].items():
             self.sdn_obj.sdn_props[req_key] = req_value
 
