@@ -25,8 +25,8 @@ source venvs/unity_venv/venv/bin/activate
 #./bash_scripts/register_rl_env.sh ppo SimEnv
 
 # Run AI simulation
-# python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file ./ai_scripts/yml/ppo.yml -optimize --n-trials 5 --n-timesteps 20000
-python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file ./ai_scripts/yml/ppo.yml --n-timesteps 20000 --save-freq 10000
+ python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file ./ai_scripts/yml/ppo.yml -optimize --n-trials 5 --n-timesteps 20000
+#python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file ./ai_scripts/yml/ppo.yml --n-timesteps 20000 --save-freq 10000
 #python run_rl_sim.py
 
 # Run regular simulation
