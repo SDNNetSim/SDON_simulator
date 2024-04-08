@@ -20,3 +20,6 @@ SimEnv:
                     activation_fn=nn.ReLU,
                     net_arch=dict(pi=[64], vf=[64])
                   )"
+  callback:
+    - helper_scripts.callback_helpers.GetModelParams:
+        verbose: 1

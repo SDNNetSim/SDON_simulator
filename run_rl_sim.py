@@ -37,7 +37,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.super_channel_space = 3
         self.ai_props['super_channel_space'] = self.super_channel_space
         self.sim_dict = dict()
-        self.train_algorithm = kwargs['train_algorithm']
+        try:
+            self.train_algorithm = kwargs['train_algorithm']
+        except KeyError:
+            self.train_algorithm = 'deep_rl'
+
         self.iteration = 0
         self.options = None
         self.optimize = None
