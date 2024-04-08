@@ -238,6 +238,7 @@ class RLHelpers:
 
         # The spectrum was almost to maximum capacity, there will be blocking but it's not the agent's fault
         # Put the start index to zero (which will block regardless of what it is), but don't penalize the agent
+        # TODO: We may no longer need this, there was a bug in the prior formulation
         if self.no_penalty:
             start_index = 0
         else:

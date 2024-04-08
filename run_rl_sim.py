@@ -264,9 +264,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             curr_req = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
 
-        req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
-        self.ai_props['source'] = int(req_dict['source'])
-        self.ai_props['destination'] = int(req_dict['destination'])
+        self.ai_props['source'] = int(curr_req['source'])
+        self.ai_props['destination'] = int(curr_req['destination'])
         self.ai_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
         if self.train_algorithm == 'q_learning':
             self.get_route()
