@@ -6,7 +6,7 @@ Configuration Arguments
     :undoc-members:
 
 .. list-table::
-   :widths: 25 25 50
+   :widths: 50 50 50
    :header-rows: 1
 
    * - Argument Name
@@ -50,4 +50,28 @@ Configuration Arguments
      - ``nli_aware`` | ``xt_aware`` | ``least_congested`` | ``shortest_path`` | ``k_shortest_path``
    * - save_snapshots
      - To save information at certain request intervals
-     -
+     - ``True`` | ``False``
+   * - snapshot_step
+     - Interval for saving snapshot results
+     - Any integer value that is a multiple of the number of requests
+   * - print_step
+     - Interval for printing simulator information
+     - Any integer value that is a multiple of the number of requests
+   * - network
+     - Network topology
+     - ``USNet`` | ``NSFNet`` | ``Pan-European``
+   * - spectral_slots
+     - Spectral slots per core on a given link
+     - Any integer value
+   * - bw_per_slot
+     - The bandwidth (GHz) for each frequency slot
+     - Any floating point value
+   * - cores_per_link
+     - Number of cores for every link in the topology
+     - Any integer value
+   * - const_link_weight
+     - Sets all link weights to 1
+     - ``True`` | ``False``
+   * - file_type
+     - File structure to save to
+     - ``json``
