@@ -1,7 +1,7 @@
 import os
 
 empty_props = {
-    'sim_info_dict': None,
+    'sims_info_dict': None,
     'plot_dict': None,
     'output_dir': os.path.join('..', 'data', 'output'),
     'input_dir': os.path.join('..', 'data', 'input'),
