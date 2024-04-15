@@ -75,3 +75,55 @@ Configuration Arguments
    * - file_type
      - File structure to save to
      - ``json``
+   * - erlangs
+     - Used from ``arash`` type simulations to determine erlang distribution
+     - Any range of integer values
+   * - requested_xt
+     - ``Arash``
+     - ``Arash``
+   * - xt_noise
+     - ``Arash``
+     - ``Arash``
+   * - theta
+     - ``Arash``
+     - ``Arash``
+   * - egn_model
+     - ``Arash``
+     - ``Arash``
+   * - phi
+     - ``Arash``
+     - ``Arash``
+   * - snr_type
+     - ``Arash``
+     - ``Arash``
+   * - xt_type
+     - ``Arash``
+     - ``Arash``
+   * - beta
+     - ``Arash``
+     - ``Arash``
+   * - input power
+     - ``Arash``
+     - ``Arash``
+   * - ai_algorithm
+     - Use QL or a specified DRL algorithm
+     - ``q_learning`` | ``ppo`` | ``a2c`` | ``dqn``
+   * - learn_rate
+     - Learning rate for q-learning algorithm
+     - Any floating point value
+   * - discount_factor
+     - Discount factor for q-learning algorithm
+     - Any floating point value
+   * - epsilon_start
+     - Where epsilon starts for q-learning algorithm
+     - Any floating point value
+   * - epsilon_end
+     - Where epsilon will end for q-learning algorithm
+     - Any floating point value
+
+StableBaselines3 and RL Baselines3 Zoo
+---------------------------------------
+
+Parameters within these libraries should work when running the simulator via command line. For more information on which
+parameters exist and their descriptions, please see: `StableBaselines3 <https://stable-baselines3.readthedocs.io/en/master/>`_ and
+`RL Baselines3 Zoo <https://www.example.com/>`_ docs.
