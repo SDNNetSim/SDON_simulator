@@ -56,7 +56,6 @@ class Engine:
                 "was_routed": sdn_props['was_routed'],
             }})
 
-    # TODO: Update doc strings
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_slicing: bool = False,
                        forced_index: int = None):
         """

@@ -17,7 +17,7 @@ def create_pt(cores_per_link: int, net_spec_dict: dict):
         'non_linearity': 1.3e-3,
         'dispersion': (16e-6 * 1550e-9 ** 2) / (2 * math.pi * 3e8),
         'num_cores': cores_per_link,
-        'fiber_type': 0,  # TODO: Is this always supposed to be 0? Add a comment explaining why if so.
+        'fiber_type': 0,
         'bending_radius': 0.05,
         'mode_coupling_co': 4.0e-4,
         'propagation_const': 4e6,

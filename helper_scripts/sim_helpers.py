@@ -394,7 +394,6 @@ def combine_and_one_hot(arr1: np.array, arr2: np.array):
     return result
 
 
-# TODO: Use this in run_sim.py and generalize this function
 def get_start_time(sim_dict: dict):
     """
     Gets the start time of a simulation.
@@ -434,10 +433,8 @@ def get_super_channels(input_arr: np.array, slots_needed: int):
 
 # TODO: Add reference
 # Please refer to this paper for the formulation:
-# TODO: Don't forget to set inf values (taken slots and starting indexes we can't allcoate)
 def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
     big_n = len(sc_index_mat) * -1.0
-    # TODO: Handle this correctly
     if big_n == 0.0:
         return np.inf
 

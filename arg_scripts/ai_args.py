@@ -1,6 +1,5 @@
 import numpy as np
 
-# TODO: Double check for repeated or not needed variables
 empty_ai_props = {
     'k_paths': None,
     'cores_per_link': None,

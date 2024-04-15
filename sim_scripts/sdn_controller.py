@@ -60,7 +60,6 @@ class SDNController:
 
         for link_tuple in zip(self.sdn_props['path_list'], self.sdn_props['path_list'][1:]):
             # Remember, Python list indexing is up to and NOT including!
-            # TODO: Net spec dict is none
             link_dict = self.sdn_props['net_spec_dict'][(link_tuple[0], link_tuple[1])]
             rev_link_dict = self.sdn_props['net_spec_dict'][(link_tuple[1], link_tuple[0])]
 
@@ -94,10 +93,8 @@ class SDNController:
         self.spectrum_obj.spectrum_props['path_list'] = path_list
         mod_format_list = [mod_format]
         for _ in range(num_segments):
-            # TODO: Make sure this uses the right network spectrum database
             self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth,
                                            ai_obj=self.ai_obj)
-            # TODO: Bug in spectrum assignment, said it was not free?
             if self.spectrum_obj.spectrum_props['is_free']:
                 self.allocate()
                 self._update_req_stats(bandwidth=bandwidth)

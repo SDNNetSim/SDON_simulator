@@ -6,7 +6,6 @@ from data_scripts.generate_data import create_bw_info, create_pt
 from helper_scripts.os_helpers import create_dir
 
 
-# TODO: Write tests
 def create_input(base_fp: str, engine_props: dict):
     """
     Creates input data to run simulations.

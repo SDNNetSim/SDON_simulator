@@ -75,7 +75,6 @@ class RLHelpers:
         return max_index, max_path
 
     def update_route_props(self, bandwidth, chosen_path):
-        # TODO: Check route props
         self.route_obj.route_props['paths_list'].append(chosen_path)
         path_len = find_path_len(path_list=chosen_path, topology=self.engine_obj.engine_props['topology'])
         chosen_bw = bandwidth
@@ -205,7 +204,6 @@ class RLHelpers:
             'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed'] + 1),
             'source': spaces.MultiBinary(self.ai_props['num_nodes']),
             'destination': spaces.MultiBinary(self.ai_props['num_nodes']),
-            # TODO: Need to scale still
             'super_channels': spaces.Box(-0.01, 100.0, shape=(self.ai_props['super_channel_space'],), dtype=np.float32)
         })
 
@@ -238,9 +236,7 @@ class RLHelpers:
 
         # The spectrum was almost to maximum capacity, there will be blocking but it's not the agent's fault
         # Put the start index to zero (which will block regardless of what it is), but don't penalize the agent
-        # TODO: We may no longer need this, there was a bug in the prior formulation
         if self.no_penalty:
-            print('================== No penalty added =================')
             start_index = 0
         else:
             start_index = self.super_channel_indexes[self.super_channel][0]
