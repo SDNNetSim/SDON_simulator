@@ -1,6 +1,6 @@
-Run DQN Simulation
+Run a RL Simulation
 ==================
 
-.. automodule:: run_dqn_sim
+.. automodule:: run_rl_sim
     :members:
     :undoc-members:

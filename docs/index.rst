@@ -10,6 +10,7 @@ networking.
    :caption: Contents:
 
    tutorials/tutorials_modules.rst
+   github/github_modules.rst
    config/config_modules.rst
    args/args_modules.rst
    bash/bash_modules.rst
@@ -18,6 +19,7 @@ networking.
    plot/plot_modules.rst
    sim/sim_modules.rst
    run_sim.rst
+   run_rl_sim.rst
    tests/tests_modules.rst
 
 Indices and tables
