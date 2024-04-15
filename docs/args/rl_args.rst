@@ -54,7 +54,30 @@ space, and tracking important statistics.
    * - epsilon
      - Current epsilon the agent is using
    * - epsilon_start
-     - Number of paths the DRL agent has to choose from
+     - Epsilon at the start of a single iteration/episode
+   * - epsilon_end
+     - Epsilon at the end of a single iteration/episode
+   * - epsilon_list
+     - List to keep track of epsilon decay values
+   * - is_training
+     - Whether the agent is training or testing
+   * - rewards_dict
+     - Contains rewards for route and core q-tables
+   * - errors_dict
+     - Contains temporal difference errors for route and core q-tables
+   * - sum_rewards_dict
+     - The total sum of rewards for each iteration/episode
+   * - sum_errors_dict
+     - Total sum of temporal difference errors for each iteration/episode
+   * - routes_matrix (path q-table)
+     - Every possible combination of 'k' routes for the q-learning agent
+   * - cores_matrix (core q-table)
+     - Every possible 'c' cores to be selected on each link
+   * - num_nodes
+     - Number of nodes in the topology
+   * - save_params_dict
+     - Contains lists of important parameters for the q-learning agent to be saved
+
 
 .. list-table:: empty_drl_props
    :widths: 25 25
@@ -62,5 +85,17 @@ space, and tracking important statistics.
 
    * - Argument Name
      - Description
-   * - (25, QPSK)
-     - 1
+   * - min_arrival
+     - Minimum arrival time in the request distribution
+   * - max_arrival
+     - Maximum arrival time in the request distribution
+   * - min_depart
+     - Minimum departure time in the request distribution
+   * - max_depart
+     - Maximum departure time in the request distribution
+   * - max_slots_needed
+     - Maximum possible slots needed a request can have
+   * - max_length
+     - Maximum possible path length
+   * - slice_space
+     - Agent to decide whether to slice a light segment or not (0 or 1)
