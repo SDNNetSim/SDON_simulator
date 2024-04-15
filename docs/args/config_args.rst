@@ -13,7 +13,7 @@ Configuration Arguments
      - Description
      - Valid Input
    * - sim_type
-     - Simulation assumptions for calculating the Erlang
+     - Simulation assumptions for calculating the Erlang and optical reach
      - ``arash`` | ``yue``
    * - holding_time
      - Mean holding time for request generation
