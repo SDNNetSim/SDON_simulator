@@ -13,20 +13,41 @@ Configuration Arguments
      - Description
      - Valid Input
    * - sim_type
-     - The simulation assumptions for calculating the Erlang
+     - Simulation assumptions for calculating the Erlang
      - ``arash`` | ``yue``
    * - holding_time
-     - The mean holding time for request generation
+     - Mean holding time for request generation
      - Any floating point value
    * - arrival_rate
-     - The inter-arrival time for request generation
+     - Inter-arrival time for request generation
      - Any floating point value
    * - thread_erlangs
-     - Whether to run the traffic volumnes specified in parallel or not
+     - Run the traffic volumes in parallel or not
      - ``True`` | ``False``
    * - guard_slots
-     - The amount of frequency channels dedicated to the guard band
+     - Frequency channels dedicated to the guard band
      - Any integer value
-   * - holding_time
-     - The mean holding time
-     - N/A
+   * - num_requests
+     - Requests to generate for a single iteration
+     - Any integer value
+   * - request_distribution
+     - Bandwidth distribution of requests
+     - Any floating point values that add up to 1.0
+   * - max_iters
+     - Maximum iterations to run
+     - Any integer value
+   * - max_segments
+     - Maximum segments for a single request
+     - Any integer value
+   * - dynamic_lps
+     - Use dynamic light path/segment slicing or not
+     - ``True`` | ``False``
+   * - allocation_method
+     - Method for assigning a request to a spectrum
+     - ``best_fit`` | ``first_fit`` | ``last_fit`` | ``priority_first`` | ``priority_last`` | ``xt_aware``
+   * - route_method
+     - Method for routing a request
+     - ``nli_aware`` | ``xt_aware`` | ``least_congested`` | ``shortest_path`` | ``k_shortest_path``
+   * - save_snapshots
+     - To save information at certain request intervals
+     -
