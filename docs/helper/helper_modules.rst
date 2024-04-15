@@ -3,10 +3,10 @@ Helper Scripts
 
 .. toctree::
 
-    ai_helpers
     os_helpers
     plot_helpers
     random_helpers
+    rl_helpers
     routing_helpers
     sim_helpers
     snr_helpers

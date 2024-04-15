@@ -14,7 +14,7 @@ from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
 from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod
-from arg_scripts.ai_args import empty_drl_props, empty_q_props, empty_ai_props
+from arg_scripts.rl_args import empty_drl_props, empty_q_props, empty_ai_props
 
 
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
