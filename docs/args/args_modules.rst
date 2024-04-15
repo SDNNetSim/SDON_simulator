@@ -6,6 +6,7 @@ Argument Scripts
     config_args
     data_args
     plot_args
+    rl_args
     routing_args
     sdn_args
     snr_args
