@@ -187,11 +187,8 @@ class SimStats:
             self.stats_props['route_times_list'].append(sdn_data['route_time'])
             self.total_trans += sdn_data['num_trans']
             bandwidth = sdn_data['bandwidth']
+            mod_format = sdn_data['modulation_list'][0]
 
-            try:
-                mod_format = sdn_data['modulation_list'][0]
-            except:
-                print('line 194 stats helpers')
             self.stats_props['weights_dict'][bandwidth][mod_format].append(sdn_data['path_weight'])
 
     def _get_iter_means(self):
@@ -212,7 +209,6 @@ class SimStats:
                     if len(data_list) == 1:
                         deviation = 0.0
                     else:
-                        # TODO: Weights dict not updates properly (empty lists)
                         deviation = stdev(data_list)
                     mod_obj[modulation] = {'mean': mean(data_list), 'std': deviation,
                                            'min': min(data_list), 'max': max(data_list)}
