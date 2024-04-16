@@ -10,7 +10,7 @@ from helper_scripts.sim_helpers import find_path_len, combine_and_one_hot, calc_
 
 class RLHelpers:
     """
-    Contains methods to assist with AI simulations.
+    Contains methods to assist with reinforcement learning simulations.
     """
 
     def __init__(self, ai_props: dict, engine_obj: object, route_obj: object, q_props: dict, drl_props: dict):
@@ -37,6 +37,14 @@ class RLHelpers:
         self.bandwidth = None
 
     def get_super_channels(self, slots_needed: int, num_channels: int):
+        """
+        Gets the available 'J' super-channels for the agent to choose from along with a fragmentation score.
+
+        :param slots_needed: Slots needed by the current request.
+        :param num_channels: Number of channels needed by the current request.
+        :return: A matrix of super-channels with their fragmentation score.
+        :rtype: list
+        """
         path_list = self.ai_props['paths_list'][self.ai_props['path_index']]
         sc_index_mat, hfrag_arr = get_hfrag(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict,
                                             spectral_slots=self.ai_props['spectral_slots'], core_num=self.core_num,
@@ -58,12 +66,18 @@ class RLHelpers:
         difference = self.ai_props['super_channel_space'] - len(resp_frag_mat)
 
         if len(resp_frag_mat) < self.ai_props['super_channel_space'] or np.any(np.isinf(resp_frag_mat)):
-            for i in range(difference):
+            for _ in range(difference):
                 resp_frag_mat = np.append(resp_frag_mat, 100.0)
 
         return resp_frag_mat
 
     def get_max_curr_q(self):
+        """
+        Gets the maximum future q for the q-learning algorithm.
+
+        :return: The index and path (state) that corresponds to the max future q.
+        :rtype: tuple
+        """
         q_values = list()
         for path_index in range(len(self.ai_props['paths_list'])):
             routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
@@ -74,11 +88,16 @@ class RLHelpers:
         max_path = self.ai_props['paths_list'][max_index]
         return max_index, max_path
 
-    def update_route_props(self, bandwidth, chosen_path):
+    def update_route_props(self, bandwidth: str, chosen_path: list):
+        """
+        Updates the route properties.
+
+        :param bandwidth: Bandwidth of the current request.
+        :param chosen_path: Path of the current request.
+        """
         self.route_obj.route_props['paths_list'].append(chosen_path)
         path_len = find_path_len(path_list=chosen_path, topology=self.engine_obj.engine_props['topology'])
-        chosen_bw = bandwidth
-        mod_format = get_path_mod(mods_dict=self.engine_obj.engine_props['mod_per_bw'][chosen_bw], path_len=path_len)
+        mod_format = get_path_mod(mods_dict=self.engine_obj.engine_props['mod_per_bw'][bandwidth], path_len=path_len)
         self.route_obj.route_props['mod_formats_list'].append([mod_format])
         self.route_obj.route_props['weights_list'].append(path_len)
 
@@ -97,6 +116,14 @@ class RLHelpers:
             self.save_model()
 
     def update_q_stats(self, reward: float, td_error: float, stats_flag: str, iteration: int):
+        """
+        Updates data structures related to tracking q-learning algorithm statistics.
+
+        :param reward: The current reward.
+        :param td_error: The current temporal difference error.
+        :param stats_flag: Flag to determine calculations for the path or core q-table.
+        :param iteration: The current episode/iteration.
+        """
         if self.completed_sim:
             return
 
@@ -130,8 +157,11 @@ class RLHelpers:
         with open(param_fp, 'w', encoding='utf-8') as file_obj:
             json.dump(params_dict, file_obj)
 
-    # TODO: Save every x iters
+    # TODO: Save every 'x' iters
     def save_model(self):
+        """
+        Saves the current q-learning model.
+        """
         date_time = os.path.join(self.engine_obj.engine_props['network'], self.engine_obj.engine_props['sim_start'])
         save_dir = os.path.join('logs', 'ql', date_time)
         create_dir(file_path=save_dir)
@@ -152,6 +182,12 @@ class RLHelpers:
         self._save_params(save_dir=save_dir)
 
     def decay_epsilon(self, amount: float, iteration: int):
+        """
+        Decays epsilon for the q-learning algorithm every step.
+
+        :param amount: Amount to decay by.
+        :param iteration: The current iteration/episode.
+        """
         self.q_props['epsilon'] -= amount
         if iteration == 0:
             self.q_props['epsilon_list'].append(self.q_props['epsilon'])
@@ -160,6 +196,11 @@ class RLHelpers:
             raise ValueError(f"Epsilon should be greater than 0 but it is {self.q_props['epsilon']}")
 
     def get_spectrum(self):
+        """
+
+
+        :return:
+        """
         resp_spec_arr = np.zeros(self.engine_obj.engine_props['spectral_slots'])
         path_list = self.ai_props['paths_list'][self.ai_props['path_index']]
         core_index = self.ai_props['core_index']
@@ -192,13 +233,13 @@ class RLHelpers:
             bandwidth_percent = self.engine_obj.engine_props['request_distribution'][bandwidth]
             if bandwidth_percent > 0:
                 self.ai_props['bandwidth_list'].append(bandwidth)
-            for modulation, data_obj in mod_obj.items():
+            for _, data_obj in mod_obj.items():
                 if data_obj['slots_needed'] > self.drl_props['max_slots_needed'] and bandwidth_percent > 0:
                     self.drl_props['max_slots_needed'] = data_obj['slots_needed']
                 if data_obj['max_length'] > self.drl_props['max_length'] and bandwidth_percent > 0:
                     self.drl_props['max_length'] = data_obj['max_length']
 
-    def get_obs_space(self, super_channel_space: int):
+    def get_obs_space(self):
         self.find_maximums()
         resp_obs = spaces.Dict({
             'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed'] + 1),
@@ -211,7 +252,6 @@ class RLHelpers:
 
     @staticmethod
     def get_action_space(super_channel_space: int):
-        super_channel_space = super_channel_space
         action_space = spaces.Discrete(super_channel_space)
         return action_space
 
@@ -221,7 +261,7 @@ class RLHelpers:
         """
         curr_time = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['arrive']
 
-        for i, req_obj in enumerate(self.ai_props['depart_list']):
+        for _, req_obj in enumerate(self.ai_props['depart_list']):
             if req_obj['depart'] <= curr_time:
                 self.engine_obj.handle_release(curr_time=req_obj['depart'])
 
