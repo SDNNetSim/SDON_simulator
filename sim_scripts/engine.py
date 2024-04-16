@@ -41,8 +41,6 @@ class Engine:
         Updates parameters for a request after attempted allocation.
 
         :param curr_time: The current simulated time.
-        :param ai_flag: Flag to determine use of mock sdn dictionary.
-        :param mock_sdn: An option mock sdn dictionary.
         """
         sdn_props = self.sdn_obj.sdn_props
         self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props)
@@ -62,6 +60,9 @@ class Engine:
         Updates the SDN controller to handle an arrival request and retrieves relevant request statistics.
 
         :param curr_time: The arrival time of the request.
+        :param force_route_matrix: Passes forced routes to the SDN controller.
+        :param force_slicing: Forces slicing in the SDN controller.
+        :param forced_index: Forces an index in the SDN controller.
         """
         for req_key, req_value in self.reqs_dict[curr_time].items():
             self.sdn_obj.sdn_props[req_key] = req_value
