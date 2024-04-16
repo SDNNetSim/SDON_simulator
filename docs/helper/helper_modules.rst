@@ -3,6 +3,7 @@ Helper Scripts
 
 .. toctree::
 
+    callback_helpers
     os_helpers
     plot_helpers
     random_helpers
