@@ -7,7 +7,7 @@ from arg_scripts.config_args import YUE_REQUIRED_OPTIONS, ARASH_REQUIRED_OPTIONS
 
 def _copy_dict_vals(dest_key: str, dictionary: dict):
     """
-    Given a dictionary, copy the values from key s1 to a given simulation key.
+    Given the s1 simulation dictionary, copy the values to another simulation run.
 
     :param dest_key: The destination key where the values will be copied to.
     :param dictionary: The original s1 dictionary.
@@ -33,7 +33,7 @@ def _find_category(category_dict: dict, target_key: str):
 def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section_list: list, types_dict: dict,
                    other_dict: dict, args_obj: dict):
     """
-    Checks if multiple threads/simulations should be run, structure each simulation's parameters.
+    Checks if multiple threads/simulations should be run, structures each simulation's parameters.
 
     :param config: The configuration object.
     :param config_dict: The main simulations configuration params.
