@@ -145,6 +145,7 @@ class SDNController:
         :param request_type: Whether the request is an arrival or departure.
         :param force_slicing: Whether to force light segment slicing or not.
         :param force_route_matrix: Whether to force a path or not.
+        :param forced_index: Whether to force a start index for a request.
         """
         self._init_req_stats()
         # Even if the request is blocked, we still consider one transponder
