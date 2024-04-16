@@ -14,4 +14,3 @@ Helper Scripts
     snr_helpers
     spectrum_helpers
     stats_helpers
-    setup_helpers
