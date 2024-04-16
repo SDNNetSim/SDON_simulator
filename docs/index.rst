@@ -18,6 +18,7 @@ networking.
    helper/helper_modules.rst
    plot/plot_modules.rst
    sim/sim_modules.rst
+   stablebaselines/stablebaselines_modules.rst
    run_sim.rst
    run_rl_sim.rst
    tests/tests_modules.rst
