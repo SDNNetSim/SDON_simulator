@@ -197,9 +197,12 @@ class RLHelpers:
 
     def get_spectrum(self):
         """
+        Returns the spectrum as a binary array along a path.
+        A one indicates that channel is taken along one or multiple of the links, a zero indicates that the channel
+        is free along every link in the path.
 
-
-        :return:
+        :return: The binary array of current path occupation.
+        :rtype: list
         """
         resp_spec_arr = np.zeros(self.engine_obj.engine_props['spectral_slots'])
         path_list = self.ai_props['paths_list'][self.ai_props['path_index']]
@@ -221,6 +224,13 @@ class RLHelpers:
         return reward
 
     def calculate_drl_reward(self, was_allocated: bool):
+        """
+        Gets the reward for the deep reinforcement learning agent.
+
+        :param was_allocated: Determines if the request was successfully allocated or not.
+        :return: The reward.
+        :rtype: float
+        """
         if self.no_penalty:
             drl_reward = 0.0
         else:
@@ -229,6 +239,9 @@ class RLHelpers:
         return drl_reward
 
     def find_maximums(self):
+        """
+        Finds the maximum length a modulation can support and the number of slots.
+        """
         for bandwidth, mod_obj in self.engine_obj.engine_props['mod_per_bw'].items():
             bandwidth_percent = self.engine_obj.engine_props['request_distribution'][bandwidth]
             if bandwidth_percent > 0:
@@ -240,6 +253,12 @@ class RLHelpers:
                     self.drl_props['max_length'] = data_obj['max_length']
 
     def get_obs_space(self):
+        """
+        Gets the observation space for the DRL agent.
+
+        :return: The observation space.
+        :rtype: spaces.Dict
+        """
         self.find_maximums()
         resp_obs = spaces.Dict({
             'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed'] + 1),
@@ -252,6 +271,13 @@ class RLHelpers:
 
     @staticmethod
     def get_action_space(super_channel_space: int):
+        """
+        Gets the action space for the DRL agent.
+
+        :param super_channel_space: The number of 'J' super-channels that can be selected.
+        :return: The action space.
+        :rtype: spaces.Discrete
+        """
         action_space = spaces.Discrete(super_channel_space)
         return action_space
 
@@ -281,14 +307,16 @@ class RLHelpers:
         else:
             start_index = self.super_channel_indexes[self.super_channel][0]
 
-        # TODO: I think the requests were created before and then "created" again and not updated in the agent
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=path_matrix,
                                        forced_index=start_index)
 
     def update_mock_sdn(self, curr_req: dict):
         """
         Updates the mock sdn dictionary to find select routes.
+
         :param curr_req: The current request.
+        :return: The mock return of the SDN controller.
+        :rtype: dict
         """
         mock_sdn = {
             'req_id': curr_req['req_id'],
