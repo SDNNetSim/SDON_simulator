@@ -8,4 +8,5 @@ Bash Scripts
     kill_script
     make_venv
     priority
+    register_rl_env
     run_sim
