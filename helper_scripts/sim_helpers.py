@@ -116,7 +116,16 @@ def find_path_cong(path_list: list, net_spec_dict: dict):
     return average_path_cong
 
 
-def find_core_frag_cong(net_spec_db, path: list, core: int):
+def find_core_frag_cong(net_spec_db: dict, path: list, core: int):
+    """
+    Finds the congestion and fragmentation scores for a specific request.
+
+    :param net_spec_db: Current network spectrum database.
+    :param path: Current path.
+    :param core: Current core.
+    :return: The congestion and fragmentation scores.
+    :rtype: float
+    """
     frag_resp = 0.0
     cong_resp = 0.0
     for src, dest in zip(path, path[1:]):
@@ -145,8 +154,8 @@ def find_core_frag_cong(net_spec_db, path: list, core: int):
     num_links = len(path) - 1
     # The lowest number of slots a request can take is 2, the max number of times [1, 1, 0, 2, 2, 0, ..., 5, 5, 0]
     # fragmentation can happen is 43 for 128 spectral slots and 86 for 256 spectral slots (Rounded)
-    frag_resp = (frag_resp / 86.0 / num_links)
-    cong_resp = (cong_resp / 256.0 / num_links)
+    frag_resp = frag_resp / 86.0 / num_links
+    cong_resp = cong_resp / 256.0 / num_links
     return frag_resp, cong_resp
 
 
@@ -408,15 +417,32 @@ def get_start_time(sim_dict: dict):
 
 
 def min_max_scale(value: float, min_value: float, max_value: float):
+    """
+    Scales a value with respect to a min and a max value.
+
+    :param value: The value to be scaled.
+    :param min_value: The minimum value to scale by.
+    :param max_value: The maximum value to scale by.
+    :return: The final scaled value.
+    :rtype: float
+    """
     return (value - min_value) / (max_value - min_value)
 
 
 def get_super_channels(input_arr: np.array, slots_needed: int):
+    """
+    Gets available valid super-channels along a specific core or input array.
+
+    :param input_arr: The array to search for super-channels on.
+    :param slots_needed: The slots needed by the current request.
+    :return: The potential super-channels available.
+    :rtype: np.array
+    """
     potential_super_channels = []
     current_start = 0
     consecutive_zeros = 0
 
-    for i in range(len(input_arr)):
+    for i in range(len(input_arr)):  # pylint: disable=consider-using-enumerate
         if input_arr[i] == 0:
             consecutive_zeros += 1
         else:
@@ -444,6 +470,16 @@ def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
 
 
 def get_hfrag(path_list: list, core_num: int, slots_needed: int, spectral_slots: int, net_spec_dict: dict):
+    """
+    Gets the shannon entropy fragmentation scores for allocating a request.
+
+    :param path_list: The current path.
+    :param core_num: The core number.
+    :param slots_needed: The slots needed by the request.
+    :param spectral_slots: The number of spectral slots on a single core.
+    :param net_spec_dict: The up-to-date network spectrum database.
+    :return: An array with all shannon entropy fragmentation scores.
+    """
     path_alloc_arr = np.zeros(spectral_slots)
     resp_frag_arr = np.ones(spectral_slots)
     if core_num is None:
