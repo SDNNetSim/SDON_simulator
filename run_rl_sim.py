@@ -17,6 +17,8 @@ from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_m
 from arg_scripts.rl_args import empty_drl_props, empty_q_props, empty_ai_props
 
 
+# TODO: Generalize this script!
+# TODO: In tutorials I will be much more specific and with explanations of how things work
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
