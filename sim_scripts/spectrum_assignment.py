@@ -124,7 +124,7 @@ class SpectrumAssignment:
 
         return self.handle_first_last(flag='last_fit')
 
-    def _get_spectrum(self, ai_obj: object):
+    def _get_spectrum(self):
         if self.spectrum_props['forced_index'] is not None:
             self.handle_first_last(flag='forced_index')
         elif self.engine_props['allocation_method'] == 'best_fit':
@@ -143,7 +143,7 @@ class SpectrumAssignment:
         self.spectrum_props['rev_cores_matrix'] = self.sdn_props['net_spec_dict'][rev_link_tuple]['cores_matrix']
         self.spectrum_props['is_free'] = False
 
-    def get_spectrum(self, mod_format_list: list, ai_obj: object, slice_bandwidth: str = None):
+    def get_spectrum(self, mod_format_list: list, slice_bandwidth: str = None):
         """
         Controls the class, attempts to find an available spectrum.
 
@@ -162,7 +162,7 @@ class SpectrumAssignment:
                 self.spectrum_props['slots_needed'] = bandwidth_dict[modulation]['slots_needed']
             else:
                 self.spectrum_props['slots_needed'] = self.sdn_props['mod_formats'][modulation]['slots_needed']
-            self._get_spectrum(ai_obj=ai_obj)
+            self._get_spectrum()
 
             if self.spectrum_props['is_free']:
                 self.spectrum_props['modulation'] = modulation
