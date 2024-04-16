@@ -12,8 +12,8 @@ networking.
    tutorials/tutorials_modules.rst
    github/github_modules.rst
    args/args_modules.rst
-   config/config_modules.rst
    bash/bash_modules.rst
+   config/config_modules.rst
    data/data_modules.rst
    helper/helper_modules.rst
    plot/plot_modules.rst
