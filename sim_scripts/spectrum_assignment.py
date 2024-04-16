@@ -148,7 +148,6 @@ class SpectrumAssignment:
         Controls the class, attempts to find an available spectrum.
 
         :param mod_format_list: A list of modulation formats to attempt allocation.
-        :param ai_obj: An artificial intelligence class.
         :param slice_bandwidth: A bandwidth used for light-segment slicing.
         """
         self._init_spectrum_info()
