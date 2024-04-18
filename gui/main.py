@@ -17,6 +17,7 @@ from sim_thread.simulation_thread import SimulationThread
 class MainWindow(QMainWindow):
 	def __init__(self):
 		super().__init__()
+		self.progressBar = QProgressBar()
 		self.start_button = QToolButton()
 		self.pause_button = QToolButton()
 		self.stop_button = QToolButton()
@@ -31,6 +32,7 @@ class MainWindow(QMainWindow):
 		self.addControlToolBar()
 		self.initStatusBar()
 	
+		
 		
 	def addControlToolBar(self):
 		# Create toolbar and add actions
@@ -106,10 +108,38 @@ class MainWindow(QMainWindow):
 		# Reposition window in center of screen
 		self.move(center_point - self.rect().center())
 
+	def setUpSimulationThread(self):
+		self.progressBar.setMaximum(1000)
+		self.progressBar.setValue(0)
+		self.progressBar.setVisible(True)
+
+		self.simulation_thread = SimulationThread()
+		self.simulation_thread.progressChanged.connect(self.update_progress)
+		self.simulation_thread.finished.connect(self.simulation_finished)
+		self.simulation_thread.start()
+	
+
+	def stopSimulation(self):
+		#print("Simulation stopped")
+		if self.simulation_thread and self.simulation_thread.isRunning():
+			self.simulation_thread.stop()
+			self.progressBar.setValue(0)
+			self.progressBar.setVisible(False)
+		self.start_button.setText("Start")
+	
+
+	def update_progress(self, value):
+		self.progressBar.setValue(value)
+
+	def simulation_finished(self):
+		self.progressBar.setVisible(False)
+		self.progressBar.setValue(0)
+	
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
 	
+
 	window = MainWindow()
 	window.show()
 	sys.exit(app.exec_())
