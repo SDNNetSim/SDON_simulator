@@ -30,6 +30,7 @@ class MainWindow(QMainWindow):
 		self.resize(1280, 720)  # Set initial size of the window
 		self.setStyleSheet("background-color: #a3e1a4")  # Set light gray background color
 		self.centerWindow()
+		self.addCentralDataDisplay()
 		self.addMenuBar() # this adds the menubar
 		self.addControlToolBar()
 		self.initStatusBar()
@@ -64,6 +65,46 @@ class MainWindow(QMainWindow):
 		aboutAction.triggered.connect(self.about)
 		helpMenu.addAction(aboutAction)
 		
+	def addCentralDataDisplay(self):
+		# Main container widget
+		containerWidget = QWidget()
+		containerWidget.setStyleSheet("background-color: #a3e1a4;")  # Set the color of the main container
+		
+		# Layout for the container widget, allowing for margins around the central data display
+		containerLayout = QVBoxLayout(containerWidget)
+		containerLayout.setContentsMargins(10, 10, 10, 10)  # Adjust these margins to control the offset
+
+		# The actual central data display widget with a white background
+		dataDisplayWidget = QWidget()
+		dataDisplayWidget.setStyleSheet(
+			"background-color: white;"
+			""
+		)
+
+		self.hoverLabel = HoverLabel()
+		# Assuming this is within your main window or a relevant container/widget
+		self.hoverLabel.normalText = ""
+		self.hoverLabel.hoverText = ""
+		self.hoverLabel.setIcon("/Users/kwadwoabempah/Python/GUI/pngtree-call-center-operator-with-phone-headset-icon-png-image_2059023.jpg")
+
+
+		operator_status_info = {"ID":"n/a", "Region":"North America", "Connection Status":"Unknown"}
+		
+		# Connect the hoverChanged signal to a custom slot if you want to handle hover changes
+		self.hoverLabel.hoverChanged.connect(lambda hovered: self.onHoverChange(self.hoverLabel, operator_status_info, hovered))
+		
+		containerLayout.addWidget(dataDisplayWidget)
+		
+		# Setting the container widget as the central widget of the main window
+		self.setCentralWidget(containerWidget)
+
+		# Example content for the data display widget
+		dataLayout = QVBoxLayout(dataDisplayWidget)
+		dataLabel = QLabel("Application Data Display", dataDisplayWidget)
+		dataLabel.setAlignment(Qt.AlignCenter)
+		# Add hoverLabel to the layout
+		dataLayout.addWidget(self.hoverLabel)
+		dataLayout.addWidget(dataLabel)
 		
 	def addControlToolBar(self):
 		# Create toolbar and add actions
@@ -210,6 +251,12 @@ class MainWindow(QMainWindow):
 		self.progressBar.setVisible(False)
 		self.progressBar.setValue(0)
 	
+	def onHoverChange(self, label, data, hovered):
+		if hovered:
+			detailedData = "<br>".join(f"{k}: {v}" for k, v in data.items())
+			tooltipText = f"Details:<br>{detailedData}"
+			#print(f"Setting tooltip: {tooltipText}")  # Debug print
+			label.setToolTip(tooltipText)
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
