@@ -34,10 +34,7 @@ class MainWindow(QMainWindow):
         self.pause_button = QToolButton()
         self.stop_button = QToolButton()
         self.simulation_thread = None
-        self.initUI()
-
-        self.hover_label = None
-        self.paused = None
+        self.init_ui()
 
     def init_ui(self):
         """
@@ -46,11 +43,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("SDNv1")
         self.resize(1280, 720)  # Set initial size of the window
         self.setStyleSheet("background-color: #a3e1a4")  # Set light gray background color
-        self.centerWindow()
-        self.addCentralDataDisplay()
-        self.addMenuBar()  # this adds the menubar
-        self.addControlToolBar()
-        self.initStatusBar()
+        self.center_window()
+        self.add_central_data_display()
+        self.add_menu_bar()  # this adds the menubar
+        self.add_control_tool_bar()
+        self.init_status_bar()
 
     def add_menu_bar(self):
         """
@@ -62,11 +59,11 @@ class MainWindow(QMainWindow):
         # Create File menu and add actions
         file_menu = menu_bar.addMenu('&File')
         open_action = QAction('&Load Configuration from File', self)
-        open_action.triggered.connect(self.openFile)
+        open_action.triggered.connect(self.open_file)
         file_menu.addAction(open_action)
 
         save_action = QAction('&Save', self)
-        save_action.triggered.connect(self.saveFile)
+        save_action.triggered.connect(self.save_file)
         file_menu.addAction(save_action)
 
         exit_action = QAction('&Exit', self)
@@ -76,7 +73,7 @@ class MainWindow(QMainWindow):
         # Create Edit menu and add actions
         edit_menu = menu_bar.addMenu('&Edit')
         settings_action = QAction('&Settings', self)
-        settings_action.triggered.connect(self.openSettings)
+        settings_action.triggered.connect(self.open_settings)
         edit_menu.addAction(settings_action)
 
         # Create Help menu and add actions
@@ -114,8 +111,8 @@ class MainWindow(QMainWindow):
         operator_status_info = {"ID": "n/a", "Region": "North America", "Connection Status": "Unknown"}
 
         # Connect the hoverChanged signal to a custom slot if you want to handle hover changes
-        self.hoverLabel.hoverChanged.connect(
-            lambda hovered: self.onHoverChange(self.hoverLabel, operator_status_info, hovered))
+        self.hover_label.hoverChanged.connect(
+            lambda hovered: self.on_hover_change(self.hover_label, operator_status_info, hovered))
 
         container_layout.addWidget(data_display_widget)
 
@@ -127,7 +124,7 @@ class MainWindow(QMainWindow):
         data_label = QLabel("Application Data Display", data_display_widget)
         data_label.setAlignment(Qt.AlignCenter)
         # Add hoverLabel to the layout
-        data_layout.addWidget(self.hoverLabel)
+        data_layout.addWidget(self.hover_label)
         data_layout.addWidget(data_label)
 
     def add_control_tool_bar(self):
@@ -147,7 +144,7 @@ class MainWindow(QMainWindow):
         self.start_button.setText("Start")
         self.start_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.start_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
-        self.start_button.clicked.connect(self.startSimulation)
+        self.start_button.clicked.connect(self.start_simulation)
 
         # set up for pause button
         # pause_button = QToolButton()
@@ -155,7 +152,7 @@ class MainWindow(QMainWindow):
         self.pause_button.setText("Pause")
         self.pause_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.pause_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
-        self.pause_button.clicked.connect(self.pauseSimulation)
+        self.pause_button.clicked.connect(self.pause_simulation)
 
         # set up for stop button
         # stop_button = QToolButton()
@@ -163,13 +160,13 @@ class MainWindow(QMainWindow):
         self.stop_button.setText("Stop")
         self.stop_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.stop_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
-        self.stop_button.clicked.connect(self.stopSimulation)
+        self.stop_button.clicked.connect(self.stop_simulation)
 
         settings_button = QToolButton()
         settings_button.setIcon(QIcon("./media/gear.png"))
         settings_button.setText("Settings")
         settings_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
-        settings_button.clicked.connect(self.openSettings)
+        settings_button.clicked.connect(self.open_settings)
 
         toolbar.addSeparator()
         toolbar.addWidget(self.start_button)
@@ -185,24 +182,24 @@ class MainWindow(QMainWindow):
         # Set green color
         self.statusBar().setStyleSheet(
             "QStatusBar { background-color: #333; color: white; }" +
-            "QProgressBar::chunk { background-color: #4CAF50; }" +
-            "QProgressBar { border: 2px solid grey; border-radius: 13px; text-align: right; color: black; background-color: #ddd;}"
+            "Qprogress_bar::chunk { background-color: #4CAF50; }" +
+            "Qprogress_bar { border: 2px solid grey; border-radius: 13px; text-align: right; color: black; background-color: #ddd;}"
         )
-        self.progressBar.setStyleSheet("""
-			QProgressBar {
+        self.progress_bar.setStyleSheet("""
+			Qprogress_bar {
 				border: 2px solid grey;
 				border-radius: 8px;  /* Rounds the corners of the progress bar */
 				background-color: #ddd;
 			}
 
-			QProgressBar::chunk {
+			Qprogress_bar::chunk {
 				background-color: #4CAF50;  /* Color of the progress chunks */
 				margin: 0px; /* Optional: Adjusts the margin between chunks if needed */
 				border-radius: 6px;  /* Rounds the corners of the progress chunks */
 			}
 		""")
-        self.statusBar().addWidget(self.progressBar)
-        self.progressBar.setVisible(False)
+        self.statusBar().addWidget(self.progress_bar)
+        self.progress_bar.setVisible(False)
 
     def center_window(self):
         """
@@ -217,9 +214,9 @@ class MainWindow(QMainWindow):
         """
         Sets up one thread of the simulation.
         """
-        self.progressBar.setMaximum(1000)
-        self.progressBar.setValue(0)
-        self.progressBar.setVisible(True)
+        self.progress_bar.setMaximum(1000)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(True)
 
         self.simulation_thread = SimulationThread()
         self.simulation_thread.progressChanged.connect(self.update_progress)
@@ -237,7 +234,7 @@ class MainWindow(QMainWindow):
         else:
             # print("Starting simulation")
             if not self.simulation_thread or not self.simulation_thread.isRunning():
-                self.setUpSimulationThread()
+                self.setup_simulation_thread()
             else:
                 self.simulation_thread.resume()
             self.start_button.setText("Start")
@@ -270,8 +267,8 @@ class MainWindow(QMainWindow):
         # print("Simulation stopped")
         if self.simulation_thread and self.simulation_thread.isRunning():
             self.simulation_thread.stop()
-            self.progressBar.setValue(0)
-            self.progressBar.setVisible(False)
+            self.progress_bar.setValue(0)
+            self.progress_bar.setVisible(False)
         self.start_button.setText("Start")
 
     # Placeholder methods for menu actions
@@ -311,14 +308,14 @@ class MainWindow(QMainWindow):
         """
         Updates the progress bar.
         """
-        self.progressBar.setValue(value)
+        self.progress_bar.setValue(value)
 
     def simulation_finished(self):
         """
         Finish the simulation.
         """
-        self.progressBar.setVisible(False)
-        self.progressBar.setValue(0)
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setValue(0)
 
     @staticmethod
     def on_hover_change(label, data, hovered):
