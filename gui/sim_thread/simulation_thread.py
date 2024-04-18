@@ -1,4 +1,4 @@
-from PqQt5.QtCore import (
+from PyQt5.QtCore import (
 	QThread, QMutex, QWaitCondition,
 	QMutexLocker, pyqtSignal, 
 )
