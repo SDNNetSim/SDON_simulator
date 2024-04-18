@@ -261,6 +261,18 @@ class MainWindow(QMainWindow):
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
 	
+	# Set a custom font for tooltips if desired
+	QToolTip.setFont(QFont('Arial', 10))
+	app.setStyleSheet("""
+		QToolTip {
+			background-color: #f5f5f5;
+			color: #333333;
+			border: 1px solid #dcdcdc;
+			padding: 4px;
+			border-radius: 4px;
+			opacity: 255;
+		}
+	""")
 
 	window = MainWindow()
 	window.show()
