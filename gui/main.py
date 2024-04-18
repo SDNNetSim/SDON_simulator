@@ -29,6 +29,7 @@ class MainWindow(QMainWindow):
 		self.setStyleSheet("background-color: #a3e1a4")  # Set light gray background color
 		self.centerWindow()
 		self.addControlToolBar()
+		self.initStatusBar()
 	
 		
 	def addControlToolBar(self):
@@ -76,6 +77,29 @@ class MainWindow(QMainWindow):
 		toolbar.addSeparator()
 		toolbar.addWidget(settings_button)
 
+	def initStatusBar(self):
+		# Set green color
+		self.statusBar().setStyleSheet(
+			"QStatusBar { background-color: #333; color: white; }" +
+			"QProgressBar::chunk { background-color: #4CAF50; }" +
+			"QProgressBar { border: 2px solid grey; border-radius: 13px; text-align: right; color: black; background-color: #ddd;}"
+		)
+		self.progressBar.setStyleSheet("""
+			QProgressBar {
+				border: 2px solid grey;
+				border-radius: 8px;  /* Rounds the corners of the progress bar */
+				background-color: #ddd;
+			}
+
+			QProgressBar::chunk {
+				background-color: #4CAF50;  /* Color of the progress chunks */
+				margin: 0px; /* Optional: Adjusts the margin between chunks if needed */
+				border-radius: 6px;  /* Rounds the corners of the progress chunks */
+			}
+		""")
+		self.statusBar().addWidget(self.progressBar)
+		self.progressBar.setVisible(False)
+
 	def centerWindow(self):
 		# Calculate the center point of the screen
 		center_point = QDesktopWidget().screenGeometry().center()
@@ -85,6 +109,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
+	
 	window = MainWindow()
 	window.show()
 	sys.exit(app.exec_())
