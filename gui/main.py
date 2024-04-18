@@ -13,6 +13,7 @@ from PyQt5.QtCore import (
 )
 
 from sim_thread.simulation_thread import SimulationThread
+from labels.helper_labels import HoverLabel
 
 class MainWindow(QMainWindow):
 	def __init__(self):
@@ -29,9 +30,39 @@ class MainWindow(QMainWindow):
 		self.resize(1280, 720)  # Set initial size of the window
 		self.setStyleSheet("background-color: #a3e1a4")  # Set light gray background color
 		self.centerWindow()
+		self.addMenuBar() # this adds the menubar
 		self.addControlToolBar()
 		self.initStatusBar()
 	
+	def addMenuBar(self):
+		# Create the menu bar
+		menuBar = self.menuBar()
+		
+		# Create File menu and add actions
+		fileMenu = menuBar.addMenu('&File')
+		openAction = QAction('&Load Configuration from File', self)
+		openAction.triggered.connect(self.openFile)
+		fileMenu.addAction(openAction)
+		
+		saveAction = QAction('&Save', self)
+		saveAction.triggered.connect(self.saveFile)
+		fileMenu.addAction(saveAction)
+		
+		exitAction = QAction('&Exit', self)
+		exitAction.triggered.connect(self.close)
+		fileMenu.addAction(exitAction)
+		
+		# Create Edit menu and add actions
+		editMenu = menuBar.addMenu('&Edit')
+		settingsAction = QAction('&Settings', self)
+		settingsAction.triggered.connect(self.openSettings)
+		editMenu.addAction(settingsAction)
+		
+		# Create Help menu and add actions
+		helpMenu = menuBar.addMenu('&Help')
+		aboutAction = QAction('&About', self)
+		aboutAction.triggered.connect(self.about)
+		helpMenu.addAction(aboutAction)
 		
 		
 	def addControlToolBar(self):
@@ -118,6 +149,33 @@ class MainWindow(QMainWindow):
 		self.simulation_thread.finished.connect(self.simulation_finished)
 		self.simulation_thread.start()
 	
+	def startSimulation(self):
+		if self.start_button.text() == "Resume":
+			#print("Resuming simulation")
+			self.simulation_thread.resume()
+			self.start_button.setText("Start")
+		else:
+			#print("Starting simulation")
+			if not self.simulation_thread or not self.simulation_thread.isRunning():
+				self.setUpSimulationThread()
+			else:
+				self.simulation_thread.resume()
+			self.start_button.setText("Start")
+
+	def pauseSimulation(self):
+		#print("Simulation paused")
+		if self.simulation_thread and self.simulation_thread.isRunning():
+			self.simulation_thread.pause()
+			self.start_button.setText("Resume")
+	
+	def resume(self):
+		if self.simulation_thread and self.simulation_thread.isRunning():
+			self.simulation_thread.pause()
+			self.start_button.setText("Resume")  # Change button text to "Resume"
+		else:
+			with QMutexLocker(self.mutex):
+				self.paused = False
+			self.wait_cond.wakeAll()
 
 	def stopSimulation(self):
 		#print("Simulation stopped")
@@ -127,6 +185,23 @@ class MainWindow(QMainWindow):
 			self.progressBar.setVisible(False)
 		self.start_button.setText("Start")
 	
+	# Placeholder methods for menu actions
+	def openFile(self):
+		# Set the file dialog to filter for .yml and .json files
+		file_name, _ = QFileDialog.getOpenFileName(self, "Open Configuration File", "",
+												"Config Files (*.yml *.json)")
+		if file_name:
+			print(f"Selected file: {file_name}")
+			# Here, you can add code to handle the opening and reading of the selected file
+
+	def saveFile(self):
+		print("Save file action triggered")
+
+	def about(self):
+		print("Show about dialog")
+	
+	def openSettings(self):
+		print("Opening settings")
 
 	def update_progress(self, value):
 		self.progressBar.setValue(value)
