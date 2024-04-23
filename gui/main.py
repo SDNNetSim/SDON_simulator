@@ -1,5 +1,5 @@
 # pylint: disable=no-name-in-module
-
+import os
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QDesktopWidget,
@@ -105,8 +105,11 @@ class MainWindow(QMainWindow):
         # Assuming this is within your main window or a relevant container/widget
         self.hover_label.normalText = ""
         self.hover_label.hoverText = ""
-        self.hover_label.setIcon(
-            "/Users/kwadwoabempah/Python/GUI/pngtree-call-center-operator-with-phone-headset-icon-png-image_2059023.jpg")
+
+        # path to operator media file
+        resource_name = "operator.png"
+        media_dir = "media"
+        self.hover_label.setIcon(os.path.join(os.getcwd(), media_dir, resource_name))
 
         operator_status_info = {"ID": "n/a", "Region": "North America", "Connection Status": "Unknown"}
 
@@ -139,31 +142,35 @@ class MainWindow(QMainWindow):
         toolbar.setIconSize(QSize(20, 20))
 
         # Create custom tool button for Start action with transparent background
-        # start_button = QToolButton()
-        self.start_button.setIcon(QIcon("./media/light-green-play-button.png"))
+
+        # path to play_button media file
+        resource_name = "light-green-play-button.png"
+        media_dir = "media"
+        self.start_button.setIcon(QIcon(os.path.join(os.getcwd(), media_dir, resource_name)))
         self.start_button.setText("Start")
         self.start_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.start_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
         self.start_button.clicked.connect(self.start_simulation)
 
         # set up for pause button
-        # pause_button = QToolButton()
-        self.pause_button.setIcon(QIcon("./media/pause.png"))
+        resource_name = "pause.png"
+        self.pause_button.setIcon(QIcon(os.path.join(os.getcwd(), media_dir, resource_name)))
         self.pause_button.setText("Pause")
         self.pause_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.pause_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
         self.pause_button.clicked.connect(self.pause_simulation)
 
         # set up for stop button
-        # stop_button = QToolButton()
-        self.stop_button.setIcon(QIcon("./media/light-red-stop-button.png"))
+        resource_name = "light-red-stop-button.png"
+        self.stop_button.setIcon(QIcon(os.path.join(os.getcwd(), media_dir, resource_name)))
         self.stop_button.setText("Stop")
         self.stop_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.stop_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
         self.stop_button.clicked.connect(self.stop_simulation)
 
         settings_button = QToolButton()
-        settings_button.setIcon(QIcon("./media/gear.png"))
+        resource_name = "gear.png"
+        settings_button.setIcon(QIcon(os.path.join(os.getcwd(), media_dir, resource_name)))
         settings_button.setText("Settings")
         settings_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
         settings_button.clicked.connect(self.open_settings)
