@@ -132,7 +132,7 @@ class MainWindow(QMainWindow):
 
     def add_control_tool_bar(self):
         """
-        Adds controls to the tool bar.
+        Adds controls to the toolbar.
         """
         # Create toolbar and add actions
         toolbar = self.addToolBar("Simulation Controls")
@@ -300,14 +300,14 @@ class MainWindow(QMainWindow):
     @staticmethod
     def about():
         """
-        Shows the about dialog.
+        Shows the About dialog.
         """
         print("Show about dialog")
 
     @staticmethod
     def open_settings():
         """
-        Opens the settings pannel.
+        Opens the settings panel.
         """
         print("Opening settings")
 
