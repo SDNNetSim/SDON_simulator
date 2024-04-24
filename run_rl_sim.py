@@ -17,8 +17,19 @@ from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_m
 from arg_scripts.rl_args import empty_drl_props, empty_q_props, empty_ai_props
 
 
-# TODO: Generalize this script!
-# TODO: In tutorials I will be much more specific and with explanations of how things work
+# TODO: General layout of the script is as follows:
+#   - Be able to select an algorithm you want to run
+#       - This may be multiple algorithms!
+#   - Have input
+#       - Move all input to the configuration file
+#       - What we want to do for path selection, core selection, and spectrum assignment
+#   - We may also be able to load existing model's from each of the above
+
+
+# TODO: RL sim is the main script, only things related to actually running the simulation
+#   - multi_agent_helpers is a script this script calls and handles things related to the agents
+#   - Three classes, where each class has a similar structure
+#   - rl_helpers are general helpers that either this script or multi agent helpers can use
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
@@ -31,9 +42,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.q_props = copy.deepcopy(empty_q_props)
         self.drl_props = copy.deepcopy(empty_drl_props)
 
+        # TODO: Add to configuration file
         self.super_channel_space = 3
         self.ai_props['super_channel_space'] = self.super_channel_space
         self.sim_dict = dict()
+        # TODO: Three algorithms, path_algo, core_algo, spectrum_algo
+        #   - To be included in the configuration file
         try:
             self.train_algorithm = kwargs['train_algorithm']
         except KeyError:
@@ -54,9 +68,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.reset(options={'save_sim': False})
         self.helper_obj.find_maximums()
 
+        # TODO: Observations will be different for each agent, this is now multi-agent
         self.observation_space = self.helper_obj.get_obs_space(super_channel_space=self.super_channel_space)
+        # TODO: Actions will be different for each agent
         self.action_space = self.helper_obj.get_action_space(super_channel_space=self.super_channel_space)
 
+    # TODO: Update path q-table based on new formulation
     def _get_max_future_q(self):
         q_values = list()
         cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']]
