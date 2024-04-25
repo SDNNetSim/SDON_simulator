@@ -147,7 +147,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if random_float < self.q_props['epsilon']:
             self.ai_props['path_index'] = np.random.choice(self.ai_props['k_paths'])
             # The level will always be the last index
-            self.level_index = self.paths_info[self.ai_props['paths_index']][-1]
+            self.level_index = self.paths_info[self.ai_props['path_index']][-1]
 
             if self.ai_props['path_index'] == 1 and self.ai_props['k_paths'] == 1:
                 self.ai_props['path_index'] = 0
@@ -160,7 +160,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if len(self.ai_props['chosen_path']) == 0:
             raise ValueError('The chosen path can not be None')
 
-        req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
+        try:
+            req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
+        except:
+            req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count'] - 1]
         self.helper_obj.update_route_props(bandwidth=req_dict['bandwidth'], chosen_path=self.ai_props['chosen_path'])
 
     def get_core(self):
@@ -214,7 +217,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             terminated = True
             base_fp = os.path.join('data')
             # TODO: Update amount
-            if self.train_algorithm == 'q_learning':
+            if self.path_algorithm == 'q_learning':
                 amount = 0
                 # self.helper_obj.decay_epsilon(amount=amount, iteration=self.iteration)
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
@@ -321,7 +324,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.ai_props['core_index'] = 0
             path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
 
-        slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
+        if path_mod is not False:
+            slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
+        else:
+            slots_needed = 0
         # super_channels = self.helper_obj.get_super_channels(slots_needed=slots_needed,
         #                                                     num_channels=self.super_channel_space)
 
@@ -445,28 +451,29 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 #   -
 if __name__ == '__main__':
     # TODO: How to add callbacks in bash scripts
+    # TODO: Do this manually, takes too long for deep learning combined
     callback = GetModelParams()
     env = SimEnv(render_mode=None, algorithm='PPO', custom_callback=callback, train_algorithm='ppo')
-    model = PPO("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=500000, log_interval=1, callback=callback)
+    # model = PPO("MultiInputPolicy", env, verbose=1, device='cpu')
+    # model.learn(total_timesteps=500000, log_interval=1, callback=callback)
 
     # model.save('./logs/best_PPO_model.zip')
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
-    # obs, info = env.reset()
-    # episode_reward = 0
-    # max_episodes = 5
-    # num_episodes = 0
-    # while True:
-    #     curr_action, _states = model.predict(obs)
-    #
-    #     obs, curr_reward, is_terminated, is_truncated, curr_info = env.step(curr_action)
-    #     episode_reward += curr_reward
-    #     if num_episodes >= max_episodes:
-    #         break
-    #     if is_terminated or is_truncated:
-    #         obs, info = env.reset()
-    #         num_episodes += 1
+    obs, info = env.reset()
+    episode_reward = 0
+    max_episodes = 5
+    num_episodes = 0
+    while True:
+        # curr_action, _states = model.predict(obs)
+
+        obs, curr_reward, is_terminated, is_truncated, curr_info = env.step([0])
+        episode_reward += curr_reward
+        if num_episodes >= max_episodes:
+            break
+        if is_terminated or is_truncated:
+            obs, info = env.reset()
+            num_episodes += 1
     #
     # # TODO: Save this to a file or plot
-    # print(episode_reward / max_episodes)
+    print(episode_reward / max_episodes)
     # obs, info = env.reset()
