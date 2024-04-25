@@ -78,20 +78,15 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.action_space = self.helper_obj.get_action_space()
 
     def _get_max_future_q(self, path_list):
-        q_values = list()
         new_cong = find_path_cong(path_list=path_list[0], net_spec_dict=self.engine_obj.net_spec_dict)
         self.new_cong_index = self.helper_obj._classify_cong(curr_cong=new_cong)
+        max_future_q = None
 
-        # TODO: Getting max future q values strangely? Should this be max future q?
-        # TODO: Maybe dynamic something...
-        # TODO: How can I loop over congestion indexes?
-        # TODO: In this case max future q often equals current q...
-        # TODO: Formulation still doesn't make much sense then
-        for path_index, _, cong_index in self.paths_info:
-            curr_q = self.q_routes[self.source][self.destination][path_index][cong_index]['q_value']
-            q_values.append(curr_q)
-
-        return np.max(q_values)
+        # TODO: They will still often equal each other, split into more?
+        #   - Maybe another formulation to make more sense...
+        #   - Consider fragmentation and congestion, or just fragmentation...Increases complexity
+        #   - Still might be a more congested path is better or something similar
+        return max_future_q
 
     def _update_routes_matrix(self, was_routed: bool):
         if was_routed:
