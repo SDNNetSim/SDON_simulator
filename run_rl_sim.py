@@ -62,6 +62,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                                     q_props=self.q_props, drl_props=self.drl_props)
 
         self.path_algorithm = None
+        # TODO: To get current/max future q
+        self.level_index = None
         self.core_algorithm = None
         self.spectrum_algorithm = None
         self.ai_props['super_channel_space'] = None
@@ -128,27 +130,35 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         cores_matrix[self.ai_props['path_index']][self.ai_props['core_index']]['q_value'] = new_q_core
 
     # TODO: Need to modify to get classifications (low, medium, high)
+    # TODO: It may be the opposite, where each path has a congestion level
+    # TODO: Should probably use old code!
     def get_route(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         routes_matrix = self.q_props['routes_matrix']
+        # TODO: May need to modify this
         self.ai_props['paths_list'] = routes_matrix[self.ai_props['source']][self.ai_props['destination']]['path']
 
+        paths_info = self.helper_obj.classify_paths(paths_list=self.ai_props['paths_list'])
         if self.ai_props['paths_list'].ndim != 1:
             self.ai_props['paths_list'] = self.ai_props['paths_list'][:, 0]
 
         if random_float < self.q_props['epsilon']:
             self.ai_props['path_index'] = np.random.choice(self.ai_props['k_paths'])
+            # The level will always be the last index
+            self.level_index = paths_info[self.ai_props['paths_index']][-1]
 
             if self.ai_props['path_index'] == 1 and self.ai_props['k_paths'] == 1:
                 self.ai_props['path_index'] = 0
             self.ai_props['chosen_path'] = self.ai_props['paths_list'][self.ai_props['path_index']]
         else:
-            self.ai_props['path_index'], self.ai_props['chosen_path'] = self.helper_obj.get_max_curr_q()
+            self.ai_props['path_index'], self.ai_props['chosen_path'] = self.helper_obj.get_max_curr_q(
+                paths_info=paths_info)
+            self.level_index = paths_info[self.ai_props['path_index']][-1]
 
         if len(self.ai_props['chosen_path']) == 0:
             raise ValueError('The chosen path can not be None')
 
-        # TODO: Need bandwidth here
+        req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
         self.helper_obj.update_route_props(bandwidth=req_dict['bandwidth'], chosen_path=self.ai_props['chosen_path'])
 
     def get_core(self):
@@ -171,15 +181,16 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                                                           source=str(source), target=str(destination), weight='length')
 
                 # TODO: Generalize this and when creating the table
-                for i in range(3):
-                    for k, curr_path in enumerate(shortest_paths):
-                        if k >= self.ai_props['k_paths']:
-                            break
-                        self.q_props['routes_matrix'][source, destination, i, k] = (curr_path, 0.0)
+                for k, curr_path in enumerate(shortest_paths):
+                    if k >= self.ai_props['k_paths']:
+                        break
 
-                        # for core_action in range(self.engine_obj.engine_props['cores_per_link']):
-                        #     self.q_props['cores_matrix'][source, destination, k, core_action] = (curr_path, core_action,
-                        #                                                                          0.0)
+                    for level_index in range(3):
+                        self.q_props['routes_matrix'][source, destination, k, level_index] = (curr_path, 0.0)
+
+                    # for core_action in range(self.engine_obj.engine_props['cores_per_link']):
+                    #     self.q_props['cores_matrix'][source, destination, k, core_action] = (curr_path, core_action,
+                    #                                                                          0.0)
 
     def setup_q_env(self):
         self.q_props['epsilon'] = self.engine_obj.engine_props['epsilon_start']
@@ -188,8 +199,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: Modification here (low, medium, high)
         path_levels = 3
 
-        self.q_props['routes_matrix'] = np.empty((self.ai_props['num_nodes'], self.ai_props['num_nodes'], path_levels,
-                                                  self.ai_props['k_paths']), dtype=route_types)
+        self.q_props['routes_matrix'] = np.empty((self.ai_props['num_nodes'], self.ai_props['num_nodes'],
+                                                  self.ai_props['k_paths'], path_levels), dtype=route_types)
         self.q_props['cores_matrix'] = np.empty((self.ai_props['num_nodes'], self.ai_props['num_nodes'],
                                                  self.ai_props['k_paths'],
                                                  self.engine_obj.engine_props['cores_per_link']), dtype=core_types)

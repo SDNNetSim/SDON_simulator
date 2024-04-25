@@ -6,6 +6,7 @@ from gymnasium import spaces
 
 from helper_scripts.os_helpers import create_dir
 from helper_scripts.sim_helpers import find_path_len, combine_and_one_hot, calc_matrix_stats, get_path_mod, get_hfrag
+from helper_scripts.sim_helpers import find_path_cong
 
 
 class RLHelpers:
@@ -71,22 +72,40 @@ class RLHelpers:
 
         return resp_frag_mat
 
-    def get_max_curr_q(self):
-        """
-        Gets the maximum future q for the q-learning algorithm.
-
-        :return: The index and path (state) that corresponds to the max future q.
-        :rtype: tuple
-        """
+    def get_max_curr_q(self, paths_info):
         q_values = list()
-        for path_index in range(len(self.ai_props['paths_list'])):
+        for path_index, _, level_index in paths_info:
             routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
-            curr_q = routes_matrix[path_index]['q_value']
+            curr_q = routes_matrix[path_index][level_index]['q_value']
             q_values.append(curr_q)
 
         max_index = np.argmax(q_values)
         max_path = self.ai_props['paths_list'][max_index]
         return max_index, max_path
+
+    @staticmethod
+    def _classify_cong(curr_cong):
+        if curr_cong < 0.3:
+            cong_index = 0
+        elif 0.3 <= curr_cong < 0.7:
+            cong_index = 1
+        elif curr_cong >= 0.7:
+            cong_index = 2
+        else:
+            raise ValueError('Congestion value not recognized.')
+
+        return cong_index
+
+    def classify_paths(self, paths_list: list):
+        info_list = list()
+        paths_list = paths_list[:, 0]
+        for path_index, curr_path in enumerate(paths_list):
+            curr_cong = find_path_cong(path_list=curr_path, net_spec_dict=self.engine_obj.net_spec_dict)
+            cong_index = self._classify_cong(curr_cong=curr_cong)
+
+            info_list.append((path_index, curr_path, cong_index))
+
+        return info_list
 
     def update_route_props(self, bandwidth: str, chosen_path: list):
         """
