@@ -283,13 +283,15 @@ class RLHelpers:
             'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed'] + 1),
             'source': spaces.MultiBinary(self.ai_props['num_nodes']),
             'destination': spaces.MultiBinary(self.ai_props['num_nodes']),
-            'super_channels': spaces.Box(-0.01, 100.0, shape=(self.ai_props['super_channel_space'],), dtype=np.float32)
+            # TODO: Change
+            'super_channels': spaces.Box(-0.01, 100.0, shape=(3,), dtype=np.float32)
         })
 
         return resp_obs
 
+    # TODO: Change
     @staticmethod
-    def get_action_space(super_channel_space: int):
+    def get_action_space(super_channel_space: int = 3):
         """
         Gets the action space for the DRL agent.
 
@@ -321,13 +323,13 @@ class RLHelpers:
 
         # The spectrum was almost to maximum capacity, there will be blocking but it's not the agent's fault
         # Put the start index to zero (which will block regardless of what it is), but don't penalize the agent
-        if self.no_penalty:
-            start_index = 0
-        else:
-            start_index = self.super_channel_indexes[self.super_channel][0]
+        # if self.no_penalty:
+        #     start_index = 0
+        # else:
+        #     start_index = self.super_channel_indexes[self.super_channel][0]
 
-        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=path_matrix,
-                                       forced_index=start_index)
+        # TODO: Got rid of forced index
+        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=path_matrix)
 
     def update_mock_sdn(self, curr_req: dict):
         """

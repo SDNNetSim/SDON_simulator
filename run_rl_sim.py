@@ -13,7 +13,7 @@ from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
-from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod
+from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod, find_path_cong
 from arg_scripts.rl_args import empty_drl_props, empty_q_props, empty_ai_props
 
 
@@ -73,22 +73,25 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.find_maximums()
 
         # TODO: Observations will be different for each agent, this is now multi-agent
-        # self.observation_space = self.helper_obj.get_obs_space(super_channel_space=self.super_channel_space)
+        self.observation_space = self.helper_obj.get_obs_space()
         # TODO: Actions will be different for each agent
-        # self.action_space = self.helper_obj.get_action_space(super_channel_space=self.super_channel_space)
+        self.action_space = self.helper_obj.get_action_space()
 
-    # TODO: Update path q-table based on new formulation
-    def _get_max_future_q(self):
+    def _get_max_future_q(self, path_list):
         q_values = list()
-        cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']]
-        cores_matrix = cores_matrix[self.ai_props['destination']][self.ai_props['path_index']]
-        for core_index in range(self.engine_obj.engine_props['cores_per_link']):
-            curr_q = cores_matrix[core_index]['q_value']
+        new_cong = find_path_cong(path_list=path_list[0], net_spec_dict=self.engine_obj.net_spec_dict)
+        self.new_cong_index = self.helper_obj._classify_cong(curr_cong=new_cong)
+
+        # TODO: Getting max future q values strangely? Should this be max future q?
+        # TODO: Maybe dynamic something...
+        # TODO: How can I loop over congestion indexes?
+        # TODO: In this case max future q often equals current q...
+        # TODO: Formulation still doesn't make much sense then
+        for path_index, _, cong_index in self.paths_info:
+            curr_q = self.q_routes[self.source][self.destination][path_index][cong_index]['q_value']
             q_values.append(curr_q)
 
-        max_index = np.argmax(q_values)
-        resp_value = cores_matrix[max_index]['q_value']
-        return resp_value
+        return np.max(q_values)
 
     def _update_routes_matrix(self, was_routed: bool):
         if was_routed:
@@ -97,8 +100,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             reward = -1.0
 
         routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
-        current_q = routes_matrix[self.ai_props['path_index']]['q_value']
-        max_future_q = self._get_max_future_q()
+        current_q = routes_matrix[self.ai_props['path_index']][self.level_index]['q_value']
+        max_future_q = self._get_max_future_q(path_list=routes_matrix[self.ai_props['path_index']][0])
         delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
         td_error = current_q - (reward + self.engine_obj.engine_props['discount_factor'] * max_future_q)
         self.helper_obj.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error,
@@ -230,21 +233,23 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')
 
     def _update_helper_obj(self, action: list):
+        # TODO: Want spectrum assignment to do this
         self.helper_obj.path_index = self.ai_props['path_index']
-        self.helper_obj.core_num = self.ai_props['core_index']
+        # TODO: No more picking a core for now
+        # self.helper_obj.core_num = self.ai_props['core_index']
 
         # TODO: First or best fit, depends on configuration file
-        if self.train_algorithm == 'q_learning':
-            raise NotImplementedError
-        else:
-            # TODO: Change this to pick a super channel
-            #   - Only valid super-channels
-            #   - If None, block
-            #       - Reward will be zero in this case
-            self.helper_obj.super_channel = action
-        self._error_check_actions()
+        # if self.path_algorithm == 'q_learning':
+        #     raise NotImplementedError
+        # else:
+        # TODO: Change this to pick a super channel
+        #   - Only valid super-channels
+        #   - If None, block
+        #       - Reward will be zero in this case
+        # self.helper_obj.super_channel = action
+        # self._error_check_actions()
 
-        if self.train_algorithm == 'q_learning':
+        if self.path_algorithm == 'q_learning':
             self.helper_obj.q_props = self.q_props
         else:
             self.helper_obj.drl_props = self.drl_props
@@ -275,9 +280,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         drl_reward = self.helper_obj.calculate_drl_reward(was_allocated=was_allocated)
 
-        if self.train_algorithm == 'q_learning':
+        if self.path_algorithm == 'q_learning':
             self._update_routes_matrix(was_routed=was_allocated)
-            self._update_cores_matrix(was_routed=was_allocated)
+            # self._update_cores_matrix(was_routed=was_allocated)
         self.ai_props['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()
@@ -318,8 +323,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
 
         slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
-        super_channels = self.helper_obj.get_super_channels(slots_needed=slots_needed,
-                                                            num_channels=self.super_channel_space)
+        # super_channels = self.helper_obj.get_super_channels(slots_needed=slots_needed,
+        #                                                     num_channels=self.super_channel_space)
 
         source_obs = np.zeros(self.ai_props['num_nodes'])
         source_obs[self.ai_props['source']] = 1.0
@@ -330,7 +335,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             'slots_needed': slots_needed,
             'source': source_obs,
             'destination': dest_obs,
-            'super_channels': super_channels,
+            # TODO: Change
+            'super_channels': 0,
         }
         return obs_dict
 
