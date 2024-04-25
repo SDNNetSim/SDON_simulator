@@ -30,6 +30,10 @@ from arg_scripts.rl_args import empty_drl_props, empty_q_props, empty_ai_props
 #   - multi_agent_helpers is a script this script calls and handles things related to the agents
 #   - Three classes, where each class has a similar structure
 #   - rl_helpers are general helpers that either this script or multi agent helpers can use
+
+# TODO: Account for command line input (while we are developing this?)
+# TODO: AI props should be RL props
+# TODO: Only support for s1
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
@@ -38,20 +42,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def __init__(self, render_mode: str = None, custom_callback: object = None, **kwargs):
         super().__init__()
+        # TODO: Props will for sure change (ql props, dqn props, etc...)
         self.ai_props = copy.deepcopy(empty_ai_props)
         self.q_props = copy.deepcopy(empty_q_props)
         self.drl_props = copy.deepcopy(empty_drl_props)
 
-        # TODO: Add to configuration file
-        self.super_channel_space = 3
-        self.ai_props['super_channel_space'] = self.super_channel_space
         self.sim_dict = dict()
-        # TODO: Three algorithms, path_algo, core_algo, spectrum_algo
-        #   - To be included in the configuration file
-        try:
-            self.train_algorithm = kwargs['train_algorithm']
-        except KeyError:
-            self.train_algorithm = 'deep_rl'
 
         self.iteration = 0
         self.options = None
@@ -61,17 +57,23 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.engine_obj = None
         self.route_obj = None
+        # TODO: Define multi-agent helpers (separately)
         self.helper_obj = RLHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj, route_obj=self.route_obj,
                                     q_props=self.q_props, drl_props=self.drl_props)
+
+        self.path_algorithm = None
+        self.core_algorithm = None
+        self.spectrum_algorithm = None
+        self.ai_props['super_channel_space'] = None
 
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
         self.helper_obj.find_maximums()
 
         # TODO: Observations will be different for each agent, this is now multi-agent
-        self.observation_space = self.helper_obj.get_obs_space(super_channel_space=self.super_channel_space)
+        # self.observation_space = self.helper_obj.get_obs_space(super_channel_space=self.super_channel_space)
         # TODO: Actions will be different for each agent
-        self.action_space = self.helper_obj.get_action_space(super_channel_space=self.super_channel_space)
+        # self.action_space = self.helper_obj.get_action_space(super_channel_space=self.super_channel_space)
 
     # TODO: Update path q-table based on new formulation
     def _get_max_future_q(self):
@@ -125,6 +127,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']][self.ai_props['destination']]
         cores_matrix[self.ai_props['path_index']][self.ai_props['core_index']]['q_value'] = new_q_core
 
+    # TODO: Need to modify to get classifications (low, medium, high)
     def get_route(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         routes_matrix = self.q_props['routes_matrix']
@@ -145,6 +148,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if len(self.ai_props['chosen_path']) == 0:
             raise ValueError('The chosen path can not be None')
 
+        # TODO: Need bandwidth here
         self.helper_obj.update_route_props(bandwidth=req_dict['bandwidth'], chosen_path=self.ai_props['chosen_path'])
 
     def get_core(self):
@@ -165,21 +169,26 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
                 shortest_paths = nx.shortest_simple_paths(G=self.engine_obj.engine_props['topology'],
                                                           source=str(source), target=str(destination), weight='length')
-                for k, curr_path in enumerate(shortest_paths):
-                    if k >= self.ai_props['k_paths']:
-                        break
-                    self.q_props['routes_matrix'][source, destination, k] = (curr_path, 0.0)
 
-                    for core_action in range(self.engine_obj.engine_props['cores_per_link']):
-                        self.q_props['cores_matrix'][source, destination, k, core_action] = (curr_path, core_action,
-                                                                                             0.0)
+                # TODO: Generalize this and when creating the table
+                for i in range(3):
+                    for k, curr_path in enumerate(shortest_paths):
+                        if k >= self.ai_props['k_paths']:
+                            break
+                        self.q_props['routes_matrix'][source, destination, i, k] = (curr_path, 0.0)
+
+                        # for core_action in range(self.engine_obj.engine_props['cores_per_link']):
+                        #     self.q_props['cores_matrix'][source, destination, k, core_action] = (curr_path, core_action,
+                        #                                                                          0.0)
 
     def setup_q_env(self):
         self.q_props['epsilon'] = self.engine_obj.engine_props['epsilon_start']
         route_types = [('path', 'O'), ('q_value', 'f8')]
         core_types = [('path', 'O'), ('core_action', 'i8'), ('q_value', 'f8')]
+        # TODO: Modification here (low, medium, high)
+        path_levels = 3
 
-        self.q_props['routes_matrix'] = np.empty((self.ai_props['num_nodes'], self.ai_props['num_nodes'],
+        self.q_props['routes_matrix'] = np.empty((self.ai_props['num_nodes'], self.ai_props['num_nodes'], path_levels,
                                                   self.ai_props['k_paths']), dtype=route_types)
         self.q_props['cores_matrix'] = np.empty((self.ai_props['num_nodes'], self.ai_props['num_nodes'],
                                                  self.ai_props['k_paths'],
@@ -281,9 +290,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.ai_props['source'] = int(curr_req['source'])
         self.ai_props['destination'] = int(curr_req['destination'])
         self.ai_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
-        if self.train_algorithm == 'q_learning':
+        if self.path_algorithm == 'q_learning':
             self.get_route()
-            self.get_core()
+            # TODO: Core for now will be first-fit in spectrum assignment only
+            # self.get_core()
             path_len = find_path_len(path_list=self.ai_props['paths_list'][self.ai_props['path_index']],
                                      topology=self.engine_obj.topology)
             path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
@@ -363,6 +373,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.ai_props['spectral_slots'] = self.sim_dict['s1']['spectral_slots']
 
         self._create_input()
+
+        # TODO: These will be changed
+        self.path_algorithm = self.sim_dict['s1']['path_algorithm']
+        self.core_algorithm = 'first_fit'
+        self.spectrum_algorithm = 'first_fit'
+
         start_arr_rate = float(self.sim_dict['s1']['arrival_rate']['start'])
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.sim_dict['s1']['holding_time']
         self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.sim_dict['s1']['cores_per_link']
@@ -373,6 +389,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.ai_props['depart_list'] = list()
 
         if self.optimize or self.optimize is None:
+            # TODO: These will have to be modified
             self.ai_props['q_props'] = copy.deepcopy(empty_q_props)
             self.ai_props['drl_props'] = copy.deepcopy(empty_drl_props)
             self.iteration = 0
@@ -383,11 +400,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj.create_topology()
         self.ai_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
-        if self.train_algorithm == 'q_learning':
+        # TODO: Needs to be generalized
+        if self.path_algorithm == 'q_learning':
             self.setup_q_env()
             self.helper_obj.q_props = self.q_props
         else:
-            self.helper_obj.drl_props = self.drl_props
+            raise NotImplementedError
+            # self.helper_obj.drl_props = self.drl_props
 
         self.helper_obj.ai_props = self.ai_props
         self.helper_obj.engine_obj = self.engine_obj

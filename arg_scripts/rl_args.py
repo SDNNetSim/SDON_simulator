@@ -48,6 +48,7 @@ empty_q_props = {
     }
 }
 
+# TODO: Maybe generalize for each agent?
 empty_drl_props = {
     'min_arrival': np.inf,
     'max_arrival': -1 * np.inf,

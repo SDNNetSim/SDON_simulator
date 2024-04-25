@@ -106,12 +106,14 @@ OTHER_OPTIONS = {
         'requested_xt': ast.literal_eval,
     },
     'ai_settings': {
-        'ai_algorithm': str,
         'learn_rate': float,
         'discount_factor': float,
         'epsilon_start': float,
         'epsilon_end': float,
         'is_training': str,
+        'path_algorithm': str,
+        'core_algorithm': str,
+        'spectrum_algorithm': str,
     },
     'file_settings': {
     },
