@@ -61,6 +61,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj = RLHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj, route_obj=self.route_obj,
                                     q_props=self.q_props, drl_props=self.drl_props)
 
+        # TODO: Change name
+        self.paths_info = None
         self.path_algorithm = None
         # TODO: To get current/max future q
         self.level_index = None
@@ -78,15 +80,17 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.action_space = self.helper_obj.get_action_space()
 
     def _get_max_future_q(self, path_list):
-        new_cong = find_path_cong(path_list=path_list[0], net_spec_dict=self.engine_obj.net_spec_dict)
+        q_values = list()
+        new_cong = find_path_cong(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict)
         self.new_cong_index = self.helper_obj._classify_cong(curr_cong=new_cong)
-        max_future_q = None
+        path_index, path, _ = self.paths_info[self.ai_props['path_index']]
+        self.paths_info[self.ai_props['path_index']] = (path_index, path, self.new_cong_index)
 
-        # TODO: They will still often equal each other, split into more?
-        #   - Maybe another formulation to make more sense...
-        #   - Consider fragmentation and congestion, or just fragmentation...Increases complexity
-        #   - Still might be a more congested path is better or something similar
-        return max_future_q
+        for path_index, _, cong_index in self.paths_info:
+            curr_q = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']][path_index][cong_index]['q_value']
+            q_values.append(curr_q)
+
+        return np.max(q_values)
 
     def _update_routes_matrix(self, was_routed: bool):
         if was_routed:
@@ -96,7 +100,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
         current_q = routes_matrix[self.ai_props['path_index']][self.level_index]['q_value']
-        max_future_q = self._get_max_future_q(path_list=routes_matrix[self.ai_props['path_index']][0])
+        max_future_q = self._get_max_future_q(path_list=routes_matrix[self.ai_props['path_index']][0][0])
         delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
         td_error = current_q - (reward + self.engine_obj.engine_props['discount_factor'] * max_future_q)
         self.helper_obj.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error,
@@ -136,22 +140,22 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: May need to modify this
         self.ai_props['paths_list'] = routes_matrix[self.ai_props['source']][self.ai_props['destination']]['path']
 
-        paths_info = self.helper_obj.classify_paths(paths_list=self.ai_props['paths_list'])
+        self.paths_info = self.helper_obj.classify_paths(paths_list=self.ai_props['paths_list'])
         if self.ai_props['paths_list'].ndim != 1:
             self.ai_props['paths_list'] = self.ai_props['paths_list'][:, 0]
 
         if random_float < self.q_props['epsilon']:
             self.ai_props['path_index'] = np.random.choice(self.ai_props['k_paths'])
             # The level will always be the last index
-            self.level_index = paths_info[self.ai_props['paths_index']][-1]
+            self.level_index = self.paths_info[self.ai_props['paths_index']][-1]
 
             if self.ai_props['path_index'] == 1 and self.ai_props['k_paths'] == 1:
                 self.ai_props['path_index'] = 0
             self.ai_props['chosen_path'] = self.ai_props['paths_list'][self.ai_props['path_index']]
         else:
             self.ai_props['path_index'], self.ai_props['chosen_path'] = self.helper_obj.get_max_curr_q(
-                paths_info=paths_info)
-            self.level_index = paths_info[self.ai_props['path_index']][-1]
+                paths_info=self.paths_info)
+            self.level_index = self.paths_info[self.ai_props['path_index']][-1]
 
         if len(self.ai_props['chosen_path']) == 0:
             raise ValueError('The chosen path can not be None')
