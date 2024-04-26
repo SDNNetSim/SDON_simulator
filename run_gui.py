@@ -14,8 +14,10 @@ from PyQt5.QtCore import (
     QSize, Qt, QMutexLocker,
 )
 
-from sim_thread.simulation_thread import SimulationThread
-from labels.helper_labels import HoverLabel
+from gui.sim_thread.simulation_thread import SimulationThread
+from gui.labels.helper_labels import HoverLabel
+
+from data_scripts.structure_data import create_network
 
 
 # TODO: Double check coding guidelines document:
@@ -61,6 +63,11 @@ class MainWindow(QMainWindow):
         open_action = QAction('&Load Configuration from File', self)
         open_action.triggered.connect(self.open_file)
         file_menu.addAction(open_action)
+
+        # Display topology information from File menu
+        display_topology_action = QAction('&Display topology', self)
+        display_topology_action.triggered.connect(self.display_topology_info)
+        file_menu.addAction(display_topology_action)
 
         save_action = QAction('&Save', self)
         save_action.triggered.connect(self.save_file)
@@ -145,7 +152,7 @@ class MainWindow(QMainWindow):
 
         # path to play_button media file
         resource_name = "light-green-play-button.png"
-        media_dir = "media"
+        media_dir = "gui/media"
         self.start_button.setIcon(QIcon(os.path.join(os.getcwd(), media_dir, resource_name)))
         self.start_button.setText("Start")
         self.start_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
@@ -190,21 +197,21 @@ class MainWindow(QMainWindow):
         self.statusBar().setStyleSheet(
             "QStatusBar { background-color: #333; color: white; }" +
             "Qprogress_bar::chunk { background-color: #4CAF50; }" +
-            "Qprogress_bar { border: 2px solid grey; border-radius: 13px; text-align: right; color: black; background-color: #ddd;}"
+            "Qprogress_bar { border: 2px solid grey; border-radius: 13px;"
+            " text-align: right; color: black; background-color: #ddd;}"
         )
-        self.progress_bar.setStyleSheet("""
-			Qprogress_bar {
-				border: 2px solid grey;
-				border-radius: 8px;  /* Rounds the corners of the progress bar */
-				background-color: #ddd;
-			}
+        self.progress_bar.setStyleSheet('''
+        Qprogress_bar {
+            border: 2px solid grey;
+            border-radius: 8px;  /* Rounds the corners of the progress bar */
+            background-color: #ddd;
+        }
 
-			Qprogress_bar::chunk {
-				background-color: #4CAF50;  /* Color of the progress chunks */
-				margin: 0px; /* Optional: Adjusts the margin between chunks if needed */
-				border-radius: 6px;  /* Rounds the corners of the progress chunks */
-			}
-		""")
+        Qprogress_bar::chunk {
+            background-color: #4CAF50;  /* Color of the progress chunks */
+            margin: 0px; /* Optional: Adjusts the margin between chunks if needed */
+            border-radius: 6px;  /* Rounds the corners of the progress chunks */
+        }''')
         self.statusBar().addWidget(self.progress_bar)
         self.progress_bar.setVisible(False)
 
@@ -291,6 +298,14 @@ class MainWindow(QMainWindow):
         # Here, you can add code to handle the opening and reading of the selected file
 
     @staticmethod
+    def display_topology_info():
+        topology_information = create_network('USNet')
+
+        for src_des_tuple, link_len in topology_information.items():
+            src, des = src_des_tuple
+            print(f'source node {src}, destination node {des}, distance {link_len}')
+
+    @staticmethod
     def save_file():
         """
         Saves a file.
@@ -341,16 +356,15 @@ if __name__ == '__main__':
 
     # Set a custom font for tooltips if desired
     QToolTip.setFont(QFont('Arial', 10))
-    app.setStyleSheet("""
-		QToolTip {
-			background-color: #f5f5f5;
-			color: #333333;
-			border: 1px solid #dcdcdc;
-			padding: 4px;
-			border-radius: 4px;
-			opacity: 255;
-		}
-	""")
+    app.setStyleSheet('''
+    QToolTip {
+        background-color: #f5f5f5;
+        color: #333333;
+        border: 1px solid #dcdcdc;
+        padding: 4px;
+        border-radius: 4px;
+        opacity: 255;
+    }''')
 
     window = MainWindow()
     window.show()
