@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
         self.pause_button = QToolButton()
         self.stop_button = QToolButton()
         self.simulation_thread = None
+        self.data_layout = None
         self.init_ui()
 
     def init_ui(self):
@@ -129,13 +130,14 @@ class MainWindow(QMainWindow):
         # Setting the container widget as the central widget of the main window
         self.setCentralWidget(container_widget)
 
-        # Example content for the data display widget
-        data_layout = QVBoxLayout(data_display_widget)
+        # # Example content for the data display widget
+        self.data_layout = QVBoxLayout(data_display_widget)
         data_label = QLabel("Application Data Display", data_display_widget)
         data_label.setAlignment(Qt.AlignCenter)
         # Add hoverLabel to the layout
-        data_layout.addWidget(self.hover_label)
-        data_layout.addWidget(data_label)
+        self.data_layout.addWidget(self.hover_label)
+        self.data_layout.addWidget(data_label)
+        self.display_topology_info()
 
     def add_control_tool_bar(self):
         """
@@ -297,13 +299,24 @@ class MainWindow(QMainWindow):
             print(f"Selected file: {file_name}")
         # Here, you can add code to handle the opening and reading of the selected file
 
-    @staticmethod
-    def display_topology_info():
+    def display_topology_info(self):
+        """
+        Displays topology information in the central data display.
+        """
         topology_information = create_network('USNet')
 
+        # Clear any existing node information from the GUI
+        for i in reversed(range(self.data_layout.count())):
+            widget = self.data_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+
+        # Add QLabel widgets for each node to display their information
         for src_des_tuple, link_len in topology_information.items():
             src, des = src_des_tuple
-            print(f'source node {src}, destination node {des}, distance {link_len}')
+            node_info = f'Source node {src}, Destination node {des}, Distance {link_len}'
+            node_label = QLabel(node_info, self)
+            self.data_layout.addWidget(node_label)
 
     @staticmethod
     def save_file():
