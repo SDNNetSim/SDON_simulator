@@ -314,6 +314,7 @@ class MainWindow(QMainWindow):
         # Add QLabel widgets for each node to display their information
         for src_des_tuple, link_len in topology_information.items():
             src, des = src_des_tuple
+            # TODO: Display actual nodes and not text
             node_info = f'Source node {src}, Destination node {des}, Distance {link_len}'
             node_label = QLabel(node_info, self)
             self.data_layout.addWidget(node_label)
