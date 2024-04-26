@@ -274,6 +274,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
         req_id = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['req_id']
+
+        # print(req_id)
+
         if req_id in reqs_status_dict:
             was_allocated = True
         else:
@@ -423,11 +426,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.ai_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
         # TODO: Needs to be generalized
-        if self.path_algorithm == 'q_learning':
+        if self.path_algorithm == 'q_learning' and self.iteration == 0:
             self.setup_q_env()
             self.helper_obj.q_props = self.q_props
         else:
-            raise NotImplementedError
+            self.helper_obj.q_props = self.q_props
             # self.helper_obj.drl_props = self.drl_props
 
         self.helper_obj.ai_props = self.ai_props
@@ -448,7 +451,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
 # TODO: Max iters bug for q-learning
 # TODO: To be completed today:
-#   -
+#   - Shouldn't be taking this long, see what's going on
 if __name__ == '__main__':
     # TODO: How to add callbacks in bash scripts
     # TODO: Do this manually, takes too long for deep learning combined
@@ -461,7 +464,7 @@ if __name__ == '__main__':
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
     obs, info = env.reset()
     episode_reward = 0
-    max_episodes = 5
+    max_episodes = 2
     num_episodes = 0
     while True:
         # curr_action, _states = model.predict(obs)
