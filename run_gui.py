@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QDesktopWidget,
     QWidget, QToolButton, QProgressBar, QAction,
     QFileDialog, QLabel, QVBoxLayout,
-    QToolTip,
+    QToolTip, QInputDialog,
 )
 from PyQt5.QtGui import (
     QIcon, QFont,
@@ -297,13 +297,15 @@ class MainWindow(QMainWindow):
             print(f"Selected file: {file_name}")
         # Here, you can add code to handle the opening and reading of the selected file
 
-    @staticmethod
-    def display_topology_info():
-        topology_information = create_network('USNet')
-
-        for src_des_tuple, link_len in topology_information.items():
-            src, des = src_des_tuple
-            print(f'source node {src}, destination node {des}, distance {link_len}')
+    def display_topology_info(self):
+        items = ['USNet', 'NSFNet', 'Pan-European']
+        item, ok = QInputDialog.getItem(self, "Select Network Type",
+                                        "Choose a network type:", items, 0, False)
+        if ok and item:
+            topology_information = create_network(item)
+            for src_des_tuple, link_len in topology_information.items():
+                src, des = src_des_tuple
+                print(f'source node {src}, destination node {des}, distance {link_len}')
 
     @staticmethod
     def save_file():
