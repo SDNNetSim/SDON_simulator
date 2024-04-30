@@ -275,8 +275,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         reqs_status_dict = self.engine_obj.reqs_status_dict
         req_id = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['req_id']
 
-        # print(req_id)
-
         if req_id in reqs_status_dict:
             was_allocated = True
         else:
@@ -464,18 +462,25 @@ if __name__ == '__main__':
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
     obs, info = env.reset()
     episode_reward = 0
-    max_episodes = 2
+    max_episodes = 10
     num_episodes = 0
+    time_steps = 0
     while True:
         # curr_action, _states = model.predict(obs)
 
         obs, curr_reward, is_terminated, is_truncated, curr_info = env.step([0])
         episode_reward += curr_reward
+
+        time_steps += 1
+
+        # print(f'{time_steps} Time steps completed.')
+
         if num_episodes >= max_episodes:
             break
         if is_terminated or is_truncated:
             obs, info = env.reset()
             num_episodes += 1
+            print(f'{num_episodes} episodes completed.')
     #
     # # TODO: Save this to a file or plot
     print(episode_reward / max_episodes)

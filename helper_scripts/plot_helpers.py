@@ -26,7 +26,8 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         self.data_dict = None
 
     def _find_ai_stats(self, cores_per_link: int):
-        ai_fp = os.path.join('..', 'data', 'ai', 'models', self.data_dict['network'], self.data_dict['date'], self.time)
+        # TODO: Generalize, also make sure to save date of simulation!
+        ai_fp = os.path.join('..', 'logs', 'ql', self.data_dict['network'], self.time)
         ai_fp = os.path.join(ai_fp, f"e{self.erlang}_params_c{cores_per_link}.json")
 
         ai_dict = self._read_json_file(file_path=ai_fp)
@@ -146,7 +147,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                     self._find_mod_info()
                     self._find_snapshot_usage()
                     self._find_misc_stats()
-                    if input_dict['ai_algorithm'] is not None and input_dict['ai_algorithm'] != 'None':
+                    if input_dict['path_algorithm'] is not None and input_dict['path_algorithm'] != 'None':
                         self._find_ai_stats(cores_per_link=input_dict['cores_per_link'])
 
     def get_file_info(self, sims_info_dict: dict):

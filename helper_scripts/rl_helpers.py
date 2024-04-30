@@ -125,7 +125,8 @@ class RLHelpers:
 
         max_iters = self.engine_obj.engine_props['max_iters']
         num_requests = self.engine_obj.engine_props['num_requests']
-        if iteration == max_iters and len_rewards == num_requests:
+
+        if iteration == (max_iters - 1) and len_rewards == num_requests:
             self.completed_sim = True
             rewards_dict = self.q_props['rewards_dict'][stats_flag]['rewards']
             errors_dict = self.q_props['errors_dict'][stats_flag]['errors']
