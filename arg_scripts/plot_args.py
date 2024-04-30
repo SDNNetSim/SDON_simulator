@@ -36,6 +36,7 @@ empty_plot_dict = {
     'learn_rate': None,
     'discount_factor': None,
 
+    'block_per_iter': [],
     'sum_rewards_list': [],
     'sum_errors_list': [],
     'epsilon_list': [],

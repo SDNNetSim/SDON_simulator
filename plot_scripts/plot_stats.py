@@ -159,13 +159,14 @@ class PlotStats:
         Plots the average blocking probability for each Erlang value.
         """
         self._setup_plot("Average Blocking Prob. vs. Erlang", y_label='Average Blocking Probability',
-                         x_label='Erlang', y_ticks=True, y_lim=[])
+                         x_label='Time Steps', y_ticks=False, x_ticks=False, y_lim=[])
 
         if not ai:
             self._plot_helper_one(x_vals='erlang_list', y_vals_list=['blocking_list'],
                                   legend_val_list=['QRC', 'k=3', 'k=1'], force_legend=True, file_name='average_bp')
         else:
-            self._plot_helper_two(y_vals_list=['blocking_list'], erlang=250, file_name='bp_e{250}')
+            # TODO: Make block per iter a matrix, for each Erlang
+            self._plot_helper_two(y_vals_list=['block_per_iter'], erlang=250, file_name='bp_e{250}')
 
 
 def main():
@@ -186,7 +187,7 @@ def main():
     sims_info_dict = find_times(dates_dict={'0430': 'NSFNet'}, filter_dict=filter_dict)
     plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
-    # plot_obj.plot_blocking(ai=True)
+    plot_obj.plot_blocking(ai=True)
     # plot_obj.plot_path_length()
     # plot_obj.plot_hops()
     # plot_obj.plot_block_reasons()

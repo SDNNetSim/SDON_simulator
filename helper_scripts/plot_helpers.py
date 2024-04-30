@@ -138,9 +138,12 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
                     self.plot_props['erlang_dict'] = self.erlang_dict
                     blocking_mean = self.plot_props['erlang_dict']['blocking_mean']
+                    last_iter = list(self.erlang_dict['iter_stats'].keys())[-1]
                     if blocking_mean is None:
-                        last_iter = list(self.erlang_dict['iter_stats'].keys())[-1]
                         blocking_mean = mean(self.erlang_dict['iter_stats'][last_iter]['sim_block_list'])
+
+                    block_per_iter = self.erlang_dict['iter_stats'][last_iter]['sim_block_list']
+                    self.plot_props['plot_dict'][time][sim_num]['block_per_iter'].append(block_per_iter)
                     self.plot_props['plot_dict'][time][sim_num]['blocking_list'].append(blocking_mean)
 
                     self._find_sim_info(input_dict=input_dict)
