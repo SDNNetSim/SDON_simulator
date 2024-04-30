@@ -462,7 +462,7 @@ if __name__ == '__main__':
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
     obs, info = env.reset()
     episode_reward = 0
-    max_episodes = 10
+    max_episodes = 100
     num_episodes = 0
     time_steps = 0
     while True:
