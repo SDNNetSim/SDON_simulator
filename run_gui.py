@@ -115,7 +115,7 @@ class MainWindow(QMainWindow):
 
         # path to operator media file
         resource_name = "operator.png"
-        media_dir = "media"
+        media_dir = "gui/media"
         self.hover_label.setIcon(os.path.join(os.getcwd(), media_dir, resource_name))
 
         operator_status_info = {"ID": "n/a", "Region": "North America", "Connection Status": "Unknown"}
