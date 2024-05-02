@@ -5,7 +5,8 @@ from arg_scripts.rl_args import empty_q_props
 
 
 # TODO: Generalize as many functions as you can, probably will move QLearning to another script
-class QLearning:
+# TODO: Probably need to standardize function names for this to be generalized
+class QLearningHelpers:
     def __init__(self):
         self.props = empty_q_props
 
