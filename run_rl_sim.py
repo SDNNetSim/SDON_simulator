@@ -30,7 +30,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     metadata = dict()
 
-    def __init__(self, render_mode: str = None, custom_callback: object = None, **kwargs):
+    # TODO: This will already have access to sim dict and everything
+    def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None, **kwargs):
         super().__init__()
 
         # TODO: Double check constructors used, probably won't need many now
@@ -39,7 +40,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.q_props = copy.deepcopy(empty_q_props)
         self.drl_props = copy.deepcopy(empty_drl_props)
 
-        self.sim_dict = dict()
+        self.sim_dict = sim_dict
 
         self.iteration = 0
         self.options = None
@@ -54,14 +55,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # TODO: Not sure how I'll init constructor vars just yet
         self.multi_agent_obj = {
-            'path_agent': PathAgent(),
-            'core_agent': CoreAgent(),
-            'spectrum_agent': SpectrumAgent(),
+            'path_agent': PathAgent(path_algorithm=sim_dict['path_algorithm']),
+            # 'core_agent': CoreAgent(),
+            # 'spectrum_agent': SpectrumAgent(),
         }
-
-        self.path_algorithm = None
-        self.core_algorithm = None
-        self.spectrum_algorithm = None
 
         self.paths_obj = None
         # Used to determine level of congestion, fragmentation, etc. for the q-learning algorithm

@@ -1,6 +1,6 @@
 class PathAgent:
-    def __init__(self):
-        raise NotImplementedError
+    def __init__(self, path_algorithm: str):
+        self.path_algorithm = path_algorithm
 
     def setup_env(self):
         raise NotImplementedError
