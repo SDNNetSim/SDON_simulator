@@ -96,6 +96,12 @@ class CoreAgent:
         raise NotImplementedError
 
 
+# The spectrum was almost to maximum capacity, there will be blocking but it's not the agent's fault
+# Put the start index to zero (which will block regardless of what it is), but don't penalize the agent
+# if self.no_penalty:
+#     start_index = 0
+# else:
+#     start_index = self.super_channel_indexes[self.super_channel][0]
 class SpectrumAgent:
     def __init__(self, spectrum_algorithm: str, rl_props: dict):
         self.spectrum_algorithm = spectrum_algorithm

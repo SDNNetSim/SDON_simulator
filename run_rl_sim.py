@@ -103,7 +103,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def step(self, action: list):
         self._update_helper_obj(action=action)
-        # TODO: Make sure route object has the selected path for q-learning
         self.rl_help_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
         req_id = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['req_id']
@@ -201,8 +200,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # TODO: Keep an eye on this, used to be sim dict but now I'm confused as to what it actually does
         self.sim_props = create_input(base_fp=base_fp, engine_props=self.sim_dict)
-        save_input(base_fp=base_fp, properties=self.sim_props, file_name=file_name,
-                   data_dict=self.sim_props)
+        modified_props = copy.deepcopy(self.sim_props)
+        if 'topology' in self.sim_props:
+            modified_props.pop('topology')
+            modified_props.pop('callback')
+
+        save_input(base_fp=base_fp, properties=modified_props, file_name=file_name,
+                   data_dict=modified_props)
 
     def setup(self):
         """
@@ -226,6 +230,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props['arrival_list'] = list()
         self.rl_props['depart_list'] = list()
 
+        # TODO: Doesn't really make sense in the config file
         if self.optimize or self.optimize is None:
             # TODO: These will have to be modified
             # TODO: Not sure if q and drl props are needed?
