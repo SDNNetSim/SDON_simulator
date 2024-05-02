@@ -2,14 +2,16 @@ from .ql_helpers import QLearningHelpers
 
 
 class PathAgent:
-    def __init__(self, path_algorithm: str):
+    def __init__(self, path_algorithm: str, engine_props: dict, rl_props: dict):
         self.path_algorithm = path_algorithm
+        self.engine_props = engine_props
+        self.rl_props = rl_props
 
         self.agent_obj = None
 
     def setup_env(self):
         if self.path_algorithm == 'q_learning':
-            self.agent_obj = QLearningHelpers()
+            self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
         else:
             raise NotImplementedError
 

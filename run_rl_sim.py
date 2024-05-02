@@ -24,7 +24,7 @@ from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAge
 # TODO: Plan is to run and debug the path agent today with new formulations
 #   - Run overnight the path agent considering cong. and frag.
 #   - Not sure how my formulation will be for this just yet
-#
+# TODO: ONLY use props in each object, do not duplicate here (Write in a standard?)
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
@@ -55,7 +55,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                                     q_props=self.q_props, drl_props=self.drl_props)
 
         # TODO: Core and spectrum agents
-        self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'])
+        # TODO: I have self.engine_props and then engine props in the actual object...
+        self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'], rl_props=self.rl_props,
+                                    engine_props=self.engine_obj.engine_props)
 
         self.paths_obj = None
         # Used to determine level of congestion, fragmentation, etc. for the q-learning algorithm
@@ -205,9 +207,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
                                  sdn_props=self.rl_props['mock_sdn_dict'])
 
-        self.engine_props = create_input(base_fp=base_fp, engine_props=self.sim_dict)
-        save_input(base_fp=base_fp, properties=self.engine_props, file_name=file_name,
-                   data_dict=self.engine_props)
+        # TODO: Keep an eye on this, used to be sim dict but now I'm confused as to what it actually does
+        self.sim_props = create_input(base_fp=base_fp, engine_props=self.sim_dict)
+        save_input(base_fp=base_fp, properties=self.sim_props, file_name=file_name,
+                   data_dict=self.sim_props)
 
     def setup(self):
         """

@@ -7,23 +7,12 @@ from arg_scripts.rl_args import empty_q_props
 # TODO: Generalize as many functions as you can, probably will move QLearning to another script
 # TODO: Probably need to standardize function names for this to be generalized
 class QLearningHelpers:
-    def __init__(self):
+    def __init__(self, rl_props: dict, engine_props: dict):
+        # TODO: Props in its own object called props (standards and guidelines)
         self.props = empty_q_props
-
-    def setup_env(self):
-        self.q_props['epsilon'] = self.engine_obj.engine_props['epsilon_start']
-        route_types = [('path', 'O'), ('q_value', 'f8')]
-        core_types = [('path', 'O'), ('core_action', 'i8'), ('q_value', 'f8')]
-        # TODO: Modification here (low, medium, high)
-        path_levels = 3
-
-        self.q_props['routes_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
-                                                  self.rl_props['k_paths'], path_levels), dtype=route_types)
-        self.q_props['cores_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
-                                                 self.rl_props['k_paths'],
-                                                 self.engine_obj.engine_props['cores_per_link']), dtype=core_types)
-
-        self._init_q_tables()
+        self.engine_props = engine_props
+        self.rl_props = rl_props
+        self.path_levels = 3
 
     def _init_q_tables(self):
         for source in range(0, self.rl_props['num_nodes']):
@@ -46,6 +35,20 @@ class QLearningHelpers:
                     # for core_action in range(self.engine_obj.engine_props['cores_per_link']):
                     #     self.q_props['cores_matrix'][source, destination, k, core_action] = (curr_path, core_action,
                     #                                                                          0.0)
+
+    def setup_env(self):
+        self.props['epsilon'] = self.engine_props['epsilon_start']
+        route_types = [('path', 'O'), ('q_value', 'f8')]
+        core_types = [('path', 'O'), ('core_action', 'i8'), ('q_value', 'f8')]
+
+        self.props['routes_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
+                                                self.rl_props['k_paths'], self.path_levels), dtype=route_types)
+
+        self.props['cores_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
+                                               self.rl_props['k_paths'],
+                                               self.engine_props['cores_per_link']), dtype=core_types)
+
+        self._init_q_tables()
 
     def get_max_future_q(self, path_list):
         q_values = list()
