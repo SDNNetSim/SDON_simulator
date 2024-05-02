@@ -59,6 +59,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: I have self.engine_props and then engine props in the actual object...
         self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'], rl_props=self.rl_props,
                                     engine_props={}, rl_help_obj=self.rl_help_obj)
+        # TODO: Hard coded algorithm, change
+        self.spectrum_agent = SpectrumAgent(spectrum_algorithm='ppo', rl_props=self.rl_props)
 
         self.paths_obj = None
         # Used to determine level of congestion, fragmentation, etc. for the q-learning algorithm
@@ -66,10 +68,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
-        # TODO: Change for multi-agent (DQN, PPO, A2C)
-        self.observation_space = self.rl_help_obj.get_obs_space()
-        # TODO: Change for multi-agent (DQN, PPO, A2C)
-        self.action_space = self.rl_help_obj.get_action_space()
+        self.observation_space = self.spectrum_agent.get_obs_space()
+        self.action_space = self.spectrum_agent.get_action_space()
 
     def _check_terminated(self):
         if self.rl_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):

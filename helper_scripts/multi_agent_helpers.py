@@ -1,7 +1,7 @@
 import numpy as np
 
+from gymnasium import spaces
 from .ql_helpers import QLearningHelpers
-from .rl_helpers import RLHelpers
 
 
 class PathAgent:
@@ -40,7 +40,8 @@ class PathAgent:
                 self.rl_props['path_index'] = 0
             self.rl_props['chosen_path'] = self.rl_props['paths_list'][self.rl_props['path_index']]
         else:
-            self.rl_props['path_index'], self.rl_props['chosen_path'] = self.agent_obj.get_max_curr_q(paths_info=self.cong_list)
+            self.rl_props['path_index'], self.rl_props['chosen_path'] = self.agent_obj.get_max_curr_q(
+                paths_info=self.cong_list)
             self.level_index = self.cong_list[self.rl_props['path_index']][-1]
 
     def _ql_route(self):
@@ -96,9 +97,11 @@ class CoreAgent:
 
 
 class SpectrumAgent:
-    def __init__(self):
-        raise NotImplementedError
+    def __init__(self, spectrum_algorithm: str, rl_props: dict):
+        self.spectrum_algorithm = spectrum_algorithm
+        self.rl_props = rl_props
 
+    # TODO: Change, hard-coded
     def _ppo_obs_space(self):
         """
         Gets the observation space for the DRL agent.
@@ -106,18 +109,20 @@ class SpectrumAgent:
         :return: The observation space.
         :rtype: spaces.Dict
         """
-        self.find_maximums()
         resp_obs = spaces.Dict({
-            'slots_needed': spaces.Discrete(self.drl_props['max_slots_needed'] + 1),
-            'source': spaces.MultiBinary(self.ai_props['num_nodes']),
-            'destination': spaces.MultiBinary(self.ai_props['num_nodes']),
-            # TODO: Change
+            'slots_needed': spaces.Discrete(15 + 1),
+            'source': spaces.MultiBinary(self.rl_props['num_nodes']),
+            'destination': spaces.MultiBinary(self.rl_props['num_nodes']),
             'super_channels': spaces.Box(-0.01, 100.0, shape=(3,), dtype=np.float32)
         })
 
         return resp_obs
 
-    # TODO: Change
+    def get_obs_space(self):
+        if self.spectrum_algorithm == 'ppo':
+            return self._ppo_obs_space()
+
+    # TODO: Change hard-coded
     @staticmethod
     def _ppo_action_space(super_channel_space: int = 3):
         """
@@ -130,11 +135,9 @@ class SpectrumAgent:
         action_space = spaces.Discrete(super_channel_space)
         return action_space
 
-    def get_obs(self):
-        raise NotImplementedError
-
-    def get_action(self):
-        raise NotImplementedError
+    def get_action_space(self):
+        if self.spectrum_algorithm == 'ppo':
+            return self._ppo_obs_space()
 
     @staticmethod
     def _calc_deep_reward(was_allocated: bool):
