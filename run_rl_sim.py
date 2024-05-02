@@ -302,12 +302,22 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
-def _run_iter():
-    raise NotImplementedError
+def _run_iters(env: object, sim_dict: dict):
+    completed_episodes = 0
+    while True:
+        # TODO: Stepping with zero?
+        obs, curr_reward, is_terminated, is_truncated, curr_info = env.step([0])
+        if completed_episodes >= sim_dict['max_iters']:
+            break
+        if is_terminated or is_truncated:
+            obs, info = env.reset()
+            completed_episodes += 1
+            print(f'{completed_episodes} episodes completed out of {sim_dict["max_iters"]}.')
 
 
 def _run_testing(env: object, sim_dict: dict):
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
+    # curr_action, _states = model.predict(obs)
     raise NotImplementedError
 
 
@@ -342,7 +352,7 @@ def _print_train_info(sim_dict: dict):
 def _run_training(env: object, sim_dict: dict):
     _print_train_info(sim_dict=sim_dict)
     if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
-        raise NotImplementedError
+        _run_iters(env=env, sim_dict=sim_dict)
     elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
         model = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
         # TODO: This should come from the yml file actually (total time steps and print step)?
