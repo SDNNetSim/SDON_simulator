@@ -301,21 +301,31 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
-# TODO: Max iters bug for q-learning
-# TODO: To be completed today:
-#   - Shouldn't be taking this long, see what's going on
-if __name__ == '__main__':
-    # TODO: How to add callbacks in bash scripts
-    # TODO: Do this manually, takes too long for deep learning combined
+def _run_iteration():
+    raise NotImplementedError
+
+
+def _setup_rl_sim():
+    raise NotImplementedError
+
+
+# TODO: To run RLZoo by command line here, we only need to run this script!
+# TODO: Maybe also run register env and other important things similar to that
+# TODO: Need configuration file input here, then input it into the SimEnv model
+def run_rl_sim():
     callback = GetModelParams()
-    env = SimEnv(render_mode=None, algorithm='PPO', custom_callback=callback, train_algorithm='ppo')
+    env = SimEnv(render_mode=None, custom_callback=callback)
+    # TODO: They're never meant to train together, only test
+    #   - How to handle something like this...
     # model = PPO("MultiInputPolicy", env, verbose=1, device='cpu')
     # model.learn(total_timesteps=500000, log_interval=1, callback=callback)
 
     # model.save('./logs/best_PPO_model.zip')
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
     obs, info = env.reset()
+    # TODO: Reward should be saved in their individual files, not needed here
     episode_reward = 0
+    # TODO: Taken from max iterations not here
     max_episodes = 100
     num_episodes = 0
     time_steps = 0
@@ -339,3 +349,7 @@ if __name__ == '__main__':
     # # TODO: Save this to a file or plot
     print(episode_reward / max_episodes)
     # obs, info = env.reset()
+
+
+if __name__ == '__main__':
+    run_rl_sim()
