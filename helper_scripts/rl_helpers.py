@@ -17,10 +17,10 @@ class RLHelpers:
     Contains methods to assist with reinforcement learning simulations.
     """
 
-    def __init__(self, ai_props: dict, engine_obj: object, route_obj: object, q_props: dict, drl_props: dict):
+    def __init__(self, rl_props: dict, engine_obj: object, route_obj: object, q_props: dict, drl_props: dict):
         # TODO: Check for variables used and unused
         #   - Improve naming
-        self.ai_props = ai_props
+        self.rl_props = rl_props
         self.q_props = q_props
         self.drl_props = drl_props
 
@@ -59,14 +59,14 @@ class RLHelpers:
         :return: A matrix of super-channels with their fragmentation score.
         :rtype: list
         """
-        path_list = self.ai_props['paths_list'][self.ai_props['path_index']]
+        path_list = self.rl_props['paths_list'][self.rl_props['path_index']]
         sc_index_mat, hfrag_arr = get_hfrag(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict,
-                                            spectral_slots=self.ai_props['spectral_slots'], core_num=self.core_num,
+                                            spectral_slots=self.rl_props['spectral_slots'], core_num=self.core_num,
                                             slots_needed=slots_needed)
 
         self.super_channel_indexes = sc_index_mat[0:num_channels]
         # There were not enough super-channels, do not penalize the agent
-        if len(self.super_channel_indexes) < self.ai_props['super_channel_space']:
+        if len(self.super_channel_indexes) < self.rl_props['super_channel_space']:
             self.no_penalty = True
         else:
             self.no_penalty = False
@@ -77,9 +77,9 @@ class RLHelpers:
             resp_frag_mat.append(hfrag_arr[start_index])
 
         resp_frag_mat = np.where(np.isinf(resp_frag_mat), 100.0, resp_frag_mat)
-        difference = self.ai_props['super_channel_space'] - len(resp_frag_mat)
+        difference = self.rl_props['super_channel_space'] - len(resp_frag_mat)
 
-        if len(resp_frag_mat) < self.ai_props['super_channel_space'] or np.any(np.isinf(resp_frag_mat)):
+        if len(resp_frag_mat) < self.rl_props['super_channel_space'] or np.any(np.isinf(resp_frag_mat)):
             for _ in range(difference):
                 resp_frag_mat = np.append(resp_frag_mat, 100.0)
 
@@ -129,7 +129,7 @@ class RLHelpers:
         for bandwidth, mod_obj in self.engine_obj.engine_props['mod_per_bw'].items():
             bandwidth_percent = self.engine_obj.engine_props['request_distribution'][bandwidth]
             if bandwidth_percent > 0:
-                self.ai_props['bandwidth_list'].append(bandwidth)
+                self.rl_props['bandwidth_list'].append(bandwidth)
             for _, data_obj in mod_obj.items():
                 if data_obj['slots_needed'] > self.drl_props['max_slots_needed'] and bandwidth_percent > 0:
                     self.drl_props['max_slots_needed'] = data_obj['slots_needed']
@@ -140,9 +140,9 @@ class RLHelpers:
         """
         Checks if a request or multiple requests need to be released.
         """
-        curr_time = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['arrive']
+        curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
 
-        for _, req_obj in enumerate(self.ai_props['depart_list']):
+        for _, req_obj in enumerate(self.rl_props['depart_list']):
             if req_obj['depart'] <= curr_time:
                 self.engine_obj.handle_release(curr_time=req_obj['depart'])
 
@@ -153,7 +153,7 @@ class RLHelpers:
         :param route_obj: The Routing class.
         """
         path_matrix = [route_obj.route_props['paths_list'][self.path_index]]
-        curr_time = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['arrive']
+        curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
 
         # The spectrum was almost to maximum capacity, there will be blocking but it's not the agent's fault
         # Put the start index to zero (which will block regardless of what it is), but don't penalize the agent
@@ -196,8 +196,7 @@ class RLHelpers:
 
         return mock_sdn
 
-    # TODO: You could argue this belongs in rl_helpers instead
-    def _reset_reqs_dict(self, seed: int):
+    def reset_reqs_dict(self, seed: int):
         self.engine_obj.generate_requests(seed=seed)
         self.min_arrival = np.inf
         self.max_arrival = -1 * np.inf

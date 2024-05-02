@@ -51,8 +51,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.engine_obj = None
         self.route_obj = None
-        self.helper_obj = RLHelpers(ai_props=self.rl_props, engine_obj=self.engine_obj, route_obj=self.route_obj,
-                                    q_props=self.q_props, drl_props=self.drl_props)
+        # TODO: These are no longer the updated props...(Q props, drl props)
+        self.rl_help_obj = RLHelpers(rl_props=self.rl_props, engine_obj=self.engine_obj, route_obj=self.route_obj,
+                                     q_props=self.q_props, drl_props=self.drl_props)
 
         # TODO: Core and spectrum agents
         # TODO: I have self.engine_props and then engine props in the actual object...
@@ -66,9 +67,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
         # TODO: Change for multi-agent (DQN, PPO, A2C)
-        self.observation_space = self.helper_obj.get_obs_space()
+        self.observation_space = self.rl_help_obj.get_obs_space()
         # TODO: Change for multi-agent (DQN, PPO, A2C)
-        self.action_space = self.helper_obj.get_action_space()
+        self.action_space = self.rl_help_obj.get_action_space()
 
     def _check_terminated(self):
         if self.rl_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
@@ -77,7 +78,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             # TODO: Update amount
             if self.path_algorithm == 'q_learning':
                 amount = 0
-                # self.helper_obj.decay_epsilon(amount=amount, iteration=self.iteration)
+                # self.rl_help_obj.decay_epsilon(amount=amount, iteration=self.iteration)
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
             self.iteration += 1
         else:
@@ -87,9 +88,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _update_helper_obj(self, action: list):
         # TODO: Want spectrum assignment to do this
-        self.helper_obj.path_index = self.rl_props['path_index']
+        self.rl_help_obj.path_index = self.rl_props['path_index']
         # TODO: No more picking a core for now
-        # self.helper_obj.core_num = self.rl_props['core_index']
+        # self.rl_help_obj.core_num = self.rl_props['core_index']
 
         # TODO: First or best fit, depends on configuration file
         # if self.path_algorithm == 'q_learning':
@@ -99,22 +100,22 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         #   - Only valid super-channels
         #   - If None, block
         #       - Reward will be zero in this case
-        # self.helper_obj.super_channel = action
+        # self.rl_help_obj.super_channel = action
         # self._error_check_actions()
 
         if self.path_algorithm == 'q_learning':
-            self.helper_obj.q_props = self.q_props
+            self.rl_help_obj.q_props = self.q_props
         else:
-            self.helper_obj.drl_props = self.drl_props
+            self.rl_help_obj.drl_props = self.drl_props
 
-        self.helper_obj.ai_props = self.rl_props
-        self.helper_obj.engine_obj = self.engine_obj
-        self.helper_obj.handle_releases()
+        self.rl_help_obj.ai_props = self.rl_props
+        self.rl_help_obj.engine_obj = self.engine_obj
+        self.rl_help_obj.handle_releases()
 
     def step(self, action: list):
         self._update_helper_obj(action=action)
         # TODO: Make sure route object has the selected path for q-learning
-        self.helper_obj.allocate(route_obj=self.route_obj)
+        self.rl_help_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
         req_id = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['req_id']
 
@@ -124,7 +125,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             was_allocated = False
         self._update_snapshots()
 
-        drl_reward = self.helper_obj.calculate_drl_reward(was_allocated=was_allocated)
+        drl_reward = self.rl_help_obj.calculate_drl_reward(was_allocated=was_allocated)
 
         if self.path_algorithm == 'q_learning':
             self._update_routes_matrix(was_routed=was_allocated)
@@ -141,6 +142,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _get_info():
         return dict()
 
+    # TODO: Split this up into more functions
     def _get_obs(self):
         # Used when we reach a reset after a simulation has finished (reset automatically called by gymnasium, use
         # placeholder variable)
@@ -151,15 +153,15 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.rl_props['source'] = int(curr_req['source'])
         self.rl_props['destination'] = int(curr_req['destination'])
-        self.rl_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
-        if self.path_algorithm == 'q_learning':
+        self.rl_props['mock_sdn_dict'] = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
+        if self.sim_dict['path_algorithm'] == 'q_learning':
             self.get_route()
-            # TODO: Core for now will be first-fit in spectrum assignment only
-            # self.get_core()
             path_len = find_path_len(path_list=self.rl_props['paths_list'][self.rl_props['path_index']],
                                      topology=self.engine_obj.topology)
             path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
         # TODO: At the moment only works for SPF-FF
+        # TODO: Core for now will be first-fit in spectrum assignment only
+        # self.get_core()
         else:
             self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
             self.route_obj.get_route()
@@ -172,7 +174,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
         else:
             slots_needed = 0
-        # super_channels = self.helper_obj.get_super_channels(slots_needed=slots_needed,
+        # super_channels = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
         #                                                     num_channels=self.super_channel_space)
 
         source_obs = np.zeros(self.rl_props['num_nodes'])
@@ -229,6 +231,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.sim_dict['holding_time']
         self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.sim_dict['cores_per_link']
 
+    # TODO: Split this up into more functions
     def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
         super().reset(seed=seed)
         self.rl_props['arrival_list'] = list()
@@ -255,18 +258,16 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             raise NotImplementedError
 
-        # TODO: Not sure about these variables...Everything below this needs a new method
-        self.helper_obj.ai_props = self.rl_props
-        self.helper_obj.engine_obj = self.engine_obj
-        self.helper_obj.route_obj = self.route_obj
+        self.rl_help_obj.rl_props = self.rl_props
+        self.rl_help_obj.engine_obj = self.engine_obj
+        self.rl_help_obj.route_obj = self.route_obj
 
         # TODO: Generalize (Ask about this)
         if seed is None:
             # seed = self.iteration
             seed = 0
 
-        self._reset_reqs_dict(seed=seed)
-
+        self.rl_help_obj.reset_reqs_dict(seed=seed)
         obs = self._get_obs()
         info = self._get_info()
         return obs, info
