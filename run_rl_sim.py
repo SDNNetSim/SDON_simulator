@@ -14,24 +14,12 @@ from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
 from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod, find_path_cong
-from arg_scripts.rl_args import empty_drl_props, empty_q_props, empty_ai_props
+from arg_scripts.rl_args import empty_drl_props, empty_q_props, empty_rl_props
+from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
 
 
-# TODO: General layout of the script is as follows:
-#   - Be able to select an algorithm you want to run
-#       - This may be multiple algorithms!
-#   - Have input
-#       - Move all input to the configuration file
-#       - What we want to do for path selection, core selection, and spectrum assignment
-#   - We may also be able to load existing model's from each of the above
-
-
-# TODO: RL sim is the main script, only things related to actually running the simulation
-#   - multi_agent_helpers is a script this script calls and handles things related to the agents
-#   - Three classes, where each class has a similar structure
-#   - rl_helpers are general helpers that either this script or multi agent helpers can use
-
-# TODO: Account for command line input (while we are developing this?)
+# TODO: Account for command line input
+#   - Run command line input in this script
 # TODO: AI props should be RL props
 # TODO: Only support for s1
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
@@ -42,8 +30,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def __init__(self, render_mode: str = None, custom_callback: object = None, **kwargs):
         super().__init__()
-        # TODO: Props will for sure change (ql props, dqn props, etc...)
-        self.ai_props = copy.deepcopy(empty_ai_props)
+        self.rl_props = copy.deepcopy(empty_rl_props)
+        self.rl_props['super_channel_space'] = None
         self.q_props = copy.deepcopy(empty_q_props)
         self.drl_props = copy.deepcopy(empty_drl_props)
 
@@ -58,36 +46,41 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj = None
         self.route_obj = None
         # TODO: Define multi-agent helpers (separately)
-        self.helper_obj = RLHelpers(ai_props=self.ai_props, engine_obj=self.engine_obj, route_obj=self.route_obj,
+        self.helper_obj = RLHelpers(ai_props=self.rl_props, engine_obj=self.engine_obj, route_obj=self.route_obj,
                                     q_props=self.q_props, drl_props=self.drl_props)
 
-        # TODO: Change name
-        self.paths_info = None
+        # TODO: Not sure how I'll init constructor vars just yet
+        self.multi_agent_obj = {
+            'path_agent': PathAgent(),
+            'core_agent': CoreAgent(),
+            'spectrum_agent': SpectrumAgent(),
+        }
+
         self.path_algorithm = None
-        # TODO: To get current/max future q
-        self.level_index = None
         self.core_algorithm = None
         self.spectrum_algorithm = None
-        self.ai_props['super_channel_space'] = None
+
+        self.paths_obj = None
+        # Used to determine level of congestion, fragmentation, etc. for the q-learning algorithm
+        self.level_index = None
 
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
-        self.helper_obj.find_maximums()
-
-        # TODO: Observations will be different for each agent, this is now multi-agent
+        # TODO: Change for multi-agent (DQN, PPO, A2C)
         self.observation_space = self.helper_obj.get_obs_space()
-        # TODO: Actions will be different for each agent
+        # TODO: Change for multi-agent (DQN, PPO, A2C)
         self.action_space = self.helper_obj.get_action_space()
 
     def _get_max_future_q(self, path_list):
         q_values = list()
         new_cong = find_path_cong(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict)
         self.new_cong_index = self.helper_obj._classify_cong(curr_cong=new_cong)
-        path_index, path, _ = self.paths_info[self.ai_props['path_index']]
-        self.paths_info[self.ai_props['path_index']] = (path_index, path, self.new_cong_index)
+        path_index, path, _ = self.paths_obj[self.rl_props['path_index']]
+        self.paths_obj[self.rl_props['path_index']] = (path_index, path, self.new_cong_index)
 
-        for path_index, _, cong_index in self.paths_info:
-            curr_q = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']][path_index][cong_index]['q_value']
+        for path_index, _, cong_index in self.paths_obj:
+            curr_q = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']][path_index][
+                cong_index]['q_value']
             q_values.append(curr_q)
 
         return np.max(q_values)
@@ -98,9 +91,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             reward = -1.0
 
-        routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
-        current_q = routes_matrix[self.ai_props['path_index']][self.level_index]['q_value']
-        max_future_q = self._get_max_future_q(path_list=routes_matrix[self.ai_props['path_index']][0][0])
+        routes_matrix = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
+        current_q = routes_matrix[self.rl_props['path_index']][self.level_index]['q_value']
+        max_future_q = self._get_max_future_q(path_list=routes_matrix[self.rl_props['path_index']][0][0])
         delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
         td_error = current_q - (reward + self.engine_obj.engine_props['discount_factor'] * max_future_q)
         self.helper_obj.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error,
@@ -109,8 +102,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         engine_props = self.engine_obj.engine_props
         new_q = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
 
-        routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
-        routes_matrix[self.ai_props['path_index']]['q_value'] = new_q
+        routes_matrix = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
+        routes_matrix[self.rl_props['path_index']]['q_value'] = new_q
 
     def _update_cores_matrix(self, was_routed: bool):
         if was_routed:
@@ -118,9 +111,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             reward = -1.0
 
-        q_cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']]
-        q_cores_matrix = q_cores_matrix[self.ai_props['destination']][self.ai_props['path_index']]
-        current_q = q_cores_matrix[self.ai_props['core_index']]['q_value']
+        q_cores_matrix = self.q_props['cores_matrix'][self.rl_props['source']]
+        q_cores_matrix = q_cores_matrix[self.rl_props['destination']][self.rl_props['path_index']]
+        current_q = q_cores_matrix[self.rl_props['core_index']]['q_value']
         max_future_q = (self.callback.value_estimate * 100.0)
         delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
         self.helper_obj.update_q_stats(reward=reward, stats_flag='cores_dict', td_error=delta, iteration=self.iteration)
@@ -128,8 +121,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         engine_props = self.engine_obj.engine_props
         new_q_core = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
 
-        cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']][self.ai_props['destination']]
-        cores_matrix[self.ai_props['path_index']][self.ai_props['core_index']]['q_value'] = new_q_core
+        cores_matrix = self.q_props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
+        cores_matrix[self.rl_props['path_index']][self.rl_props['core_index']]['q_value'] = new_q_core
 
     # TODO: Need to modify to get classifications (low, medium, high)
     # TODO: It may be the opposite, where each path has a congestion level
@@ -138,46 +131,46 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         routes_matrix = self.q_props['routes_matrix']
         # TODO: May need to modify this
-        self.ai_props['paths_list'] = routes_matrix[self.ai_props['source']][self.ai_props['destination']]['path']
+        self.rl_props['paths_list'] = routes_matrix[self.rl_props['source']][self.rl_props['destination']]['path']
 
-        self.paths_info = self.helper_obj.classify_paths(paths_list=self.ai_props['paths_list'])
-        if self.ai_props['paths_list'].ndim != 1:
-            self.ai_props['paths_list'] = self.ai_props['paths_list'][:, 0]
+        self.paths_obj = self.helper_obj.classify_paths(paths_list=self.rl_props['paths_list'])
+        if self.rl_props['paths_list'].ndim != 1:
+            self.rl_props['paths_list'] = self.rl_props['paths_list'][:, 0]
 
         if random_float < self.q_props['epsilon']:
-            self.ai_props['path_index'] = np.random.choice(self.ai_props['k_paths'])
+            self.rl_props['path_index'] = np.random.choice(self.rl_props['k_paths'])
             # The level will always be the last index
-            self.level_index = self.paths_info[self.ai_props['path_index']][-1]
+            self.level_index = self.paths_obj[self.rl_props['path_index']][-1]
 
-            if self.ai_props['path_index'] == 1 and self.ai_props['k_paths'] == 1:
-                self.ai_props['path_index'] = 0
-            self.ai_props['chosen_path'] = self.ai_props['paths_list'][self.ai_props['path_index']]
+            if self.rl_props['path_index'] == 1 and self.rl_props['k_paths'] == 1:
+                self.rl_props['path_index'] = 0
+            self.rl_props['chosen_path'] = self.rl_props['paths_list'][self.rl_props['path_index']]
         else:
-            self.ai_props['path_index'], self.ai_props['chosen_path'] = self.helper_obj.get_max_curr_q(
-                paths_info=self.paths_info)
-            self.level_index = self.paths_info[self.ai_props['path_index']][-1]
+            self.rl_props['path_index'], self.rl_props['chosen_path'] = self.helper_obj.get_max_curr_q(
+                paths_info=self.paths_obj)
+            self.level_index = self.paths_obj[self.rl_props['path_index']][-1]
 
-        if len(self.ai_props['chosen_path']) == 0:
+        if len(self.rl_props['chosen_path']) == 0:
             raise ValueError('The chosen path can not be None')
 
         try:
-            req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
+            req_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
         except:
-            req_dict = self.ai_props['arrival_list'][self.ai_props['arrival_count'] - 1]
-        self.helper_obj.update_route_props(bandwidth=req_dict['bandwidth'], chosen_path=self.ai_props['chosen_path'])
+            req_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count'] - 1]
+        self.helper_obj.update_route_props(bandwidth=req_dict['bandwidth'], chosen_path=self.rl_props['chosen_path'])
 
     def get_core(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         if random_float < self.q_props['epsilon']:
-            self.ai_props['core_index'] = np.random.randint(0, self.engine_obj.engine_props['cores_per_link'])
+            self.rl_props['core_index'] = np.random.randint(0, self.engine_obj.engine_props['cores_per_link'])
         else:
-            cores_matrix = self.q_props['cores_matrix'][self.ai_props['source']][self.ai_props['destination']]
-            q_values = cores_matrix[self.ai_props['path_index']]['q_value']
-            self.ai_props['core_index'] = np.argmax(q_values)
+            cores_matrix = self.q_props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
+            q_values = cores_matrix[self.rl_props['path_index']]['q_value']
+            self.rl_props['core_index'] = np.argmax(q_values)
 
     def _init_q_tables(self):
-        for source in range(0, self.ai_props['num_nodes']):
-            for destination in range(0, self.ai_props['num_nodes']):
+        for source in range(0, self.rl_props['num_nodes']):
+            for destination in range(0, self.rl_props['num_nodes']):
                 # A node cannot be attached to itself
                 if source == destination:
                     continue
@@ -187,7 +180,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
                 # TODO: Generalize this and when creating the table
                 for k, curr_path in enumerate(shortest_paths):
-                    if k >= self.ai_props['k_paths']:
+                    if k >= self.rl_props['k_paths']:
                         break
 
                     for level_index in range(3):
@@ -204,16 +197,16 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: Modification here (low, medium, high)
         path_levels = 3
 
-        self.q_props['routes_matrix'] = np.empty((self.ai_props['num_nodes'], self.ai_props['num_nodes'],
-                                                  self.ai_props['k_paths'], path_levels), dtype=route_types)
-        self.q_props['cores_matrix'] = np.empty((self.ai_props['num_nodes'], self.ai_props['num_nodes'],
-                                                 self.ai_props['k_paths'],
+        self.q_props['routes_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
+                                                  self.rl_props['k_paths'], path_levels), dtype=route_types)
+        self.q_props['cores_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
+                                                 self.rl_props['k_paths'],
                                                  self.engine_obj.engine_props['cores_per_link']), dtype=core_types)
 
         self._init_q_tables()
 
     def _check_terminated(self):
-        if self.ai_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
+        if self.rl_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
             base_fp = os.path.join('data')
             # TODO: Update amount
@@ -228,17 +221,17 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return terminated
 
     def _error_check_actions(self):
-        if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.ai_props['k_paths'] - 1):
+        if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.rl_props['k_paths'] - 1):
             raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
         if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (
-                self.ai_props['cores_per_link'] - 1):
+                self.rl_props['cores_per_link'] - 1):
             raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')
 
     def _update_helper_obj(self, action: list):
         # TODO: Want spectrum assignment to do this
-        self.helper_obj.path_index = self.ai_props['path_index']
+        self.helper_obj.path_index = self.rl_props['path_index']
         # TODO: No more picking a core for now
-        # self.helper_obj.core_num = self.ai_props['core_index']
+        # self.helper_obj.core_num = self.rl_props['core_index']
 
         # TODO: First or best fit, depends on configuration file
         # if self.path_algorithm == 'q_learning':
@@ -256,12 +249,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             self.helper_obj.drl_props = self.drl_props
 
-        self.helper_obj.ai_props = self.ai_props
+        self.helper_obj.ai_props = self.rl_props
         self.helper_obj.engine_obj = self.engine_obj
         self.helper_obj.handle_releases()
 
     def _update_snapshots(self):
-        arrival_count = self.ai_props['arrival_count']
+        arrival_count = self.rl_props['arrival_count']
 
         snapshot_step = self.engine_obj.engine_props['snapshot_step']
         if self.engine_obj.engine_props['save_snapshots'] and (arrival_count + 1) % snapshot_step == 0:
@@ -273,7 +266,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: Make sure route object has the selected path for q-learning
         self.helper_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
-        req_id = self.ai_props['arrival_list'][self.ai_props['arrival_count']]['req_id']
+        req_id = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['req_id']
 
         if req_id in reqs_status_dict:
             was_allocated = True
@@ -286,7 +279,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if self.path_algorithm == 'q_learning':
             self._update_routes_matrix(was_routed=was_allocated)
             # self._update_cores_matrix(was_routed=was_allocated)
-        self.ai_props['arrival_count'] += 1
+        self.rl_props['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()
         truncated = False
@@ -301,28 +294,28 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _get_obs(self):
         # Used when we reach a reset after a simulation has finished (reset automatically called by gymnasium, use
         # placeholder variable)
-        if self.ai_props['arrival_count'] == self.engine_obj.engine_props['num_requests']:
-            curr_req = self.ai_props['arrival_list'][self.ai_props['arrival_count'] - 1]
+        if self.rl_props['arrival_count'] == self.engine_obj.engine_props['num_requests']:
+            curr_req = self.rl_props['arrival_list'][self.rl_props['arrival_count'] - 1]
         else:
-            curr_req = self.ai_props['arrival_list'][self.ai_props['arrival_count']]
+            curr_req = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
 
-        self.ai_props['source'] = int(curr_req['source'])
-        self.ai_props['destination'] = int(curr_req['destination'])
-        self.ai_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
+        self.rl_props['source'] = int(curr_req['source'])
+        self.rl_props['destination'] = int(curr_req['destination'])
+        self.rl_props['mock_sdn_dict'] = self.helper_obj.update_mock_sdn(curr_req=curr_req)
         if self.path_algorithm == 'q_learning':
             self.get_route()
             # TODO: Core for now will be first-fit in spectrum assignment only
             # self.get_core()
-            path_len = find_path_len(path_list=self.ai_props['paths_list'][self.ai_props['path_index']],
+            path_len = find_path_len(path_list=self.rl_props['paths_list'][self.rl_props['path_index']],
                                      topology=self.engine_obj.topology)
             path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
         # TODO: At the moment only works for SPF-FF
         else:
-            self.route_obj.sdn_props = self.ai_props['mock_sdn_dict']
+            self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
             self.route_obj.get_route()
-            self.ai_props['paths_list'] = self.route_obj.route_props['paths_list']
-            self.ai_props['path_index'] = 0
-            self.ai_props['core_index'] = 0
+            self.rl_props['paths_list'] = self.route_obj.route_props['paths_list']
+            self.rl_props['path_index'] = 0
+            self.rl_props['core_index'] = 0
             path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
 
         if path_mod is not False:
@@ -332,10 +325,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # super_channels = self.helper_obj.get_super_channels(slots_needed=slots_needed,
         #                                                     num_channels=self.super_channel_space)
 
-        source_obs = np.zeros(self.ai_props['num_nodes'])
-        source_obs[self.ai_props['source']] = 1.0
-        dest_obs = np.zeros(self.ai_props['num_nodes'])
-        dest_obs[self.ai_props['destination']] = 1.0
+        source_obs = np.zeros(self.rl_props['num_nodes'])
+        source_obs[self.rl_props['source']] = 1.0
+        dest_obs = np.zeros(self.rl_props['num_nodes'])
+        dest_obs[self.rl_props['destination']] = 1.0
 
         obs_dict = {
             'slots_needed': slots_needed,
@@ -360,14 +353,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 if req_time < self.min_arrival:
                     self.min_arrival = req_time
 
-                self.ai_props['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
+                self.rl_props['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
             else:
                 if req_time > self.max_depart:
                     self.max_depart = req_time
                 if req_time < self.min_depart:
                     self.min_depart = req_time
 
-                self.ai_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
+                self.rl_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
 
     def _create_input(self):
         base_fp = os.path.join('data')
@@ -377,7 +370,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.engine_obj = Engine(engine_props=self.sim_dict['s1'])
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
-                                 sdn_props=self.ai_props['mock_sdn_dict'])
+                                 sdn_props=self.rl_props['mock_sdn_dict'])
         self.sim_dict['s1'] = create_input(base_fp=base_fp, engine_props=self.sim_dict['s1'])
         save_input(base_fp=base_fp, properties=self.sim_dict['s1'], file_name=file_name,
                    data_dict=self.sim_dict['s1'])
@@ -391,9 +384,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
         self.optimize = args_obj['optimize']
-        self.ai_props['k_paths'] = self.sim_dict['s1']['k_paths']
-        self.ai_props['cores_per_link'] = self.sim_dict['s1']['cores_per_link']
-        self.ai_props['spectral_slots'] = self.sim_dict['s1']['spectral_slots']
+        self.rl_props['k_paths'] = self.sim_dict['s1']['k_paths']
+        self.rl_props['cores_per_link'] = self.sim_dict['s1']['cores_per_link']
+        self.rl_props['spectral_slots'] = self.sim_dict['s1']['spectral_slots']
 
         self._create_input()
 
@@ -408,20 +401,20 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
         super().reset(seed=seed)
-        self.ai_props['arrival_list'] = list()
-        self.ai_props['depart_list'] = list()
+        self.rl_props['arrival_list'] = list()
+        self.rl_props['depart_list'] = list()
 
         if self.optimize or self.optimize is None:
             # TODO: These will have to be modified
-            self.ai_props['q_props'] = copy.deepcopy(empty_q_props)
-            self.ai_props['drl_props'] = copy.deepcopy(empty_drl_props)
+            self.rl_props['q_props'] = copy.deepcopy(empty_q_props)
+            self.rl_props['drl_props'] = copy.deepcopy(empty_drl_props)
             self.iteration = 0
             self.setup()
 
-        self.ai_props['arrival_count'] = 0
+        self.rl_props['arrival_count'] = 0
         self.engine_obj.init_iter(iteration=self.iteration)
         self.engine_obj.create_topology()
-        self.ai_props['num_nodes'] = len(self.engine_obj.topology.nodes)
+        self.rl_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
         # TODO: Needs to be generalized
         if self.path_algorithm == 'q_learning' and self.iteration == 0:
@@ -431,7 +424,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.helper_obj.q_props = self.q_props
             # self.helper_obj.drl_props = self.drl_props
 
-        self.helper_obj.ai_props = self.ai_props
+        self.helper_obj.ai_props = self.rl_props
         self.helper_obj.engine_obj = self.engine_obj
         self.helper_obj.route_obj = self.route_obj
 
