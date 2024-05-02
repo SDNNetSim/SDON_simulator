@@ -1,13 +1,15 @@
 import numpy as np
 
 from .ql_helpers import QLearningHelpers
+from .rl_helpers import RLHelpers
 
 
 class PathAgent:
-    def __init__(self, path_algorithm: str, engine_props: dict, rl_props: dict):
+    def __init__(self, path_algorithm: str, engine_props: dict, rl_props: dict, rl_help_obj: object):
         self.path_algorithm = path_algorithm
         self.engine_props = engine_props
         self.rl_props = rl_props
+        self.rl_help_obj = rl_help_obj
 
         self.agent_obj = None
 
@@ -28,19 +30,8 @@ class PathAgent:
     def get_reward(self):
         raise NotImplementedError
 
-    # TODO: Just return a route
-    # TODO: Break up into more methods
-    def _ql_route(self):
-        random_float = np.round(np.random.uniform(0, 1), decimals=1)
-        routes_matrix = self.q_props['routes_matrix']
-        # TODO: May need to modify this
-        self.rl_props['paths_list'] = routes_matrix[self.rl_props['source']][self.rl_props['destination']]['path']
-
-        self.paths_obj = self.helper_obj.classify_paths(paths_list=self.rl_props['paths_list'])
-        if self.rl_props['paths_list'].ndim != 1:
-            self.rl_props['paths_list'] = self.rl_props['paths_list'][:, 0]
-
-        if random_float < self.q_props['epsilon']:
+    def __ql_route(self, random_float: float):
+        if random_float < self.agent_obj.props['epsilon']:
             self.rl_props['path_index'] = np.random.choice(self.rl_props['k_paths'])
             # The level will always be the last index
             self.level_index = self.paths_obj[self.rl_props['path_index']][-1]
@@ -49,9 +40,20 @@ class PathAgent:
                 self.rl_props['path_index'] = 0
             self.rl_props['chosen_path'] = self.rl_props['paths_list'][self.rl_props['path_index']]
         else:
-            self.rl_props['path_index'], self.rl_props['chosen_path'] = self.helper_obj.get_max_curr_q(
+            self.rl_props['path_index'], self.rl_props['chosen_path'] = self.agent_obj.get_max_curr_q(
                 paths_info=self.paths_obj)
             self.level_index = self.paths_obj[self.rl_props['path_index']][-1]
+
+    def _ql_route(self):
+        random_float = float(np.round(np.random.uniform(0, 1), decimals=1))
+        routes_matrix = self.agent_obj.props['routes_matrix']
+        self.rl_props['paths_list'] = routes_matrix[self.rl_props['source']][self.rl_props['destination']]['path']
+
+        self.paths_obj = self.rl_help_obj.classify_paths(paths_list=self.rl_props['paths_list'])
+        if self.rl_props['paths_list'].ndim != 1:
+            self.rl_props['paths_list'] = self.rl_props['paths_list'][:, 0]
+
+        self.__ql_route(random_float=random_float)
 
         if len(self.rl_props['chosen_path']) == 0:
             raise ValueError('The chosen path can not be None')
