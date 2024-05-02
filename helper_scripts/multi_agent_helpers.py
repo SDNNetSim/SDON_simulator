@@ -1,3 +1,5 @@
+import numpy as np
+
 from .ql_helpers import QLearningHelpers
 
 
@@ -26,7 +28,8 @@ class PathAgent:
     def get_reward(self):
         raise NotImplementedError
 
-    # TODO: These will move to multi-agent helpers script
+    # TODO: Just return a route
+    # TODO: Break up into more methods
     def _ql_route(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         routes_matrix = self.q_props['routes_matrix']
@@ -53,15 +56,11 @@ class PathAgent:
         if len(self.rl_props['chosen_path']) == 0:
             raise ValueError('The chosen path can not be None')
 
-        try:
-            req_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
-        except:
-            req_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count'] - 1]
-        self.helper_obj.update_route_props(bandwidth=req_dict['bandwidth'], chosen_path=self.rl_props['chosen_path'])
-
-    # TODO: To call the above function
     def get_route(self):
-        raise NotImplementedError
+        if self.path_algorithm == 'q_learning':
+            self._ql_route()
+        else:
+            raise NotImplementedError
 
 
 class CoreAgent:

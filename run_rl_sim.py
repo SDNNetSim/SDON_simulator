@@ -155,7 +155,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props['destination'] = int(curr_req['destination'])
         self.rl_props['mock_sdn_dict'] = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
         if self.sim_dict['path_algorithm'] == 'q_learning':
-            self.get_route()
+            self.path_agent.get_route()
             path_len = find_path_len(path_list=self.rl_props['paths_list'][self.rl_props['path_index']],
                                      topology=self.engine_obj.topology)
             path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
