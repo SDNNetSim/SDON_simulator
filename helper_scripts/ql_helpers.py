@@ -21,20 +21,18 @@ class QLearningHelpers:
                 if source == destination:
                     continue
 
-                shortest_paths = nx.shortest_simple_paths(G=self.engine_obj.engine_props['topology'],
+                shortest_paths = nx.shortest_simple_paths(G=self.engine_props['topology'],
                                                           source=str(source), target=str(destination), weight='length')
-
-                # TODO: Generalize this and when creating the table
                 for k, curr_path in enumerate(shortest_paths):
                     if k >= self.rl_props['k_paths']:
                         break
 
-                    for level_index in range(3):
-                        self.q_props['routes_matrix'][source, destination, k, level_index] = (curr_path, 0.0)
+                    for level_index in range(self.path_levels):
+                        self.props['routes_matrix'][source, destination, k, level_index] = (curr_path, 0.0)
 
-                    # for core_action in range(self.engine_obj.engine_props['cores_per_link']):
-                    #     self.q_props['cores_matrix'][source, destination, k, core_action] = (curr_path, core_action,
-                    #                                                                          0.0)
+                    for core_action in range(self.engine_props['cores_per_link']):
+                        core_tuple = (curr_path, core_action, 0.0)
+                        self.props['cores_matrix'][source, destination, k, core_action] = core_tuple
 
     def setup_env(self):
         self.props['epsilon'] = self.engine_props['epsilon_start']

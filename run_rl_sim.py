@@ -57,7 +57,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: Core and spectrum agents
         # TODO: I have self.engine_props and then engine props in the actual object...
         self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'], rl_props=self.rl_props,
-                                    engine_props=self.engine_obj.engine_props)
+                                    engine_props={})
 
         self.paths_obj = None
         # Used to determine level of congestion, fragmentation, etc. for the q-learning algorithm
@@ -191,6 +191,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _init_envs(self):
         if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
+            self.path_agent.engine_props = self.engine_obj.engine_props
             self.path_agent.setup_env()
         # TODO: Init everything? What to actually do when testing?
         else:
