@@ -22,6 +22,9 @@ from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAge
 #   - Run command line input in this script
 # TODO: AI props should be RL props
 # TODO: Only support for s1
+# TODO: Plan is to run and debug the path agent today with new formulations
+#   - Run overnight the path agent considering cong. and frag.
+#   - Not sure how my formulation will be for this just yet
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
@@ -70,59 +73,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.observation_space = self.helper_obj.get_obs_space()
         # TODO: Change for multi-agent (DQN, PPO, A2C)
         self.action_space = self.helper_obj.get_action_space()
-
-    def _get_max_future_q(self, path_list):
-        q_values = list()
-        new_cong = find_path_cong(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict)
-        self.new_cong_index = self.helper_obj._classify_cong(curr_cong=new_cong)
-        path_index, path, _ = self.paths_obj[self.rl_props['path_index']]
-        self.paths_obj[self.rl_props['path_index']] = (path_index, path, self.new_cong_index)
-
-        for path_index, _, cong_index in self.paths_obj:
-            curr_q = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']][path_index][
-                cong_index]['q_value']
-            q_values.append(curr_q)
-
-        return np.max(q_values)
-
-    def _update_routes_matrix(self, was_routed: bool):
-        if was_routed:
-            reward = 1.0
-        else:
-            reward = -1.0
-
-        routes_matrix = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        current_q = routes_matrix[self.rl_props['path_index']][self.level_index]['q_value']
-        max_future_q = self._get_max_future_q(path_list=routes_matrix[self.rl_props['path_index']][0][0])
-        delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
-        td_error = current_q - (reward + self.engine_obj.engine_props['discount_factor'] * max_future_q)
-        self.helper_obj.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error,
-                                       iteration=self.iteration)
-
-        engine_props = self.engine_obj.engine_props
-        new_q = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
-
-        routes_matrix = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        routes_matrix[self.rl_props['path_index']]['q_value'] = new_q
-
-    def _update_cores_matrix(self, was_routed: bool):
-        if was_routed:
-            reward = 1.0
-        else:
-            reward = -1.0
-
-        q_cores_matrix = self.q_props['cores_matrix'][self.rl_props['source']]
-        q_cores_matrix = q_cores_matrix[self.rl_props['destination']][self.rl_props['path_index']]
-        current_q = q_cores_matrix[self.rl_props['core_index']]['q_value']
-        max_future_q = (self.callback.value_estimate * 100.0)
-        delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
-        self.helper_obj.update_q_stats(reward=reward, stats_flag='cores_dict', td_error=delta, iteration=self.iteration)
-
-        engine_props = self.engine_obj.engine_props
-        new_q_core = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
-
-        cores_matrix = self.q_props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        cores_matrix[self.rl_props['path_index']][self.rl_props['core_index']]['q_value'] = new_q_core
 
     # TODO: Need to modify to get classifications (low, medium, high)
     # TODO: It may be the opposite, where each path has a congestion level
