@@ -10,6 +10,21 @@ class QLearningHelpers:
     def __init__(self):
         self.props = empty_q_props
 
+    def setup_q_env(self):
+        self.q_props['epsilon'] = self.engine_obj.engine_props['epsilon_start']
+        route_types = [('path', 'O'), ('q_value', 'f8')]
+        core_types = [('path', 'O'), ('core_action', 'i8'), ('q_value', 'f8')]
+        # TODO: Modification here (low, medium, high)
+        path_levels = 3
+
+        self.q_props['routes_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
+                                                  self.rl_props['k_paths'], path_levels), dtype=route_types)
+        self.q_props['cores_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
+                                                 self.rl_props['k_paths'],
+                                                 self.engine_obj.engine_props['cores_per_link']), dtype=core_types)
+
+        self._init_q_tables()
+
     def _init_q_tables(self):
         for source in range(0, self.rl_props['num_nodes']):
             for destination in range(0, self.rl_props['num_nodes']):

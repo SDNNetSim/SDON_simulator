@@ -74,22 +74,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: Change for multi-agent (DQN, PPO, A2C)
         self.action_space = self.helper_obj.get_action_space()
 
-    # TODO: To multi-agent
-    def setup_q_env(self):
-        self.q_props['epsilon'] = self.engine_obj.engine_props['epsilon_start']
-        route_types = [('path', 'O'), ('q_value', 'f8')]
-        core_types = [('path', 'O'), ('core_action', 'i8'), ('q_value', 'f8')]
-        # TODO: Modification here (low, medium, high)
-        path_levels = 3
-
-        self.q_props['routes_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
-                                                  self.rl_props['k_paths'], path_levels), dtype=route_types)
-        self.q_props['cores_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
-                                                 self.rl_props['k_paths'],
-                                                 self.engine_obj.engine_props['cores_per_link']), dtype=core_types)
-
-        self._init_q_tables()
-
     def _check_terminated(self):
         if self.rl_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
