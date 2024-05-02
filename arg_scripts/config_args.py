@@ -105,7 +105,7 @@ OTHER_OPTIONS = {
         'xt_noise': str_to_bool,
         'requested_xt': ast.literal_eval,
     },
-    'ai_settings': {
+    'rl_settings': {
         'learn_rate': float,
         'discount_factor': float,
         'epsilon_start': float,
@@ -114,6 +114,7 @@ OTHER_OPTIONS = {
         'path_algorithm': str,
         'core_algorithm': str,
         'spectrum_algorithm': str,
+        'optimize': str_to_bool,
     },
     'file_settings': {
     },

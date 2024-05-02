@@ -40,7 +40,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.q_props = copy.deepcopy(empty_q_props)
         self.drl_props = copy.deepcopy(empty_drl_props)
 
-        self.sim_dict = sim_dict
+        self.sim_dict = sim_dict['s1']
 
         self.iteration = 0
         self.options = None
@@ -55,7 +55,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # TODO: Not sure how I'll init constructor vars just yet
         self.multi_agent_obj = {
-            'path_agent': PathAgent(path_algorithm=sim_dict['path_algorithm']),
+            'path_agent': PathAgent(path_algorithm=self.sim_dict['path_algorithm']),
             # 'core_agent': CoreAgent(),
             # 'spectrum_agent': SpectrumAgent(),
         }
@@ -192,16 +192,19 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _create_input(self):
         base_fp = os.path.join('data')
-        self.sim_dict['s1']['thread_num'] = 's1'
-        get_start_time(sim_dict=self.sim_dict)
+        self.sim_dict['thread_num'] = 's1'
+        # Added only for structure consistency
+        get_start_time(sim_dict={'s1': self.sim_dict})
         file_name = "sim_input_s1.json"
 
-        self.engine_obj = Engine(engine_props=self.sim_dict['s1'])
+        self.engine_obj = Engine(engine_props=self.sim_dict)
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
                                  sdn_props=self.rl_props['mock_sdn_dict'])
-        self.sim_dict['s1'] = create_input(base_fp=base_fp, engine_props=self.sim_dict['s1'])
-        save_input(base_fp=base_fp, properties=self.sim_dict['s1'], file_name=file_name,
-                   data_dict=self.sim_dict['s1'])
+
+        # TODO: Sim dict re-defined here and modified above?
+        self.sim_dict = create_input(base_fp=base_fp, engine_props=self.sim_dict)
+        save_input(base_fp=base_fp, properties=self.sim_dict, file_name=file_name,
+                   data_dict=self.sim_dict)
 
     def setup(self):
         """
@@ -211,11 +214,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # config_path = os.path.join('ini', 'run_ini', 'config.ini')
         # self.sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
+        # TODO: Not sure if I still need these props here...
         # Instead of args obj
         self.optimize = self.sim_dict['optimize']
-        self.rl_props['k_paths'] = self.sim_dict['s1']['k_paths']
-        self.rl_props['cores_per_link'] = self.sim_dict['s1']['cores_per_link']
-        self.rl_props['spectral_slots'] = self.sim_dict['s1']['spectral_slots']
+        self.rl_props['k_paths'] = self.sim_dict['k_paths']
+        self.rl_props['cores_per_link'] = self.sim_dict['cores_per_link']
+        self.rl_props['spectral_slots'] = self.sim_dict['spectral_slots']
 
         self._create_input()
 
@@ -348,8 +352,7 @@ def _setup_rl_sim():
 
 def run_rl_sim():
     callback = GetModelParams()
-    env = SimEnv(render_mode=None, custom_callback=callback)
-    env.sim_dict = _setup_rl_sim()
+    env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=_setup_rl_sim())
     env.sim_dict['callback'] = callback
 
     if env.sim_dict['is_training']:
