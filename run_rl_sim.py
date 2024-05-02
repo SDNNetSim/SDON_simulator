@@ -387,34 +387,6 @@ def run_rl_sim():
     else:
         _run_testing(env=env, sim_dict=env.sim_dict)
 
-    obs, info = env.reset()
-    # TODO: Reward should be saved in their individual files, not needed here
-    episode_reward = 0
-    # TODO: Taken from max iterations not here
-    max_episodes = 100
-    num_episodes = 0
-    time_steps = 0
-    while True:
-        # curr_action, _states = model.predict(obs)
-
-        obs, curr_reward, is_terminated, is_truncated, curr_info = env.step([0])
-        episode_reward += curr_reward
-
-        time_steps += 1
-
-        # print(f'{time_steps} Time steps completed.')
-
-        if num_episodes >= max_episodes:
-            break
-        if is_terminated or is_truncated:
-            obs, info = env.reset()
-            num_episodes += 1
-            print(f'{num_episodes} episodes completed.')
-    #
-    # # TODO: Save this to a file or plot
-    print(episode_reward / max_episodes)
-    # obs, info = env.reset()
-
 
 if __name__ == '__main__':
     run_rl_sim()
