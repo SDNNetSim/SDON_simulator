@@ -195,3 +195,35 @@ class RLHelpers:
         }
 
         return mock_sdn
+
+    # TODO: You could argue this belongs in rl_helpers instead
+    def _reset_reqs_dict(self, seed: int):
+        self.engine_obj.generate_requests(seed=seed)
+        self.min_arrival = np.inf
+        self.max_arrival = -1 * np.inf
+        self.min_depart = np.inf
+        self.max_depart = -1 * np.inf
+
+        for req_time in self.engine_obj.reqs_dict:
+            if self.engine_obj.reqs_dict[req_time]['request_type'] == 'arrival':
+                if req_time > self.max_arrival:
+                    self.max_arrival = req_time
+                if req_time < self.min_arrival:
+                    self.min_arrival = req_time
+
+                self.rl_props['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
+            else:
+                if req_time > self.max_depart:
+                    self.max_depart = req_time
+                if req_time < self.min_depart:
+                    self.min_depart = req_time
+
+                self.rl_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
+
+    # TODO: This will probably also move to rl helpers
+    def _error_check_actions(self):
+        if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.rl_props['k_paths'] - 1):
+            raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
+        if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (
+                self.rl_props['cores_per_link'] - 1):
+            raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')

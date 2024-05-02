@@ -89,13 +89,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return terminated
 
-    def _error_check_actions(self):
-        if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.rl_props['k_paths'] - 1):
-            raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
-        if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (
-                self.rl_props['cores_per_link'] - 1):
-            raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')
-
     def _update_helper_obj(self, action: list):
         # TODO: Want spectrum assignment to do this
         self.helper_obj.path_index = self.rl_props['path_index']
@@ -200,29 +193,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         }
         return obs_dict
 
-    def _reset_reqs_dict(self, seed: int):
-        self.engine_obj.generate_requests(seed=seed)
-        self.min_arrival = np.inf
-        self.max_arrival = -1 * np.inf
-        self.min_depart = np.inf
-        self.max_depart = -1 * np.inf
-
-        for req_time in self.engine_obj.reqs_dict:
-            if self.engine_obj.reqs_dict[req_time]['request_type'] == 'arrival':
-                if req_time > self.max_arrival:
-                    self.max_arrival = req_time
-                if req_time < self.min_arrival:
-                    self.min_arrival = req_time
-
-                self.rl_props['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
-            else:
-                if req_time > self.max_depart:
-                    self.max_depart = req_time
-                if req_time < self.min_depart:
-                    self.min_depart = req_time
-
-                self.rl_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
-
     def _create_input(self):
         base_fp = os.path.join('data')
         self.sim_dict['s1']['thread_num'] = 's1'
@@ -302,7 +272,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
+# In order to have the same structure as DRL
+# TODO: Have the above code return an action! Stepping with a random zero makes no sense at all
 def _run_iters(env: object, sim_dict: dict):
+    _, _ = env.reset()
     completed_episodes = 0
     while True:
         # TODO: Stepping with zero?
@@ -310,7 +283,7 @@ def _run_iters(env: object, sim_dict: dict):
         if completed_episodes >= sim_dict['max_iters']:
             break
         if is_terminated or is_truncated:
-            obs, info = env.reset()
+            _, _ = env.reset()
             completed_episodes += 1
             print(f'{completed_episodes} episodes completed out of {sim_dict["max_iters"]}.')
 
@@ -353,6 +326,8 @@ def _run_training(env: object, sim_dict: dict):
     _print_train_info(sim_dict=sim_dict)
     if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
         _run_iters(env=env, sim_dict=sim_dict)
+    # TODO: Consider RL zoo and optimization via command line
+    # TODO: Also register the environment
     elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
         model = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
         # TODO: This should come from the yml file actually (total time steps and print step)?
@@ -374,8 +349,6 @@ def _setup_rl_sim():
     return sim_dict
 
 
-# TODO: To run RLZoo by command line here, we only need to run this script!
-# TODO: Maybe also run register env and other important things similar to that
 def run_rl_sim():
     callback = GetModelParams()
     env = SimEnv(render_mode=None, custom_callback=callback)
