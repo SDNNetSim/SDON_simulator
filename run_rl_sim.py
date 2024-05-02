@@ -86,24 +86,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return terminated
 
+    # TODO: Pick a super-channel and a core
     def _update_helper_obj(self, action: list):
-        # TODO: Want spectrum assignment to do this
         self.rl_help_obj.path_index = self.rl_props['path_index']
-        # TODO: No more picking a core for now
         # self.rl_help_obj.core_num = self.rl_props['core_index']
 
-        # TODO: First or best fit, depends on configuration file
-        # if self.path_algorithm == 'q_learning':
-        #     raise NotImplementedError
-        # else:
-        # TODO: Change this to pick a super channel
-        #   - Only valid super-channels
-        #   - If None, block
-        #       - Reward will be zero in this case
-        # self.rl_help_obj.super_channel = action
-        # self._error_check_actions()
-
-        if self.path_algorithm == 'q_learning':
+        # TODO: Not sure about this
+        if self.sim_dict['path_algorithm'] == 'q_learning':
             self.rl_help_obj.q_props = self.q_props
         else:
             self.rl_help_obj.drl_props = self.drl_props
@@ -295,12 +284,15 @@ def _run_testing(env: object, sim_dict: dict):
     raise NotImplementedError
 
 
-def _get_model(algorithm: str, device: str, env: object):
+# TODO: Type for env
+def _get_model(algorithm: str, device: str, env):
     model = None
     if algorithm == 'dqn':
         model = None
     elif algorithm == 'ppo':
-        model = None
+        # TODO: Number of training steps
+        # TODO: Policy to configuration file
+        model = PPO(policy='MlpPolicy', env=env, device=device)
     elif algorithm == 'a2c':
         model = None
 
