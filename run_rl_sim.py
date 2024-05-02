@@ -240,11 +240,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         """
         Sets up this class.
         """
-        args_obj = parse_args()
-        config_path = os.path.join('ini', 'run_ini', 'config.ini')
-        self.sim_dict = read_config(args_obj=args_obj, config_path=config_path)
+        # args_obj = parse_args()
+        # config_path = os.path.join('ini', 'run_ini', 'config.ini')
+        # self.sim_dict = read_config(args_obj=args_obj, config_path=config_path)
 
-        self.optimize = args_obj['optimize']
+        # Instead of args obj
+        self.optimize = self.sim_dict['optimize']
         self.rl_props['k_paths'] = self.sim_dict['s1']['k_paths']
         self.rl_props['cores_per_link'] = self.sim_dict['s1']['cores_per_link']
         self.rl_props['spectral_slots'] = self.sim_dict['s1']['spectral_slots']
@@ -306,7 +307,11 @@ def _run_iteration():
 
 
 def _setup_rl_sim():
-    raise NotImplementedError
+    args_obj = parse_args()
+    config_path = os.path.join('ini', 'run_ini', 'config.ini')
+    sim_dict = read_config(args_obj=args_obj, config_path=config_path)
+
+    return sim_dict
 
 
 # TODO: To run RLZoo by command line here, we only need to run this script!
@@ -315,9 +320,17 @@ def _setup_rl_sim():
 def run_rl_sim():
     callback = GetModelParams()
     env = SimEnv(render_mode=None, custom_callback=callback)
+    env.sim_dict = _setup_rl_sim()
+
     # TODO: They're never meant to train together, only test
     #   - How to handle something like this...
+    #   - If testing, use all, if training, loop for each agent, user should input correctly here
+    #       - Print it out
     # model = PPO("MultiInputPolicy", env, verbose=1, device='cpu')
+    #   TODO: - If training and DRL call learn
+    #           - Else, train in the loop below
+    #   TODO: - If testing, select each model to work together
+    #           - They should ALL use the loop below
     # model.learn(total_timesteps=500000, log_interval=1, callback=callback)
 
     # model.save('./logs/best_PPO_model.zip')
