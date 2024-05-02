@@ -302,18 +302,54 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
-def _run_testing():
+def _run_iter():
     raise NotImplementedError
 
 
-# We will only train ONE agent for this implementation
-def _run_training(sim_dict: dict):
+def _run_testing(env: object, sim_dict: dict):
+    # model = DQN.load('./logs/DQN/best_model.zip', env=env)
+    raise NotImplementedError
+
+
+def _get_model(algorithm: str, device: str, env: object):
+    model = None
+    if algorithm == 'dqn':
+        model = None
+    elif algorithm == 'ppo':
+        model = None
+    elif algorithm == 'a2c':
+        model = None
+
+    return model
+
+
+def _print_train_info(sim_dict: dict):
     if sim_dict['path_algorithm'] == 'q_learning':
-        raise NotImplementedError
+        print(f'Beginning training process for the PATH AGENT using the '
+              f'{sim_dict["path_algorithm"].title()} algorithm.')
     elif sim_dict['core_algorithm'] == 'q_learning':
+        print(f'Beginning training process for the CORE AGENT using the '
+              f'{sim_dict["core_algorithm"].title()} algorithm.')
+    elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
+        print(f'Beginning training process for the SPECTRUM AGENT using the '
+              f'{sim_dict["spectrum_algorithm"].title()} algorithm.')
+    else:
+        raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '
+                         f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
+                         f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
+
+
+def _run_training(env: object, sim_dict: dict):
+    _print_train_info(sim_dict=sim_dict)
+    if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
         raise NotImplementedError
     elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
-        raise NotImplementedError
+        model = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
+        # TODO: This should come from the yml file actually (total time steps and print step)?
+        model.learn(total_timesteps=sim_dict['num_requests'], log_interval=sim_dict['print_step'],
+                    callback=sim_dict['callback'])
+        # TODO: Save model
+        # model.save('./logs/best_PPO_model.zip')
     else:
         raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '
                          f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
@@ -330,29 +366,17 @@ def _setup_rl_sim():
 
 # TODO: To run RLZoo by command line here, we only need to run this script!
 # TODO: Maybe also run register env and other important things similar to that
-# TODO: Need configuration file input here, then input it into the SimEnv model
 def run_rl_sim():
     callback = GetModelParams()
     env = SimEnv(render_mode=None, custom_callback=callback)
     env.sim_dict = _setup_rl_sim()
+    env.sim_dict['callback'] = callback
 
     if env.sim_dict['is_training']:
-        _run_training()
+        _run_training(env=env, sim_dict=env.sim_dict)
     else:
-        _run_testing()
-    # TODO: They're never meant to train together, only test
-    #   - How to handle something like this...
-    #   - If testing, use all, if training, loop for each agent, user should input correctly here
-    #       - Print it out
-    # model = PPO("MultiInputPolicy", env, verbose=1, device='cpu')
-    #   TODO: - If training and DRL call learn
-    #           - Else, train in the loop below
-    #   TODO: - If testing, select each model to work together
-    #           - They should ALL use the loop below
-    # model.learn(total_timesteps=500000, log_interval=1, callback=callback)
+        _run_testing(env=env, sim_dict=env.sim_dict)
 
-    # model.save('./logs/best_PPO_model.zip')
-    # model = DQN.load('./logs/DQN/best_model.zip', env=env)
     obs, info = env.reset()
     # TODO: Reward should be saved in their individual files, not needed here
     episode_reward = 0
