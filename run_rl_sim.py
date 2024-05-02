@@ -74,9 +74,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: Change for multi-agent (DQN, PPO, A2C)
         self.action_space = self.helper_obj.get_action_space()
 
-    # TODO: Need to modify to get classifications (low, medium, high)
-    # TODO: It may be the opposite, where each path has a congestion level
-    # TODO: Should probably use old code!
+    # TODO: These will move to multi-agent helpers script
     def get_route(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         routes_matrix = self.q_props['routes_matrix']
@@ -118,28 +116,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             q_values = cores_matrix[self.rl_props['path_index']]['q_value']
             self.rl_props['core_index'] = np.argmax(q_values)
 
-    def _init_q_tables(self):
-        for source in range(0, self.rl_props['num_nodes']):
-            for destination in range(0, self.rl_props['num_nodes']):
-                # A node cannot be attached to itself
-                if source == destination:
-                    continue
-
-                shortest_paths = nx.shortest_simple_paths(G=self.engine_obj.engine_props['topology'],
-                                                          source=str(source), target=str(destination), weight='length')
-
-                # TODO: Generalize this and when creating the table
-                for k, curr_path in enumerate(shortest_paths):
-                    if k >= self.rl_props['k_paths']:
-                        break
-
-                    for level_index in range(3):
-                        self.q_props['routes_matrix'][source, destination, k, level_index] = (curr_path, 0.0)
-
-                    # for core_action in range(self.engine_obj.engine_props['cores_per_link']):
-                    #     self.q_props['cores_matrix'][source, destination, k, core_action] = (curr_path, core_action,
-                    #                                                                          0.0)
-
+    # TODO: To multi-agent
     def setup_q_env(self):
         self.q_props['epsilon'] = self.engine_obj.engine_props['epsilon_start']
         route_types = [('path', 'O'), ('q_value', 'f8')]
@@ -202,14 +179,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj.ai_props = self.rl_props
         self.helper_obj.engine_obj = self.engine_obj
         self.helper_obj.handle_releases()
-
-    def _update_snapshots(self):
-        arrival_count = self.rl_props['arrival_count']
-
-        snapshot_step = self.engine_obj.engine_props['snapshot_step']
-        if self.engine_obj.engine_props['save_snapshots'] and (arrival_count + 1) % snapshot_step == 0:
-            self.engine_obj.stats_obj.update_snapshot(net_spec_dict=self.engine_obj.net_spec_dict,
-                                                      req_num=arrival_count + 1)
 
     def step(self, action: list):
         self._update_helper_obj(action=action)

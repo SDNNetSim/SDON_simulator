@@ -1,8 +1,3 @@
-class QLearning:
-    def __init__(self):
-        raise NotImplementedError
-
-
 class PathAgent:
     def __init__(self):
         raise NotImplementedError
@@ -37,22 +32,6 @@ class CoreAgent:
         raise NotImplementedError
 
 
-class DQN:
-    def __init__(self):
-        raise NotImplementedError
-
-
-class A2C:
-    def __init__(self):
-        raise NotImplementedError
-
-
-class PPO:
-    def __init__(self):
-        raise NotImplementedError
-
-
-# TODO: Can be PPO, DQN, or A2C
 class SpectrumAgent:
     def __init__(self):
         raise NotImplementedError

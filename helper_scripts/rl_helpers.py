@@ -2,6 +2,7 @@ import os
 import json
 
 import numpy as np
+import networkx as nx
 from gymnasium import spaces
 
 from helper_scripts.os_helpers import create_dir
@@ -17,6 +18,8 @@ class RLHelpers:
     """
 
     def __init__(self, ai_props: dict, engine_obj: object, route_obj: object, q_props: dict, drl_props: dict):
+        # TODO: Check for variables used and unused
+        #   - Improve naming
         self.ai_props = ai_props
         self.q_props = q_props
         self.drl_props = drl_props
@@ -38,6 +41,14 @@ class RLHelpers:
         self.super_channel_indexes = list()
         self.mod_format = None
         self.bandwidth = None
+
+    def _update_snapshots(self):
+        arrival_count = self.rl_props['arrival_count']
+
+        snapshot_step = self.engine_obj.engine_props['snapshot_step']
+        if self.engine_obj.engine_props['save_snapshots'] and (arrival_count + 1) % snapshot_step == 0:
+            self.engine_obj.stats_obj.update_snapshot(net_spec_dict=self.engine_obj.net_spec_dict,
+                                                      req_num=arrival_count + 1)
 
     def get_super_channels(self, slots_needed: int, num_channels: int):
         """
@@ -73,52 +84,6 @@ class RLHelpers:
                 resp_frag_mat = np.append(resp_frag_mat, 100.0)
 
         return resp_frag_mat
-
-    def get_max_curr_q(self, paths_info):
-        q_values = list()
-        for path_index, _, level_index in paths_info:
-            routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
-            curr_q = routes_matrix[path_index][level_index]['q_value']
-            q_values.append(curr_q)
-
-        max_index = np.argmax(q_values)
-        max_path = self.ai_props['paths_list'][max_index]
-        return max_index, max_path
-
-    def get_max_future_q(self, path_list):
-        q_values = list()
-        new_cong = find_path_cong(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict)
-        # TODO: Fix this
-        self.new_cong_index = self.helper_obj._classify_cong(curr_cong=new_cong)
-        path_index, path, _ = self.paths_obj[self.rl_props['path_index']]
-        self.paths_obj[self.rl_props['path_index']] = (path_index, path, self.new_cong_index)
-
-        for path_index, _, cong_index in self.paths_obj:
-            curr_q = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']][path_index][
-                cong_index]['q_value']
-            q_values.append(curr_q)
-
-        return np.max(q_values)
-
-    def _update_routes_matrix(self, was_routed: bool):
-        if was_routed:
-            reward = 1.0
-        else:
-            reward = -1.0
-
-        routes_matrix = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        current_q = routes_matrix[self.rl_props['path_index']][self.level_index]['q_value']
-        max_future_q = self.get_max_future_q(path_list=routes_matrix[self.rl_props['path_index']][0][0])
-        delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
-        td_error = current_q - (reward + self.engine_obj.engine_props['discount_factor'] * max_future_q)
-        self.helper_obj.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error,
-                                       iteration=self.iteration)
-
-        engine_props = self.engine_obj.engine_props
-        new_q = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
-
-        routes_matrix = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        routes_matrix[self.rl_props['path_index']]['q_value'] = new_q
 
     @staticmethod
     def _classify_cong(curr_cong):
@@ -156,101 +121,6 @@ class RLHelpers:
         mod_format = get_path_mod(mods_dict=self.engine_obj.engine_props['mod_per_bw'][bandwidth], path_len=path_len)
         self.route_obj.route_props['mod_formats_list'].append([mod_format])
         self.route_obj.route_props['weights_list'].append(path_len)
-
-    def _calc_q_averages(self, stats_flag: str, episode: str, iteration: int):
-        len_rewards = len(self.q_props['rewards_dict'][stats_flag]['rewards'][episode])
-
-        max_iters = self.engine_obj.engine_props['max_iters']
-        num_requests = self.engine_obj.engine_props['num_requests']
-
-        if iteration == (max_iters - 1) and len_rewards == num_requests:
-            self.completed_sim = True
-            rewards_dict = self.q_props['rewards_dict'][stats_flag]['rewards']
-            errors_dict = self.q_props['errors_dict'][stats_flag]['errors']
-            self.q_props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
-            self.q_props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=errors_dict)
-
-            self.save_model()
-
-    def update_q_stats(self, reward: float, td_error: float, stats_flag: str, iteration: int):
-        """
-        Updates data structures related to tracking q-learning algorithm statistics.
-
-        :param reward: The current reward.
-        :param td_error: The current temporal difference error.
-        :param stats_flag: Flag to determine calculations for the path or core q-table.
-        :param iteration: The current episode/iteration.
-        """
-        if self.completed_sim:
-            return
-
-        episode = str(iteration)
-        if episode not in self.q_props['rewards_dict'][stats_flag]['rewards'].keys():
-            self.q_props['rewards_dict'][stats_flag]['rewards'][episode] = [reward]
-            self.q_props['errors_dict'][stats_flag]['errors'][episode] = [td_error]
-            self.q_props['sum_rewards_dict'][episode] = reward
-            self.q_props['sum_errors_dict'][episode] = td_error
-        else:
-            self.q_props['rewards_dict'][stats_flag]['rewards'][episode].append(reward)
-            self.q_props['errors_dict'][stats_flag]['errors'][episode].append(td_error)
-            self.q_props['sum_rewards_dict'][episode] += reward
-            self.q_props['sum_errors_dict'][episode] += td_error
-
-        self._calc_q_averages(stats_flag=stats_flag, episode=episode, iteration=iteration)
-
-    def _save_params(self, save_dir: str):
-        params_dict = dict()
-        for param_type, params_list in self.q_props['save_params_dict'].items():
-            for curr_param in params_list:
-                if param_type == 'engine_params_list':
-                    params_dict[curr_param] = self.engine_obj.engine_props[curr_param]
-                else:
-                    params_dict[curr_param] = self.q_props[curr_param]
-
-        erlang = self.engine_obj.engine_props['erlang']
-        cores_per_link = self.engine_obj.engine_props['cores_per_link']
-        param_fp = f"e{erlang}_params_c{cores_per_link}.json"
-        param_fp = os.path.join(save_dir, param_fp)
-        with open(param_fp, 'w', encoding='utf-8') as file_obj:
-            json.dump(params_dict, file_obj)
-
-    # TODO: Save every 'x' iters
-    def save_model(self):
-        """
-        Saves the current q-learning model.
-        """
-        date_time = os.path.join(self.engine_obj.engine_props['network'], self.engine_obj.engine_props['sim_start'])
-        save_dir = os.path.join('logs', 'ql', date_time)
-        create_dir(file_path=save_dir)
-
-        erlang = self.engine_obj.engine_props['erlang']
-        cores_per_link = self.engine_obj.engine_props['cores_per_link']
-        route_fp = f"e{erlang}_routes_c{cores_per_link}.npy"
-        core_fp = f"e{erlang}_cores_c{cores_per_link}.npy"
-
-        for curr_fp in (route_fp, core_fp):
-            save_fp = os.path.join(os.getcwd(), save_dir, curr_fp)
-
-            if curr_fp.split('_')[1] == 'routes':
-                np.save(save_fp, self.q_props['routes_matrix'])
-            else:
-                np.save(save_fp, self.q_props['cores_matrix'])
-
-        self._save_params(save_dir=save_dir)
-
-    def decay_epsilon(self, amount: float, iteration: int):
-        """
-        Decays epsilon for the q-learning algorithm every step.
-
-        :param amount: Amount to decay by.
-        :param iteration: The current iteration/episode.
-        """
-        self.q_props['epsilon'] -= amount
-        if iteration == 0:
-            self.q_props['epsilon_list'].append(self.q_props['epsilon'])
-
-        if self.q_props['epsilon'] < 0.0:
-            raise ValueError(f"Epsilon should be greater than 0 but it is {self.q_props['epsilon']}")
 
     def get_spectrum(self):
         """

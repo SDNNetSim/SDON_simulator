@@ -59,3 +59,7 @@ empty_drl_props = {
     'max_length': 0,
     'slice_space': 2,
 }
+
+empty_ppo_props = {
+
+}
