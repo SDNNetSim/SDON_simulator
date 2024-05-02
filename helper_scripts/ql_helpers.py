@@ -10,7 +10,7 @@ class QLearningHelpers:
     def __init__(self):
         self.props = empty_q_props
 
-    def setup_q_env(self):
+    def setup_env(self):
         self.q_props['epsilon'] = self.engine_obj.engine_props['epsilon_start']
         route_types = [('path', 'O'), ('q_value', 'f8')]
         core_types = [('path', 'O'), ('core_action', 'i8'), ('q_value', 'f8')]

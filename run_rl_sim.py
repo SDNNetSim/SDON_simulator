@@ -24,6 +24,7 @@ from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAge
 # TODO: Plan is to run and debug the path agent today with new formulations
 #   - Run overnight the path agent considering cong. and frag.
 #   - Not sure how my formulation will be for this just yet
+#
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Simulates a deep q-learning environment with stable baselines3 integration.
@@ -53,12 +54,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.helper_obj = RLHelpers(ai_props=self.rl_props, engine_obj=self.engine_obj, route_obj=self.route_obj,
                                     q_props=self.q_props, drl_props=self.drl_props)
 
-        # TODO: Not sure how I'll init constructor vars just yet
-        self.multi_agent_obj = {
-            'path_agent': PathAgent(path_algorithm=self.sim_dict['path_algorithm']),
-            # 'core_agent': CoreAgent(),
-            # 'spectrum_agent': SpectrumAgent(),
-        }
+        # TODO: Core and spectrum agents
+        self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'])
 
         self.paths_obj = None
         # Used to determine level of congestion, fragmentation, etc. for the q-learning algorithm
@@ -190,6 +187,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         }
         return obs_dict
 
+    def _init_envs(self):
+        if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
+            self.path_agent.setup_env()
+        # TODO: Init everything? What to actually do when testing?
+        else:
+            raise NotImplementedError
+
     def _create_input(self):
         base_fp = os.path.join('data')
         self.sim_dict['thread_num'] = 's1'
@@ -201,21 +205,15 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
                                  sdn_props=self.rl_props['mock_sdn_dict'])
 
-        # TODO: Sim dict re-defined here and modified above?
-        self.sim_dict = create_input(base_fp=base_fp, engine_props=self.sim_dict)
-        save_input(base_fp=base_fp, properties=self.sim_dict, file_name=file_name,
-                   data_dict=self.sim_dict)
+        self.engine_props = create_input(base_fp=base_fp, engine_props=self.sim_dict)
+        save_input(base_fp=base_fp, properties=self.engine_props, file_name=file_name,
+                   data_dict=self.engine_props)
 
     def setup(self):
         """
         Sets up this class.
         """
-        # args_obj = parse_args()
-        # config_path = os.path.join('ini', 'run_ini', 'config.ini')
-        # self.sim_dict = read_config(args_obj=args_obj, config_path=config_path)
-
-        # TODO: Not sure if I still need these props here...
-        # Instead of args obj
+        # TODO: Not sure if I still need these props here (rl_props)...
         self.optimize = self.sim_dict['optimize']
         self.rl_props['k_paths'] = self.sim_dict['k_paths']
         self.rl_props['cores_per_link'] = self.sim_dict['cores_per_link']
@@ -223,14 +221,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self._create_input()
 
-        # TODO: These will be changed
-        self.path_algorithm = self.sim_dict['s1']['path_algorithm']
-        self.core_algorithm = 'first_fit'
-        self.spectrum_algorithm = 'first_fit'
-
-        start_arr_rate = float(self.sim_dict['s1']['arrival_rate']['start'])
-        self.engine_obj.engine_props['erlang'] = start_arr_rate / self.sim_dict['s1']['holding_time']
-        self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.sim_dict['s1']['cores_per_link']
+        start_arr_rate = float(self.sim_dict['arrival_rate']['start'])
+        self.engine_obj.engine_props['erlang'] = start_arr_rate / self.sim_dict['holding_time']
+        self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.sim_dict['cores_per_link']
 
     def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
         super().reset(seed=seed)
@@ -239,6 +232,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         if self.optimize or self.optimize is None:
             # TODO: These will have to be modified
+            # TODO: Not sure if q and drl props are needed?
             self.rl_props['q_props'] = copy.deepcopy(empty_q_props)
             self.rl_props['drl_props'] = copy.deepcopy(empty_drl_props)
             self.iteration = 0
@@ -250,19 +244,20 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
         # TODO: Needs to be generalized
-        if self.path_algorithm == 'q_learning' and self.iteration == 0:
-            self.setup_q_env()
-            self.helper_obj.q_props = self.q_props
+        #   - Consider training AND testing
+        if self.iteration == 0:
+            self._init_envs()
+        # TODO: A reset of props?
         else:
-            self.helper_obj.q_props = self.q_props
-            # self.helper_obj.drl_props = self.drl_props
+            raise NotImplementedError
 
+        # TODO: Not sure about these variables...Everything below this needs a new method
         self.helper_obj.ai_props = self.rl_props
         self.helper_obj.engine_obj = self.engine_obj
         self.helper_obj.route_obj = self.route_obj
 
+        # TODO: Generalize (Ask about this)
         if seed is None:
-            # TODO: Change
             # seed = self.iteration
             seed = 0
 

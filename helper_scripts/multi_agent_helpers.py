@@ -1,9 +1,19 @@
+from .ql_helpers import QLearningHelpers
+
+
 class PathAgent:
     def __init__(self, path_algorithm: str):
         self.path_algorithm = path_algorithm
 
+        self.agent_obj = None
+
     def setup_env(self):
-        raise NotImplementedError
+        if self.path_algorithm == 'q_learning':
+            self.agent_obj = QLearningHelpers()
+        else:
+            raise NotImplementedError
+
+        self.agent_obj.setup_env()
 
     def get_obs(self):
         raise NotImplementedError
