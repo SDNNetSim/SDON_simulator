@@ -302,8 +302,22 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
-def _run_iteration():
+def _run_testing():
     raise NotImplementedError
+
+
+# We will only train ONE agent for this implementation
+def _run_training(sim_dict: dict):
+    if sim_dict['path_algorithm'] == 'q_learning':
+        raise NotImplementedError
+    elif sim_dict['core_algorithm'] == 'q_learning':
+        raise NotImplementedError
+    elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
+        raise NotImplementedError
+    else:
+        raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '
+                         f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
+                         f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
 
 
 def _setup_rl_sim():
@@ -322,6 +336,10 @@ def run_rl_sim():
     env = SimEnv(render_mode=None, custom_callback=callback)
     env.sim_dict = _setup_rl_sim()
 
+    if env.sim_dict['is_training']:
+        _run_training()
+    else:
+        _run_testing()
     # TODO: They're never meant to train together, only test
     #   - How to handle something like this...
     #   - If testing, use all, if training, loop for each agent, user should input correctly here
