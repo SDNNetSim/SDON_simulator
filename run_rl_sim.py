@@ -58,7 +58,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: Core and spectrum agents
         # TODO: I have self.engine_props and then engine props in the actual object...
         self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'], rl_props=self.rl_props,
-                                    engine_props={})
+                                    engine_props={}, rl_help_obj=self.rl_help_obj)
 
         self.paths_obj = None
         # Used to determine level of congestion, fragmentation, etc. for the q-learning algorithm

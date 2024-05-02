@@ -86,12 +86,12 @@ class QLearningHelpers:
     def get_max_curr_q(self, paths_info):
         q_values = list()
         for path_index, _, level_index in paths_info:
-            routes_matrix = self.q_props['routes_matrix'][self.ai_props['source']][self.ai_props['destination']]
+            routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
             curr_q = routes_matrix[path_index][level_index]['q_value']
             q_values.append(curr_q)
 
         max_index = np.argmax(q_values)
-        max_path = self.ai_props['paths_list'][max_index]
+        max_path = self.rl_props['paths_list'][max_index]
         return max_index, max_path
 
     def _calc_q_averages(self, stats_flag: str, episode: str, iteration: int):
