@@ -125,6 +125,7 @@ class MainWindow(QMainWindow):
             print()
 
         # continue here and create 'Node' widgets
+        # TODO: Change to NodeWidget
         node_widget = CirclesWidget()
         node_widget.generate_circles()
         network_information_display_layout.addWidget(node_widget)
