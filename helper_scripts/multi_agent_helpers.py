@@ -5,9 +5,9 @@ from .ql_helpers import QLearningHelpers
 
 
 class PathAgent:
-    def __init__(self, path_algorithm: str, engine_props: dict, rl_props: dict, rl_help_obj: object):
+    def __init__(self, path_algorithm: str, rl_props: dict, rl_help_obj: object):
         self.path_algorithm = path_algorithm
-        self.engine_props = engine_props
+        self.engine_props = None
         self.rl_props = rl_props
         self.rl_help_obj = rl_help_obj
 
@@ -81,11 +81,19 @@ class PathAgent:
 
 
 class CoreAgent:
-    def __init__(self):
-        raise NotImplementedError
+    def __init__(self, core_algorithm: str, rl_props: dict):
+        self.core_algorithm = core_algorithm
+        self.rl_props = rl_props
+        self.engine_props = None
+        self.agent_obj = None
 
     def setup_env(self):
-        raise NotImplementedError
+        if self.core_algorithm == 'q_learning':
+            self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
+        else:
+            raise NotImplementedError
+
+        self.agent_obj.setup_env()
 
     def get_obs(self):
         raise NotImplementedError

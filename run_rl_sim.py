@@ -32,6 +32,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     metadata = dict()
 
     # TODO: Double check constructors used, probably won't need many now
+    # TODO: Double check to see if props needs to be reset...
     def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None, **kwargs):
         super().__init__()
 
@@ -57,13 +58,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: Core and spectrum agents
         # TODO: I have self.engine_props and then engine props in the actual object...
         self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'], rl_props=self.rl_props,
-                                    engine_props={}, rl_help_obj=self.rl_help_obj)
+                                    rl_help_obj=self.rl_help_obj)
+        self.core_agent = CoreAgent(core_algorithm=self.sim_dict['core_algorithm'], rl_props=self.rl_props)
         # TODO: Hard coded algorithm, change
         self.spectrum_agent = SpectrumAgent(spectrum_algorithm='ppo', rl_props=self.rl_props)
-
-        self.paths_obj = None
-        # Used to determine level of congestion, fragmentation, etc. for the q-learning algorithm
-        self.level_index = None
 
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
@@ -145,6 +143,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props['source'] = int(curr_req['source'])
         self.rl_props['destination'] = int(curr_req['destination'])
         self.rl_props['mock_sdn_dict'] = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
+        # TODO: Will probably have to change for test/train
         if self.sim_dict['path_algorithm'] == 'q_learning':
             self.path_agent.get_route()
             self.route_obj.route_props['paths_list'] = [self.rl_props['chosen_path']]
@@ -187,6 +186,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.path_agent.engine_props = self.engine_obj.engine_props
             self.path_agent.setup_env()
+        elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
+            self.core_agent.engine_props = self.engine_obj.engine_props
+            self.core_agent.setup_env()
         # TODO: Init everything? What to actually do when testing?
         else:
             raise NotImplementedError
