@@ -150,13 +150,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             path_len = find_path_len(path_list=self.rl_props['paths_list'][self.rl_props['path_index']],
                                      topology=self.engine_obj.topology)
             path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
-        if self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
+        elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
             self.route_obj.engine_props['route_method'] = 'shortest_path'
             self.route_obj.get_route()
-            path_mod = self.route_obj.route_props['mod_formats_list'][0]
-            # TODO: Need to force core
+            self.rl_props['chosen_path'] = self.route_obj.route_props['paths_list']
+            path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
             self.core_agent.get_core()
+            self.rl_props['core_index'] = 5
         else:
             self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
             self.route_obj.get_route()
