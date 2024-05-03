@@ -49,15 +49,16 @@ class QLearningHelpers:
 
         self._init_q_tables()
 
-    def get_max_future_q(self, path_list):
+    def get_max_future_q(self, path_list: list, net_spec_dict: dict):
         q_values = list()
-        new_cong = find_path_cong(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict)
+        new_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
         # TODO: Only using three congestion indexes is probably not good enough (maybe 10?)
         new_cong_index = classify_cong(curr_cong=new_cong)
         path_index, path, _ = self.paths_obj[self.rl_props['path_index']]
         self.paths_obj[self.rl_props['path_index']] = (path_index, path, new_cong_index)
 
-        # TODO: Reclassifying all paths when that's not necessary
+        # TODO: Reclassifying all paths when that's not actually correct
+        #   - In fact, it actually doesn't make sense
         for path_index, _, cong_index in self.paths_obj:
             curr_q = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']][path_index][
                 cong_index]['q_value']
@@ -65,10 +66,11 @@ class QLearningHelpers:
 
         return np.max(q_values)
 
-    def update_routes_matrix(self, reward: float, level_index: int):
+    def update_routes_matrix(self, reward: float, level_index: int, net_spec_dict: dict):
         routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
         current_q = routes_matrix[self.rl_props['path_index']][level_index]['q_value']
-        max_future_q = self.get_max_future_q(path_list=routes_matrix[self.rl_props['path_index']][0][0])
+        max_future_q = self.get_max_future_q(path_list=routes_matrix[self.rl_props['path_index']][0][0],
+                                             net_spec_dict=net_spec_dict)
         delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
         td_error = current_q - (reward + self.engine_obj.engine_props['discount_factor'] * max_future_q)
         self.helper_obj.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error,

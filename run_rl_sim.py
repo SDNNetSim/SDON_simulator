@@ -121,7 +121,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         drl_reward = 1
 
         if self.sim_dict['path_algorithm'] == 'q_learning':
-            self.path_agent.update(was_allocated=was_allocated)
+            self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict)
             # self._update_cores_matrix(was_routed=was_allocated)
         self.rl_props['arrival_count'] += 1
         terminated = self._check_terminated()
