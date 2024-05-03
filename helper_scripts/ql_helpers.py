@@ -1,8 +1,11 @@
 import networkx as nx
 import numpy as np
+import os
+import json
 
 from arg_scripts.rl_args import empty_q_props
 from helper_scripts.sim_helpers import find_path_cong, classify_cong, calc_matrix_stats
+from helper_scripts.os_helpers import create_dir
 
 
 # TODO: Generalize as many functions as you can, probably will move QLearning to another script
@@ -121,15 +124,15 @@ class QLearningHelpers:
 
     def _save_params(self, save_dir: str):
         params_dict = dict()
-        for param_type, params_list in self.q_props['save_params_dict'].items():
+        for param_type, params_list in self.props['save_params_dict'].items():
             for curr_param in params_list:
                 if param_type == 'engine_params_list':
-                    params_dict[curr_param] = self.engine_obj.engine_props[curr_param]
+                    params_dict[curr_param] = self.engine_props[curr_param]
                 else:
-                    params_dict[curr_param] = self.q_props[curr_param]
+                    params_dict[curr_param] = self.props[curr_param]
 
-        erlang = self.engine_obj.engine_props['erlang']
-        cores_per_link = self.engine_obj.engine_props['cores_per_link']
+        erlang = self.engine_props['erlang']
+        cores_per_link = self.engine_props['cores_per_link']
         param_fp = f"e{erlang}_params_c{cores_per_link}.json"
         param_fp = os.path.join(save_dir, param_fp)
         with open(param_fp, 'w', encoding='utf-8') as file_obj:
@@ -140,12 +143,13 @@ class QLearningHelpers:
         """
         Saves the current q-learning model.
         """
-        date_time = os.path.join(self.engine_obj.engine_props['network'], self.engine_obj.engine_props['sim_start'])
+        date_time = os.path.join(self.engine_props['network'], self.engine_props['date'],
+                                 self.engine_props['sim_start'])
         save_dir = os.path.join('logs', 'ql', date_time)
         create_dir(file_path=save_dir)
 
-        erlang = self.engine_obj.engine_props['erlang']
-        cores_per_link = self.engine_obj.engine_props['cores_per_link']
+        erlang = self.engine_props['erlang']
+        cores_per_link = self.engine_props['cores_per_link']
         route_fp = f"e{erlang}_routes_c{cores_per_link}.npy"
         core_fp = f"e{erlang}_cores_c{cores_per_link}.npy"
 
@@ -153,14 +157,18 @@ class QLearningHelpers:
             save_fp = os.path.join(os.getcwd(), save_dir, curr_fp)
 
             if curr_fp.split('_')[1] == 'routes':
-                np.save(save_fp, self.q_props['routes_matrix'])
+                np.save(save_fp, self.props['routes_matrix'])
             else:
-                np.save(save_fp, self.q_props['cores_matrix'])
+                np.save(save_fp, self.props['cores_matrix'])
 
         self._save_params(save_dir=save_dir)
 
-    def decay_epsilon(self, amount: float):
-        self.props['epsilon'] -= amount
+    def decay_epsilon(self):
+        if self.props['epsilon'] > self.engine_props['epsilon_end']:
+            decay_rate = (self.engine_props['epsilon_start'] - self.engine_props['epsilon_end'])
+            decay_rate /= self.engine_props['max_iters']
+            self.props['epsilon'] -= decay_rate
+
         if self.iteration == 0:
             self.props['epsilon_list'].append(self.props['epsilon'])
 

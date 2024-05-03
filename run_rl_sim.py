@@ -75,10 +75,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if self.rl_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
             base_fp = os.path.join('data')
-            # TODO: Update amount
-            if self.path_algorithm == 'q_learning':
-                amount = 0
-                # self.rl_help_obj.decay_epsilon(amount=amount, iteration=self.iteration)
+            if self.sim_dict['path_algorithm'] == 'q_learning':
+                self.path_agent.end_iter()
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
             self.iteration += 1
         else:
@@ -121,7 +119,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         drl_reward = 1
 
         if self.sim_dict['path_algorithm'] == 'q_learning':
-            self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict)
+            self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
+                                   iteration=self.iteration)
             # self._update_cores_matrix(was_routed=was_allocated)
         self.rl_props['arrival_count'] += 1
         terminated = self._check_terminated()
@@ -250,13 +249,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj.create_topology()
         self.rl_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
-        # TODO: Needs to be generalized
-        #   - Consider training AND testing
         if self.iteration == 0:
             self._init_envs()
         # TODO: A reset of props?
         else:
-            raise NotImplementedError
+            print('Did not do anything for the next iteration. To be continued/debugged.')
 
         self.rl_help_obj.rl_props = self.rl_props
         self.rl_help_obj.engine_obj = self.engine_obj

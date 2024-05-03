@@ -13,6 +13,10 @@ class PathAgent:
 
         self.agent_obj = None
 
+    def end_iter(self):
+        if self.path_algorithm == 'q_learning':
+            self.agent_obj.decay_epsilon()
+
     def setup_env(self):
         if self.path_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)

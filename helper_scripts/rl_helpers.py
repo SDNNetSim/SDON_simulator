@@ -97,7 +97,7 @@ class RLHelpers:
         :param bandwidth: Bandwidth of the current request.
         :param chosen_path: Path of the current request.
         """
-        self.route_obj.route_props['paths_list'].append(chosen_path)
+        self.route_obj.route_props['paths_list'] = [chosen_path]
         path_len = find_path_len(path_list=chosen_path, topology=self.engine_obj.engine_props['topology'])
         mod_format = get_path_mod(mods_dict=self.engine_obj.engine_props['mod_per_bw'][bandwidth], path_len=path_len)
         self.route_obj.route_props['mod_formats_list'].append([mod_format])
@@ -133,11 +133,8 @@ class RLHelpers:
 
         :param route_obj: The Routing class.
         """
-        # TODO: Paths list not updated properly, also not sure if path index updated properly
-        path_matrix = [route_obj.route_props['paths_list'][self.path_index]]
         curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
-
-        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=path_matrix)
+        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=[self.rl_props['chosen_path']])
 
     def update_mock_sdn(self, curr_req: dict):
         """
