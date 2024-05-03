@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 
 from arg_scripts.rl_args import empty_q_props
-from helper_scripts.sim_helpers import find_path_cong, classify_cong
+from helper_scripts.sim_helpers import find_path_cong, classify_cong, calc_matrix_stats
 
 
 # TODO: Generalize as many functions as you can, probably will move QLearning to another script
@@ -13,7 +13,9 @@ class QLearningHelpers:
         self.props = empty_q_props
         self.engine_props = engine_props
         self.rl_props = rl_props
+
         self.path_levels = 3
+        self.completed_sim = False
 
     def _init_q_tables(self):
         for source in range(0, self.rl_props['num_nodes']):
@@ -64,9 +66,8 @@ class QLearningHelpers:
                                              net_spec_dict=net_spec_dict, routes_matrix=routes_matrix)
 
         delta = reward + self.engine_props['discount_factor'] * max_future_q
-        td_error = current_q - (reward + self.engine_obj.engine_props['discount_factor'] * max_future_q)
-        self.helper_obj.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error,
-                                       iteration=self.iteration)
+        td_error = current_q - (reward + self.engine_props['discount_factor'] * max_future_q)
+        self.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error)
 
         engine_props = self.engine_obj.engine_props
         new_q = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
@@ -85,46 +86,39 @@ class QLearningHelpers:
         max_path = self.rl_props['paths_list'][max_index]
         return max_index, max_path
 
-    def _calc_q_averages(self, stats_flag: str, episode: str, iteration: int):
-        len_rewards = len(self.q_props['rewards_dict'][stats_flag]['rewards'][episode])
+    def _calc_q_averages(self, stats_flag: str, episode: str):
+        len_rewards = len(self.props['rewards_dict'][stats_flag]['rewards'][episode])
 
-        max_iters = self.engine_obj.engine_props['max_iters']
-        num_requests = self.engine_obj.engine_props['num_requests']
+        max_iters = self.engine_props['max_iters']
+        num_requests = self.engine_props['num_requests']
 
-        if iteration == (max_iters - 1) and len_rewards == num_requests:
+        if self.rl_props['iteration'] == (max_iters - 1) and len_rewards == num_requests:
             self.completed_sim = True
-            rewards_dict = self.q_props['rewards_dict'][stats_flag]['rewards']
-            errors_dict = self.q_props['errors_dict'][stats_flag]['errors']
-            self.q_props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
-            self.q_props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=errors_dict)
+            rewards_dict = self.props['rewards_dict'][stats_flag]['rewards']
+            errors_dict = self.props['errors_dict'][stats_flag]['errors']
+            self.props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
+            self.props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=errors_dict)
 
             self.save_model()
 
-    def update_q_stats(self, reward: float, td_error: float, stats_flag: str, iteration: int):
-        """
-        Updates data structures related to tracking q-learning algorithm statistics.
-
-        :param reward: The current reward.
-        :param td_error: The current temporal difference error.
-        :param stats_flag: Flag to determine calculations for the path or core q-table.
-        :param iteration: The current episode/iteration.
-        """
+    def update_q_stats(self, reward: float, td_error: float, stats_flag: str):
+        # To account for a reset even after a sim has completed (how SB3 works)
         if self.completed_sim:
             return
 
-        episode = str(iteration)
-        if episode not in self.q_props['rewards_dict'][stats_flag]['rewards'].keys():
-            self.q_props['rewards_dict'][stats_flag]['rewards'][episode] = [reward]
-            self.q_props['errors_dict'][stats_flag]['errors'][episode] = [td_error]
-            self.q_props['sum_rewards_dict'][episode] = reward
-            self.q_props['sum_errors_dict'][episode] = td_error
+        episode = str(self.rl_props['iteration'])
+        if episode not in self.props['rewards_dict'][stats_flag]['rewards'].keys():
+            self.props['rewards_dict'][stats_flag]['rewards'][episode] = [reward]
+            self.props['errors_dict'][stats_flag]['errors'][episode] = [td_error]
+            self.props['sum_rewards_dict'][episode] = reward
+            self.props['sum_errors_dict'][episode] = td_error
         else:
-            self.q_props['rewards_dict'][stats_flag]['rewards'][episode].append(reward)
-            self.q_props['errors_dict'][stats_flag]['errors'][episode].append(td_error)
-            self.q_props['sum_rewards_dict'][episode] += reward
-            self.q_props['sum_errors_dict'][episode] += td_error
+            self.props['rewards_dict'][stats_flag]['rewards'][episode].append(reward)
+            self.props['errors_dict'][stats_flag]['errors'][episode].append(td_error)
+            self.props['sum_rewards_dict'][episode] += reward
+            self.props['sum_errors_dict'][episode] += td_error
 
-        self._calc_q_averages(stats_flag=stats_flag, episode=episode, iteration=iteration)
+        self._calc_q_averages(stats_flag=stats_flag, episode=episode)
 
     def _save_params(self, save_dir: str):
         params_dict = dict()
