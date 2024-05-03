@@ -1,13 +1,7 @@
-import os
-import json
-
 import numpy as np
-import networkx as nx
-from gymnasium import spaces
 
-from helper_scripts.os_helpers import create_dir
-from helper_scripts.sim_helpers import find_path_len, combine_and_one_hot, calc_matrix_stats, get_path_mod, get_hfrag
-from helper_scripts.sim_helpers import find_path_cong
+from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
+from helper_scripts.sim_helpers import find_path_cong, classify_cong
 
 
 # TODO: Might switch around the functions in this script to make more sense
@@ -42,7 +36,7 @@ class RLHelpers:
         self.mod_format = None
         self.bandwidth = None
 
-    def _update_snapshots(self):
+    def update_snapshots(self):
         arrival_count = self.rl_props['arrival_count']
 
         snapshot_step = self.engine_obj.engine_props['snapshot_step']
@@ -85,25 +79,12 @@ class RLHelpers:
 
         return resp_frag_mat
 
-    @staticmethod
-    def _classify_cong(curr_cong):
-        if curr_cong < 0.3:
-            cong_index = 0
-        elif 0.3 <= curr_cong < 0.7:
-            cong_index = 1
-        elif curr_cong >= 0.7:
-            cong_index = 2
-        else:
-            raise ValueError('Congestion value not recognized.')
-
-        return cong_index
-
     def classify_paths(self, paths_list: list):
         info_list = list()
         paths_list = paths_list[:, 0]
         for path_index, curr_path in enumerate(paths_list):
             curr_cong = find_path_cong(path_list=curr_path, net_spec_dict=self.engine_obj.net_spec_dict)
-            cong_index = self._classify_cong(curr_cong=curr_cong)
+            cong_index = classify_cong(curr_cong=curr_cong)
 
             info_list.append((path_index, curr_path, cong_index))
 

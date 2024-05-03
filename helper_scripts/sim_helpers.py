@@ -505,3 +505,16 @@ def get_hfrag(path_list: list, core_num: int, slots_needed: int, spectral_slots:
     resp_frag_arr = np.where(resp_frag_arr == 1, np.inf, resp_frag_arr)
 
     return sc_index_mat, resp_frag_arr
+
+
+def classify_cong(curr_cong: float):
+    if curr_cong < 0.3:
+        cong_index = 0
+    elif 0.3 <= curr_cong < 0.7:
+        cong_index = 1
+    elif curr_cong >= 0.7:
+        cong_index = 2
+    else:
+        raise ValueError('Congestion value not recognized.')
+
+    return cong_index

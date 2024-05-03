@@ -87,7 +87,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return terminated
 
     # TODO: Pick a super-channel and a core
-    def _update_helper_obj(self, action: list):
+    def _update_helper_obj(self, action: list, bandwidth, ):
         self.rl_help_obj.path_index = self.rl_props['path_index']
         # self.rl_help_obj.core_num = self.rl_props['core_index']
 
@@ -100,23 +100,28 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_help_obj.ai_props = self.rl_props
         self.rl_help_obj.engine_obj = self.engine_obj
         self.rl_help_obj.handle_releases()
+        self.rl_help_obj.update_route_props(chosen_path=self.rl_props['chosen_path'], bandwidth=bandwidth)
 
     def step(self, action: list):
-        self._update_helper_obj(action=action)
+        req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
+        req_id = req_info_dict['req_id']
+        bandwidth = req_info_dict['bandwidth']
+        self._update_helper_obj(action=action, bandwidth=bandwidth)
         self.rl_help_obj.allocate(route_obj=self.route_obj)
         reqs_status_dict = self.engine_obj.reqs_status_dict
-        req_id = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['req_id']
 
         if req_id in reqs_status_dict:
             was_allocated = True
         else:
             was_allocated = False
-        self._update_snapshots()
+        self.rl_help_obj.update_snapshots()
 
-        drl_reward = self.rl_help_obj.calculate_drl_reward(was_allocated=was_allocated)
+        # TODO: Change
+        # drl_reward = self.rl_help_obj.calculate_drl_reward(was_allocated=was_allocated)
+        drl_reward = 1
 
-        if self.path_algorithm == 'q_learning':
-            self._update_routes_matrix(was_routed=was_allocated)
+        if self.sim_dict['path_algorithm'] == 'q_learning':
+            self.path_agent.update(was_allocated=was_allocated)
             # self._update_cores_matrix(was_routed=was_allocated)
         self.rl_props['arrival_count'] += 1
         terminated = self._check_terminated()
@@ -144,6 +149,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props['mock_sdn_dict'] = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
         if self.sim_dict['path_algorithm'] == 'q_learning':
             self.path_agent.get_route()
+            self.route_obj.route_props['paths_list'] = [self.rl_props['chosen_path']]
             path_len = find_path_len(path_list=self.rl_props['paths_list'][self.rl_props['path_index']],
                                      topology=self.engine_obj.topology)
             path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
@@ -270,7 +276,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 # In order to have the same structure as DRL
 # TODO: Have the above code return an action! Stepping with a random zero makes no sense at all
 def _run_iters(env: object, sim_dict: dict):
-    _, _ = env.reset()
     completed_episodes = 0
     while True:
         # TODO: Stepping with zero?

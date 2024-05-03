@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 
 from arg_scripts.rl_args import empty_q_props
+from helper_scripts.sim_helpers import find_path_cong, classify_cong
 
 
 # TODO: Generalize as many functions as you can, probably will move QLearning to another script
@@ -51,11 +52,12 @@ class QLearningHelpers:
     def get_max_future_q(self, path_list):
         q_values = list()
         new_cong = find_path_cong(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict)
-        # TODO: Fix this
-        self.new_cong_index = self.helper_obj._classify_cong(curr_cong=new_cong)
+        # TODO: Only using three congestion indexes is probably not good enough (maybe 10?)
+        new_cong_index = classify_cong(curr_cong=new_cong)
         path_index, path, _ = self.paths_obj[self.rl_props['path_index']]
-        self.paths_obj[self.rl_props['path_index']] = (path_index, path, self.new_cong_index)
+        self.paths_obj[self.rl_props['path_index']] = (path_index, path, new_cong_index)
 
+        # TODO: Reclassifying all paths when that's not necessary
         for path_index, _, cong_index in self.paths_obj:
             curr_q = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']][path_index][
                 cong_index]['q_value']
@@ -63,14 +65,9 @@ class QLearningHelpers:
 
         return np.max(q_values)
 
-    def _update_routes_matrix(self, was_routed: bool):
-        if was_routed:
-            reward = 1.0
-        else:
-            reward = -1.0
-
-        routes_matrix = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        current_q = routes_matrix[self.rl_props['path_index']][self.level_index]['q_value']
+    def update_routes_matrix(self, reward: float, level_index: int):
+        routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
+        current_q = routes_matrix[self.rl_props['path_index']][level_index]['q_value']
         max_future_q = self.get_max_future_q(path_list=routes_matrix[self.rl_props['path_index']][0][0])
         delta = reward + self.engine_obj.engine_props['discount_factor'] * max_future_q
         td_error = current_q - (reward + self.engine_obj.engine_props['discount_factor'] * max_future_q)
