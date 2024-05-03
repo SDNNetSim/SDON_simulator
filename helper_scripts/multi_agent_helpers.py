@@ -33,10 +33,11 @@ class PathAgent:
         else:
             return -1.0
 
-    def update(self, was_allocated: bool, net_spec_dict: dict):
+    def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int):
         reward = self.get_reward(was_allocated=was_allocated)
 
         if self.path_algorithm == 'q_learning':
+            self.agent_obj.iteration = iteration
             self.agent_obj.update_routes_matrix(reward=reward, level_index=self.level_index,
                                                 net_spec_dict=net_spec_dict)
 

@@ -16,6 +16,7 @@ class QLearningHelpers:
 
         self.path_levels = 3
         self.completed_sim = False
+        self.iteration = 0
 
     def _init_q_tables(self):
         for source in range(0, self.rl_props['num_nodes']):
@@ -68,11 +69,9 @@ class QLearningHelpers:
         delta = reward + self.engine_props['discount_factor'] * max_future_q
         td_error = current_q - (reward + self.engine_props['discount_factor'] * max_future_q)
         self.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error)
+        new_q = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
 
-        engine_props = self.engine_obj.engine_props
-        new_q = ((1.0 - engine_props['learn_rate']) * current_q) + (engine_props['learn_rate'] * delta)
-
-        routes_matrix = self.q_props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
+        routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
         routes_matrix[self.rl_props['path_index']]['q_value'] = new_q
 
     def get_max_curr_q(self, paths_info):
@@ -92,7 +91,7 @@ class QLearningHelpers:
         max_iters = self.engine_props['max_iters']
         num_requests = self.engine_props['num_requests']
 
-        if self.rl_props['iteration'] == (max_iters - 1) and len_rewards == num_requests:
+        if self.iteration == (max_iters - 1) and len_rewards == num_requests:
             self.completed_sim = True
             rewards_dict = self.props['rewards_dict'][stats_flag]['rewards']
             errors_dict = self.props['errors_dict'][stats_flag]['errors']
@@ -106,7 +105,7 @@ class QLearningHelpers:
         if self.completed_sim:
             return
 
-        episode = str(self.rl_props['iteration'])
+        episode = str(self.iteration)
         if episode not in self.props['rewards_dict'][stats_flag]['rewards'].keys():
             self.props['rewards_dict'][stats_flag]['rewards'][episode] = [reward]
             self.props['errors_dict'][stats_flag]['errors'][episode] = [td_error]
@@ -160,16 +159,10 @@ class QLearningHelpers:
 
         self._save_params(save_dir=save_dir)
 
-    def decay_epsilon(self, amount: float, iteration: int):
-        """
-        Decays epsilon for the q-learning algorithm every step.
+    def decay_epsilon(self, amount: float):
+        self.props['epsilon'] -= amount
+        if self.iteration == 0:
+            self.props['epsilon_list'].append(self.props['epsilon'])
 
-        :param amount: Amount to decay by.
-        :param iteration: The current iteration/episode.
-        """
-        self.q_props['epsilon'] -= amount
-        if iteration == 0:
-            self.q_props['epsilon_list'].append(self.q_props['epsilon'])
-
-        if self.q_props['epsilon'] < 0.0:
-            raise ValueError(f"Epsilon should be greater than 0 but it is {self.q_props['epsilon']}")
+        if self.props['epsilon'] < 0.0:
+            raise ValueError(f"Epsilon should be greater than 0 but it is {self.props['epsilon']}")
