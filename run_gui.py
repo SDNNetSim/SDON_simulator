@@ -104,24 +104,7 @@ class MainWindow(QMainWindow):
         data_display_widget = QWidget()
         data_display_widget.setStyleSheet(
             "background-color: white;"
-            ""
         )
-
-        self.hover_label = HoverLabel()
-        # Assuming this is within your main window or a relevant container/widget
-        self.hover_label.normalText = ""
-        self.hover_label.hoverText = ""
-
-        # path to operator media file
-        resource_name = "operator.png"
-        media_dir = "gui/media"
-        self.hover_label.setIcon(os.path.join(os.getcwd(), media_dir, resource_name))
-
-        operator_status_info = {"ID": "n/a", "Region": "North America", "Connection Status": "Unknown"}
-
-        # Connect the hoverChanged signal to a custom slot if you want to handle hover changes
-        self.hover_label.hoverChanged.connect(
-            lambda hovered: self.on_hover_change(self.hover_label, operator_status_info, hovered))
 
         container_layout.addWidget(data_display_widget)
 
@@ -132,8 +115,6 @@ class MainWindow(QMainWindow):
         data_layout = QVBoxLayout(data_display_widget)
         data_label = QLabel("Application Data Display", data_display_widget)
         data_label.setAlignment(Qt.AlignCenter)
-        # Add hoverLabel to the layout
-        data_layout.addWidget(self.hover_label)
         data_layout.addWidget(data_label)
 
     def add_control_tool_bar(self):
