@@ -4,7 +4,7 @@ import os
 import json
 
 from arg_scripts.rl_args import empty_q_props
-from helper_scripts.sim_helpers import find_path_cong, classify_cong, calc_matrix_stats
+from helper_scripts.sim_helpers import find_path_cong, classify_cong, calc_matrix_stats, find_core_cong
 from helper_scripts.os_helpers import create_dir
 
 
@@ -37,9 +37,9 @@ class QLearningHelpers:
                     for level_index in range(self.path_levels):
                         self.props['routes_matrix'][source, destination, k, level_index] = (curr_path, 0.0)
 
-                    for core_action in range(self.engine_props['cores_per_link']):
-                        core_tuple = (curr_path, core_action, 0.0)
-                        self.props['cores_matrix'][source, destination, k, core_action] = core_tuple
+                        for core_action in range(self.engine_props['cores_per_link']):
+                            core_tuple = (curr_path, core_action, 0.0)
+                            self.props['cores_matrix'][source, destination, k, core_action, level_index] = core_tuple
 
     def setup_env(self):
         self.props['epsilon'] = self.engine_props['epsilon_start']
@@ -51,22 +51,28 @@ class QLearningHelpers:
 
         self.props['cores_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
                                                self.rl_props['k_paths'],
-                                               self.engine_props['cores_per_link']), dtype=core_types)
+                                               self.engine_props['cores_per_link'], self.path_levels), dtype=core_types)
 
         self._init_q_tables()
 
-    # TODO: Generalize for core and route
-    def get_max_future_q(self, path_list: list, net_spec_dict: dict, routes_matrix: list):
-        new_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
-        # TODO: Only using three congestion indexes is probably not good enough (maybe 10?)
-        new_cong_index = classify_cong(curr_cong=new_cong)
-        max_future_q = routes_matrix[self.rl_props['path_index']][new_cong_index]['q_value']
+    def get_max_future_q(self, path_list: list, net_spec_dict: dict, matrix: list, core: list, flag: str):
+        if flag == 'path':
+            new_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
+        elif flag == 'core':
+            new_cong = find_core_cong(core=core)
+        else:
+            raise NotImplementedError
 
+        new_cong_index = classify_cong(curr_cong=new_cong)
+        max_future_q = matrix[self.rl_props['path_index']][new_cong_index]['q_value']
         return max_future_q
 
     def update_routes_matrix(self, reward: float, level_index: int, net_spec_dict: dict):
         routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        current_q = routes_matrix[self.rl_props['path_index']][level_index]['q_value']
+        path_list = routes_matrix[self.rl_props['path_index']][level_index]
+        current_q = path_list['q_value']
+
+        # TODO: Should NOT pass [0][0]
         max_future_q = self.get_max_future_q(path_list=routes_matrix[self.rl_props['path_index']][0][0],
                                              net_spec_dict=net_spec_dict, routes_matrix=routes_matrix)
 
@@ -76,12 +82,14 @@ class QLearningHelpers:
         new_q = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
 
         routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        # TODO: Check this
         routes_matrix[self.rl_props['path_index']]['q_value'] = new_q
 
     def update_cores_matrix(self, reward: float, core_index: int, level_index: int, net_spec_dict: dict):
         cores_matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        current_q = cores_matrix[self.rl_props['path_index']][core_index][level_index]['q_value']
+        path_list = cores_matrix[self.rl_props['path_index']][level_index][core_index]
+        current_q = path_list['q_value']
+
+        # TODO: Should NOT pass [0][0]
         max_future_q = self.get_max_future_q(path_list=cores_matrix[self.rl_props['path_index']][0][0],
                                              net_spec_dict=net_spec_dict, routes_matrix=cores_matrix)
 

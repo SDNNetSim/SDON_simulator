@@ -120,7 +120,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                    iteration=self.iteration)
-        elif self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
+        elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.core_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                    iteration=self.iteration)
         self.rl_props['arrival_count'] += 1

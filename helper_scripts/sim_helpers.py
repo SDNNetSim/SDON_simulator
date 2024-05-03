@@ -115,6 +115,9 @@ def find_path_cong(path_list: list, net_spec_dict: dict):
     average_path_cong = np.mean(links_cong_list)
     return average_path_cong
 
+def find_core_cong(core: list):
+    raise NotImplementedError
+
 
 def find_core_frag_cong(net_spec_db: dict, path: list, core: int):
     """
