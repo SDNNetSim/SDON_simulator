@@ -81,12 +81,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return terminated
 
-    # TODO: Pick a super-channel and a core
     def _update_helper_obj(self, action: list, bandwidth):
         self.rl_help_obj.path_index = self.rl_props['path_index']
         self.rl_help_obj.core_num = self.rl_props['core_index']
 
-        # TODO: Not sure about this
         if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.rl_help_obj.q_props = self.q_props
         elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
@@ -152,12 +150,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             path_len = find_path_len(path_list=self.rl_props['paths_list'][self.rl_props['path_index']],
                                      topology=self.engine_obj.topology)
             path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
-        # TODO: At the moment only works for SPF-FF
-        # TODO: Core for now will be first-fit in spectrum assignment only
         if self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
+            self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
             self.route_obj.get_route()
             self.core_agent.get_core()
-            print('Line 157 run_rl_sim')
         else:
             self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
             self.route_obj.get_route()
