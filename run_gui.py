@@ -1,22 +1,21 @@
 # pylint: disable=no-name-in-module
 import os
 import sys
+
+from PyQt5.QtCore import (
+    QSize, Qt, QMutexLocker, )
+from PyQt5.QtGui import (
+    QIcon, QFont, )
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QDesktopWidget,
     QWidget, QToolButton, QProgressBar, QAction,
-    QFileDialog, QLabel, QVBoxLayout,
-    QToolTip, QInputDialog, QDialog,
-)
-from PyQt5.QtGui import (
-    QIcon, QFont,
-)
-from PyQt5.QtCore import (
-    QSize, Qt, QMutexLocker,
+    QFileDialog, QVBoxLayout,
+    QToolTip, QInputDialog, QDialog, QGridLayout,
 )
 
-from gui.sim_thread.simulation_thread import SimulationThread
-from gui.labels.helper_labels import HoverLabel
 from data_scripts.structure_data import create_network
+from gui.nodes.circles import CirclesWidget
+from gui.sim_thread.simulation_thread import SimulationThread
 
 
 # TODO: Double check coding guidelines document:
@@ -56,6 +55,7 @@ class MainWindow(QMainWindow):
         """
         # Create the menu bar
         menu_bar = self.menuBar()
+        menu_bar.setStyleSheet("background-color: grey;")
 
         # Create File menu and add actions
         file_menu = menu_bar.addMenu('&File')
@@ -94,7 +94,7 @@ class MainWindow(QMainWindow):
         """
         # Main container widget
         container_widget = QWidget()
-        container_widget.setStyleSheet("background-color: #a3e1a4;")  # Set the color of the main container
+        container_widget.setStyleSheet("background-color: grey;")  # Set the color of the main container
 
         # Layout for the container widget, allowing for margins around the central data display
         container_layout = QVBoxLayout(container_widget)
@@ -105,17 +105,32 @@ class MainWindow(QMainWindow):
         data_display_widget.setStyleSheet(
             "background-color: white;"
         )
-
         container_layout.addWidget(data_display_widget)
+
+        network_information_display_layout = QGridLayout(data_display_widget)
+        network_information_display_layout.setContentsMargins(10, 10, 10, 10)
+
+        # contains mapping of src nodes and their destination nodes with distance
+        network_mapping_dict = {}
+        topology_information_dict = create_network('USNet')
+        for (src, des), link_len in topology_information_dict.items():
+            if src not in network_mapping_dict:
+                network_mapping_dict[src] = []
+            network_mapping_dict[src].append((des, link_len))
+
+        for src, mapping in network_mapping_dict.items():
+            print(f'Node {src} is connected to ', end='')
+            for dest, distance in mapping:
+                print(f'node {dest} with distance {distance}', end=', ')
+            print()
+
+        # continue here and create 'Node' widgets
+        node_widget = CirclesWidget()
+        node_widget.generate_circles()
+        network_information_display_layout.addWidget(node_widget)
 
         # Setting the container widget as the central widget of the main window
         self.setCentralWidget(container_widget)
-
-        # Example content for the data display widget
-        data_layout = QVBoxLayout(data_display_widget)
-        data_label = QLabel("Application Data Display", data_display_widget)
-        data_label.setAlignment(Qt.AlignCenter)
-        data_layout.addWidget(data_label)
 
     def add_control_tool_bar(self):
         """
@@ -124,7 +139,7 @@ class MainWindow(QMainWindow):
         # Create toolbar and add actions
         toolbar = self.addToolBar("Simulation Controls")
         # Set gray background color and black text color for the toolbar
-        toolbar.setStyleSheet("background-color: #d2dae2; color: white;")
+        toolbar.setStyleSheet("background-color: grey; color: white;")
         toolbar.setMovable(False)
         toolbar.setIconSize(QSize(20, 20))
 
@@ -278,6 +293,9 @@ class MainWindow(QMainWindow):
         # Here, you can add code to handle the opening and reading of the selected file
 
     def display_topology_info(self):
+        """
+        Displays a network topology
+        """
         network_selection_dialog = QDialog()
         network_selection_dialog.setSizeGripEnabled(True)
 
@@ -289,11 +307,15 @@ class MainWindow(QMainWindow):
         items = ['USNet', 'NSFNet', 'Pan-European']
         item, ok = network_type_input.getItem(network_selection_dialog, "Choose a network type:",
                                               "Select Network Type", items, 0, False)
+
+        network_mapping_dict = {}
+
         if ok and item:
-            topology_information = create_network(item)
-            for src_des_tuple, link_len in topology_information.items():
-                src, des = src_des_tuple
-                print(f'source node {src}, destination node {des}, distance {link_len}')
+            topology_information_dict = create_network(item)
+            for (src, des), link_len in topology_information_dict.items():
+                if src not in network_mapping_dict:
+                    network_mapping_dict[src] = []
+                network_mapping_dict[src].append((des, link_len))
 
     @staticmethod
     def save_file():
