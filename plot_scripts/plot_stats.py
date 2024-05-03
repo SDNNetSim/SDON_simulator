@@ -184,7 +184,7 @@ def main():
         ]
     }
 
-    sims_info_dict = find_times(dates_dict={'0430': 'NSFNet'}, filter_dict=filter_dict)
+    sims_info_dict = find_times(dates_dict={'0503': 'NSFNet'}, filter_dict=filter_dict)
     plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
     plot_obj.plot_blocking(ai=True)

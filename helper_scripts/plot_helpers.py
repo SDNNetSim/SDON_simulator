@@ -27,7 +27,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
     def _find_ai_stats(self, cores_per_link: int):
         # TODO: Generalize, also make sure to save date of simulation!
-        ai_fp = os.path.join('..', 'logs', 'ql', self.data_dict['network'], self.time)
+        ai_fp = os.path.join('..', 'logs', 'ql', self.data_dict['network'], self.data_dict['date'], self.time)
         ai_fp = os.path.join(ai_fp, f"e{self.erlang}_params_c{cores_per_link}.json")
 
         ai_dict = self._read_json_file(file_path=ai_fp)

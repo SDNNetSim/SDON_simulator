@@ -31,11 +31,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     metadata = dict()
 
-    # TODO: This will already have access to sim dict and everything
+    # TODO: Double check constructors used, probably won't need many now
     def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None, **kwargs):
         super().__init__()
 
-        # TODO: Double check constructors used, probably won't need many now
         self.rl_props = copy.deepcopy(empty_rl_props)
         self.rl_props['super_channel_space'] = None
         self.q_props = copy.deepcopy(empty_q_props)
