@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QDesktopWidget,
     QWidget, QToolButton, QProgressBar, QAction,
     QFileDialog, QLabel, QVBoxLayout,
-    QToolTip, QInputDialog,
+    QToolTip, QInputDialog, QDialog,
 )
 from PyQt5.QtGui import (
     QIcon, QFont,
@@ -16,7 +16,6 @@ from PyQt5.QtCore import (
 
 from gui.sim_thread.simulation_thread import SimulationThread
 from gui.labels.helper_labels import HoverLabel
-
 from data_scripts.structure_data import create_network
 
 
@@ -298,9 +297,17 @@ class MainWindow(QMainWindow):
         # Here, you can add code to handle the opening and reading of the selected file
 
     def display_topology_info(self):
+        network_selection_dialog = QDialog()
+        network_selection_dialog.setSizeGripEnabled(True)
+
+        # this centers the dialog box with respect to the main window
+        dialog_pos = self.mapToGlobal(self.rect().center()) - network_selection_dialog.rect().center()
+        network_selection_dialog.move(dialog_pos)
+
+        network_type_input = QInputDialog()
         items = ['USNet', 'NSFNet', 'Pan-European']
-        item, ok = QInputDialog.getItem(self, "Select Network Type",
-                                        "Choose a network type:", items, 0, False)
+        item, ok = network_type_input.getItem(network_selection_dialog, "Choose a network type:",
+                                              "Select Network Type", items, 0, False)
         if ok and item:
             topology_information = create_network(item)
             for src_des_tuple, link_len in topology_information.items():
