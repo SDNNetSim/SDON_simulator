@@ -117,7 +117,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # drl_reward = self.rl_help_obj.calculate_drl_reward(was_allocated=was_allocated)
         drl_reward = 1
 
-        if self.sim_dict['path_algorithm'] == 'q_learning':
+        if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                    iteration=self.iteration)
             # self._update_cores_matrix(was_routed=was_allocated)

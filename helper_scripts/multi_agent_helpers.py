@@ -102,7 +102,8 @@ class CoreAgent:
 
         self.agent_obj.setup_env()
 
-    def get_reward(self, was_allocated: bool):
+    @staticmethod
+    def get_reward(was_allocated: bool):
         if was_allocated:
             return 1.0
         else:
@@ -120,9 +121,6 @@ class CoreAgent:
         raise NotImplementedError
 
     def get_action(self):
-        raise NotImplementedError
-
-    def get_reward(self):
         raise NotImplementedError
 
     def _ql_core(self):
