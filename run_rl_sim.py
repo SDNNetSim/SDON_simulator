@@ -59,7 +59,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: I have self.engine_props and then engine props in the actual object...
         self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'], rl_props=self.rl_props,
                                     rl_help_obj=self.rl_help_obj)
-        self.core_agent = CoreAgent(core_algorithm=self.sim_dict['core_algorithm'], rl_props=self.rl_props)
+        self.core_agent = CoreAgent(core_algorithm=self.sim_dict['core_algorithm'], rl_props=self.rl_props,
+                                    rl_help_obj=self.rl_help_obj)
         # TODO: Hard coded algorithm, change
         self.spectrum_agent = SpectrumAgent(spectrum_algorithm='ppo', rl_props=self.rl_props)
 

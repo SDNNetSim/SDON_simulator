@@ -81,13 +81,15 @@ class PathAgent:
 
 
 class CoreAgent:
-    def __init__(self, core_algorithm: str, rl_props: dict):
+    def __init__(self, core_algorithm: str, rl_props: dict, rl_help_obj: object):
         self.core_algorithm = core_algorithm
         self.rl_props = rl_props
         self.engine_props = None
         self.agent_obj = None
+        self.rl_help_obj = rl_help_obj
 
         self.level_index = None
+        self.cong_list = list()
 
     def end_iter(self):
         # TODO: Only save core/path algorithm
@@ -128,6 +130,10 @@ class CoreAgent:
         #   - Core table setup
         #   - Congestion classification
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
+        cores_matrix = self.agent_obj.props['cores_matrix']
+        self.rl_props['cores_list'] = cores_matrix[self.rl_props['path_index']]
+        self.cong_list = self.rl_help_obj.classify_cores(cores_list=self.rl_props['cores_list'])
+
         if random_float < self.agent_obj.props['epsilon']:
             self.rl_props['core_index'] = np.random.randint(0, self.engine_props['cores_per_link'])
         else:

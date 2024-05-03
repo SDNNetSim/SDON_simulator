@@ -1,7 +1,7 @@
 import numpy as np
 
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
-from helper_scripts.sim_helpers import find_path_cong, classify_cong
+from helper_scripts.sim_helpers import find_path_cong, classify_cong, find_core_cong
 
 
 # TODO: Might switch around the functions in this script to make more sense
@@ -87,6 +87,18 @@ class RLHelpers:
             cong_index = classify_cong(curr_cong=curr_cong)
 
             info_list.append((path_index, curr_path, cong_index))
+
+        return info_list
+
+    def classify_cores(self, cores_list: list):
+        info_list = list()
+        cores_list = cores_list[:, 0]
+
+        for core_index, curr_core in enumerate(cores_list):
+            curr_cong = find_core_cong(core=curr_core, net_spec_dict=self.engine_obj.net_spec_dict)
+            cong_index = classify_cong(curr_cong=curr_cong)
+
+            info_list.append((core_index, curr_core, cong_index))
 
         return info_list
 

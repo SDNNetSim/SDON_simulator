@@ -39,7 +39,7 @@ class QLearningHelpers:
 
                         for core_action in range(self.engine_props['cores_per_link']):
                             core_tuple = (curr_path, core_action, 0.0)
-                            self.props['cores_matrix'][source, destination, k, core_action, level_index] = core_tuple
+                            self.props['cores_matrix'][k, core_action, level_index] = core_tuple
 
     def setup_env(self):
         self.props['epsilon'] = self.engine_props['epsilon_start']
@@ -49,8 +49,7 @@ class QLearningHelpers:
         self.props['routes_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
                                                 self.rl_props['k_paths'], self.path_levels), dtype=route_types)
 
-        self.props['cores_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
-                                               self.rl_props['k_paths'],
+        self.props['cores_matrix'] = np.empty((self.rl_props['k_paths'],
                                                self.engine_props['cores_per_link'], self.path_levels), dtype=core_types)
 
         self._init_q_tables()
