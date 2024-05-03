@@ -55,6 +55,7 @@ class QLearningHelpers:
 
         self._init_q_tables()
 
+    # TODO: Generalize for core and route
     def get_max_future_q(self, path_list: list, net_spec_dict: dict, routes_matrix: list):
         new_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
         # TODO: Only using three congestion indexes is probably not good enough (maybe 10?)
@@ -75,7 +76,22 @@ class QLearningHelpers:
         new_q = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
 
         routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
+        # TODO: Check this
         routes_matrix[self.rl_props['path_index']]['q_value'] = new_q
+
+    def update_cores_matrix(self, reward: float, core_index: int, level_index: int, net_spec_dict: dict):
+        cores_matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
+        current_q = cores_matrix[self.rl_props['path_index']][core_index][level_index]['q_value']
+        max_future_q = self.get_max_future_q(path_list=cores_matrix[self.rl_props['path_index']][0][0],
+                                             net_spec_dict=net_spec_dict, routes_matrix=cores_matrix)
+
+        delta = reward + self.engine_props['discount_factor'] * max_future_q
+        td_error = current_q - (reward + self.engine_props['discount_factor'] * max_future_q)
+        self.update_q_stats(reward=reward, stats_flag='cores_dict', td_error=td_error)
+        new_q = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
+
+        cores_matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
+        cores_matrix[self.rl_props['path_index']][core_index]['q_value'] = new_q
 
     def get_max_curr_q(self, paths_info):
         q_values = list()
