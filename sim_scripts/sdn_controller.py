@@ -179,7 +179,7 @@ class SDNController:
                     else:
                         self.spectrum_obj.spectrum_props['forced_index'] = forced_index
                         # TODO: Modify spectrum assignment to force a core
-                        self.spectrum_obj.spectrum_props['force_core'] = force_core
+                        self.spectrum_obj.spectrum_props['forced_core'] = force_core
                         self.spectrum_obj.spectrum_props['path_list'] = path_list
                         self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
                         # Request was blocked for this path

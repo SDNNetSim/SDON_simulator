@@ -135,7 +135,7 @@ class RLHelpers:
         """
         curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
         # TODO: Check this for when using core agent and when not using
-        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=[self.rl_props['chosen_path']],
+        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props['chosen_path'],
                                        force_core=self.rl_props['core_index'])
 
     def update_mock_sdn(self, curr_req: dict):
