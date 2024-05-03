@@ -87,6 +87,13 @@ class CoreAgent:
         self.engine_props = None
         self.agent_obj = None
 
+        self.level_index = None
+
+    def end_iter(self):
+        # TODO: Only save core/path algorithm
+        if self.core_algorithm == 'q_learning':
+            self.agent_obj.decay_epsilon()
+
     def setup_env(self):
         if self.core_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
@@ -94,6 +101,20 @@ class CoreAgent:
             raise NotImplementedError
 
         self.agent_obj.setup_env()
+
+    def get_reward(self, was_allocated: bool):
+        if was_allocated:
+            return 1.0
+        else:
+            return -1.0
+
+    def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int):
+        reward = self.get_reward(was_allocated=was_allocated)
+
+        if self.core_algorithm == 'q_learning':
+            self.agent_obj.iteration = iteration
+            self.agent_obj.update_cores_matrix(reward=reward, level_index=self.level_index,
+                                               net_spec_dict=net_spec_dict)
 
     def get_obs(self):
         raise NotImplementedError
@@ -105,6 +126,9 @@ class CoreAgent:
         raise NotImplementedError
 
     def _ql_core(self):
+        # TODO: Cores depending on paths before, so we didn't have congestion. Need to change:
+        #   - Core table setup
+        #   - Congestion classification
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         if random_float < self.agent_obj.props['epsilon']:
             self.rl_props['core_index'] = np.random.randint(0, self.engine_props['cores_per_link'])

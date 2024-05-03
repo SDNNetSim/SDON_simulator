@@ -72,8 +72,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if self.rl_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
             base_fp = os.path.join('data')
-            if self.sim_dict['path_algorithm'] == 'q_learning':
+            if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
                 self.path_agent.end_iter()
+            elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
+                self.core_agent.end_iter()
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
             self.iteration += 1
         else:
@@ -88,7 +90,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.rl_help_obj.q_props = self.q_props
         elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
-            print('Here')
+            pass
         else:
             self.rl_help_obj.drl_props = self.drl_props
 
@@ -158,7 +160,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.rl_props['chosen_path'] = self.route_obj.route_props['paths_list']
             path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
             self.core_agent.get_core()
-            self.rl_props['core_index'] = 5
         # TODO: Modify
         else:
             self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
