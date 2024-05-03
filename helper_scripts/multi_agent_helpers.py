@@ -104,19 +104,18 @@ class CoreAgent:
     def get_reward(self):
         raise NotImplementedError
 
-    # TODO: Here or in the ql_agent script?
     def _ql_core(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
-        if random_float < self.q_props['epsilon']:
-            self.rl_props['core_index'] = np.random.randint(0, self.engine_obj.engine_props['cores_per_link'])
+        if random_float < self.agent_obj.props['epsilon']:
+            self.rl_props['core_index'] = np.random.randint(0, self.engine_props['cores_per_link'])
         else:
-            cores_matrix = self.q_props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
+            cores_matrix = self.agent_obj.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
             q_values = cores_matrix[self.rl_props['path_index']]['q_value']
             self.rl_props['core_index'] = np.argmax(q_values)
 
-    # TODO: To call the above function
     def get_core(self):
-        raise NotImplementedError
+        if self.core_algorithm == 'q_learning':
+            self._ql_core()
 
 
 # The spectrum was almost to maximum capacity, there will be blocking but it's not the agent's fault

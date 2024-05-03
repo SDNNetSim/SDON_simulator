@@ -152,7 +152,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
         if self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
+            self.route_obj.engine_props['route_method'] = 'shortest_path'
             self.route_obj.get_route()
+            path_mod = self.route_obj.route_props['mod_formats_list'][0]
+            # TODO: Need to force core
             self.core_agent.get_core()
         else:
             self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
@@ -249,6 +252,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props['arrival_count'] = 0
         self.engine_obj.init_iter(iteration=self.iteration)
         self.engine_obj.create_topology()
+        self.rl_help_obj.topology = self.engine_obj.topology
         self.rl_props['num_nodes'] = len(self.engine_obj.topology.nodes)
 
         if self.iteration == 0:
