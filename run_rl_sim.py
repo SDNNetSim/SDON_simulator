@@ -91,7 +91,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.rl_help_obj.q_props = self.q_props
         elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
-            pass
+            self.rl_help_obj.q_props = self.q_props
         else:
             self.rl_help_obj.drl_props = self.drl_props
 
