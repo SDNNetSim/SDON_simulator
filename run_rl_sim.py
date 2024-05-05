@@ -145,6 +145,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             curr_req = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
 
+        if self.iteration == 14:
+            print('Line 149 run rl sim.')
+
         self.rl_props['source'] = int(curr_req['source'])
         self.rl_props['destination'] = int(curr_req['destination'])
         self.rl_props['mock_sdn_dict'] = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
@@ -164,7 +167,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.rl_props['chosen_path'] = self.route_obj.route_props['paths_list']
             # TODO: Always shortest path
             self.rl_props['path_index'] = 0
-            path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
+            path_len = find_path_len(path_list=self.rl_props['chosen_path'],
+                                     topology=self.engine_obj.topology)
+            path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
             self.core_agent.get_core()
         # TODO: Modify
         else:
@@ -250,6 +255,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props['arrival_list'] = list()
         self.rl_props['depart_list'] = list()
 
+        if self.iteration == 10:
+            print('Begin debug line 254 in run rl sim.')
+
         # TODO: Doesn't really make sense in the config file
         if self.optimize or self.optimize is None:
             # TODO: These will have to be modified
@@ -267,7 +275,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         if self.iteration == 0:
             self._init_envs()
-        # TODO: A reset of props?
         else:
             print('Did not do anything for the next iteration. To be continued/debugged.')
 
