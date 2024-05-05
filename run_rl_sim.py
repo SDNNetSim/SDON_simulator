@@ -151,7 +151,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # TODO: Will probably have to change for test/train
         if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.path_agent.get_route()
-            self.route_obj.route_props['paths_list'] = [self.rl_props['chosen_path']]
+            self.rl_help_obj.rl_props['chosen_path'] = [self.rl_props['chosen_path']]
+            self.route_obj.route_props['paths_list'] = self.rl_help_obj.rl_props['chosen_path']
             path_len = find_path_len(path_list=self.rl_props['paths_list'][self.rl_props['path_index']],
                                      topology=self.engine_obj.topology)
             path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)

@@ -71,9 +71,8 @@ class QLearningHelpers:
         path_list = routes_matrix[self.rl_props['path_index']][level_index]
         current_q = path_list['q_value']
 
-        # TODO: Should NOT pass [0][0]
         max_future_q = self.get_max_future_q(path_list=routes_matrix[self.rl_props['path_index']][0][0],
-                                             net_spec_dict=net_spec_dict, routes_matrix=routes_matrix)
+                                             net_spec_dict=net_spec_dict, matrix=routes_matrix, flag='path')
 
         delta = reward + self.engine_props['discount_factor'] * max_future_q
         td_error = current_q - (reward + self.engine_props['discount_factor'] * max_future_q)
@@ -130,7 +129,8 @@ class QLearningHelpers:
             self.props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
             self.props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=errors_dict)
 
-            self.save_model()
+            self.save_model(path_algorithm=self.engine_props['path_algorithm'],
+                            core_algorithm=self.engine_props['core_algorithm'])
 
     def update_q_stats(self, reward: float, td_error: float, stats_flag: str):
         # To account for a reset even after a sim has completed (how SB3 works)
@@ -168,7 +168,7 @@ class QLearningHelpers:
             json.dump(params_dict, file_obj)
 
     # TODO: Save every 'x' iters
-    def save_model(self):
+    def save_model(self, path_algorithm: str, core_algorithm: str):
         """
         Saves the current q-learning model.
         """
@@ -179,17 +179,19 @@ class QLearningHelpers:
 
         erlang = self.engine_props['erlang']
         cores_per_link = self.engine_props['cores_per_link']
-        route_fp = f"e{erlang}_routes_c{cores_per_link}.npy"
-        core_fp = f"e{erlang}_cores_c{cores_per_link}.npy"
 
-        for curr_fp in (route_fp, core_fp):
-            save_fp = os.path.join(os.getcwd(), save_dir, curr_fp)
+        if path_algorithm == 'q_learning':
+            save_fp = f"e{erlang}_routes_c{cores_per_link}.npy"
+        elif core_algorithm == 'q_learning':
+            save_fp = f"e{erlang}_cores_c{cores_per_link}.npy"
+        else:
+            raise NotImplementedError
 
-            if curr_fp.split('_')[1] == 'routes':
-                np.save(save_fp, self.props['routes_matrix'])
-            else:
-                np.save(save_fp, self.props['cores_matrix'])
-
+        save_fp = os.path.join(os.getcwd(), save_dir, save_fp)
+        if save_fp.split('_')[1] == 'routes':
+            np.save(save_fp, self.props['routes_matrix'])
+        else:
+            np.save(save_fp, self.props['cores_matrix'])
         self._save_params(save_dir=save_dir)
 
     def decay_epsilon(self):
