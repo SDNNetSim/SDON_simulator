@@ -125,6 +125,20 @@ class CoreAgent:
     def get_action(self):
         raise NotImplementedError
 
+    def __ql_route(self, random_float: float):
+        if random_float < self.agent_obj.props['epsilon']:
+            self.rl_props['path_index'] = np.random.choice(self.rl_props['k_paths'])
+            # The level will always be the last index
+            self.level_index = self.cong_list[self.rl_props['path_index']][-1]
+
+            if self.rl_props['path_index'] == 1 and self.rl_props['k_paths'] == 1:
+                self.rl_props['path_index'] = 0
+            self.rl_props['chosen_path'] = self.rl_props['paths_list'][self.rl_props['path_index']]
+        else:
+            self.rl_props['path_index'], self.rl_props['chosen_path'] = self.agent_obj.get_max_curr_q(
+                paths_info=self.cong_list)
+            self.level_index = self.cong_list[self.rl_props['path_index']][-1]
+
     def _ql_core(self):
         # TODO: Cores depending on paths before, so we didn't have congestion. Need to change:
         #   - Core table setup
@@ -134,11 +148,11 @@ class CoreAgent:
         self.rl_props['cores_list'] = cores_matrix[self.rl_props['path_index']]
         self.cong_list = self.rl_help_obj.classify_cores(cores_list=self.rl_props['cores_list'])
 
+        # TODO: Need
         if random_float < self.agent_obj.props['epsilon']:
             self.rl_props['core_index'] = np.random.randint(0, self.engine_props['cores_per_link'])
         else:
-            cores_matrix = self.agent_obj.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
-            q_values = cores_matrix[self.rl_props['path_index']]['q_value']
+            q_values = self.rl_props['cores_list']['q_value']
             self.rl_props['core_index'] = np.argmax(q_values)
 
     def get_core(self):

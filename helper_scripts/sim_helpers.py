@@ -116,12 +116,23 @@ def find_path_cong(path_list: list, net_spec_dict: dict):
     return average_path_cong
 
 
-def find_core_cong(core: list):
-    non_zero_count = np.count_nonzero(core)
-    total_count = core.size
-    percentage_non_zero = (non_zero_count / total_count) * 100
+def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
+    links_cong_list = list()
+    for src, dest in zip(path_list, path_list[1:]):
+        src_dest = (src, dest)
+        cores_matrix = net_spec_dict[src_dest]['cores_matrix']
+        cores_per_link = float(len(cores_matrix))
 
-    return percentage_non_zero
+        # Every core will have the same number of spectral slots
+        total_slots = len(cores_matrix[0])
+        slots_taken = 0
+        core_slots_taken = float(len(np.where(cores_matrix[core_index] != 0.0)[0]))
+        slots_taken += core_slots_taken
+
+        links_cong_list.append(slots_taken / (total_slots * cores_per_link))
+
+    average_core_cong = np.mean(links_cong_list)
+    return average_core_cong
 
 
 def find_core_frag_cong(net_spec_db: dict, path: list, core: int):

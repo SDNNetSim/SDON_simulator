@@ -94,8 +94,10 @@ class RLHelpers:
         info_list = list()
         cores_list = cores_list[:, 0]
 
+        path_list = cores_list[0][0][0][0]
         for core_index, curr_core in enumerate(cores_list):
-            curr_cong = find_core_cong(core=curr_core, net_spec_dict=self.engine_obj.net_spec_dict)
+            curr_cong = find_core_cong(core_index=core_index, net_spec_dict=self.engine_obj.net_spec_dict,
+                                       path_list=path_list)
             cong_index = classify_cong(curr_cong=curr_cong)
 
             info_list.append((core_index, curr_core, cong_index))
