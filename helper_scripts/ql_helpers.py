@@ -54,11 +54,11 @@ class QLearningHelpers:
 
         self._init_q_tables()
 
-    def get_max_future_q(self, path_list: list, net_spec_dict: dict, matrix: list, core: list, flag: str):
+    def get_max_future_q(self, path_list: list, net_spec_dict: dict, matrix: list, flag: str, core_index: int = None):
         if flag == 'path':
             new_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
         elif flag == 'core':
-            new_cong = find_core_cong(core=core)
+            new_cong = find_core_cong(core_index=core_index, net_spec_dict=net_spec_dict, path_list=path_list)
         else:
             raise NotImplementedError
 
@@ -84,21 +84,19 @@ class QLearningHelpers:
         routes_matrix[self.rl_props['path_index']]['q_value'] = new_q
 
     def update_cores_matrix(self, reward: float, core_index: int, level_index: int, net_spec_dict: dict):
-        cores_matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        path_list = cores_matrix[self.rl_props['path_index']][level_index][core_index]
-        current_q = path_list['q_value']
+        cores_matrix = self.props['cores_matrix'][self.rl_props['path_index']]
+        cores_list = cores_matrix[self.rl_props['core_index']][level_index]
+        current_q = cores_list['q_value']
 
-        # TODO: Should NOT pass [0][0]
-        max_future_q = self.get_max_future_q(path_list=cores_matrix[self.rl_props['path_index']][0][0],
-                                             net_spec_dict=net_spec_dict, routes_matrix=cores_matrix)
+        max_future_q = self.get_max_future_q(path_list=cores_list['path'], net_spec_dict=net_spec_dict,
+                                             matrix=cores_matrix, flag='core', core_index=core_index)
 
         delta = reward + self.engine_props['discount_factor'] * max_future_q
         td_error = current_q - (reward + self.engine_props['discount_factor'] * max_future_q)
         self.update_q_stats(reward=reward, stats_flag='cores_dict', td_error=td_error)
         new_q = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
 
-        cores_matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        cores_matrix[self.rl_props['path_index']][core_index]['q_value'] = new_q
+        cores_matrix[core_index][level_index]['q_value'] = new_q
 
     def get_max_curr_q(self, cong_list: list, matrix_flag: str):
         q_values = list()
