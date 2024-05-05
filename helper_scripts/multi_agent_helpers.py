@@ -56,7 +56,7 @@ class PathAgent:
             self.rl_props['chosen_path'] = self.rl_props['paths_list'][self.rl_props['path_index']]
         else:
             self.rl_props['path_index'], self.rl_props['chosen_path'] = self.agent_obj.get_max_curr_q(
-                paths_info=self.cong_list)
+                cong_list=self.cong_list, matrix_flag='routes_matrix')
             self.level_index = self.cong_list[self.rl_props['path_index']][-1]
 
     def _ql_route(self):
@@ -125,35 +125,22 @@ class CoreAgent:
     def get_action(self):
         raise NotImplementedError
 
-    def __ql_route(self, random_float: float):
-        if random_float < self.agent_obj.props['epsilon']:
-            self.rl_props['path_index'] = np.random.choice(self.rl_props['k_paths'])
-            # The level will always be the last index
-            self.level_index = self.cong_list[self.rl_props['path_index']][-1]
-
-            if self.rl_props['path_index'] == 1 and self.rl_props['k_paths'] == 1:
-                self.rl_props['path_index'] = 0
-            self.rl_props['chosen_path'] = self.rl_props['paths_list'][self.rl_props['path_index']]
-        else:
-            self.rl_props['path_index'], self.rl_props['chosen_path'] = self.agent_obj.get_max_curr_q(
-                paths_info=self.cong_list)
-            self.level_index = self.cong_list[self.rl_props['path_index']][-1]
-
     def _ql_core(self):
-        # TODO: Cores depending on paths before, so we didn't have congestion. Need to change:
-        #   - Core table setup
-        #   - Congestion classification
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         cores_matrix = self.agent_obj.props['cores_matrix']
         self.rl_props['cores_list'] = cores_matrix[self.rl_props['path_index']]
         self.cong_list = self.rl_help_obj.classify_cores(cores_list=self.rl_props['cores_list'])
 
-        # TODO: Need
+        # TODO: Need to update level index
         if random_float < self.agent_obj.props['epsilon']:
             self.rl_props['core_index'] = np.random.randint(0, self.engine_props['cores_per_link'])
+            self.level_index = None
         else:
             q_values = self.rl_props['cores_list']['q_value']
             self.rl_props['core_index'] = np.argmax(q_values)
+            self.rl_props['core_index'] = self.agent_obj.get_max_curr_q(cong_list=self.cong_list,
+                                                                        matrix_flag='cores_matrix')
+            self.level_index = None
 
     def get_core(self):
         if self.core_algorithm == 'q_learning':

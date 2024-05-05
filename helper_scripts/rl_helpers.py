@@ -92,15 +92,15 @@ class RLHelpers:
 
     def classify_cores(self, cores_list: list):
         info_list = list()
-        cores_list = cores_list[:, 0]
+        cores_list = cores_list[:, 0][0]
 
-        path_list = cores_list[0][0][0][0]
         for core_index, curr_core in enumerate(cores_list):
+            path_list = curr_core['path'][0]
             curr_cong = find_core_cong(core_index=core_index, net_spec_dict=self.engine_obj.net_spec_dict,
                                        path_list=path_list)
             cong_index = classify_cong(curr_cong=curr_cong)
 
-            info_list.append((core_index, curr_core, cong_index))
+            info_list.append((core_index, curr_core[cong_index], cong_index))
 
         return info_list
 

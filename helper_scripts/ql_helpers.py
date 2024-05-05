@@ -100,11 +100,17 @@ class QLearningHelpers:
         cores_matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
         cores_matrix[self.rl_props['path_index']][core_index]['q_value'] = new_q
 
-    def get_max_curr_q(self, paths_info):
+    def get_max_curr_q(self, cong_list: list, matrix_flag: str):
         q_values = list()
-        for path_index, _, level_index in paths_info:
-            routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-            curr_q = routes_matrix[path_index][level_index]['q_value']
+        for path_index, _, level_index in cong_list:
+            if matrix_flag == 'routes_matrix':
+                matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
+            elif matrix_flag == 'cores_matrix':
+                matrix = self.props['cores_matrix']
+            else:
+                raise ValueError
+
+            curr_q = matrix[path_index][level_index]['q_value']
             q_values.append(curr_q)
 
         max_index = np.argmax(q_values)
