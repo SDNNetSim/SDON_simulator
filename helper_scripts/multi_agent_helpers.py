@@ -131,13 +131,13 @@ class CoreAgent:
         self.rl_props['cores_list'] = cores_matrix[self.rl_props['path_index']]
         self.cong_list = self.rl_help_obj.classify_cores(cores_list=self.rl_props['cores_list'])
 
-        # TODO: Need to update level index
         if random_float < self.agent_obj.props['epsilon']:
             self.rl_props['core_index'] = np.random.randint(0, self.engine_props['cores_per_link'])
             self.level_index = self.cong_list[self.rl_props['core_index']][-1]
         else:
-            self.rl_props['core_index'] = self.agent_obj.get_max_curr_q(cong_list=self.cong_list,
-                                                                        matrix_flag='cores_matrix')
+            self.rl_props['core_index'], self.rl_props['chosen_core'] = self.agent_obj.get_max_curr_q(
+                cong_list=self.cong_list,
+                matrix_flag='cores_matrix')
             self.level_index = self.cong_list[self.rl_props['core_index']][-1]
 
     def get_core(self):

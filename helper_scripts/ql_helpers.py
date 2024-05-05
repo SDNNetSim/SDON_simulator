@@ -102,20 +102,22 @@ class QLearningHelpers:
 
     def get_max_curr_q(self, cong_list: list, matrix_flag: str):
         q_values = list()
-        for path_index, _, level_index in cong_list:
+        for obj_index, _, level_index in cong_list:
             if matrix_flag == 'routes_matrix':
                 matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
+                sub_flag = 'paths_list'
             elif matrix_flag == 'cores_matrix':
                 matrix = self.props['cores_matrix'][self.rl_props['path_index']]
+                sub_flag = 'cores_list'
             else:
                 raise ValueError
 
-            curr_q = matrix[path_index][level_index]['q_value']
+            curr_q = matrix[obj_index][level_index]['q_value']
             q_values.append(curr_q)
 
         max_index = np.argmax(q_values)
-        max_path = self.rl_props['paths_list'][max_index]
-        return max_index, max_path
+        max_obj = self.rl_props[sub_flag][max_index]
+        return max_index, max_obj
 
     def _calc_q_averages(self, stats_flag: str, episode: str):
         len_rewards = len(self.props['rewards_dict'][stats_flag]['rewards'][episode])
