@@ -161,6 +161,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.route_obj.engine_props['route_method'] = 'shortest_path'
             self.route_obj.get_route()
             self.rl_props['chosen_path'] = self.route_obj.route_props['paths_list']
+            # TODO: Always shortest path
+            self.rl_props['path_index'] = 0
             path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
             self.core_agent.get_core()
         # TODO: Modify

@@ -106,7 +106,7 @@ class QLearningHelpers:
             if matrix_flag == 'routes_matrix':
                 matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
             elif matrix_flag == 'cores_matrix':
-                matrix = self.props['cores_matrix']
+                matrix = self.props['cores_matrix'][self.rl_props['path_index']]
             else:
                 raise ValueError
 

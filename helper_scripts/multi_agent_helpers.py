@@ -134,13 +134,11 @@ class CoreAgent:
         # TODO: Need to update level index
         if random_float < self.agent_obj.props['epsilon']:
             self.rl_props['core_index'] = np.random.randint(0, self.engine_props['cores_per_link'])
-            self.level_index = None
+            self.level_index = self.cong_list[self.rl_props['core_index']][-1]
         else:
-            q_values = self.rl_props['cores_list']['q_value']
-            self.rl_props['core_index'] = np.argmax(q_values)
             self.rl_props['core_index'] = self.agent_obj.get_max_curr_q(cong_list=self.cong_list,
                                                                         matrix_flag='cores_matrix')
-            self.level_index = None
+            self.level_index = self.cong_list[self.rl_props['core_index']][-1]
 
     def get_core(self):
         if self.core_algorithm == 'q_learning':

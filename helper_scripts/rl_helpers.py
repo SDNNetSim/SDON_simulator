@@ -92,7 +92,6 @@ class RLHelpers:
 
     def classify_cores(self, cores_list: list):
         info_list = list()
-        cores_list = cores_list[:, 0][0]
 
         for core_index, curr_core in enumerate(cores_list):
             path_list = curr_core['path'][0]
