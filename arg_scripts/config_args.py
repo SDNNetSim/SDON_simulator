@@ -110,7 +110,7 @@ OTHER_OPTIONS = {
         'discount_factor': float,
         'epsilon_start': float,
         'epsilon_end': float,
-        'is_training': str,
+        'is_training': bool,
         'path_algorithm': str,
         'core_algorithm': str,
         'spectrum_algorithm': str,

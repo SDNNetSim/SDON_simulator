@@ -25,12 +25,6 @@ class PathAgent:
 
         self.agent_obj.setup_env()
 
-    def get_obs(self):
-        raise NotImplementedError
-
-    def get_action(self):
-        raise NotImplementedError
-
     def get_reward(self, was_allocated: bool):
         if was_allocated:
             return 1.0
@@ -78,6 +72,11 @@ class PathAgent:
             self._ql_route()
         else:
             raise NotImplementedError
+
+    def load_model(self, model_path: str):
+        # TODO: Hard coded, also need Erlang here, also params
+        route_matrix_path = f'logs/ql/{model_path}/e250.0_routes_c7.npy'
+        self.agent_obj.props['routes_matrix'] = np.load(route_matrix_path, allow_pickle=True)
 
 
 class CoreAgent:
@@ -143,6 +142,11 @@ class CoreAgent:
     def get_core(self):
         if self.core_algorithm == 'q_learning':
             self._ql_core()
+
+    def load_model(self, model_path: str):
+        # TODO: Hard coded, also need Erlang here, also params
+        core_matrix_path = f'logs/ql/{model_path}/e250.0_cores_c7.npy'
+        self.agent_obj.props['cores_matrix'] = np.load(core_matrix_path, allow_pickle=True)
 
 
 # The spectrum was almost to maximum capacity, there will be blocking but it's not the agent's fault

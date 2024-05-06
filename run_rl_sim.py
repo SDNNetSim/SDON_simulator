@@ -145,9 +145,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             curr_req = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
 
-        if self.iteration == 14:
-            print('Line 149 run rl sim.')
-
         self.rl_props['source'] = int(curr_req['source'])
         self.rl_props['destination'] = int(curr_req['destination'])
         self.rl_props['mock_sdn_dict'] = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
@@ -311,7 +308,11 @@ def _run_iters(env: object, sim_dict: dict):
 def _run_testing(env: object, sim_dict: dict):
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
     # curr_action, _states = model.predict(obs)
-    raise NotImplementedError
+    # TODO: For the path and the core agent, replace their tables with this one
+    # TODO: Note that the same hyperparams need to be loaded because they won't be here
+    # TODO: Hard coded
+    env.path_agent.load_model(model_path='NSFNet/0506/10_40_08_449829')
+    env.core_agent.load_model(model_path='NSFNet/0506/10_40_17_522794')
 
 
 # TODO: Type for env
@@ -377,6 +378,7 @@ def run_rl_sim():
     env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=_setup_rl_sim())
     env.sim_dict['callback'] = callback
 
+    env.sim_dict['is_training'] = False
     if env.sim_dict['is_training']:
         _run_training(env=env, sim_dict=env.sim_dict)
     else:
