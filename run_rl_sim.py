@@ -12,7 +12,7 @@ from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
-from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod, find_path_cong
+from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod
 from arg_scripts.rl_args import empty_drl_props, empty_q_props, empty_rl_props
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
 
@@ -69,18 +69,21 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _update_helper_obj(self, action: list, bandwidth):
         self.rl_help_obj.path_index = self.rl_props['path_index']
         self.rl_help_obj.core_num = self.rl_props['core_index']
-
-        if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
-            self.rl_help_obj.q_props = self.q_props
-        elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
-            self.rl_help_obj.q_props = self.q_props
-        else:
-            self.rl_help_obj.drl_props = self.drl_props
-
         self.rl_help_obj.ai_props = self.rl_props
         self.rl_help_obj.engine_obj = self.engine_obj
         self.rl_help_obj.handle_releases()
         self.rl_help_obj.update_route_props(chosen_path=self.rl_props['chosen_path'], bandwidth=bandwidth)
+
+    def _handle_test_train(self, was_allocated: bool):
+        if self.sim_dict['is_training']:
+            if self.sim_dict['path_algorithm'] == 'q_learning':
+                self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
+                                       iteration=self.iteration)
+            elif self.sim_dict['core_algorithm'] == 'q_learning':
+                self.core_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
+                                       iteration=self.iteration)
+        else:
+            raise NotImplementedError
 
     def step(self, action: list):
         req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
@@ -94,18 +97,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             was_allocated = True
         else:
             was_allocated = False
+
+        self._handle_test_train(was_allocated=was_allocated)
         self.rl_help_obj.update_snapshots()
+        drl_reward = self.rl_help_obj.calculate_drl_reward(was_allocated=was_allocated)
 
-        # TODO: Change
-        # drl_reward = self.rl_help_obj.calculate_drl_reward(was_allocated=was_allocated)
-        drl_reward = 1
-
-        if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
-            self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
-                                   iteration=self.iteration)
-        elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
-            self.core_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
-                                   iteration=self.iteration)
         self.rl_props['arrival_count'] += 1
         terminated = self._check_terminated()
         new_obs = self._get_obs()
