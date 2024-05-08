@@ -17,18 +17,7 @@ from arg_scripts.rl_args import empty_drl_props, empty_q_props, empty_rl_props
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
 
 
-# TODO: Account for command line input
-#   - Run command line input in this script
-# TODO: AI props should be RL props
-# TODO: Only support for s1
-# TODO: Plan is to run and debug the path agent today with new formulations
-#   - Run overnight the path agent considering cong. and frag.
-#   - Not sure how my formulation will be for this just yet
-# TODO: ONLY use props in each object, do not duplicate here (Write in a standard?)
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
-    """
-    Simulates a deep q-learning environment with stable baselines3 integration.
-    """
     metadata = dict()
 
     # TODO: Double check constructors used, probably won't need many now
@@ -38,9 +27,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.rl_props = copy.deepcopy(empty_rl_props)
         self.rl_props['super_channel_space'] = None
-        self.q_props = copy.deepcopy(empty_q_props)
-        self.drl_props = copy.deepcopy(empty_drl_props)
-
         self.sim_dict = sim_dict['s1']
 
         self.iteration = 0
@@ -51,18 +37,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.engine_obj = None
         self.route_obj = None
-        # TODO: These are no longer the updated props...(Q props, drl props)
-        self.rl_help_obj = RLHelpers(rl_props=self.rl_props, engine_obj=self.engine_obj, route_obj=self.route_obj,
-                                     q_props=self.q_props, drl_props=self.drl_props)
+        self.rl_help_obj = RLHelpers(rl_props=self.rl_props, engine_obj=self.engine_obj, route_obj=self.route_obj)
 
-        # TODO: Core and spectrum agents
-        # TODO: I have self.engine_props and then engine props in the actual object...
         self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'], rl_props=self.rl_props,
                                     rl_help_obj=self.rl_help_obj)
         self.core_agent = CoreAgent(core_algorithm=self.sim_dict['core_algorithm'], rl_props=self.rl_props,
                                     rl_help_obj=self.rl_help_obj)
-        # TODO: Hard coded algorithm, change
-        self.spectrum_agent = SpectrumAgent(spectrum_algorithm='ppo', rl_props=self.rl_props)
+        self.spectrum_agent = SpectrumAgent(spectrum_algorithm=self.sim_dict['spectrum_algorithm'],
+                                            rl_props=self.rl_props)
 
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
