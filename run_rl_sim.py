@@ -74,7 +74,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_help_obj.handle_releases()
         self.rl_help_obj.update_route_props(chosen_path=self.rl_props['chosen_path'], bandwidth=bandwidth)
 
-    def _handle_test_train(self, was_allocated: bool):
+    def _handle_test_train_step(self, was_allocated: bool):
         if self.sim_dict['is_training']:
             if self.sim_dict['path_algorithm'] == 'q_learning':
                 self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
@@ -98,7 +98,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             was_allocated = False
 
-        self._handle_test_train(was_allocated=was_allocated)
+        self._handle_test_train_step(was_allocated=was_allocated)
         self.rl_help_obj.update_snapshots()
         drl_reward = self.rl_help_obj.calculate_drl_reward(was_allocated=was_allocated)
 
@@ -114,18 +114,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _get_info():
         return dict()
 
-    # TODO: Split this up into more functions
-    def _get_obs(self):
-        # Used when we reach a reset after a simulation has finished (reset automatically called by gymnasium, use
-        # placeholder variable)
-        if self.rl_props['arrival_count'] == self.engine_obj.engine_props['num_requests']:
-            curr_req = self.rl_props['arrival_list'][self.rl_props['arrival_count'] - 1]
-        else:
-            curr_req = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
-
-        self.rl_props['source'] = int(curr_req['source'])
-        self.rl_props['destination'] = int(curr_req['destination'])
-        self.rl_props['mock_sdn_dict'] = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
+    # TODO: Get obs function for each in multi agent helpers...
+    def _handle_test_train_obs(self, curr_req: dict):
         # TODO: Will probably have to change for test/train
         if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.path_agent.get_route()
@@ -155,12 +145,27 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.rl_props['core_index'] = None
             path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
 
+        return path_mod
+
+    def _get_obs(self):
+        # Used when we reach a reset after a simulation has finished (reset automatically called by gymnasium, use
+        # placeholder variable)
+        if self.rl_props['arrival_count'] == self.engine_obj.engine_props['num_requests']:
+            curr_req = self.rl_props['arrival_list'][self.rl_props['arrival_count'] - 1]
+        else:
+            curr_req = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
+
+        self.rl_props['source'] = int(curr_req['source'])
+        self.rl_props['destination'] = int(curr_req['destination'])
+        self.rl_props['mock_sdn_dict'] = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
+
+        path_mod = self._handle_test_train_obs(curr_req=curr_req)
         if path_mod is not False:
             slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
         else:
             slots_needed = 0
-        # super_channels = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
-        #                                                     num_channels=self.super_channel_space)
+        super_channels = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
+                                                             num_channels=self.super_channel_space)
 
         source_obs = np.zeros(self.rl_props['num_nodes'])
         source_obs[self.rl_props['source']] = 1.0
@@ -171,8 +176,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             'slots_needed': slots_needed,
             'source': source_obs,
             'destination': dest_obs,
-            # TODO: Change
-            'super_channels': 0,
+            'super_channels': super_channels,
         }
         return obs_dict
 
@@ -183,7 +187,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.core_agent.engine_props = self.engine_obj.engine_props
             self.core_agent.setup_env()
-        # TODO: Init everything? What to actually do when testing?
         else:
             raise NotImplementedError
 
@@ -224,24 +227,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.sim_dict['holding_time']
         self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.sim_dict['cores_per_link']
 
-    # TODO: Split this up into more functions
-    def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
-        super().reset(seed=seed)
-        self.rl_props['arrival_list'] = list()
-        self.rl_props['depart_list'] = list()
-
-        if self.iteration == 10:
-            print('Begin debug line 254 in run rl sim.')
-
-        # TODO: Doesn't really make sense in the config file
-        if self.optimize or self.optimize is None:
-            # TODO: These will have to be modified
-            # TODO: Not sure if q and drl props are needed?
-            self.rl_props['q_props'] = copy.deepcopy(empty_q_props)
-            self.rl_props['drl_props'] = copy.deepcopy(empty_drl_props)
-            self.iteration = 0
-            self.setup()
-
+    def _init_props_envs(self):
         self.rl_props['arrival_count'] = 0
         self.engine_obj.init_iter(iteration=self.iteration)
         self.engine_obj.create_topology()
@@ -257,7 +243,21 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_help_obj.engine_obj = self.engine_obj
         self.rl_help_obj.route_obj = self.route_obj
 
-        # TODO: Generalize (Ask about this)
+    def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
+        super().reset(seed=seed)
+        self.rl_props['arrival_list'] = list()
+        self.rl_props['depart_list'] = list()
+
+        # TODO: Doesn't really make sense in the config file
+        if self.optimize or self.optimize is None:
+            # TODO: These will have to be modified
+            # TODO: Not sure if q and drl props are needed?
+            self.rl_props['q_props'] = copy.deepcopy(empty_q_props)
+            self.rl_props['drl_props'] = copy.deepcopy(empty_drl_props)
+            self.iteration = 0
+            self.setup()
+
+        self._init_props_envs()
         if seed is None:
             # seed = self.iteration
             seed = 0
@@ -268,12 +268,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
-# In order to have the same structure as DRL
-# TODO: Have the above code return an action! Stepping with a random zero makes no sense at all
 def _run_iters(env: object, sim_dict: dict):
     completed_episodes = 0
     while True:
-        # TODO: Stepping with zero?
+        # TODO: Get the acutal action here from DRL
         obs, curr_reward, is_terminated, is_truncated, curr_info = env.step([0])
         if completed_episodes >= sim_dict['max_iters']:
             break
@@ -286,15 +284,11 @@ def _run_iters(env: object, sim_dict: dict):
 def _run_testing(env: object, sim_dict: dict):
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
     # curr_action, _states = model.predict(obs)
-    # TODO: For the path and the core agent, replace their tables with this one
-    # TODO: Note that the same hyperparams need to be loaded because they won't be here
-    # TODO: Hard coded
     env.path_agent.load_model(model_path='NSFNet/0506/10_40_08_449829')
     env.core_agent.load_model(model_path='NSFNet/0506/10_40_17_522794')
 
 
-# TODO: Type for env
-def _get_model(algorithm: str, device: str, env):
+def _get_model(algorithm: str, device: str, env: object):
     model = None
     if algorithm == 'dqn':
         model = None
@@ -328,7 +322,7 @@ def _run_training(env: object, sim_dict: dict):
     _print_train_info(sim_dict=sim_dict)
     if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
         _run_iters(env=env, sim_dict=sim_dict)
-    # TODO: Consider RL zoo and optimization via command line
+    # TODO: RL zoo and optimization via command line
     # TODO: Also register the environment
     elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
         model = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
