@@ -74,8 +74,7 @@ class PathAgent:
             raise NotImplementedError
 
     def load_model(self, model_path: str):
-        # TODO: Hard coded, also need Erlang here, also params
-        route_matrix_path = f'logs/ql/{model_path}/e250.0_routes_c7.npy'
+        route_matrix_path = f'logs/ql/{model_path}'
         self.agent_obj.props['routes_matrix'] = np.load(route_matrix_path, allow_pickle=True)
 
 
@@ -207,7 +206,7 @@ class SpectrumAgent:
 
         return reward
 
-    def calculate_drl_reward(self, was_allocated: bool):
+    def get_reward(self, was_allocated: bool, no_penalty=False):
         """
         Gets the reward for the deep reinforcement learning agent.
 
@@ -215,15 +214,12 @@ class SpectrumAgent:
         :return: The reward.
         :rtype: float
         """
-        if self.no_penalty:
+        if no_penalty:
             drl_reward = 0.0
         else:
-            drl_reward = self._calc_deep_reward(was_allocated=was_allocated)
+            drl_reward = 1.0
 
         return drl_reward
-
-    def get_reward(self):
-        raise NotImplementedError
 
     def _ppo_spectrum(self):
         """

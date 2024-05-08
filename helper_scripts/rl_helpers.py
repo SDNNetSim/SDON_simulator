@@ -11,12 +11,10 @@ class RLHelpers:
     Contains methods to assist with reinforcement learning simulations.
     """
 
-    def __init__(self, rl_props: dict, engine_obj: object, route_obj: object, q_props: dict, drl_props: dict):
+    def __init__(self, rl_props: dict, engine_obj: object, route_obj: object):
         # TODO: Check for variables used and unused
         #   - Improve naming
         self.rl_props = rl_props
-        self.q_props = q_props
-        self.drl_props = drl_props
 
         self.engine_obj = engine_obj
         self.route_obj = route_obj

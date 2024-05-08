@@ -26,8 +26,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         super().__init__()
 
         self.rl_props = copy.deepcopy(empty_rl_props)
-        self.rl_props['super_channel_space'] = None
         self.sim_dict = sim_dict['s1']
+        self.rl_props['super_channel_space'] = self.sim_dict['super_channel_space']
 
         self.iteration = 0
         self.options = None
@@ -37,6 +37,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.engine_obj = None
         self.route_obj = None
+        # TODO: RL props does not carry over to these functions! (Double check everything)
         self.rl_help_obj = RLHelpers(rl_props=self.rl_props, engine_obj=self.engine_obj, route_obj=self.route_obj)
 
         self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'], rl_props=self.rl_props,
@@ -100,7 +101,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self._handle_test_train_step(was_allocated=was_allocated)
         self.rl_help_obj.update_snapshots()
-        drl_reward = self.rl_help_obj.calculate_drl_reward(was_allocated=was_allocated)
+        drl_reward = self.spectrum_agent.get_reward(was_allocated=was_allocated)
 
         self.rl_props['arrival_count'] += 1
         terminated = self._check_terminated()
@@ -165,7 +166,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             slots_needed = 0
         super_channels = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
-                                                             num_channels=self.super_channel_space)
+                                                             num_channels=self.rl_props['super_channel_space'])
 
         source_obs = np.zeros(self.rl_props['num_nodes'])
         source_obs[self.rl_props['source']] = 1.0
@@ -282,10 +283,11 @@ def _run_iters(env: object, sim_dict: dict):
 
 
 def _run_testing(env: object, sim_dict: dict):
+    # TODO: Add support for DRL loaded model
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
     # curr_action, _states = model.predict(obs)
-    env.path_agent.load_model(model_path='NSFNet/0506/10_40_08_449829')
-    env.core_agent.load_model(model_path='NSFNet/0506/10_40_17_522794')
+    env.path_agent.load_model(model_path=sim_dict['path_model'])
+    env.core_agent.load_model(model_path=sim_dict['core_model'])
 
 
 def _get_model(algorithm: str, device: str, env: object):
@@ -350,7 +352,6 @@ def run_rl_sim():
     env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=_setup_rl_sim())
     env.sim_dict['callback'] = callback
 
-    env.sim_dict['is_training'] = False
     if env.sim_dict['is_training']:
         _run_training(env=env, sim_dict=env.sim_dict)
     else:
