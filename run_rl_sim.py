@@ -13,7 +13,7 @@ from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
 from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod
-from arg_scripts.rl_args import empty_drl_props, empty_q_props, empty_rl_props
+from arg_scripts.rl_args import empty_rl_props
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
 
 
@@ -115,36 +115,47 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _get_info():
         return dict()
 
-    # TODO: Get obs function for each in multi agent helpers...
+    def _handle_path_train(self):
+        self.path_agent.get_route()
+        self.rl_help_obj.rl_props['chosen_path'] = [self.rl_props['chosen_path']]
+        self.route_obj.route_props['paths_list'] = self.rl_help_obj.rl_props['chosen_path']
+        self.rl_props['core_index'] = None
+
+    def _handle_core_train(self):
+        self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
+        self.route_obj.engine_props['route_method'] = 'shortest_path'
+        self.route_obj.get_route()
+
+        self.rl_props['chosen_path'] = self.route_obj.route_props['paths_list']
+        # Always the shortest path
+        self.rl_props['path_index'] = 0
+        self.core_agent.get_core()
+
+    def _handle_spectrum_train(self):
+        self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
+        self.route_obj.get_route()
+        self.rl_props['paths_list'] = self.route_obj.route_props['paths_list']
+        self.rl_props['path_index'] = 0
+        self.rl_props['core_index'] = None
+        path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
+
     def _handle_test_train_obs(self, curr_req: dict):
-        # TODO: Will probably have to change for test/train
-        if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
-            self.path_agent.get_route()
-            self.rl_help_obj.rl_props['chosen_path'] = [self.rl_props['chosen_path']]
-            self.route_obj.route_props['paths_list'] = self.rl_help_obj.rl_props['chosen_path']
-            path_len = find_path_len(path_list=self.rl_props['paths_list'][self.rl_props['path_index']],
-                                     topology=self.engine_obj.topology)
-            path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
-            self.rl_props['core_index'] = None
-        elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
-            self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
-            self.route_obj.engine_props['route_method'] = 'shortest_path'
-            self.route_obj.get_route()
-            self.rl_props['chosen_path'] = self.route_obj.route_props['paths_list']
-            # TODO: Always shortest path
-            self.rl_props['path_index'] = 0
-            path_len = find_path_len(path_list=self.rl_props['chosen_path'],
-                                     topology=self.engine_obj.topology)
-            path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
-            self.core_agent.get_core()
-        # TODO: Modify
+        if self.sim_dict['is_training']:
+            if self.sim_dict['path_algorithm'] == 'q_learning':
+                self._handle_path_train()
+            elif self.sim_dict['core_algorithm'] == 'q_learning':
+                self._handle_core_train()
+            elif self.sim_dict['spectrum_algorithm'] not in ('first_fit', 'best_fit', ' last_fit'):
+                self._handle_spectrum_train()
+            else:
+                raise NotImplementedError
+        # TODO: For testing purposes
         else:
-            self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
-            self.route_obj.get_route()
-            self.rl_props['paths_list'] = self.route_obj.route_props['paths_list']
-            self.rl_props['path_index'] = 0
-            self.rl_props['core_index'] = None
-            path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
+            raise NotImplementedError
+
+        path_len = find_path_len(path_list=self.rl_props['paths_list'][self.rl_props['path_index']],
+                                 topology=self.engine_obj.topology)
+        path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
 
         return path_mod
 
@@ -251,10 +262,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # TODO: Doesn't really make sense in the config file
         if self.optimize or self.optimize is None:
-            # TODO: These will have to be modified
-            # TODO: Not sure if q and drl props are needed?
-            self.rl_props['q_props'] = copy.deepcopy(empty_q_props)
-            self.rl_props['drl_props'] = copy.deepcopy(empty_drl_props)
             self.iteration = 0
             self.setup()
 

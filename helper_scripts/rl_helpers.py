@@ -182,25 +182,11 @@ class RLHelpers:
 
     def reset_reqs_dict(self, seed: int):
         self.engine_obj.generate_requests(seed=seed)
-        self.min_arrival = np.inf
-        self.max_arrival = -1 * np.inf
-        self.min_depart = np.inf
-        self.max_depart = -1 * np.inf
 
         for req_time in self.engine_obj.reqs_dict:
             if self.engine_obj.reqs_dict[req_time]['request_type'] == 'arrival':
-                if req_time > self.max_arrival:
-                    self.max_arrival = req_time
-                if req_time < self.min_arrival:
-                    self.min_arrival = req_time
-
                 self.rl_props['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
             else:
-                if req_time > self.max_depart:
-                    self.max_depart = req_time
-                if req_time < self.min_depart:
-                    self.min_depart = req_time
-
                 self.rl_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
 
     # TODO: This will probably also move to rl helpers
