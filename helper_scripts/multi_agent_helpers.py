@@ -163,6 +163,7 @@ class SpectrumAgent:
         :return: The observation space.
         :rtype: spaces.Dict
         """
+        # TODO: Change
         resp_obs = spaces.Dict({
             'slots_needed': spaces.Discrete(15 + 1),
             'source': spaces.MultiBinary(self.rl_props['num_nodes']),

@@ -74,10 +74,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_help_obj.path_index = self.rl_props['path_index']
         self.rl_help_obj.core_num = self.rl_props['core_index']
 
-        if self.rl_props['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
-            self.rl_help_obj.forced_index = action
+        if self.sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
+            self.rl_help_obj.rl_props['forced_index'] = action
         else:
-            self.rl_help_obj.forced_index = None
+            self.rl_help_obj.rl_props['forced_index'] = None
 
         self.rl_help_obj.ai_props = self.rl_props
         self.rl_help_obj.engine_obj = self.engine_obj
@@ -147,6 +147,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj.engine_props['route_method'] = 'shortest_path'
         self.route_obj.get_route()
         self.rl_props['paths_list'] = self.route_obj.route_props['paths_list']
+        self.rl_props['chosen_path'] = self.route_obj.route_props['paths_list']
         self.rl_props['path_index'] = 0
         self.rl_props['core_index'] = None
 

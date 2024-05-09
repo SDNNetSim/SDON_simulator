@@ -145,9 +145,10 @@ class RLHelpers:
         :param route_obj: The Routing class.
         """
         curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
+        forced_index = self.super_channel_indexes[self.rl_props['forced_index']][0]
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props['chosen_path'],
                                        force_core=self.rl_props['core_index'],
-                                       forced_index=self.rl_props['forced_index'])
+                                       forced_index=forced_index)
 
     def update_mock_sdn(self, curr_req: dict):
         """
