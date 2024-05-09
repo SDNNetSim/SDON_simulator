@@ -122,7 +122,7 @@ class QLearningHelpers:
         max_iters = self.engine_props['max_iters']
         num_requests = self.engine_props['num_requests']
 
-        if self.iteration == (max_iters - 1) and len_rewards == num_requests:
+        if self.iteration == ((max_iters - 1) % 10) and len_rewards == num_requests:
             self.completed_sim = True
             rewards_dict = self.props['rewards_dict'][stats_flag]['rewards']
             errors_dict = self.props['errors_dict'][stats_flag]['errors']

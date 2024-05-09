@@ -117,12 +117,6 @@ class CoreAgent:
             self.agent_obj.update_cores_matrix(reward=reward, level_index=self.level_index,
                                                net_spec_dict=net_spec_dict, core_index=self.rl_props['core_index'])
 
-    def get_obs(self):
-        raise NotImplementedError
-
-    def get_action(self):
-        raise NotImplementedError
-
     def _ql_core(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         cores_matrix = self.agent_obj.props['cores_matrix']
@@ -163,7 +157,7 @@ class SpectrumAgent:
         :return: The observation space.
         :rtype: spaces.Dict
         """
-        # TODO: Change
+        # TODO: Change, hard coded
         resp_obs = spaces.Dict({
             'slots_needed': spaces.Discrete(15 + 1),
             'source': spaces.MultiBinary(self.rl_props['num_nodes']),
@@ -197,3 +191,8 @@ class SpectrumAgent:
 
     def get_spectrum(self):
         raise NotImplementedError
+
+    def load_model(self, model_path: str):
+        raise NotImplementedError
+        # model = DQN.load('./logs/DQN/best_model.zip', env=env)
+        # curr_action, _states = model.predict(obs)

@@ -141,11 +141,14 @@ class RLHelpers:
     def allocate(self):
         curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
 
-        try:
-            forced_index = self.super_channel_indexes[self.rl_props['forced_index']][0]
-        # DRL agent picked a super-channel that is not available, block
-        except IndexError:
-            return
+        if self.rl_props['forced_index'] is not None:
+            try:
+                forced_index = self.super_channel_indexes[self.rl_props['forced_index']][0]
+            # DRL agent picked a super-channel that is not available, block
+            except IndexError:
+                return
+        else:
+            forced_index = None
 
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props['chosen_path'],
                                        force_core=self.rl_props['core_index'],

@@ -262,8 +262,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         if self.iteration == 0:
             self._init_envs()
-        else:
-            print('Did not do anything for the next iteration. To be continued/debugged.')
 
         self.rl_help_obj.rl_props = self.rl_props
         self.rl_help_obj.engine_obj = self.engine_obj
@@ -303,11 +301,9 @@ def _run_iters(env: object, sim_dict: dict):
 
 
 def _run_testing(env: object, sim_dict: dict):
-    # TODO: Load DRL model
-    # model = DQN.load('./logs/DQN/best_model.zip', env=env)
-    # curr_action, _states = model.predict(obs)
     env.path_agent.load_model(model_path=sim_dict['path_model'])
     env.core_agent.load_model(model_path=sim_dict['core_model'])
+    env.spectrum_agent.load_model(model_path=sim_dict['spectrum_model'])
 
 
 def _get_model(algorithm: str, device: str, env: object):
@@ -359,8 +355,6 @@ def _run_training(env: object, sim_dict: dict):
         model, yaml_dict = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
         model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
                     callback=sim_dict['callback'])
-        # TODO: Save model with a name of the date time?
-        # model.save('./logs/best_PPO_model.zip')
     else:
         raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '
                          f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
