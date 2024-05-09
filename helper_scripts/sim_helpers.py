@@ -458,20 +458,20 @@ def get_super_channels(input_arr: np.array, slots_needed: int):
     :rtype: np.array
     """
     potential_super_channels = []
-    current_start = 0
     consecutive_zeros = 0
+    current_start = 0  # Initialize current_start here
 
     for i in range(len(input_arr)):  # pylint: disable=consider-using-enumerate
         if input_arr[i] == 0:
             consecutive_zeros += 1
+            if consecutive_zeros == 1:
+                current_start = i
         else:
             consecutive_zeros = 0
-            current_start = i + 1
 
         if consecutive_zeros >= slots_needed:
             potential_super_channels.append([current_start, i])
-            consecutive_zeros -= 1
-            current_start += 1
+            consecutive_zeros = 0
 
     return np.array(potential_super_channels)
 
@@ -513,7 +513,10 @@ def get_hfrag(path_list: list, core_num: int, slots_needed: int, spectral_slots:
     for super_channel in sc_index_mat:
         mock_alloc_arr = copy.deepcopy(path_alloc_arr)
         for index in super_channel:
-            mock_alloc_arr[index] = 1
+            try:
+                mock_alloc_arr[index] = 1
+            except IndexError:
+                print('Here')
 
         tmp_sc_mat = get_super_channels(input_arr=mock_alloc_arr, slots_needed=slots_needed)
         hfrag_after = _get_hfrag_score(sc_index_mat=tmp_sc_mat, spectral_slots=spectral_slots)

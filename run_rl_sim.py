@@ -17,11 +17,14 @@ from arg_scripts.rl_args import empty_rl_props
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
 
 
+# TODO: Re-order functions
+# TODO: Check if props needs to be reset
+# TODO: Check if props updated in other objects
+# TODO: RLZoo handled via command line
+# TODO: Goal is for everything to be ran here
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     metadata = dict()
 
-    # TODO: Double check constructors used, probably won't need many now
-    # TODO: Double check to see if props needs to be reset...
     def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None, **kwargs):
         super().__init__()
 
@@ -37,7 +40,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.engine_obj = None
         self.route_obj = None
-        # TODO: RL props does not carry over to these functions! (Double check everything)
         self.rl_help_obj = RLHelpers(rl_props=self.rl_props, engine_obj=self.engine_obj, route_obj=self.route_obj)
 
         self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'], rl_props=self.rl_props,
@@ -213,7 +215,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
                                  sdn_props=self.rl_props['mock_sdn_dict'])
 
-        # TODO: Keep an eye on this, used to be sim dict but now I'm confused as to what it actually does
         self.sim_props = create_input(base_fp=base_fp, engine_props=self.sim_dict)
         modified_props = copy.deepcopy(self.sim_props)
         if 'topology' in self.sim_props:
@@ -227,7 +228,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         """
         Sets up this class.
         """
-        # TODO: Not sure if I still need these props here (rl_props)...
         self.optimize = self.sim_dict['optimize']
         self.rl_props['k_paths'] = self.sim_dict['k_paths']
         self.rl_props['cores_per_link'] = self.sim_dict['cores_per_link']
@@ -260,7 +260,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props['arrival_list'] = list()
         self.rl_props['depart_list'] = list()
 
-        # TODO: Doesn't really make sense in the config file
+        # TODO: Does this make sense?
         if self.optimize or self.optimize is None:
             self.iteration = 0
             self.setup()
@@ -279,7 +279,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 def _run_iters(env: object, sim_dict: dict):
     completed_episodes = 0
     while True:
-        # TODO: Get the acutal action here from DRL
+        # TODO: Get the action from DRL
         obs, curr_reward, is_terminated, is_truncated, curr_info = env.step([0])
         if completed_episodes >= sim_dict['max_iters']:
             break
@@ -290,7 +290,7 @@ def _run_iters(env: object, sim_dict: dict):
 
 
 def _run_testing(env: object, sim_dict: dict):
-    # TODO: Add support for DRL loaded model
+    # TODO: Load DRL model
     # model = DQN.load('./logs/DQN/best_model.zip', env=env)
     # curr_action, _states = model.predict(obs)
     env.path_agent.load_model(model_path=sim_dict['path_model'])
@@ -331,14 +331,12 @@ def _run_training(env: object, sim_dict: dict):
     _print_train_info(sim_dict=sim_dict)
     if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
         _run_iters(env=env, sim_dict=sim_dict)
-    # TODO: RL zoo and optimization via command line
-    # TODO: Also register the environment
     elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
         model = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
-        # TODO: This should come from the yml file actually (total time steps and print step)?
+        # TODO: YML file or config?
         model.learn(total_timesteps=sim_dict['num_requests'], log_interval=sim_dict['print_step'],
                     callback=sim_dict['callback'])
-        # TODO: Save model
+        # TODO: Save model with a name
         # model.save('./logs/best_PPO_model.zip')
     else:
         raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '
