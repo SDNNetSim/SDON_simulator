@@ -195,14 +195,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs_dict
 
     def _init_envs(self):
+        # SB3 will init the environment for us, but not for non-DRL algorithms we've added
         if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.path_agent.engine_props = self.engine_obj.engine_props
             self.path_agent.setup_env()
         elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
             self.core_agent.engine_props = self.engine_obj.engine_props
             self.core_agent.setup_env()
-        else:
-            raise NotImplementedError
 
     def _create_input(self):
         base_fp = os.path.join('data')
@@ -297,14 +296,14 @@ def _run_testing(env: object, sim_dict: dict):
     env.core_agent.load_model(model_path=sim_dict['core_model'])
 
 
-def _get_model(algorithm: str, device: str, env: object):
+def _get_model(algorithm: str, device: str, env: object, policy: str):
     model = None
     if algorithm == 'dqn':
         model = None
     elif algorithm == 'ppo':
         # TODO: Number of training steps
         # TODO: Policy to configuration file
-        model = PPO(policy='MlpPolicy', env=env, device=device)
+        model = PPO(policy=policy, env=env, device=device)
     elif algorithm == 'a2c':
         model = None
 
@@ -332,11 +331,12 @@ def _run_training(env: object, sim_dict: dict):
     if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
         _run_iters(env=env, sim_dict=sim_dict)
     elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
-        model = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
-        # TODO: YML file or config?
-        model.learn(total_timesteps=sim_dict['num_requests'], log_interval=sim_dict['print_step'],
-                    callback=sim_dict['callback'])
-        # TODO: Save model with a name
+        model = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env,
+                           policy=sim_dict['policy'])
+        # TODO: YML file or config? Save every x iters? Also don't forget hyperparameter tuning
+        model.learn(total_timesteps=sim_dict['num_requests'] * sim_dict['max_iters'],
+                    log_interval=sim_dict['print_step'], callback=sim_dict['callback'])
+        # TODO: Save model with a name of the date time?
         # model.save('./logs/best_PPO_model.zip')
     else:
         raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '

@@ -159,7 +159,6 @@ class SpectrumAgent:
         self.spectrum_algorithm = spectrum_algorithm
         self.rl_props = rl_props
 
-    # TODO: Change, hard-coded
     def _ppo_obs_space(self):
         """
         Gets the observation space for the DRL agent.
@@ -180,22 +179,13 @@ class SpectrumAgent:
         if self.spectrum_algorithm == 'ppo':
             return self._ppo_obs_space()
 
-    # TODO: Change hard-coded
-    @staticmethod
-    def _ppo_action_space(super_channel_space: int = 3):
-        """
-        Gets the action space for the DRL agent.
-
-        :param super_channel_space: The number of 'J' super-channels that can be selected.
-        :return: The action space.
-        :rtype: spaces.Discrete
-        """
-        action_space = spaces.Discrete(super_channel_space)
+    def _ppo_action_space(self):
+        action_space = spaces.Discrete(self.rl_props['super_channel_space'])
         return action_space
 
     def get_action_space(self):
         if self.spectrum_algorithm == 'ppo':
-            return self._ppo_obs_space()
+            return self._ppo_action_space()
 
     @staticmethod
     def _calc_deep_reward(was_allocated: bool):

@@ -116,6 +116,8 @@ OTHER_OPTIONS = {
         'spectrum_algorithm': str,
         'optimize': str_to_bool,
         'super_channel_space': int,
+        'device': str,
+        'policy': str,
     },
     'file_settings': {
     },
@@ -165,6 +167,7 @@ COMMAND_LINE_PARAMS = [
     ['theta', float, ''],
     ['filter_mods', bool, ''],
     ['super_channel_space', int, ''],
+    ['policy', str, ''],
 
     # For StableBaselines3
     ['algo', str, ''],
