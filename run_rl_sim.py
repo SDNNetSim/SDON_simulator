@@ -1,5 +1,6 @@
 import os
 import copy
+import torch.nn as nn
 
 import gymnasium as gym
 import numpy as np
@@ -303,18 +304,17 @@ def _get_model(algorithm: str, device: str, env: object):
     if algorithm == 'dqn':
         model = None
     elif algorithm == 'ppo':
-        # TODO: Number of training steps
-        # TODO: Policy to configuration file
         yaml_path = os.path.join('sb3_scripts', 'yml', 'ppo.yml')
         yaml_dict = parse_yaml_file(yaml_path)
         env_name = list(yaml_dict.keys())[0]
-        model = PPO(policy=yaml_dict[env_name]['policy'], n_steps=yaml_dict[env_name]['n_steps'],
+        kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])
+        model = PPO(env=env, device=device, policy=yaml_dict[env_name]['policy'], n_steps=yaml_dict[env_name]['n_steps'],
                     batch_size=yaml_dict[env_name]['batch_size'], gae_lambda=yaml_dict[env_name]['gae_lambda'],
                     gamma=yaml_dict[env_name]['gamma'], n_epochs=yaml_dict[env_name]['n_epochs'],
                     vf_coef=yaml_dict[env_name]['vf_coef'], ent_coef=yaml_dict[env_name]['ent_coef'],
                     max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
                     learning_rate=yaml_dict[env_name]['learning_rate'], clip_range=yaml_dict[env_name]['clip_range'],
-                    policy_kwargs=yaml_dict[env_name]['policy_kwargs'], env=env, device=device)
+                    policy_kwargs=kwargs_dict)
     elif algorithm == 'a2c':
         model = None
 
