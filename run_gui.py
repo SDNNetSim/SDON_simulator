@@ -226,10 +226,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # set up for stop button
         resource_name = "light-red-stop-button.png"
-        self.stop_button.setIcon(QIcon(os.path.join(os.getcwd(), media_dir, resource_name)))
+        self.stop_button.setIcon(
+            QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
+        )
         self.stop_button.setText("Stop")
-        self.stop_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.stop_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
+        self.stop_button.setStyleSheet(
+            "background-color: transparent;"
+        )
         self.stop_button.clicked.connect(self.stop_simulation)
 
         settings_button = QToolButton()
