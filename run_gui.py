@@ -235,11 +235,15 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         self.stop_button.clicked.connect(self.stop_simulation)
 
-        settings_button = QToolButton()
+        settings_button = QtWidgets.QToolButton()
         resource_name = "gear.png"
-        settings_button.setIcon(QIcon(os.path.join(os.getcwd(), media_dir, resource_name)))
+        settings_button.setIcon(
+            QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
+        )
         settings_button.setText("Settings")
-        settings_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
+        settings_button.setStyleSheet(
+            "background-color: transparent;"
+        )
         settings_button.clicked.connect(self.open_settings)
 
         mw_toolbar.addSeparator()
