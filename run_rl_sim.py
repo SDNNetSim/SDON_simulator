@@ -50,6 +50,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.spectrum_agent = SpectrumAgent(spectrum_algorithm=self.sim_dict['spectrum_algorithm'],
                                             rl_props=self.rl_props)
 
+        self.modified_props = None
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
         self.observation_space = self.spectrum_agent.get_obs_space()
@@ -161,7 +162,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 self._handle_spectrum_train()
             else:
                 raise NotImplementedError
-        # TODO: For testing purposes
+        # TODO: Load model somewhere else and already have the functions here
         else:
             raise NotImplementedError
 
@@ -230,13 +231,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                                  sdn_props=self.rl_props['mock_sdn_dict'])
 
         self.sim_props = create_input(base_fp=base_fp, engine_props=self.sim_dict)
-        modified_props = copy.deepcopy(self.sim_props)
+        self.modified_props = copy.deepcopy(self.sim_props)
         if 'topology' in self.sim_props:
-            modified_props.pop('topology')
-            modified_props.pop('callback')
+            self.modified_props.pop('topology')
+            self.modified_props.pop('callback')
 
-        save_input(base_fp=base_fp, properties=modified_props, file_name=file_name,
-                   data_dict=modified_props)
+        save_input(base_fp=base_fp, properties=self.modified_props, file_name=file_name,
+                   data_dict=self.modified_props)
 
     def setup(self):
         """
@@ -331,7 +332,7 @@ def _get_model(algorithm: str, device: str, env: object):
     return model, yaml_dict[env_name]
 
 
-def _print_train_info(sim_dict: dict):
+def _print_info(sim_dict: dict):
     if sim_dict['path_algorithm'] == 'q_learning':
         print(f'Beginning training process for the PATH AGENT using the '
               f'{sim_dict["path_algorithm"].title()} algorithm.')
@@ -347,18 +348,26 @@ def _print_train_info(sim_dict: dict):
                          f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
 
 
-def _run_training(env: object, sim_dict: dict):
-    _print_train_info(sim_dict=sim_dict)
-    if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
-        _run_iters(env=env, sim_dict=sim_dict)
-    elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
-        model, yaml_dict = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
-        model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
-                    callback=sim_dict['callback'])
+def _run(env: object, sim_dict: dict):
+    _print_info(sim_dict=sim_dict)
+
+    if sim_dict['is_training']:
+        if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
+            _run_iters(env=env, sim_dict=sim_dict)
+        elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
+            model, yaml_dict = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
+            model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
+                        callback=sim_dict['callback'])
+
+            save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
+                                   env.modified_props['sim_start'], 'ppo_model.zip')
+            model.save(save_fp)
+        else:
+            raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '
+                             f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
+                             f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
     else:
-        raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '
-                         f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
-                         f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
+        raise NotImplementedError
 
 
 def _setup_rl_sim():
@@ -374,10 +383,7 @@ def run_rl_sim():
     env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=_setup_rl_sim())
     env.sim_dict['callback'] = callback
 
-    if env.sim_dict['is_training']:
-        _run_training(env=env, sim_dict=env.sim_dict)
-    else:
-        _run_testing(env=env, sim_dict=env.sim_dict)
+    _run(env=env, sim_dict=env.sim_dict)
 
 
 if __name__ == '__main__':

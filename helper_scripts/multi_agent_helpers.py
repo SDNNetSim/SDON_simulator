@@ -90,7 +90,6 @@ class CoreAgent:
         self.cong_list = list()
 
     def end_iter(self):
-        # TODO: Only save core/path algorithm
         if self.core_algorithm == 'q_learning':
             self.agent_obj.decay_epsilon()
 
