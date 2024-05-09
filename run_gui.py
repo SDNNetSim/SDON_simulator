@@ -192,13 +192,13 @@ class MainWindow(QtWidgets.QMainWindow):
         Adds controls to the toolbar.
         """
         # Create toolbar and add actions
-        toolbar = self.addToolBar("Simulation Controls")
-        # Set gray background color and black text color for the toolbar
-        toolbar.setStyleSheet("background-color: grey; color: white;")
-        toolbar.setMovable(False)
-        toolbar.setIconSize(QSize(20, 20))
-
-        # Create custom tool button for Start action with transparent background
+        mw_toolbar = QtWidgets.QToolBar()
+        self.addToolBar(QtCore.Qt.TopToolBarArea, mw_toolbar)
+        mw_toolbar.setStyleSheet(
+            "background-color: grey; color: white;")
+        mw_toolbar.setMovable(False)
+        mw_toolbar.setIconSize(QtCore.QSize(15, 15))
+        mw_toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
 
         # path to play_button media file
         resource_name = "light-green-play-button.png"
@@ -232,12 +232,12 @@ class MainWindow(QtWidgets.QMainWindow):
         settings_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
         settings_button.clicked.connect(self.open_settings)
 
-        toolbar.addSeparator()
-        toolbar.addWidget(self.start_button)
-        toolbar.addWidget(self.pause_button)
-        toolbar.addWidget(self.stop_button)
-        toolbar.addSeparator()
-        toolbar.addWidget(settings_button)
+        mw_toolbar.addSeparator()
+        mw_toolbar.addWidget(self.start_button)
+        mw_toolbar.addWidget(self.pause_button)
+        mw_toolbar.addWidget(self.stop_button)
+        mw_toolbar.addSeparator()
+        mw_toolbar.addWidget(settings_button)
 
     def init_status_bar(self):
         """
