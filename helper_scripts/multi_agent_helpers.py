@@ -148,16 +148,13 @@ class CoreAgent:
         self.agent_obj.props['cores_matrix'] = np.load(core_matrix_path, allow_pickle=True)
 
 
-# The spectrum was almost to maximum capacity, there will be blocking but it's not the agent's fault
-# Put the start index to zero (which will block regardless of what it is), but don't penalize the agent
-# if self.no_penalty:
-#     start_index = 0
-# else:
-#     start_index = self.super_channel_indexes[self.super_channel][0]
 class SpectrumAgent:
     def __init__(self, spectrum_algorithm: str, rl_props: dict):
         self.spectrum_algorithm = spectrum_algorithm
         self.rl_props = rl_props
+
+        # TODO: Update
+        self.no_penalty = None
 
     def _ppo_obs_space(self):
         """
@@ -187,48 +184,15 @@ class SpectrumAgent:
         if self.spectrum_algorithm == 'ppo':
             return self._ppo_action_space()
 
-    @staticmethod
-    def _calc_deep_reward(was_allocated: bool):
-        if was_allocated:
-            reward = 1.0
-        else:
-            reward = -1.0
-
-        return reward
-
-    def get_reward(self, was_allocated: bool, no_penalty=False):
-        """
-        Gets the reward for the deep reinforcement learning agent.
-
-        :param was_allocated: Determines if the request was successfully allocated or not.
-        :return: The reward.
-        :rtype: float
-        """
-        if no_penalty:
+    def get_reward(self, was_allocated: bool):
+        if self.no_penalty and not was_allocated:
             drl_reward = 0.0
+        elif not was_allocated:
+            drl_reward = -1.0
         else:
             drl_reward = 1.0
 
         return drl_reward
-
-    def _ppo_spectrum(self):
-        """
-        Returns the spectrum as a binary array along a path.
-        A one indicates that channel is taken along one or multiple of the links, a zero indicates that the channel
-        is free along every link in the path.
-
-        :return: The binary array of current path occupation.
-        :rtype: list
-        """
-        resp_spec_arr = np.zeros(self.engine_obj.engine_props['spectral_slots'])
-        path_list = self.ai_props['paths_list'][self.ai_props['path_index']]
-        core_index = self.ai_props['core_index']
-        net_spec_dict = self.engine_obj.net_spec_dict
-        for source, dest in zip(path_list, path_list[1:]):
-            core_arr = net_spec_dict[(source, dest)]['cores_matrix'][core_index]
-            resp_spec_arr = combine_and_one_hot(resp_spec_arr, core_arr)
-
-        return resp_spec_arr
 
     def get_spectrum(self):
         raise NotImplementedError

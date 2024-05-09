@@ -59,9 +59,9 @@ class RLHelpers:
         self.super_channel_indexes = sc_index_mat[0:num_channels]
         # There were not enough super-channels, do not penalize the agent
         if len(self.super_channel_indexes) < self.rl_props['super_channel_space']:
-            self.no_penalty = True
+            no_penalty = True
         else:
-            self.no_penalty = False
+            no_penalty = False
 
         resp_frag_mat = list()
         for channel in self.super_channel_indexes:
@@ -75,7 +75,7 @@ class RLHelpers:
             for _ in range(difference):
                 resp_frag_mat = np.append(resp_frag_mat, 100.0)
 
-        return resp_frag_mat
+        return resp_frag_mat, no_penalty
 
     def classify_paths(self, paths_list: list):
         info_list = list()
@@ -138,16 +138,16 @@ class RLHelpers:
             if req_obj['depart'] <= curr_time:
                 self.engine_obj.handle_release(curr_time=req_obj['depart'])
 
-    def allocate(self, route_obj: object):
+    def allocate(self):
         """
         Attempts to allocate a given request.
 
         :param route_obj: The Routing class.
         """
         curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
-        # TODO: Check this for when using core agent and when not using
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props['chosen_path'],
-                                       force_core=self.rl_props['core_index'])
+                                       force_core=self.rl_props['core_index'],
+                                       forced_index=self.rl_props['forced_index'])
 
     def update_mock_sdn(self, curr_req: dict):
         """
@@ -188,11 +188,3 @@ class RLHelpers:
                 self.rl_props['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
             else:
                 self.rl_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
-
-    # TODO: This will probably also move to rl helpers
-    def _error_check_actions(self):
-        if self.helper_obj.path_index < 0 or self.helper_obj.path_index > (self.rl_props['k_paths'] - 1):
-            raise ValueError(f'Path index out of range: {self.helper_obj.path_index}')
-        if self.helper_obj.core_num < 0 or self.helper_obj.core_num > (
-                self.rl_props['cores_per_link'] - 1):
-            raise ValueError(f'Core index out of range: {self.helper_obj.core_num}')

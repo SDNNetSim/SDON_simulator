@@ -73,6 +73,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _update_helper_obj(self, action: list, bandwidth):
         self.rl_help_obj.path_index = self.rl_props['path_index']
         self.rl_help_obj.core_num = self.rl_props['core_index']
+
+        if self.rl_props['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
+            self.rl_help_obj.forced_index = action
+        else:
+            self.rl_help_obj.forced_index = None
+
         self.rl_help_obj.ai_props = self.rl_props
         self.rl_help_obj.engine_obj = self.engine_obj
         self.rl_help_obj.handle_releases()
@@ -94,7 +100,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         req_id = req_info_dict['req_id']
         bandwidth = req_info_dict['bandwidth']
         self._update_helper_obj(action=action, bandwidth=bandwidth)
-        self.rl_help_obj.allocate(route_obj=self.route_obj)
+        self.rl_help_obj.allocate()
         reqs_status_dict = self.engine_obj.reqs_status_dict
 
         if req_id in reqs_status_dict:
@@ -123,6 +129,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_help_obj.rl_props['chosen_path'] = [self.rl_props['chosen_path']]
         self.route_obj.route_props['paths_list'] = self.rl_help_obj.rl_props['chosen_path']
         self.rl_props['core_index'] = None
+        self.rl_props['forced_index'] = None
 
     def _handle_core_train(self):
         self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
@@ -132,15 +139,16 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props['chosen_path'] = self.route_obj.route_props['paths_list']
         # Always the shortest path
         self.rl_props['path_index'] = 0
+        self.rl_props['forced_index'] = None
         self.core_agent.get_core()
 
     def _handle_spectrum_train(self):
         self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
+        self.route_obj.engine_props['route_method'] = 'shortest_path'
         self.route_obj.get_route()
         self.rl_props['paths_list'] = self.route_obj.route_props['paths_list']
         self.rl_props['path_index'] = 0
         self.rl_props['core_index'] = None
-        path_mod = self.route_obj.route_props['mod_formats_list'][0][0]
 
     def _handle_test_train_obs(self, curr_req: dict):
         if self.sim_dict['is_training']:
@@ -179,8 +187,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
         else:
             slots_needed = 0
-        super_channels = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
-                                                             num_channels=self.rl_props['super_channel_space'])
+        super_channels, no_penalty = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
+                                                                         num_channels=self.rl_props[
+                                                                             'super_channel_space'])
+        self.spectrum_agent.no_penalty = no_penalty
 
         source_obs = np.zeros(self.rl_props['num_nodes'])
         source_obs[self.rl_props['source']] = 1.0
@@ -279,7 +289,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 def _run_iters(env: object, sim_dict: dict):
     completed_episodes = 0
     while True:
-        # TODO: Get the action from DRL
         obs, curr_reward, is_terminated, is_truncated, curr_info = env.step([0])
         if completed_episodes >= sim_dict['max_iters']:
             break
@@ -308,7 +317,8 @@ def _get_model(algorithm: str, device: str, env: object):
         yaml_dict = parse_yaml_file(yaml_path)
         env_name = list(yaml_dict.keys())[0]
         kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])
-        model = PPO(env=env, device=device, policy=yaml_dict[env_name]['policy'], n_steps=yaml_dict[env_name]['n_steps'],
+        model = PPO(env=env, device=device, policy=yaml_dict[env_name]['policy'],
+                    n_steps=yaml_dict[env_name]['n_steps'],
                     batch_size=yaml_dict[env_name]['batch_size'], gae_lambda=yaml_dict[env_name]['gae_lambda'],
                     gamma=yaml_dict[env_name]['gamma'], n_epochs=yaml_dict[env_name]['n_epochs'],
                     vf_coef=yaml_dict[env_name]['vf_coef'], ent_coef=yaml_dict[env_name]['ent_coef'],
