@@ -350,26 +350,28 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Displays a network topology
         """
-        network_selection_dialog = QDialog()
+        network_selection_dialog = QtWidgets.QDialog()
+        network_selection_dialog.setGeometry(100, 100, 100, 100)
+        network_selection_dialog.adjustSize()
         network_selection_dialog.setSizeGripEnabled(True)
 
         # this centers the dialog box with respect to the main window
-        dialog_pos = self.mapToGlobal(self.rect().center()) - network_selection_dialog.rect().center()
+        dialog_pos = self.mapToGlobal(
+            self.rect().center()) - network_selection_dialog.rect().center()
         network_selection_dialog.move(dialog_pos)
 
-        network_type_input = QInputDialog()
+        network_selection_input = QtWidgets.QInputDialog(
+            network_selection_dialog
+        )
         items = ['USNet', 'NSFNet', 'Pan-European']
-        item, ok = network_type_input.getItem(network_selection_dialog, "Choose a network type:",
-                                              "Select Network Type", items, 0, False)
-
-        network_mapping_dict = {}
+        item, ok = network_selection_input.getItem(
+            network_selection_dialog, "Choose a network type:",
+            "Select Network Type", items, 0, False
+        )
 
         if ok and item:
-            topology_information_dict = create_network(item)
-            for (src, des), link_len in topology_information_dict.items():
-                if src not in network_mapping_dict:
-                    network_mapping_dict[src] = []
-                network_mapping_dict[src].append((des, link_len))
+            # set network_option to item
+            self.network_option = item
 
     @staticmethod
     def save_file():
