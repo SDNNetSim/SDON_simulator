@@ -12,7 +12,7 @@ from sim_scripts.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
-from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod
+from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod, parse_yaml_file
 from arg_scripts.rl_args import empty_rl_props
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
 
@@ -296,18 +296,29 @@ def _run_testing(env: object, sim_dict: dict):
     env.core_agent.load_model(model_path=sim_dict['core_model'])
 
 
-def _get_model(algorithm: str, device: str, env: object, policy: str):
+def _get_model(algorithm: str, device: str, env: object):
     model = None
+    yaml_dict = None
+    env_name = None
     if algorithm == 'dqn':
         model = None
     elif algorithm == 'ppo':
         # TODO: Number of training steps
         # TODO: Policy to configuration file
-        model = PPO(policy=policy, env=env, device=device)
+        yaml_path = os.path.join('sb3_scripts', 'yml', 'ppo.yml')
+        yaml_dict = parse_yaml_file(yaml_path)
+        env_name = list(yaml_dict.keys())[0]
+        model = PPO(policy=yaml_dict[env_name]['policy'], n_steps=yaml_dict[env_name]['n_steps'],
+                    batch_size=yaml_dict[env_name]['batch_size'], gae_lambda=yaml_dict[env_name]['gae_lambda'],
+                    gamma=yaml_dict[env_name]['gamma'], n_epochs=yaml_dict[env_name]['n_epochs'],
+                    vf_coef=yaml_dict[env_name]['vf_coef'], ent_coef=yaml_dict[env_name]['ent_coef'],
+                    max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
+                    learning_rate=yaml_dict[env_name]['learning_rate'], clip_range=yaml_dict[env_name]['clip_range'],
+                    policy_kwargs=yaml_dict[env_name]['policy_kwargs'], env=env, device=device)
     elif algorithm == 'a2c':
         model = None
 
-    return model
+    return model, yaml_dict[env_name]
 
 
 def _print_train_info(sim_dict: dict):
@@ -331,11 +342,9 @@ def _run_training(env: object, sim_dict: dict):
     if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
         _run_iters(env=env, sim_dict=sim_dict)
     elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
-        model = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env,
-                           policy=sim_dict['policy'])
-        # TODO: YML file or config? Save every x iters? Also don't forget hyperparameter tuning
-        model.learn(total_timesteps=sim_dict['num_requests'] * sim_dict['max_iters'],
-                    log_interval=sim_dict['print_step'], callback=sim_dict['callback'])
+        model, yaml_dict = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
+        model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
+                    callback=sim_dict['callback'])
         # TODO: Save model with a name of the date time?
         # model.save('./logs/best_PPO_model.zip')
     else:

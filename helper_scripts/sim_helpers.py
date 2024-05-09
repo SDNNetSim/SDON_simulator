@@ -3,6 +3,7 @@ from datetime import datetime
 
 import networkx as nx
 import numpy as np
+import yaml
 
 
 def get_path_mod(mods_dict: dict, path_len: int):
@@ -540,3 +541,12 @@ def classify_cong(curr_cong: float):
         raise ValueError('Congestion value not recognized.')
 
     return cong_index
+
+
+def parse_yaml_file(yaml_file: str):
+    with open(yaml_file, "r") as f:
+        try:
+            yaml_data = yaml.safe_load(f)
+            return yaml_data
+        except yaml.YAMLError as exc:
+            print(exc)
