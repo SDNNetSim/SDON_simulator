@@ -1,43 +1,45 @@
-from PyQt5.QtCore import (
-	QThread, QMutex, QWaitCondition,
-	QMutexLocker, pyqtSignal, 
-)
+from PyQt5 import QtCore
 
-class SimulationThread(QThread):
-	progressChanged = pyqtSignal(int)  # Signal emitted to update progress
-	finished = pyqtSignal()  # Signal emitted when simulation finishes
 
-	def __init__(self):
-		super(SimulationThread, self).__init__()
-		self.paused = False
-		self.stopped = False
-		self.mutex = QMutex()
-		self.pause_condition = QWaitCondition()
+class SimulationThread(QtCore.QThread):
+    # Signal emitted to update progress
+    progress_changed_sig = QtCore.pyqtSignal(int)
+    # Signal emitted when simulation finishes
+    finished_sig = QtCore.pyqtSignal()
 
-	def run(self):
-		for i in range(1, 1001):
-			with QMutexLocker(self.mutex):
-				if self.stopped:
-					break  # Exit loop if stopped
+    def __init__(self):
+        super(SimulationThread, self).__init__()
+        self.paused = False
+        self.stopped = False
+        self.mutex = QtCore.QMutex()
+        self.pause_condition = QtCore.QWaitCondition()
 
-				while self.paused:
-					self.pause_condition.wait(self.mutex)  # Wait until resume() is called
+    def run_thread(self):
+        for i in range(1, 1001):
+            with QtCore.QMutexLocker(self.mutex):
+                if self.stopped:
+                    break  # Exit loop if stopped
 
-			self.progressChanged.emit(i)  # Emit progress
-			self.msleep(10)  # Simulate work
+                while self.paused:
+                    self.pause_condition.wait(
+                        self.mutex)  # Wait until resume() is called
 
-		self.finished.emit()  # Notify that simulation is finished
-	
-	def pause(self):
-		with QMutexLocker(self.mutex):
-			self.paused = True
+            self.progress_changed_sig.emit(i)  # Emit progress
+            self.msleep(2)  # Simulate work
 
-	def resume(self):
-		with QMutexLocker(self.mutex):
-			self.paused = False
-		self.pause_condition.wakeOne()  # Resume the thread
+        self.finished.emit()  # Notify that simulation is finished
 
-	def stop(self):
-		with QMutexLocker(self.mutex):
-			self.stopped = True
-		self.pause_condition.wakeOne()  # Ensure the thread exits if it was paused
+    def pause(self):
+        with QtCore.QMutexLocker(self.mutex):
+            self.paused = True
+
+    def resume(self):
+        with QtCore.QMutexLocker(self.mutex):
+            self.paused = False
+        self.pause_condition.wakeOne()  # Resume the thread
+
+    def stop(self):
+        with QtCore.QMutexLocker(self.mutex):
+            self.stopped = True
+        # Ensure the thread exits if it was paused
+        self.pause_condition.wakeOne()
