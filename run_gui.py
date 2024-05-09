@@ -283,8 +283,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress_bar.setVisible(True)
 
         self.simulation_thread = SimulationThread()
-        self.simulation_thread.progressChanged.connect(self.update_progress)
-        self.simulation_thread.finished.connect(self.simulation_finished)
+        self.simulation_thread.progress_changed_sig.connect(
+            self.update_progress
+        )
+        self.simulation_thread.finished_sig.connect(self.simulation_finished)
         self.simulation_thread.start()
 
     def start_simulation(self):
