@@ -45,5 +45,6 @@ class SimulationThread(QtCore.QThread):
     def stop(self):
         with QtCore.QMutexLocker(self.mutex):
             self.stopped = True
+            self.paused = False
         # Ensure the thread exits if it was paused
         self.pause_condition.wakeOne()
