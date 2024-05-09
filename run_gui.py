@@ -2,19 +2,11 @@
 import os
 import sys
 
-from PyQt5.QtCore import (
-    QSize, Qt, QMutexLocker, )
-from PyQt5.QtGui import (
-    QIcon, QFont, )
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QDesktopWidget,
-    QWidget, QToolButton, QProgressBar, QAction,
-    QFileDialog, QVBoxLayout,
-    QToolTip, QInputDialog, QDialog, QGridLayout,
-)
+import networkx as nx
+from PyQt5 import QtWidgets, QtCore, QtGui
+from matplotlib import pyplot as plt
 
 from data_scripts.structure_data import create_network
-from gui.nodes.circles import CirclesWidget
 from gui.sim_thread.simulation_thread import SimulationThread
 
 
@@ -22,17 +14,17 @@ from gui.sim_thread.simulation_thread import SimulationThread
 #   - Assertive function names
 #   - Complete docstrings
 #   - Parameter types
-class MainWindow(QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
     """
     The main window class, central point that controls all GUI functionality and actions.
     """
 
     def __init__(self):
         super().__init__()
-        self.progress_bar = QProgressBar()
-        self.start_button = QToolButton()
-        self.pause_button = QToolButton()
-        self.stop_button = QToolButton()
+        self.progress_bar = QtWidgets.QProgressBar()
+        self.start_button = QtWidgets.QToolButton()
+        self.pause_button = QtWidgets.QToolButton()
+        self.stop_button = QtWidgets.QToolButton()
         self.simulation_thread = None
         self.init_ui()
 
@@ -59,32 +51,32 @@ class MainWindow(QMainWindow):
 
         # Create File menu and add actions
         file_menu = menu_bar.addMenu('&File')
-        open_action = QAction('&Load Configuration from File', self)
+        open_action = QtWidgets.QAction('&Load Configuration from File', self)
         open_action.triggered.connect(self.open_file)
         file_menu.addAction(open_action)
 
         # Display topology information from File menu
-        display_topology_action = QAction('&Display topology', self)
+        display_topology_action = QtWidgets.QAction('&Display topology', self)
         display_topology_action.triggered.connect(self.display_topology_info)
         file_menu.addAction(display_topology_action)
 
-        save_action = QAction('&Save', self)
+        save_action = QtWidgets.QAction('&Save', self)
         save_action.triggered.connect(self.save_file)
         file_menu.addAction(save_action)
 
-        exit_action = QAction('&Exit', self)
+        exit_action = QtWidgets.QAction('&Exit', self)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
         # Create Edit menu and add actions
         edit_menu = menu_bar.addMenu('&Edit')
-        settings_action = QAction('&Settings', self)
+        settings_action = QtWidgets.QAction('&Settings', self)
         settings_action.triggered.connect(self.open_settings)
         edit_menu.addAction(settings_action)
 
         # Create Help menu and add actions
         help_menu = menu_bar.addMenu('&Help')
-        about_action = QAction('&About', self)
+        about_action = QtWidgets.QAction('&About', self)
         about_action.triggered.connect(self.about)
         help_menu.addAction(about_action)
 
@@ -216,7 +208,7 @@ class MainWindow(QMainWindow):
         Gets the center point of the window.
         """
         # Calculate the center point of the screen
-        center_point = QDesktopWidget().screenGeometry().center()
+        center_point = QtWidgets.QDesktopWidget().screenGeometry().center()
         # Reposition window in center of screen
         self.move(center_point - self.rect().center())
 
@@ -266,7 +258,7 @@ class MainWindow(QMainWindow):
             self.simulation_thread.pause()
             self.start_button.setText("Resume")  # Change button text to "Resume"
         else:
-            with QMutexLocker(self.mutex):
+            with QtCore.QMutexLocker(self.mutex):
                 self.paused = False
             self.wait_cond.wakeAll()
 
@@ -287,8 +279,9 @@ class MainWindow(QMainWindow):
         Opens a file.
         """
         # Set the file dialog to filter for .yml and .json files
-        file_name, _ = QFileDialog.getOpenFileName(self, "Open Configuration File", "",
-                                                   "Config Files (*.yml *.json)")
+        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Open Configuration File", "", "Config Files (*.yml *.json)"
+        )
         if file_name:
             print(f"Selected file: {file_name}")
         # Here, you can add code to handle the opening and reading of the selected file
@@ -365,20 +358,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-
-    # Set a custom font for tooltips if desired
-    QToolTip.setFont(QFont('Arial', 10))
-    app.setStyleSheet('''
-    QToolTip {
-        background-color: #f5f5f5;
-        color: #333333;
-        border: 1px solid #dcdcdc;
-        padding: 4px;
-        border-radius: 4px;
-        opacity: 255;
-    }''')
-
+    app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
