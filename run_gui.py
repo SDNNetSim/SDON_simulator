@@ -132,37 +132,59 @@ class MainWindow(QtWidgets.QMainWindow):
         container_layout.setContentsMargins(5, 5, 5, 5)
         container_widget.setLayout(container_layout)
 
-        # The actual central data display widget with a white background
-        data_display_widget = QWidget()
-        data_display_widget.setStyleSheet(
-            "background-color: white;"
+        # main window splitters
+        left_mw_splitter = QtWidgets.QSplitter()
+        left_mw_splitter.setMinimumWidth(200)
+        left_mw_splitter.setOrientation(QtCore.Qt.Vertical)
+
+        left_info_pane1 = QtWidgets.QWidget(self)
+        left_info_pane1.setStyleSheet(
+            "background-color: #545756;"
+            "border-radius: 5px;"
+            "border: 2px solid black;"
         )
-        container_layout.addWidget(data_display_widget)
 
-        network_information_display_layout = QGridLayout(data_display_widget)
-        network_information_display_layout.setContentsMargins(10, 10, 10, 10)
+        left_info_pane2 = QtWidgets.QWidget(self)
+        left_info_pane2.setStyleSheet(
+            "background-color: #545756;"
+            "border-radius: 5px;"
+            "border: 2px solid black;"
+        )
 
-        # contains mapping of src nodes and their destination nodes with distance
-        network_mapping_dict = {}
-        topology_information_dict = create_network('USNet')
-        for (src, des), link_len in topology_information_dict.items():
-            if src not in network_mapping_dict:
-                network_mapping_dict[src] = []
-            network_mapping_dict[src].append((des, link_len))
+        left_mw_splitter.addWidget(left_info_pane1)
+        left_mw_splitter.addWidget(left_info_pane2)
 
-        for src, mapping in network_mapping_dict.items():
-            print(f'Node {src} is connected to ', end='')
-            for dest, distance in mapping:
-                print(f'node {dest} with distance {distance}', end=', ')
-            print()
+        right_mw_splitter = QtWidgets.QSplitter()
+        right_mw_splitter.setOrientation(QtCore.Qt.Vertical)
 
-        # continue here and create 'Node' widgets
-        # TODO: Change to NodeWidget
-        node_widget = CirclesWidget()
-        node_widget.generate_circles()
-        network_information_display_layout.addWidget(node_widget)
+        bottom_right_pane1 = QtWidgets.QWidget(self)
+        bottom_right_pane1.setMinimumHeight(150)
+        bottom_right_pane1.setMaximumHeight(200)
+        bottom_right_pane1.setStyleSheet(
+            "background-color: #545756;"
+            "border-radius: 5px;"
+            "border: 2px solid black;"
+        )
 
-        # Setting the container widget as the central widget of the main window
+        # scroll area for network topology
+        topology_scroll_area = QtWidgets.QScrollArea()
+        topology_scroll_area.setStyleSheet(
+            "background-color: white"
+        )
+        topology_scroll_area.setWidget(label)
+
+        right_mw_splitter.addWidget(topology_scroll_area)
+        right_mw_splitter.addWidget(bottom_right_pane1)
+
+        # create main window splitter
+        mw_splitter = QtWidgets.QSplitter()
+        mw_splitter.setOrientation(QtCore.Qt.Horizontal)
+        mw_splitter.addWidget(left_mw_splitter)
+        mw_splitter.addWidget(right_mw_splitter)
+
+        container_layout.addWidget(mw_splitter)
+
+        # Set main window central widget
         self.setCentralWidget(container_widget)
 
     def add_control_tool_bar(self):
