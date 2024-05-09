@@ -203,10 +203,14 @@ class MainWindow(QtWidgets.QMainWindow):
         # path to play_button media file
         resource_name = "light-green-play-button.png"
         media_dir = "gui/media"
-        self.start_button.setIcon(QIcon(os.path.join(os.getcwd(), media_dir, resource_name)))
+        self.start_button.setIcon(
+            QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
+        )
         self.start_button.setText("Start")
-        self.start_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.start_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
+        self.start_button.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
+        self.start_button.setStyleSheet(
+            "background-color: transparent;"
+        )
         self.start_button.clicked.connect(self.start_simulation)
 
         # set up for pause button
