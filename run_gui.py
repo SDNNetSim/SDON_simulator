@@ -291,12 +291,11 @@ class MainWindow(QtWidgets.QMainWindow):
         Begins the simulation.
         """
         if self.start_button.text() == "Resume":
-            # print("Resuming simulation")
             self.simulation_thread.resume()
             self.start_button.setText("Start")
         else:
-            # print("Starting simulation")
-            if not self.simulation_thread or not self.simulation_thread.isRunning():
+            if (not self.simulation_thread or
+                    not self.simulation_thread.isRunning()):
                 self.setup_simulation_thread()
             else:
                 self.simulation_thread.resume()
