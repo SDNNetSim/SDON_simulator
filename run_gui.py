@@ -257,26 +257,11 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Initializes the status bar.
         """
-        # Set green color
-        self.statusBar().setStyleSheet(
-            "QStatusBar { background-color: #333; color: white; }" +
-            "Qprogress_bar::chunk { background-color: #4CAF50; }" +
-            "Qprogress_bar { border: 2px solid grey; border-radius: 13px;"
-            " text-align: right; color: black; background-color: #ddd;}"
+        main_status_bar = self.statusBar()
+        main_status_bar.setStyleSheet(
+            "background: gray;"
         )
-        self.progress_bar.setStyleSheet('''
-        Qprogress_bar {
-            border: 2px solid grey;
-            border-radius: 8px;  /* Rounds the corners of the progress bar */
-            background-color: #ddd;
-        }
-
-        Qprogress_bar::chunk {
-            background-color: #4CAF50;  /* Color of the progress chunks */
-            margin: 0px; /* Optional: Adjusts the margin between chunks if needed */
-            border-radius: 6px;  /* Rounds the corners of the progress chunks */
-        }''')
-        self.statusBar().addWidget(self.progress_bar)
+        main_status_bar.addWidget(self.progress_bar)
         self.progress_bar.setVisible(False)
 
     def center_window(self):
