@@ -319,7 +319,10 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         if self.simulation_thread and self.simulation_thread.isRunning():
             self.simulation_thread.pause()
-            self.start_button.setText("Resume")  # Change button text to "Resume"
+            # Change button text to "Resume"
+            self.start_button.setText(
+                "Resume"
+            )
         else:
             with QtCore.QMutexLocker(self.mutex):
                 self.paused = False
@@ -347,7 +350,6 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         if file_name:
             print(f"Selected file: {file_name}")
-        # Here, you can add code to handle the opening and reading of the selected file
 
     def display_topology_info(self):
         """
