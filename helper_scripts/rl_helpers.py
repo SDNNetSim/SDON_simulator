@@ -56,7 +56,7 @@ class RLHelpers:
                                             spectral_slots=self.rl_props['spectral_slots'], core_num=self.core_num,
                                             slots_needed=slots_needed)
 
-        self.super_channel_indexes = sc_index_mat[0:num_channels]
+        self.super_channel_indexes = sc_index_mat[:num_channels]
         # There were not enough super-channels, do not penalize the agent
         if len(self.super_channel_indexes) < self.rl_props['super_channel_space']:
             no_penalty = True

@@ -167,6 +167,10 @@ class SDNController:
         segment_slicing = False
         while True:
             for path_index, path_list in enumerate(route_matrix):
+
+                if path_list == ['4', '6', '7', '8', '12']:
+                    print('Line 173 sdn controller.')
+
                 if path_list is not False:
                     self.sdn_props['path_list'] = path_list
                     mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]

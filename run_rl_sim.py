@@ -98,6 +98,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def step(self, action: list):
         req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
         req_id = req_info_dict['req_id']
+
+        if req_id == 25:
+            print("Line 103 run rl sim.")
+
         bandwidth = req_info_dict['bandwidth']
         self._update_helper_obj(action=action, bandwidth=bandwidth)
         self.rl_help_obj.allocate()
