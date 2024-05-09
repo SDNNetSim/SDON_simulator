@@ -26,6 +26,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_button = QtWidgets.QToolButton()
         self.stop_button = QtWidgets.QToolButton()
         self.simulation_thread = None
+        self.network_option = ''
         self.init_ui()
 
     def init_ui(self):
