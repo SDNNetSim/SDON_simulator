@@ -167,10 +167,6 @@ class SDNController:
         segment_slicing = False
         while True:
             for path_index, path_list in enumerate(route_matrix):
-
-                if path_list == ['4', '6', '7', '8', '12']:
-                    print('Line 173 sdn controller.')
-
                 if path_list is not False:
                     self.sdn_props['path_list'] = path_list
                     mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
@@ -182,9 +178,11 @@ class SDNController:
                             continue
                     else:
                         self.spectrum_obj.spectrum_props['forced_index'] = forced_index
-                        # TODO: Modify spectrum assignment to force a core
                         self.spectrum_obj.spectrum_props['forced_core'] = force_core
                         self.spectrum_obj.spectrum_props['path_list'] = path_list
+
+                        if self.sdn_props['req_id'] == 24:
+                            print('Line 185 sdn controller.')
                         self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
                         # Request was blocked for this path
                         if self.spectrum_obj.spectrum_props['is_free'] is not True:

@@ -99,8 +99,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
         req_id = req_info_dict['req_id']
 
-        if req_id == 25:
-            print("Line 103 run rl sim.")
+        if req_id == 24:
+            print('Line 103 run rl sim')
 
         bandwidth = req_info_dict['bandwidth']
         self._update_helper_obj(action=action, bandwidth=bandwidth)
@@ -192,6 +192,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
         else:
             slots_needed = 0
+
+        if curr_req['req_id'] == 24:
+            print('Line 197 run rl sim.')
         super_channels, no_penalty = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
                                                                          num_channels=self.rl_props[
                                                                              'super_channel_space'])
