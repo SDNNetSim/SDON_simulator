@@ -14,7 +14,11 @@ class SimulationThread(QtCore.QThread):
         self.mutex = QtCore.QMutex()
         self.pause_condition = QtCore.QWaitCondition()
 
-    def run_thread(self):
+    def run(self):
+        """
+        Overrides run method in QtCore.QThread
+        Starting point of thread
+        """
         for i in range(1, 1001):
             with QtCore.QMutexLocker(self.mutex):
                 if self.stopped:
@@ -27,7 +31,7 @@ class SimulationThread(QtCore.QThread):
             self.progress_changed_sig.emit(i)  # Emit progress
             self.msleep(2)  # Simulate work
 
-        self.finished.emit()  # Notify that simulation is finished
+        self.finished_sig.emit()  # Notify that simulation is finished
 
     def pause(self):
         with QtCore.QMutexLocker(self.mutex):
