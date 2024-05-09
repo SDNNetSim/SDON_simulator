@@ -82,15 +82,55 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def add_central_data_display(self):
         """
-        Adds initial data displayed to the main screen, for example, the topology.
+        Adds initial data displayed to the main screen, for example,
+        the topology.
         """
-        # Main container widget
-        container_widget = QWidget()
-        container_widget.setStyleSheet("background-color: grey;")  # Set the color of the main container
+        # contains mapping of src nodes and
+        # their destination nodes with distance
+        topology_information_dict = create_network('Pan-European')
 
-        # Layout for the container widget, allowing for margins around the central data display
-        container_layout = QVBoxLayout(container_widget)
-        container_layout.setContentsMargins(10, 10, 10, 10)  # Adjust these margins to control the offset
+        edge_list = [(src, des, {'weight': link_len})
+                     for (src, des), link_len in
+                     topology_information_dict.items()]
+        network_topo = nx.Graph(edge_list)
+
+        # graphing is done here
+        figure = plt.figure()
+        ax = figure.add_subplot(1, 1, 1)
+        # spring_layout returns a dictionary of coordinates
+        pos = nx.spring_layout(network_topo, seed=5, scale=3.5)
+        nx.draw(network_topo, pos, with_labels=True, ax=ax, node_size=200,
+                font_size=8)
+        # Close the matplotlib figure to prevent it from displaying
+        plt.close(figure)
+
+        figure.canvas.draw()
+        width, height = figure.canvas.get_width_height()
+        buffer = figure.canvas.buffer_rgba()
+        image = QtGui.QImage(buffer, width, height, QtGui.QImage.Format_ARGB32)
+        pixmap = QtGui.QPixmap.fromImage(image)
+
+        # Display the QPixmap using a QLabel
+        label = QtWidgets.QLabel(self)
+        label.setFixedSize(pixmap.rect().size())
+        # Center align pixmap, not even necessary (same size)
+        label.setAlignment(QtCore.Qt.AlignCenter)
+        label.setPixmap(pixmap)
+
+        # Main container widget
+        # this is needed because of mw central display
+        container_widget = QtWidgets.QWidget(self)
+        # Set the color of the main container
+        container_widget.setStyleSheet(
+            "background-color: #15b09e;"
+        )
+
+        # Layout for the container widget,
+        # allowing for margins around the central data display
+        container_layout = QtWidgets.QHBoxLayout()
+        # these margins to control the offset
+        container_layout.setContentsMargins(5, 5, 5, 5)
+        container_widget.setLayout(container_layout)
 
         # The actual central data display widget with a white background
         data_display_widget = QWidget()
