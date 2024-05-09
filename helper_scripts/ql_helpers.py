@@ -122,12 +122,18 @@ class QLearningHelpers:
         max_iters = self.engine_props['max_iters']
         num_requests = self.engine_props['num_requests']
 
-        if self.iteration == ((max_iters - 1) % 10) and len_rewards == num_requests:
-            self.completed_sim = True
+        if ((self.iteration == (max_iters - 1) or self.iteration == ((max_iters - 1) % 10))
+                and len_rewards == num_requests):
             rewards_dict = self.props['rewards_dict'][stats_flag]['rewards']
             errors_dict = self.props['errors_dict'][stats_flag]['errors']
-            self.props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
-            self.props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=errors_dict)
+
+            if self.iteration == (max_iters - 1):
+                self.completed_sim = True
+                self.props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
+                self.props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=errors_dict)
+            else:
+                self.props['rewards_dict'][stats_flag]['training'] = calc_matrix_stats(input_dict=rewards_dict)
+                self.props['errors_dict'][stats_flag]['training'] = calc_matrix_stats(input_dict=errors_dict)
 
             self.save_model(path_algorithm=self.engine_props['path_algorithm'],
                             core_algorithm=self.engine_props['core_algorithm'])
