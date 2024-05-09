@@ -34,7 +34,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.setWindowTitle("SDNv1")
         self.resize(1280, 720)  # Set initial size of the window
-        self.setStyleSheet("background-color: #a3e1a4")  # Set light gray background color
+        self.setStyleSheet("background-color: gray")
         self.center_window()
         self.add_central_data_display()
         self.add_menu_bar()  # this adds the menubar
