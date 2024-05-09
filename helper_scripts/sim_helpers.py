@@ -449,6 +449,7 @@ def min_max_scale(value: float, min_value: float, max_value: float):
     return (value - min_value) / (max_value - min_value)
 
 
+# TODO: This is not working properly
 def get_super_channels(input_arr: np.array, slots_needed: int):
     potential_super_channels = []
     consecutive_zeros = 0
@@ -456,8 +457,9 @@ def get_super_channels(input_arr: np.array, slots_needed: int):
     for i in range(len(input_arr)):
         if input_arr[i] == 0:
             consecutive_zeros += 1
-            if consecutive_zeros >= slots_needed:
-                start_position = i - slots_needed + 1
+            # Plus one to account for the guard band
+            if consecutive_zeros >= (slots_needed + 1):
+                start_position = i - slots_needed
                 end_position = i
 
                 if start_position == end_position:
@@ -495,6 +497,7 @@ def get_hfrag(path_list: list, core_num: int, slots_needed: int, spectral_slots:
     """
     path_alloc_arr = np.zeros(spectral_slots)
     resp_frag_arr = np.ones(spectral_slots)
+    # TODO: First fit for core, only use in testing
     if core_num is None:
         core_num = 0
 

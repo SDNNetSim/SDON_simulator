@@ -98,10 +98,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def step(self, action: list):
         req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
         req_id = req_info_dict['req_id']
-
-        if req_id == 24:
-            print('Line 103 run rl sim')
-
         bandwidth = req_info_dict['bandwidth']
         self._update_helper_obj(action=action, bandwidth=bandwidth)
         self.rl_help_obj.allocate()
@@ -190,16 +186,16 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         path_mod = self._handle_test_train_obs(curr_req=curr_req)
         if path_mod is not False:
             slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
+            super_channels, no_penalty = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
+                                                                             num_channels=self.rl_props[
+                                                                                 'super_channel_space'])
+        # No penalty for DRL agent, mistake not made by it
         else:
-            slots_needed = 0
+            slots_needed = -1
+            no_penalty = True
+            super_channels = np.array([100.0, 100.0, 100.0])
 
-        if curr_req['req_id'] == 24:
-            print('Line 197 run rl sim.')
-        super_channels, no_penalty = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
-                                                                         num_channels=self.rl_props[
-                                                                             'super_channel_space'])
         self.spectrum_agent.no_penalty = no_penalty
-
         source_obs = np.zeros(self.rl_props['num_nodes'])
         source_obs[self.rl_props['source']] = 1.0
         dest_obs = np.zeros(self.rl_props['num_nodes'])

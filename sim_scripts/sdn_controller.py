@@ -180,9 +180,6 @@ class SDNController:
                         self.spectrum_obj.spectrum_props['forced_index'] = forced_index
                         self.spectrum_obj.spectrum_props['forced_core'] = force_core
                         self.spectrum_obj.spectrum_props['path_list'] = path_list
-
-                        if self.sdn_props['req_id'] == 24:
-                            print('Line 185 sdn controller.')
                         self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
                         # Request was blocked for this path
                         if self.spectrum_obj.spectrum_props['is_free'] is not True:

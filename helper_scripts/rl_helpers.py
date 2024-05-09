@@ -58,7 +58,7 @@ class RLHelpers:
 
         self.super_channel_indexes = sc_index_mat[:num_channels]
         # There were not enough super-channels, do not penalize the agent
-        if len(self.super_channel_indexes) < self.rl_props['super_channel_space']:
+        if len(self.super_channel_indexes) == 0:
             no_penalty = True
         else:
             no_penalty = False
@@ -139,13 +139,14 @@ class RLHelpers:
                 self.engine_obj.handle_release(curr_time=req_obj['depart'])
 
     def allocate(self):
-        """
-        Attempts to allocate a given request.
-
-        :param route_obj: The Routing class.
-        """
         curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
-        forced_index = self.super_channel_indexes[self.rl_props['forced_index']][0]
+
+        try:
+            forced_index = self.super_channel_indexes[self.rl_props['forced_index']][0]
+        # DRL agent picked a super-channel that is not available, block
+        except IndexError:
+            return
+
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props['chosen_path'],
                                        force_core=self.rl_props['core_index'],
                                        forced_index=forced_index)
