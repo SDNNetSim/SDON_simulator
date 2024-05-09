@@ -215,10 +215,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # set up for pause button
         resource_name = "pause.png"
-        self.pause_button.setIcon(QIcon(os.path.join(os.getcwd(), media_dir, resource_name)))
+        self.pause_button.setIcon(
+            QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
+        )
         self.pause_button.setText("Pause")
-        self.pause_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.pause_button.setStyleSheet("background-color: transparent;")  # Set transparent background color
+        self.pause_button.setStyleSheet(
+            "background-color: transparent;"
+        )
         self.pause_button.clicked.connect(self.pause_simulation)
 
         # set up for stop button
