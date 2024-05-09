@@ -155,7 +155,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             raise NotImplementedError
 
-        path_len = find_path_len(path_list=self.rl_props['paths_list'][self.rl_props['path_index']],
+        path_len = find_path_len(path_list=self.rl_props['chosen_path'],
                                  topology=self.engine_obj.topology)
         path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
 

@@ -51,7 +51,7 @@ class RLHelpers:
         :return: A matrix of super-channels with their fragmentation score.
         :rtype: list
         """
-        path_list = self.rl_props['paths_list'][self.rl_props['path_index']]
+        path_list = self.rl_props['chosen_path']
         sc_index_mat, hfrag_arr = get_hfrag(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict,
                                             spectral_slots=self.rl_props['spectral_slots'], core_num=self.core_num,
                                             slots_needed=slots_needed)
