@@ -112,8 +112,11 @@ OTHER_OPTIONS = {
         'epsilon_end': float,
         'is_training': str_to_bool,
         'path_algorithm': str,
+        'path_model': str,
         'core_algorithm': str,
+        'core_model': str,
         'spectrum_algorithm': str,
+        'spectrum_model': str,
         'optimize': str_to_bool,
         'super_channel_space': int,
         'device': str,
@@ -168,6 +171,9 @@ COMMAND_LINE_PARAMS = [
     ['filter_mods', bool, ''],
     ['super_channel_space', int, ''],
     ['policy', str, ''],
+    ['path_model', str, ''],
+    ['core_model', str, ''],
+    ['spectrum_model', str, ''],
 
     # For StableBaselines3
     ['algo', str, ''],

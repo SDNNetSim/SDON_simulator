@@ -1,6 +1,7 @@
 import numpy as np
 
 from gymnasium import spaces
+from stable_baselines3 import PPO
 from .ql_helpers import QLearningHelpers
 
 
@@ -74,8 +75,7 @@ class PathAgent:
             raise NotImplementedError
 
     def load_model(self, model_path: str):
-        route_matrix_path = f'logs/ql/{model_path}'
-        self.agent_obj.props['routes_matrix'] = np.load(route_matrix_path, allow_pickle=True)
+        self.agent_obj.props['routes_matrix'] = np.load(model_path, allow_pickle=True)
 
 
 class CoreAgent:
@@ -136,9 +136,7 @@ class CoreAgent:
             self._ql_core()
 
     def load_model(self, model_path: str):
-        # TODO: Hard coded, also need Erlang here, also params
-        core_matrix_path = f'logs/ql/{model_path}/e250.0_cores_c7.npy'
-        self.agent_obj.props['cores_matrix'] = np.load(core_matrix_path, allow_pickle=True)
+        self.agent_obj.props['cores_matrix'] = np.load(model_path, allow_pickle=True)
 
 
 class SpectrumAgent:
@@ -146,8 +144,8 @@ class SpectrumAgent:
         self.spectrum_algorithm = spectrum_algorithm
         self.rl_props = rl_props
 
-        # TODO: Update
         self.no_penalty = None
+        self.model = None
 
     def _ppo_obs_space(self):
         """
@@ -191,7 +189,6 @@ class SpectrumAgent:
     def get_spectrum(self):
         raise NotImplementedError
 
+    # TODO: Not sure how to do this then, need sim env...
     def load_model(self, model_path: str):
-        raise NotImplementedError
-        # model = DQN.load('./logs/DQN/best_model.zip', env=env)
-        # curr_action, _states = model.predict(obs)
+        self.model = PPO.load(model_path, env=env)

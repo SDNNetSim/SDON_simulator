@@ -239,6 +239,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         save_input(base_fp=base_fp, properties=self.modified_props, file_name=file_name,
                    data_dict=self.modified_props)
 
+    # TODO: Options to switch between them
+    def _load_models(self):
+        self.path_agent.load_model(model_path=self.sim_dict['path_model'])
+        self.core_agent.load_model(model_path=self.sim_dict['core_model'])
+        self.spectrum_agent.load_model(model_path=self.sim_dict['spectrum_model'])
+
     def setup(self):
         """
         Sets up this class.
@@ -278,6 +284,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.iteration = 0
             self.setup()
 
+            if not self.sim_dict['is_training']:
+                self._load_models()
+
         self._init_props_envs()
         if seed is None:
             # seed = self.iteration
@@ -289,10 +298,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
-def _run_iters(env: object, sim_dict: dict):
+def _run_iters(env: object, sim_dict: dict, is_training: bool):
     completed_episodes = 0
     while True:
-        obs, curr_reward, is_terminated, is_truncated, curr_info = env.step([0])
+        if is_training:
+            obs, curr_reward, is_terminated, is_truncated, curr_info = env.step([0])
+        else:
+            raise NotImplementedError
         if completed_episodes >= sim_dict['max_iters']:
             break
         if is_terminated or is_truncated:
@@ -353,7 +365,7 @@ def _run(env: object, sim_dict: dict):
 
     if sim_dict['is_training']:
         if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
-            _run_iters(env=env, sim_dict=sim_dict)
+            _run_iters(env=env, sim_dict=sim_dict, is_training=True)
         elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
             model, yaml_dict = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
             model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
@@ -367,7 +379,9 @@ def _run(env: object, sim_dict: dict):
                              f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
                              f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
     else:
-        raise NotImplementedError
+        # TODO: Need to load the model here? Model predict should call everything and will revolve around everything
+        #  then
+        _run_iters(env=env, sim_dict=sim_dict, is_training=False)
 
 
 def _setup_rl_sim():
@@ -382,7 +396,6 @@ def run_rl_sim():
     callback = GetModelParams()
     env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=_setup_rl_sim())
     env.sim_dict['callback'] = callback
-
     _run(env=env, sim_dict=env.sim_dict)
 
 
