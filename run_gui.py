@@ -169,6 +169,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # scroll area for network topology
         topology_scroll_area = QtWidgets.QScrollArea()
+        topology_scroll_area.setAlignment(QtCore.Qt.AlignCenter)
         topology_scroll_area.setStyleSheet(
             "background-color: white"
         )
