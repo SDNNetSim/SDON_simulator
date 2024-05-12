@@ -146,6 +146,10 @@ class RLHelpers:
                 forced_index = self.super_channel_indexes[self.rl_props['forced_index']][0]
             # DRL agent picked a super-channel that is not available, block
             except IndexError:
+                self.engine_obj.stats_obj.blocked_reqs += 1
+                self.engine_obj.stats_obj.stats_props['block_reasons_dict']['congestion'] += 1
+                bandwidth = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['bandwidth']
+                self.engine_obj.stats_obj.stats_props['block_bw_dict'][bandwidth] += 1
                 return
         else:
             forced_index = None
