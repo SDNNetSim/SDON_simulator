@@ -57,13 +57,15 @@ class QLearningHelpers:
     def get_max_future_q(self, path_list: list, net_spec_dict: dict, matrix: list, flag: str, core_index: int = None):
         if flag == 'path':
             new_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
+            new_cong_index = classify_cong(curr_cong=new_cong)
+            max_future_q = matrix[self.rl_props['path_index']][new_cong_index]['q_value']
         elif flag == 'core':
             new_cong = find_core_cong(core_index=core_index, net_spec_dict=net_spec_dict, path_list=path_list)
+            new_cong_index = classify_cong(curr_cong=new_cong)
+            max_future_q = matrix[core_index][new_cong_index]['q_value']
         else:
             raise NotImplementedError
 
-        new_cong_index = classify_cong(curr_cong=new_cong)
-        max_future_q = matrix[self.rl_props['path_index']][new_cong_index]['q_value']
         return max_future_q
 
     def update_routes_matrix(self, reward: float, level_index: int, net_spec_dict: dict):
@@ -135,8 +137,12 @@ class QLearningHelpers:
                 self.props['rewards_dict'][stats_flag]['training'] = calc_matrix_stats(input_dict=rewards_dict)
                 self.props['errors_dict'][stats_flag]['training'] = calc_matrix_stats(input_dict=errors_dict)
 
-            self.save_model(path_algorithm=self.engine_props['path_algorithm'],
-                            core_algorithm=self.engine_props['core_algorithm'])
+            if not self.engine_props['is_training']:
+                self.save_model(path_algorithm=self.engine_props['path_algorithm'], core_algorithm='first_fit')
+                self.save_model(path_algorithm='first_fit', core_algorithm=self.engine_props['core_algorithm'])
+            else:
+                self.save_model(path_algorithm=self.engine_props['path_algorithm'],
+                                core_algorithm=self.engine_props['core_algorithm'])
 
     def update_q_stats(self, reward: float, td_error: float, stats_flag: str):
         # To account for a reset even after a sim has completed (how SB3 works)
@@ -173,7 +179,6 @@ class QLearningHelpers:
         with open(param_fp, 'w', encoding='utf-8') as file_obj:
             json.dump(params_dict, file_obj)
 
-    # TODO: Save every 'x' iters
     def save_model(self, path_algorithm: str, core_algorithm: str):
         """
         Saves the current q-learning model.

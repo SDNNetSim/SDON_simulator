@@ -365,7 +365,7 @@ def _print_info(sim_dict: dict):
                          f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
 
 
-def _get_model(env: object, sim_dict: dict):
+def _get_trained_model(env: object, sim_dict: dict):
     if sim_dict['spectrum_algorithm'] == 'ppo':
         model = PPO.load(os.path.join('logs', sim_dict['spectrum_model'], 'ppo_model.zip'), env=env)
     else:
@@ -393,8 +393,11 @@ def _run(env: object, sim_dict: dict):
                              f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
                              f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
     else:
-        model = _get_model(env=env, sim_dict=sim_dict)
+        model = _get_trained_model(env=env, sim_dict=sim_dict)
         _run_iters(env=env, sim_dict=sim_dict, is_training=False, model=model)
+        save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
+                               env.modified_props['sim_start'], 'ppo_model.zip')
+        model.save(save_fp)
 
 
 def _setup_rl_sim():
