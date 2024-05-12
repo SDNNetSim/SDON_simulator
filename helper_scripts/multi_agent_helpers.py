@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 from gymnasium import spaces
@@ -74,7 +76,9 @@ class PathAgent:
         else:
             raise NotImplementedError
 
-    def load_model(self, model_path: str):
+    def load_model(self, model_path: str, erlang: float, num_cores: int):
+        self.setup_env()
+        model_path = os.path.join('logs', model_path, f'e{erlang}_routes_c{num_cores}.npy')
         self.agent_obj.props['routes_matrix'] = np.load(model_path, allow_pickle=True)
 
 
@@ -135,7 +139,9 @@ class CoreAgent:
         if self.core_algorithm == 'q_learning':
             self._ql_core()
 
-    def load_model(self, model_path: str):
+    def load_model(self, model_path: str, erlang: float, num_cores: int):
+        self.setup_env()
+        model_path = os.path.join('logs', model_path, f'e{erlang}_cores_c{num_cores}.npy')
         self.agent_obj.props['cores_matrix'] = np.load(model_path, allow_pickle=True)
 
 
@@ -188,7 +194,3 @@ class SpectrumAgent:
 
     def get_spectrum(self):
         raise NotImplementedError
-
-    # TODO: Not sure how to do this then, need sim env...
-    def load_model(self, model_path: str):
-        self.model = PPO.load(model_path, env=env)

@@ -94,7 +94,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 self.core_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                        iteration=self.iteration)
         else:
-            raise NotImplementedError
+            self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
+                                   iteration=self.iteration)
+            self.core_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
+                                   iteration=self.iteration)
 
     def step(self, action: list):
         req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
@@ -125,8 +128,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _get_info():
         return dict()
 
-    def _handle_path_train(self):
+    def _handle_path_train_test(self):
         self.path_agent.get_route()
+        # TODO: How does this work even when training?
         self.rl_help_obj.rl_props['chosen_path'] = [self.rl_props['chosen_path']]
         self.route_obj.route_props['paths_list'] = self.rl_help_obj.rl_props['chosen_path']
         self.rl_props['core_index'] = None
@@ -155,18 +159,18 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _handle_test_train_obs(self, curr_req: dict):
         if self.sim_dict['is_training']:
             if self.sim_dict['path_algorithm'] == 'q_learning':
-                self._handle_path_train()
+                self._handle_path_train_test()
             elif self.sim_dict['core_algorithm'] == 'q_learning':
                 self._handle_core_train()
             elif self.sim_dict['spectrum_algorithm'] not in ('first_fit', 'best_fit', ' last_fit'):
                 self._handle_spectrum_train()
             else:
                 raise NotImplementedError
-        # TODO: Load model somewhere else and already have the functions here
         else:
-            raise NotImplementedError
+            self._handle_path_train_test()
+            self.core_agent.get_core()
 
-        path_len = find_path_len(path_list=self.rl_props['chosen_path'],
+        path_len = find_path_len(path_list=self.rl_props['chosen_path'][0],
                                  topology=self.engine_obj.topology)
         path_mod = get_path_mod(mods_dict=curr_req['mod_formats'], path_len=path_len)
 
@@ -239,11 +243,17 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         save_input(base_fp=base_fp, properties=self.modified_props, file_name=file_name,
                    data_dict=self.modified_props)
 
-    # TODO: Options to switch between them
+    # TODO: Options to switch between them (not use all AI)
     def _load_models(self):
-        self.path_agent.load_model(model_path=self.sim_dict['path_model'])
-        self.core_agent.load_model(model_path=self.sim_dict['core_model'])
-        self.spectrum_agent.load_model(model_path=self.sim_dict['spectrum_model'])
+        self.path_agent.engine_props = self.engine_obj.engine_props
+        self.path_agent.rl_props = self.rl_props
+        self.path_agent.load_model(model_path=self.sim_dict['path_model'], erlang=self.sim_dict['erlang'],
+                                   num_cores=self.sim_dict['cores_per_link'])
+
+        self.core_agent.engine_props = self.engine_obj.engine_props
+        self.core_agent.rl_props = self.rl_props
+        self.core_agent.load_model(model_path=self.sim_dict['core_model'], erlang=self.sim_dict['erlang'],
+                                   num_cores=self.sim_dict['cores_per_link'])
 
     def setup(self):
         """
@@ -279,15 +289,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props['arrival_list'] = list()
         self.rl_props['depart_list'] = list()
 
-        # TODO: Does this make sense?
         if self.optimize or self.optimize is None:
             self.iteration = 0
             self.setup()
 
-            if not self.sim_dict['is_training']:
-                self._load_models()
-
         self._init_props_envs()
+        if not self.sim_dict['is_training'] and self.iteration == 0:
+            self._load_models()
         if seed is None:
             # seed = self.iteration
             seed = 0
@@ -298,25 +306,22 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return obs, info
 
 
-def _run_iters(env: object, sim_dict: dict, is_training: bool):
+def _run_iters(env: object, sim_dict: dict, is_training: bool, model=None):
     completed_episodes = 0
+    obs, info = env.reset()
     while True:
         if is_training:
             obs, curr_reward, is_terminated, is_truncated, curr_info = env.step([0])
         else:
-            raise NotImplementedError
+            action, _states = model.predict(obs)
+            obs, curr_reward, is_terminated, is_truncated, curr_info = env.step(action)
+
         if completed_episodes >= sim_dict['max_iters']:
             break
         if is_terminated or is_truncated:
-            _, _ = env.reset()
+            obs, info = env.reset()
             completed_episodes += 1
             print(f'{completed_episodes} episodes completed out of {sim_dict["max_iters"]}.')
-
-
-def _run_testing(env: object, sim_dict: dict):
-    env.path_agent.load_model(model_path=sim_dict['path_model'])
-    env.core_agent.load_model(model_path=sim_dict['core_model'])
-    env.spectrum_agent.load_model(model_path=sim_dict['spectrum_model'])
 
 
 def _get_model(algorithm: str, device: str, env: object):
@@ -360,6 +365,15 @@ def _print_info(sim_dict: dict):
                          f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
 
 
+def _get_model(env: object, sim_dict: dict):
+    if sim_dict['spectrum_algorithm'] == 'ppo':
+        model = PPO.load(os.path.join('logs', sim_dict['spectrum_model'], 'ppo_model.zip'), env=env)
+    else:
+        raise NotImplementedError
+
+    return model
+
+
 def _run(env: object, sim_dict: dict):
     _print_info(sim_dict=sim_dict)
 
@@ -379,9 +393,8 @@ def _run(env: object, sim_dict: dict):
                              f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
                              f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
     else:
-        # TODO: Need to load the model here? Model predict should call everything and will revolve around everything
-        #  then
-        _run_iters(env=env, sim_dict=sim_dict, is_training=False)
+        model = _get_model(env=env, sim_dict=sim_dict)
+        _run_iters(env=env, sim_dict=sim_dict, is_training=False, model=model)
 
 
 def _setup_rl_sim():
