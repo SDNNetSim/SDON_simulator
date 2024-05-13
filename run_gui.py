@@ -110,14 +110,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         left_info_pane1 = QtWidgets.QWidget(self)
         left_info_pane1.setStyleSheet(
-            "background-color: #545756;"
+            "background-color: white;"
             "border-radius: 5px;"
             "border: 2px solid black;"
         )
 
         left_info_pane2 = QtWidgets.QWidget(self)
         left_info_pane2.setStyleSheet(
-            "background-color: #545756;"
+            "background-color: white;"
             "border-radius: 5px;"
             "border: 2px solid black;"
         )
@@ -137,7 +137,7 @@ class MainWindow(QtWidgets.QMainWindow):
         bottom_right_pane1.setMinimumHeight(150)
         bottom_right_pane1.setMaximumHeight(200)
         bottom_right_pane1.setStyleSheet(
-            "background-color: #545756;"
+            "background-color: white;"
             "border-radius: 5px;"
             "border: 2px solid black;"
         )
