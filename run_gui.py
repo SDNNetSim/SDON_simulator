@@ -25,13 +25,14 @@ class MainWindow(QtWidgets.QMainWindow):
     mw_main_view_left_splitter = None
     mw_main_view_right_splitter = None
     mw_topology_view_area = None
+    bottom_right_pane1 = None
+    start_button = None
+    pause_button = None
+    stop_button = None
 
     def __init__(self):
         super().__init__()
         self.progress_bar = QtWidgets.QProgressBar()
-        self.start_button = QtWidgets.QToolButton()
-        self.pause_button = QtWidgets.QToolButton()
-        self.stop_button = QtWidgets.QToolButton()
         self.simulation_thread = None
         self.network_option = ''
         self.init_mw_ui()
