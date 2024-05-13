@@ -369,8 +369,6 @@ class MainWindow(QtWidgets.QMainWindow):
         Displays a network topology
         """
         network_selection_dialog = QtWidgets.QDialog()
-        network_selection_dialog.setGeometry(100, 100, 100, 100)
-        network_selection_dialog.adjustSize()
         network_selection_dialog.setSizeGripEnabled(True)
 
         # this centers the dialog box with respect to the main window
@@ -378,9 +376,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.rect().center()) - network_selection_dialog.rect().center()
         network_selection_dialog.move(dialog_pos)
 
-        network_selection_input = QtWidgets.QInputDialog(
-            network_selection_dialog
-        )
+        network_selection_input = QtWidgets.QInputDialog()
         items = ['USNet', 'NSFNet', 'Pan-European']
         item, ok = network_selection_input.getItem(
             network_selection_dialog, "Choose a network type:",
@@ -388,8 +384,40 @@ class MainWindow(QtWidgets.QMainWindow):
         )
 
         if ok and item:
-            # set network_option to item
-            self.network_option = item
+            # contains mapping of src nodes and
+            # their destination nodes with distance
+            topology_information_dict = create_network(item)
+
+            edge_list = [(src, des, {'weight': link_len})
+                         for (src, des), link_len in
+                         topology_information_dict.items()]
+            network_topo = nx.Graph(edge_list)
+
+            # graphing is done here
+            figure = plt.figure()
+            ax = figure.add_subplot(1, 1, 1)
+            # spring_layout returns a dictionary of coordinates
+            pos = nx.spring_layout(network_topo, seed=5, scale=3.5)
+            nx.draw(network_topo, pos, with_labels=True, ax=ax, node_size=200,
+                    font_size=8)
+            # Close the matplotlib figure to prevent it from displaying
+            plt.close(figure)
+
+            figure.canvas.draw()
+            width, height = figure.canvas.get_width_height()
+            buffer = figure.canvas.buffer_rgba()
+            image = QtGui.QImage(buffer, width, height,
+                                 QtGui.QImage.Format_ARGB32)
+            pixmap = QtGui.QPixmap.fromImage(image)
+
+            # Display the QPixmap using a QLabel
+            label = QtWidgets.QLabel(self)
+            label.setFixedSize(pixmap.rect().size())
+            # Center align pixmap, not even necessary (same size)
+            label.setAlignment(QtCore.Qt.AlignCenter)
+            label.setPixmap(pixmap)
+
+            self.mw_topology_view_area.setWidget(label)
 
     @staticmethod
     def save_file():
