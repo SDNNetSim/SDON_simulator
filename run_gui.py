@@ -16,8 +16,15 @@ from gui.sim_thread.simulation_thread import SimulationThread
 #   - Parameter types
 class MainWindow(QtWidgets.QMainWindow):
     """
-    The main window class, central point that controls all GUI functionality and actions.
+    The main window class, central point that controls all GUI functionality
+    and actions.
     """
+    mw_main_view_widget = None  # this is container_widget
+    mw_main_view_layout = None
+    mw_main_view_splitter = None
+    mw_main_view_left_splitter = None
+    mw_main_view_right_splitter = None
+    mw_topology_view_area = None
 
     def __init__(self):
         super().__init__()
@@ -120,23 +127,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Main container widget
         # this is needed because of mw central display
-        container_widget = QtWidgets.QWidget(self)
+        self.mw_main_view_widget = QtWidgets.QWidget(self)
         # Set the color of the main container
-        container_widget.setStyleSheet(
+        self.mw_main_view_widget.setStyleSheet(
             "background-color: #15b09e;"
         )
 
         # Layout for the container widget,
         # allowing for margins around the central data display
-        container_layout = QtWidgets.QHBoxLayout()
+        self.mw_main_view_layout = QtWidgets.QHBoxLayout()
         # these margins to control the offset
-        container_layout.setContentsMargins(5, 5, 5, 5)
-        container_widget.setLayout(container_layout)
-
-        # main window splitters
-        left_mw_splitter = QtWidgets.QSplitter()
-        left_mw_splitter.setMinimumWidth(200)
-        left_mw_splitter.setOrientation(QtCore.Qt.Vertical)
+        self.mw_main_view_layout.setContentsMargins(5, 5, 5, 5)
+        self.mw_main_view_widget.setLayout(self.mw_main_view_layout)
 
         left_info_pane1 = QtWidgets.QWidget(self)
         left_info_pane1.setStyleSheet(
@@ -152,11 +154,16 @@ class MainWindow(QtWidgets.QMainWindow):
             "border: 2px solid black;"
         )
 
-        left_mw_splitter.addWidget(left_info_pane1)
-        left_mw_splitter.addWidget(left_info_pane2)
+        # initialize main view left splitter
+        # main window splitters
+        self.mw_main_view_left_splitter = QtWidgets.QSplitter()
+        self.mw_main_view_left_splitter.setMinimumWidth(200)
+        self.mw_main_view_left_splitter.setOrientation(QtCore.Qt.Vertical)
+        self.mw_main_view_left_splitter.addWidget(left_info_pane1)
+        self.mw_main_view_left_splitter.addWidget(left_info_pane2)
 
-        right_mw_splitter = QtWidgets.QSplitter()
-        right_mw_splitter.setOrientation(QtCore.Qt.Vertical)
+        self.mw_main_view_right_splitter = QtWidgets.QSplitter()
+        self.mw_main_view_right_splitter.setOrientation(QtCore.Qt.Vertical)
 
         bottom_right_pane1 = QtWidgets.QWidget(self)
         bottom_right_pane1.setMinimumHeight(150)
@@ -168,26 +175,30 @@ class MainWindow(QtWidgets.QMainWindow):
         )
 
         # scroll area for network topology
-        topology_scroll_area = QtWidgets.QScrollArea()
-        topology_scroll_area.setAlignment(QtCore.Qt.AlignCenter)
-        topology_scroll_area.setStyleSheet(
+        self.mw_topology_view_area = QtWidgets.QScrollArea()
+        self.mw_topology_view_area.setAlignment(QtCore.Qt.AlignCenter)
+        self.mw_topology_view_area.setStyleSheet(
             "background-color: white"
         )
-        topology_scroll_area.setWidget(label)
+        self.mw_topology_view_area.setWidget(init_topology_data)
 
-        right_mw_splitter.addWidget(topology_scroll_area)
-        right_mw_splitter.addWidget(bottom_right_pane1)
+        self.mw_main_view_right_splitter.addWidget(self.mw_topology_view_area)
+        self.mw_main_view_right_splitter.addWidget(bottom_right_pane1)
 
         # create main window splitter
-        mw_splitter = QtWidgets.QSplitter()
-        mw_splitter.setOrientation(QtCore.Qt.Horizontal)
-        mw_splitter.addWidget(left_mw_splitter)
-        mw_splitter.addWidget(right_mw_splitter)
+        self.mw_main_view_splitter = QtWidgets.QSplitter()
+        self.mw_main_view_splitter.setOrientation(QtCore.Qt.Horizontal)
+        self.mw_main_view_splitter.addWidget(
+            self.mw_main_view_left_splitter
+        )
+        self.mw_main_view_splitter.addWidget(
+            self.mw_main_view_right_splitter
+        )
 
-        container_layout.addWidget(mw_splitter)
+        self.mw_main_view_layout.addWidget(self.mw_main_view_splitter)
 
         # Set main window central widget
-        self.setCentralWidget(container_widget)
+        self.setCentralWidget(self.mw_main_view_widget)
 
     def add_control_tool_bar(self):
         """
