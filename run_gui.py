@@ -93,38 +93,6 @@ class MainWindow(QtWidgets.QMainWindow):
         Adds initial data displayed to the main screen, for example,
         the topology.
         """
-        # contains mapping of src nodes and
-        # their destination nodes with distance
-        topology_information_dict = create_network('Pan-European')
-
-        edge_list = [(src, des, {'weight': link_len})
-                     for (src, des), link_len in
-                     topology_information_dict.items()]
-        network_topo = nx.Graph(edge_list)
-
-        # graphing is done here
-        figure = plt.figure()
-        ax = figure.add_subplot(1, 1, 1)
-        # spring_layout returns a dictionary of coordinates
-        pos = nx.spring_layout(network_topo, seed=5, scale=3.5)
-        nx.draw(network_topo, pos, with_labels=True, ax=ax, node_size=200,
-                font_size=8)
-        # Close the matplotlib figure to prevent it from displaying
-        plt.close(figure)
-
-        figure.canvas.draw()
-        width, height = figure.canvas.get_width_height()
-        buffer = figure.canvas.buffer_rgba()
-        image = QtGui.QImage(buffer, width, height, QtGui.QImage.Format_ARGB32)
-        pixmap = QtGui.QPixmap.fromImage(image)
-
-        # Display the QPixmap using a QLabel
-        label = QtWidgets.QLabel(self)
-        label.setFixedSize(pixmap.rect().size())
-        # Center align pixmap, not even necessary (same size)
-        label.setAlignment(QtCore.Qt.AlignCenter)
-        label.setPixmap(pixmap)
-
         # Main container widget
         # this is needed because of mw central display
         self.mw_main_view_widget = QtWidgets.QWidget(self)
