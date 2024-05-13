@@ -34,9 +34,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stop_button = QtWidgets.QToolButton()
         self.simulation_thread = None
         self.network_option = ''
-        self.init_ui()
+        self.init_mw_ui()
 
-    def init_ui(self):
+    def init_mw_ui(self):
         """
         Initialize the user interface.
         """
@@ -44,12 +44,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.resize(1280, 720)  # Set initial size of the window
         self.setStyleSheet("background-color: gray")
         self.center_window()
-        self.add_central_data_display()
-        self.add_menu_bar()  # this adds the menubar
-        self.add_control_tool_bar()
-        self.init_status_bar()
+        self.init_mw_view_area()
+        self.init_mw_menu_bar()
+        self.init_mw_tool_bar()
+        self.init_mw_status_bar()
 
-    def add_menu_bar(self):
+    def init_mw_menu_bar(self):
         """
         Creates the menu bar.
         """
@@ -65,7 +65,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Display topology information from File menu
         display_topology_action = QtWidgets.QAction('&Display topology', self)
-        display_topology_action.triggered.connect(self.display_topology_info)
+        display_topology_action.triggered.connect(self.display_topology)
         file_menu.addAction(display_topology_action)
 
         save_action = QtWidgets.QAction('&Save', self)
@@ -88,7 +88,7 @@ class MainWindow(QtWidgets.QMainWindow):
         about_action.triggered.connect(self.about)
         help_menu.addAction(about_action)
 
-    def add_central_data_display(self):
+    def init_mw_view_area(self):
         """
         Adds initial data displayed to the main screen, for example,
         the topology.
@@ -200,7 +200,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Set main window central widget
         self.setCentralWidget(self.mw_main_view_widget)
 
-    def add_control_tool_bar(self):
+    def init_mw_tool_bar(self):
         """
         Adds controls to the toolbar.
         """
@@ -266,7 +266,7 @@ class MainWindow(QtWidgets.QMainWindow):
         mw_toolbar.addSeparator()
         mw_toolbar.addWidget(settings_button)
 
-    def init_status_bar(self):
+    def init_mw_status_bar(self):
         """
         Initializes the status bar.
         """
@@ -363,7 +363,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if file_name:
             print(f"Selected file: {file_name}")
 
-    def display_topology_info(self):
+    def display_topology(self):
         """
         Displays a network topology
         """
