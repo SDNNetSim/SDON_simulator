@@ -337,9 +337,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 "Resume"
             )
         else:
-            with QtCore.QMutexLocker(self.mutex):
-                self.paused = False
-            self.wait_cond.wakeAll()
+            with QtCore.QMutexLocker(self.simulation_thread.mutex):
+                self.simulation_thread.paused = False
+            self.simulation_thread.wait_cond.wakeAll()
 
     def stop_simulation(self):
         """
