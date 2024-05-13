@@ -109,18 +109,42 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mw_main_view_widget.setLayout(self.mw_main_view_layout)
 
         left_info_pane1 = QtWidgets.QWidget(self)
+        # may need a layout if I need to place things in here
+        left_info_pane1_layout = QtWidgets.QVBoxLayout()
+        left_info_pane1.setLayout(left_info_pane1_layout)
+        left_info_pane1_init_data = QtWidgets.QLabel(
+            "Nothing to display"
+        )
+        left_info_pane1_init_data.setStyleSheet(
+            "border: 0px"
+        )
+        left_info_pane1_init_data.setAlignment(QtCore.Qt.AlignCenter)
+        left_info_pane1_layout.addWidget(left_info_pane1_init_data)
         left_info_pane1.setStyleSheet(
             "background-color: white;"
             "border-radius: 5px;"
             "border: 2px solid black;"
         )
 
+        # left info pane 2 begin here
         left_info_pane2 = QtWidgets.QWidget(self)
+        left_info_pane2_layout = QtWidgets.QVBoxLayout()
+        left_info_pane2.setLayout(left_info_pane2_layout)
         left_info_pane2.setStyleSheet(
             "background-color: white;"
             "border-radius: 5px;"
             "border: 2px solid black;"
         )
+        # initial data inside left info pane 2
+        left_info_pane2_init_data = QtWidgets.QLabel(
+            "Nothing to display"
+        )
+        left_info_pane2_init_data.setStyleSheet(
+            "border: none"
+        )
+        left_info_pane2_init_data.setAlignment(QtCore.Qt.AlignCenter)
+        # set layout with initial data
+        left_info_pane2_layout.addWidget(left_info_pane2_init_data)
 
         # initialize main view left splitter
         # main window splitters
@@ -141,6 +165,15 @@ class MainWindow(QtWidgets.QMainWindow):
             "border-radius: 5px;"
             "border: 2px solid black;"
         )
+
+        # initially empty, can be programmed to display whatever
+        init_topology_data = QtWidgets.QLabel(
+            "Nothing to display"
+        )
+        init_topology_data.setStyleSheet(
+            "border: none"
+        )
+        init_topology_data.setAlignment(QtCore.Qt.AlignCenter)
 
         # scroll area for network topology
         self.mw_topology_view_area = QtWidgets.QScrollArea()
