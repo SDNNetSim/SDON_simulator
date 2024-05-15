@@ -1,6 +1,7 @@
 import os
 import copy
 
+import torch.nn as nn
 import gymnasium as gym
 import numpy as np
 from stable_baselines3 import PPO
