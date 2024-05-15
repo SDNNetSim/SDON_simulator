@@ -252,6 +252,8 @@ class SpectrumAgent:
         """
         if self.spectrum_algorithm == 'ppo':
             return self._ppo_obs_space()
+        elif self.spectrum_algorithm in ('first_fit', 'last_fit'):
+            return
 
         raise NotImplementedError
 
@@ -267,6 +269,8 @@ class SpectrumAgent:
         """
         if self.spectrum_algorithm == 'ppo':
             return self._ppo_action_space()
+        elif self.spectrum_algorithm in ('first_fit', 'last_fit'):
+            return
 
         raise NotImplementedError
 
