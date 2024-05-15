@@ -1,6 +1,5 @@
 import numpy as np
 
-# TODO: Double check arguments here
 empty_rl_props = {
     'k_paths': None,
     'cores_per_link': None,
@@ -49,7 +48,6 @@ empty_q_props = {
     }
 }
 
-# TODO: Have props for each possible agent: DQN, PPO, A2C
 empty_drl_props = {
     'min_arrival': np.inf,
     'max_arrival': -1 * np.inf,
