@@ -174,6 +174,9 @@ COMMAND_LINE_PARAMS = [
     ['path_model', str, ''],
     ['core_model', str, ''],
     ['spectrum_model', str, ''],
+    ['path_algorithm', str, ''],
+    ['core_algorithm', str, ''],
+    ['spectrum_algorithm', str, ''],
 
     # For StableBaselines3
     ['algo', str, ''],

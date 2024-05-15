@@ -1,6 +1,5 @@
 import os
 import copy
-import torch.nn as nn
 
 import gymnasium as gym
 import numpy as np
@@ -14,19 +13,21 @@ from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
 from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod, parse_yaml_file
-from arg_scripts.rl_args import empty_rl_props
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
+from arg_scripts.rl_args import empty_rl_props
 
 
 # TODO: Re-order functions
 # TODO: Check if props needs to be reset
 # TODO: Check if props updated in other objects
 # TODO: RLZoo handled via command line
-# TODO: Goal is for everything to be ran here
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
+    """
+    Controls all reinforcement learning assisted simulations.
+    """
     metadata = dict()
 
-    def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None, **kwargs):
+    def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None):
         super().__init__()
 
         self.rl_props = copy.deepcopy(empty_rl_props)
@@ -51,6 +52,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                                             rl_props=self.rl_props)
 
         self.modified_props = None
+        self.sim_props = None
         # Used to get config variables into the observation space
         self.reset(options={'save_sim': False})
         self.observation_space = self.spectrum_agent.get_obs_space()
@@ -60,6 +62,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if self.rl_props['arrival_count'] == (self.engine_obj.engine_props['num_requests']):
             terminated = True
             base_fp = os.path.join('data')
+            # The spectrum agent is handled by SB3 automatically
             if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
                 self.path_agent.end_iter()
             elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
@@ -71,7 +74,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return terminated
 
-    def _update_helper_obj(self, action: list, bandwidth):
+    def _update_helper_obj(self, action: list, bandwidth: str):
         self.rl_help_obj.path_index = self.rl_props['path_index']
         self.rl_help_obj.core_num = self.rl_props['core_index']
 
@@ -80,7 +83,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             self.rl_help_obj.rl_props['forced_index'] = None
 
-        self.rl_help_obj.ai_props = self.rl_props
+        self.rl_help_obj.rl_props = self.rl_props
         self.rl_help_obj.engine_obj = self.engine_obj
         self.rl_help_obj.handle_releases()
         self.rl_help_obj.update_route_props(chosen_path=self.rl_props['chosen_path'], bandwidth=bandwidth)
@@ -100,18 +103,22 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                                    iteration=self.iteration)
 
     def step(self, action: list):
+        """
+        Handles a single time step in the simulation.
+
+        :param action: A list of actions from the DRL agent.
+        :return: The new observation, reward, if terminated, if truncated, and misc. info.
+        :rtype: tuple
+        """
         req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
         req_id = req_info_dict['req_id']
         bandwidth = req_info_dict['bandwidth']
+
         self._update_helper_obj(action=action, bandwidth=bandwidth)
         self.rl_help_obj.allocate()
         reqs_status_dict = self.engine_obj.reqs_status_dict
 
-        if req_id in reqs_status_dict:
-            was_allocated = True
-        else:
-            was_allocated = False
-
+        was_allocated = req_id in reqs_status_dict
         self._handle_test_train_step(was_allocated=was_allocated)
         self.rl_help_obj.update_snapshots()
         drl_reward = self.spectrum_agent.get_reward(was_allocated=was_allocated)
@@ -130,7 +137,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _handle_path_train_test(self):
         self.path_agent.get_route()
-        # TODO: How does this work even when training?
         self.rl_help_obj.rl_props['chosen_path'] = [self.rl_props['chosen_path']]
         self.route_obj.route_props['paths_list'] = self.rl_help_obj.rl_props['chosen_path']
         self.rl_props['core_index'] = None
@@ -243,7 +249,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         save_input(base_fp=base_fp, properties=self.modified_props, file_name=file_name,
                    data_dict=self.modified_props)
 
-    # TODO: Options to switch between them (not use all AI)
+    # TODO: Options to have select AI agents
     def _load_models(self):
         self.path_agent.engine_props = self.engine_obj.engine_props
         self.path_agent.rl_props = self.rl_props
@@ -285,6 +291,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_help_obj.route_obj = self.route_obj
 
     def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
+        """
+        Resets necessary variables after each iteration of the simulation.
+
+        :param seed: Seed for random generation.
+        :param options: Custom option input.
+        :return: The first observation and misc. information.
+        :rtype: tuple
+        """
         super().reset(seed=seed)
         self.rl_props['arrival_list'] = list()
         self.rl_props['depart_list'] = list()
@@ -308,18 +322,18 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
 def _run_iters(env: object, sim_dict: dict, is_training: bool, model=None):
     completed_episodes = 0
-    obs, info = env.reset()
+    obs, _ = env.reset()
     while True:
         if is_training:
-            obs, curr_reward, is_terminated, is_truncated, curr_info = env.step([0])
+            obs, _, is_terminated, is_truncated, _ = env.step([0])
         else:
             action, _states = model.predict(obs)
-            obs, curr_reward, is_terminated, is_truncated, curr_info = env.step(action)
+            obs, _, is_terminated, is_truncated, _ = env.step(action)
 
         if completed_episodes >= sim_dict['max_iters']:
             break
         if is_terminated or is_truncated:
-            obs, info = env.reset()
+            obs, _ = env.reset()
             completed_episodes += 1
             print(f'{completed_episodes} episodes completed out of {sim_dict["max_iters"]}.')
 
@@ -334,7 +348,7 @@ def _get_model(algorithm: str, device: str, env: object):
         yaml_path = os.path.join('sb3_scripts', 'yml', 'ppo.yml')
         yaml_dict = parse_yaml_file(yaml_path)
         env_name = list(yaml_dict.keys())[0]
-        kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])
+        kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
         model = PPO(env=env, device=device, policy=yaml_dict[env_name]['policy'],
                     n_steps=yaml_dict[env_name]['n_steps'],
                     batch_size=yaml_dict[env_name]['batch_size'], gae_lambda=yaml_dict[env_name]['gae_lambda'],
@@ -409,6 +423,9 @@ def _setup_rl_sim():
 
 
 def run_rl_sim():
+    """
+    The main function that controls reinforcement learning simulations.
+    """
     callback = GetModelParams()
     env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=_setup_rl_sim())
     env.sim_dict['callback'] = callback

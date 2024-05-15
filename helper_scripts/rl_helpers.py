@@ -4,16 +4,12 @@ from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
 from helper_scripts.sim_helpers import find_path_cong, classify_cong, find_core_cong
 
 
-# TODO: Might switch around the functions in this script to make more sense
-#   - Something in a more organized way, separate QL from DQN, DQN from A2C, etc.
 class RLHelpers:
     """
     Contains methods to assist with reinforcement learning simulations.
     """
 
     def __init__(self, rl_props: dict, engine_obj: object, route_obj: object):
-        # TODO: Check for variables used and unused
-        #   - Improve naming
         self.rl_props = rl_props
 
         self.engine_obj = engine_obj
@@ -21,23 +17,19 @@ class RLHelpers:
 
         self.topology = None
         self.net_spec_dict = None
-        self.reqs_status_dict = None
-        self.algorithm = None
-        self.completed_sim = False
 
-        self.no_penalty = None
-        self.path_index = None
         self.core_num = None
-        self.slice_request = None
         self.super_channel = None
         self.super_channel_indexes = list()
         self.mod_format = None
-        self.bandwidth = None
 
     def update_snapshots(self):
+        """
+        Updates snapshot saves for the simulation.
+        """
         arrival_count = self.rl_props['arrival_count']
-
         snapshot_step = self.engine_obj.engine_props['snapshot_step']
+
         if self.engine_obj.engine_props['save_snapshots'] and (arrival_count + 1) % snapshot_step == 0:
             self.engine_obj.stats_obj.update_snapshot(net_spec_dict=self.engine_obj.net_spec_dict,
                                                       req_num=arrival_count + 1)
@@ -58,10 +50,7 @@ class RLHelpers:
 
         self.super_channel_indexes = sc_index_mat[:num_channels]
         # There were not enough super-channels, do not penalize the agent
-        if len(self.super_channel_indexes) == 0:
-            no_penalty = True
-        else:
-            no_penalty = False
+        no_penalty = len(self.super_channel_indexes) == 0
 
         resp_frag_mat = list()
         for channel in self.super_channel_indexes:
@@ -78,6 +67,13 @@ class RLHelpers:
         return resp_frag_mat, no_penalty
 
     def classify_paths(self, paths_list: list):
+        """
+        Classify paths by their current congestion level.
+
+        :param paths_list: A list of paths from source to destination.
+        :return: The index of the path, the path itself, and its congestion index for every path.
+        :rtype: list
+        """
         info_list = list()
         paths_list = paths_list[:, 0]
         for path_index, curr_path in enumerate(paths_list):
@@ -89,6 +85,13 @@ class RLHelpers:
         return info_list
 
     def classify_cores(self, cores_list: list):
+        """
+        Classify cores by their congestion level.
+
+        :param cores_list: A list of cores.
+        :return: The core index, the core itself, and the congestion level of that core for every core.
+        :rtype: list
+        """
         info_list = list()
 
         for core_index, curr_core in enumerate(cores_list):
@@ -114,20 +117,6 @@ class RLHelpers:
         self.route_obj.route_props['mod_formats_list'].append([mod_format])
         self.route_obj.route_props['weights_list'].append(path_len)
 
-    def find_maximums(self):
-        """
-        Finds the maximum length a modulation can support and the number of slots.
-        """
-        for bandwidth, mod_obj in self.engine_obj.engine_props['mod_per_bw'].items():
-            bandwidth_percent = self.engine_obj.engine_props['request_distribution'][bandwidth]
-            if bandwidth_percent > 0:
-                self.rl_props['bandwidth_list'].append(bandwidth)
-            for _, data_obj in mod_obj.items():
-                if data_obj['slots_needed'] > self.drl_props['max_slots_needed'] and bandwidth_percent > 0:
-                    self.drl_props['max_slots_needed'] = data_obj['slots_needed']
-                if data_obj['max_length'] > self.drl_props['max_length'] and bandwidth_percent > 0:
-                    self.drl_props['max_length'] = data_obj['max_length']
-
     def handle_releases(self):
         """
         Checks if a request or multiple requests need to be released.
@@ -139,8 +128,10 @@ class RLHelpers:
                 self.engine_obj.handle_release(curr_time=req_obj['depart'])
 
     def allocate(self):
+        """
+        Attempts to allocate a request.
+        """
         curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
-
         if self.rl_props['forced_index'] is not None:
             try:
                 forced_index = self.super_channel_indexes[self.rl_props['forced_index']][0]
@@ -190,6 +181,11 @@ class RLHelpers:
         return mock_sdn
 
     def reset_reqs_dict(self, seed: int):
+        """
+        Resets the request dictionary.
+
+        :param seed: The random seed.
+        """
         self.engine_obj.generate_requests(seed=seed)
 
         for req_time in self.engine_obj.reqs_dict:

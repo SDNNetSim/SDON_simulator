@@ -115,7 +115,10 @@ def read_config(args_obj: dict, config_path: str = None):
                 if option not in config[category]:
                     config_dict['s1'][option] = None
                 else:
-                    config_dict['s1'][option] = type_obj(config[category][option])
+                    if args_obj[option] is not None:
+                        config_dict['s1'][option] = args_obj[option]
+                    else:
+                        config_dict['s1'][option] = type_obj(config[category][option])
 
         # Ignoring index zero since we've already handled s1, the first simulation
         resp = _setup_threads(config=config, config_dict=config_dict, section_list=config.sections()[1:],

@@ -3,24 +3,35 @@ import os
 import numpy as np
 
 from gymnasium import spaces
-from stable_baselines3 import PPO
 from .ql_helpers import QLearningHelpers
 
 
 class PathAgent:
+    """
+    A class that handles everything related to path assignment in reinforcement learning simulations.
+    """
+
     def __init__(self, path_algorithm: str, rl_props: dict, rl_help_obj: object):
         self.path_algorithm = path_algorithm
         self.engine_props = None
         self.rl_props = rl_props
         self.rl_help_obj = rl_help_obj
-
         self.agent_obj = None
 
+        self.level_index = None
+        self.cong_list = None
+
     def end_iter(self):
+        """
+        Ends an iteration for the path agent.
+        """
         if self.path_algorithm == 'q_learning':
             self.agent_obj.decay_epsilon()
 
     def setup_env(self):
+        """
+        Sets up the environment for the path agent.
+        """
         if self.path_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
         else:
@@ -28,13 +39,28 @@ class PathAgent:
 
         self.agent_obj.setup_env()
 
-    def get_reward(self, was_allocated: bool):
+    @staticmethod
+    def get_reward(was_allocated: bool):
+        """
+        Get the current reward for the last agent's action.
+
+        :param was_allocated: If the request was allocated or not.
+        :return: The reward.
+        :rtype: float
+        """
         if was_allocated:
             return 1.0
-        else:
-            return -1.0
+
+        return -1.0
 
     def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int):
+        """
+        Makes updates to the agent for each time step.
+
+        :param was_allocated: If the request was allocated.
+        :param net_spec_dict: The current network spectrum database.
+        :param iteration: The current iteration.
+        """
         reward = self.get_reward(was_allocated=was_allocated)
 
         if self.path_algorithm == 'q_learning':
@@ -71,18 +97,32 @@ class PathAgent:
             raise ValueError('The chosen path can not be None')
 
     def get_route(self):
+        """
+        Assign a route for the current request.
+        """
         if self.path_algorithm == 'q_learning':
             self._ql_route()
         else:
             raise NotImplementedError
 
     def load_model(self, model_path: str, erlang: float, num_cores: int):
+        """
+        Loads a previously trained path agent model.
+
+        :param model_path: The path to the trained model.
+        :param erlang: The Erlang value the model was trained with.
+        :param num_cores: The number of cores the model was trained with.
+        """
         self.setup_env()
         model_path = os.path.join('logs', model_path, f'e{erlang}_routes_c{num_cores}.npy')
         self.agent_obj.props['routes_matrix'] = np.load(model_path, allow_pickle=True)
 
 
 class CoreAgent:
+    """
+    A class that handles everything related to core assignment in reinforcement learning simulations.
+    """
+
     def __init__(self, core_algorithm: str, rl_props: dict, rl_help_obj: object):
         self.core_algorithm = core_algorithm
         self.rl_props = rl_props
@@ -94,10 +134,16 @@ class CoreAgent:
         self.cong_list = list()
 
     def end_iter(self):
+        """
+        Ends an iteration for the core agent.
+        """
         if self.core_algorithm == 'q_learning':
             self.agent_obj.decay_epsilon()
 
     def setup_env(self):
+        """
+        Sets up the environment for the core agent.
+        """
         if self.core_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
         else:
@@ -107,12 +153,26 @@ class CoreAgent:
 
     @staticmethod
     def get_reward(was_allocated: bool):
+        """
+        Gets the core agent's reward based on the last action taken.
+
+        :param was_allocated: If the last request was allocated.
+        :return: The reward.
+        :rtype: float
+        """
         if was_allocated:
             return 1.0
-        else:
-            return -1.0
+
+        return -1.0
 
     def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int):
+        """
+        Makes updates to the core agent after each time step.
+
+        :param was_allocated: If the request was allocated.
+        :param net_spec_dict: The current network spectrum database.
+        :param iteration: The current iteration
+        """
         reward = self.get_reward(was_allocated=was_allocated)
 
         if self.core_algorithm == 'q_learning':
@@ -136,16 +196,30 @@ class CoreAgent:
             self.level_index = self.cong_list[self.rl_props['core_index']][-1]
 
     def get_core(self):
+        """
+        Assigns a core to the current request.
+        """
         if self.core_algorithm == 'q_learning':
             self._ql_core()
 
     def load_model(self, model_path: str, erlang: float, num_cores: int):
+        """
+        Loads a previously trained core agent model.
+
+        :param model_path: The path to the core agent model.
+        :param erlang: The Erlang value the model was trained on.
+        :param num_cores: The number of cores the model was trained on.
+        """
         self.setup_env()
         model_path = os.path.join('logs', model_path, f'e{erlang}_cores_c{num_cores}.npy')
         self.agent_obj.props['cores_matrix'] = np.load(model_path, allow_pickle=True)
 
 
 class SpectrumAgent:
+    """
+    A class that handles everything related to spectrum assignment in reinforcement learning simulations.
+    """
+
     def __init__(self, spectrum_algorithm: str, rl_props: dict):
         self.spectrum_algorithm = spectrum_algorithm
         self.rl_props = rl_props
@@ -171,18 +245,43 @@ class SpectrumAgent:
         return resp_obs
 
     def get_obs_space(self):
+        """
+        Gets the observation space for each DRL model.
+
+        :return: The DRL model's observation space.
+        """
         if self.spectrum_algorithm == 'ppo':
             return self._ppo_obs_space()
+        elif self.spectrum_algorithm in ('first_fit', 'last_fit'):
+            return
+
+        raise NotImplementedError
 
     def _ppo_action_space(self):
         action_space = spaces.Discrete(self.rl_props['super_channel_space'])
         return action_space
 
     def get_action_space(self):
+        """
+        Gets the action space for the DRL model.
+
+        :return: The DRL model's action space.
+        """
         if self.spectrum_algorithm == 'ppo':
             return self._ppo_action_space()
+        elif self.spectrum_algorithm in ('first_fit', 'last_fit'):
+            return
+
+        raise NotImplementedError
 
     def get_reward(self, was_allocated: bool):
+        """
+        Gets the reward for the spectrum agent.
+
+        :param was_allocated: If the request was allocated or not.
+        :return: The reward.
+        :rtype: float
+        """
         if self.no_penalty and not was_allocated:
             drl_reward = 0.0
         elif not was_allocated:
@@ -191,6 +290,3 @@ class SpectrumAgent:
             drl_reward = 1.0
 
         return drl_reward
-
-    def get_spectrum(self):
-        raise NotImplementedError
