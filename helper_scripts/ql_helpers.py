@@ -1,18 +1,22 @@
-import networkx as nx
-import numpy as np
+# pylint: disable=unsupported-assignment-operation
+
 import os
 import json
+
+import networkx as nx
+import numpy as np
 
 from arg_scripts.rl_args import empty_q_props
 from helper_scripts.sim_helpers import find_path_cong, classify_cong, calc_matrix_stats, find_core_cong
 from helper_scripts.os_helpers import create_dir
 
 
-# TODO: Generalize as many functions as you can, probably will move QLearning to another script
-# TODO: Probably need to standardize function names for this to be generalized
 class QLearningHelpers:
+    """
+    Class dedicated to handling everything related to the q-learning algorithm.
+    """
+
     def __init__(self, rl_props: dict, engine_props: dict):
-        # TODO: Props in its own object called props (standards and guidelines)
         self.props = empty_q_props
         self.engine_props = engine_props
         self.rl_props = rl_props
@@ -39,9 +43,13 @@ class QLearningHelpers:
 
                         for core_action in range(self.engine_props['cores_per_link']):
                             core_tuple = (curr_path, core_action, 0.0)
-                            self.props['cores_matrix'][k, core_action, level_index] = core_tuple
+                            self.props['cores_matrix'][
+                                k, core_action, level_index] = core_tuple
 
     def setup_env(self):
+        """
+        Sets up the q-learning environments.
+        """
         self.props['epsilon'] = self.engine_props['epsilon_start']
         route_types = [('path', 'O'), ('q_value', 'f8')]
         core_types = [('path', 'O'), ('core_action', 'i8'), ('q_value', 'f8')]
@@ -55,6 +63,17 @@ class QLearningHelpers:
         self._init_q_tables()
 
     def get_max_future_q(self, path_list: list, net_spec_dict: dict, matrix: list, flag: str, core_index: int = None):
+        """
+        Gets the maximum possible future q for the next state s prime.
+
+        :param path_list: The current path.
+        :param net_spec_dict: The network spectrum database.
+        :param matrix: The matrix to find the maximum current q-value in.
+        :param flag: A flag to determine whether the matrix is for the path or core agent.
+        :param core_index: The index of the core selected.
+        :return: The maximum future q.
+        :rtype: float
+        """
         if flag == 'path':
             new_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
             new_cong_index = classify_cong(curr_cong=new_cong)
@@ -69,6 +88,13 @@ class QLearningHelpers:
         return max_future_q
 
     def update_routes_matrix(self, reward: float, level_index: int, net_spec_dict: dict):
+        """
+        Updates the q-table for the path/routing agent.
+
+        :param reward: The reward received from the last action.
+        :param level_index: Index to determine the current state.
+        :param net_spec_dict: The network spectrum database.
+        """
         routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
         path_list = routes_matrix[self.rl_props['path_index']][level_index]
         current_q = path_list['q_value']
@@ -85,6 +111,14 @@ class QLearningHelpers:
         routes_matrix[self.rl_props['path_index']]['q_value'] = new_q
 
     def update_cores_matrix(self, reward: float, core_index: int, level_index: int, net_spec_dict: dict):
+        """
+        Updates the q-table for the core agent.
+
+        :param reward: The reward received from the last action.
+        :param core_index: The index of the core selected.
+        :param level_index: Index to determine the current state.
+        :param net_spec_dict: The network spectrum database.
+        """
         cores_matrix = self.props['cores_matrix'][self.rl_props['path_index']]
         cores_list = cores_matrix[self.rl_props['core_index']][level_index]
         current_q = cores_list['q_value']
@@ -100,6 +134,14 @@ class QLearningHelpers:
         cores_matrix[core_index][level_index]['q_value'] = new_q
 
     def get_max_curr_q(self, cong_list: list, matrix_flag: str):
+        """
+        Gets the maximum current q-value from the current state s.
+
+        :param cong_list: A list determining the congestion levels of cores or paths in the current state.
+        :param matrix_flag: A flag to determine whether to update the path or core q-table.
+        :return: The maximum q-value index (state) and an object
+        :rtype: tuple
+        """
         q_values = list()
         for obj_index, _, level_index in cong_list:
             if matrix_flag == 'routes_matrix':
@@ -124,8 +166,7 @@ class QLearningHelpers:
         max_iters = self.engine_props['max_iters']
         num_requests = self.engine_props['num_requests']
 
-        if ((self.iteration == (max_iters - 1) or self.iteration == ((max_iters - 1) % 10))
-                and len_rewards == num_requests):
+        if (self.iteration in (max_iters - 1, (max_iters - 1) % 10)) and len_rewards == num_requests:
             rewards_dict = self.props['rewards_dict'][stats_flag]['rewards']
             errors_dict = self.props['errors_dict'][stats_flag]['errors']
 
@@ -145,6 +186,13 @@ class QLearningHelpers:
                                 core_algorithm=self.engine_props['core_algorithm'])
 
     def update_q_stats(self, reward: float, td_error: float, stats_flag: str):
+        """
+        Update relevant statistics for both q-learning agents.
+
+        :param reward: The current reward.
+        :param td_error: The current temporal difference error.
+        :param stats_flag: A flag to determine whether to update the path or core agent.
+        """
         # To account for a reset even after a sim has completed (how SB3 works)
         if self.completed_sim:
             return
@@ -182,6 +230,9 @@ class QLearningHelpers:
     def save_model(self, path_algorithm: str, core_algorithm: str):
         """
         Saves the current q-learning model.
+
+        :param path_algorithm: The path algorithm used.
+        :param core_algorithm: The core algorithm used.
         """
         date_time = os.path.join(self.engine_props['network'], self.engine_props['date'],
                                  self.engine_props['sim_start'])
@@ -206,8 +257,11 @@ class QLearningHelpers:
         self._save_params(save_dir=save_dir)
 
     def decay_epsilon(self):
+        """
+        Decay the epsilon value (degree of randomness).
+        """
         if self.props['epsilon'] > self.engine_props['epsilon_end']:
-            decay_rate = (self.engine_props['epsilon_start'] - self.engine_props['epsilon_end'])
+            decay_rate = self.engine_props['epsilon_start'] - self.engine_props['epsilon_end']
             decay_rate /= self.engine_props['max_iters']
             self.props['epsilon'] -= decay_rate
 
