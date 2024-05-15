@@ -118,6 +118,7 @@ OTHER_OPTIONS = {
         'spectrum_algorithm': str,
         'spectrum_model': str,
         'optimize': str_to_bool,
+        'optimize_hyperparameters': str_to_bool,
         'super_channel_space': int,
         'device': str,
         'policy': str,
@@ -177,6 +178,7 @@ COMMAND_LINE_PARAMS = [
     ['path_algorithm', str, ''],
     ['core_algorithm', str, ''],
     ['spectrum_algorithm', str, ''],
+    ['optimize_hyperparameters', str, ''],
 
     # For StableBaselines3
     ['algo', str, ''],
@@ -216,5 +218,5 @@ COMMAND_LINE_PARAMS = [
     ['config', str, ''],
     ['show-progress', bool, ''],
     ['conf-file', str, ''],
-    ['eval-episodes', int, '']
+    ['eval-episodes', int, ''],
 ]

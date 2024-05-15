@@ -1,5 +1,6 @@
 import os
 import copy
+import subprocess
 
 import torch.nn as nn
 import gymnasium as gym
@@ -15,7 +16,7 @@ from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
 from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod, parse_yaml_file
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
-from arg_scripts.rl_args import empty_rl_props
+from arg_scripts.rl_args import empty_rl_props, SETUP_RL_COMMANDS
 
 
 # TODO: Re-order functions
@@ -28,11 +29,15 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     metadata = dict()
 
-    def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None):
+    def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None, **kwargs):
         super().__init__()
 
         self.rl_props = copy.deepcopy(empty_rl_props)
-        self.sim_dict = sim_dict['s1']
+
+        if sim_dict is None:
+            self.sim_dict = _setup_rl_sim()['s1']
+        else:
+            self.sim_dict = sim_dict['s1']
         self.rl_props['super_channel_space'] = self.sim_dict['super_channel_space']
 
         self.iteration = 0
@@ -245,7 +250,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.modified_props = copy.deepcopy(self.sim_props)
         if 'topology' in self.sim_props:
             self.modified_props.pop('topology')
-            self.modified_props.pop('callback')
+            try:
+                self.modified_props.pop('callback')
+            except KeyError:
+                print('Callback does not exist, skipping.')
 
         save_input(base_fp=base_fp, properties=self.modified_props, file_name=file_name,
                    data_dict=self.modified_props)
@@ -273,7 +281,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self._create_input()
 
-        start_arr_rate = float(self.sim_dict['arrival_rate']['start'])
+        # fixme
+        try:
+            start_arr_rate = float(self.sim_dict['arrival_rate']['start'])
+        except TypeError:
+            start_arr_rate = self.sim_dict['arrival_rate'] / self.sim_dict['cores_per_link']
+
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.sim_dict['holding_time']
         self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.sim_dict['cores_per_link']
 
@@ -389,6 +402,17 @@ def _get_trained_model(env: object, sim_dict: dict):
     return model
 
 
+def _run_rl_zoo(sim_dict: dict):
+    for command in SETUP_RL_COMMANDS:
+        subprocess.run(command, shell=True)
+
+    if sim_dict['spectrum_algorithm'] == 'ppo':
+        subprocess.run('python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file '
+                       './sb3_scripts/yml/ppo.yml -optimize --n-trials 5 --n-timesteps 20000', shell=True)
+    else:
+        raise NotImplementedError
+
+
 def _run(env: object, sim_dict: dict):
     _print_info(sim_dict=sim_dict)
 
@@ -396,13 +420,17 @@ def _run(env: object, sim_dict: dict):
         if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
             _run_iters(env=env, sim_dict=sim_dict, is_training=True)
         elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
-            model, yaml_dict = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'], env=env)
-            model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
-                        callback=sim_dict['callback'])
+            if sim_dict['optimize_hyperparameters']:
+                _run_rl_zoo(sim_dict=sim_dict)
+            else:
+                model, yaml_dict = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'],
+                                              env=env)
+                model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
+                            callback=sim_dict['callback'])
 
-            save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
-                                   env.modified_props['sim_start'], 'ppo_model.zip')
-            model.save(save_fp)
+                save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
+                                       env.modified_props['sim_start'], 'ppo_model.zip')
+                model.save(save_fp)
         else:
             raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '
                              f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '

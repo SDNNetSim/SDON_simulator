@@ -24,10 +24,6 @@ pip install -r requirements.txt
 # Modify StableBaselines3 to register custom environments
 ./bash_scripts/register_rl_env.sh ppo SimEnv
 
-# Run AI simulation
-# python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file ./ai_scripts/yml/ppo.yml -optimize --n-trials 5 --n-timesteps 20000
-#python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file ./ai_scripts/yml/ppo.yml --n-timesteps 20000 --save-freq 10000
-
 # Learning rate, discount factor, epsilon
 
 # Variables for outer loop
@@ -35,7 +31,7 @@ var1_list=("0.1" "0.1" "0.2" "0.2" "0.8" "0.8" "0.9" "0.9")
 var2_list=("0.99" "0.1" "0.99" "0.1" "0.99" "0.1" "0.99" "0.1")
 var3_list=("0.10" "0.10" "0.10" "0.10" "0.10" "0.10" "0.10" "0.10")
 
-python run_rl_sim.py --device gpu --path_algorithm first_fit --core_algorithm q_learning --spectrum_algorithm first_fit
+python run_rl_sim.py --device cpu --path_algorithm first_fit --core_algorithm q_learning --spectrum_algorithm first_fit
 
 # Run regular simulation
 # python run_sim.py --max_segments 1 --k_paths 3

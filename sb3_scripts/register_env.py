@@ -11,7 +11,7 @@ def copy_yml_file(algorithm: str):
 
     :param algorithm: The algorithm being used for RLZoo3.
     """
-    source_file = f'ai_scripts/yml/{algorithm}.yml'
+    source_file = f'sb3_scripts/yml/{algorithm}.yml'
     destination_file = f'venvs/unity_venv/venv/lib/python3.11/site-packages/rl_zoo3/hyperparams/{algorithm}.yml'
     shutil.copy(source_file, destination_file)
 
