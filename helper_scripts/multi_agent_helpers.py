@@ -250,10 +250,8 @@ class SpectrumAgent:
         """
         if self.spectrum_algorithm == 'ppo':
             return self._ppo_obs_space()
-        elif self.spectrum_algorithm in ('first_fit', 'last_fit'):
-            return
 
-        raise NotImplementedError
+        return None
 
     def _ppo_action_space(self):
         action_space = spaces.Discrete(self.rl_props['super_channel_space'])
@@ -267,10 +265,8 @@ class SpectrumAgent:
         """
         if self.spectrum_algorithm == 'ppo':
             return self._ppo_action_space()
-        elif self.spectrum_algorithm in ('first_fit', 'last_fit'):
-            return
 
-        raise NotImplementedError
+        return None
 
     def get_reward(self, was_allocated: bool):
         """
