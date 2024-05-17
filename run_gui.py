@@ -158,10 +158,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mw_main_view_right_splitter = QtWidgets.QSplitter()
         self.mw_main_view_right_splitter.setOrientation(QtCore.Qt.Vertical)
 
-        bottom_right_pane1 = QtWidgets.QWidget(self)
-        bottom_right_pane1.setMinimumHeight(150)
-        bottom_right_pane1.setMaximumHeight(200)
-        bottom_right_pane1.setStyleSheet(
+        # create layout for bottom right pane
+        self.bottom_right_pane1 = QtWidgets.QPlainTextEdit(self)
+        self.bottom_right_pane1.setReadOnly(True)
+        self.bottom_right_pane1.appendPlainText("No Data to display")
+        self.bottom_right_pane1.setMinimumHeight(150)
+        self.bottom_right_pane1.setMaximumHeight(200)
+        self.bottom_right_pane1.setStyleSheet(
             "background-color: white;"
             "border-radius: 5px;"
             "border: 2px solid black;"
@@ -185,7 +188,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mw_topology_view_area.setWidget(init_topology_data)
 
         self.mw_main_view_right_splitter.addWidget(self.mw_topology_view_area)
-        self.mw_main_view_right_splitter.addWidget(bottom_right_pane1)
+        self.mw_main_view_right_splitter.addWidget(self.bottom_right_pane1)
 
         # create main window splitter
         self.mw_main_view_splitter = QtWidgets.QSplitter()
