@@ -122,6 +122,8 @@ OTHER_OPTIONS = {
         'super_channel_space': int,
         'device': str,
         'policy': str,
+        'reward': float,
+        'penalty': float,
     },
     'file_settings': {
     },
@@ -179,6 +181,8 @@ COMMAND_LINE_PARAMS = [
     ['core_algorithm', str, ''],
     ['spectrum_algorithm', str, ''],
     ['optimize_hyperparameters', str, ''],
+    ['reward', float, ''],
+    ['penalty', float, ''],
 
     # For StableBaselines3
     ['algo', str, ''],

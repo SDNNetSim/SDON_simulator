@@ -93,8 +93,7 @@ class SDNController:
         self.spectrum_obj.spectrum_props['path_list'] = path_list
         mod_format_list = [mod_format]
         for _ in range(num_segments):
-            self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth,
-                                           ai_obj=self.ai_obj)
+            self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth)
             if self.spectrum_obj.spectrum_props['is_free']:
                 self.allocate()
                 self._update_req_stats(bandwidth=bandwidth)

@@ -118,6 +118,15 @@ def find_path_cong(path_list: list, net_spec_dict: dict):
 
 
 def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
+    """
+    Finds the current percentage of congestion on a core along a path.
+
+    :param core_index: Index of the core.
+    :param net_spec_dict: Network spectrum database.
+    :param path_list: Current path.
+    :return: The average congestion percentage on the core.
+    :rtype: float
+    """
     links_cong_list = list()
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
@@ -449,12 +458,19 @@ def min_max_scale(value: float, min_value: float, max_value: float):
     return (value - min_value) / (max_value - min_value)
 
 
-# TODO: This is not working properly
 def get_super_channels(input_arr: np.array, slots_needed: int):
+    """
+    Gets available super-channels w.r.t. the current request's needs.
+
+    :param input_arr: The current spectrum (a single core).
+    :param slots_needed: Slots needed by the request.
+    :return: A matrix of positions of available super-channels.
+    :rtype: np.array
+    """
     potential_super_channels = []
     consecutive_zeros = 0
 
-    for i in range(len(input_arr)):
+    for i in range(len(input_arr)): # pylint: disable=consider-using-enumerate
         if input_arr[i] == 0:
             consecutive_zeros += 1
             # Plus one to account for the guard band
@@ -524,6 +540,13 @@ def get_hfrag(path_list: list, core_num: int, slots_needed: int, spectral_slots:
 
 
 def classify_cong(curr_cong: float):
+    """
+    Classifies congestion percentages to 'levels'.
+
+    :param curr_cong: Current congestion percentage.
+    :return: The congestion indexes or level.
+    :rtype: int
+    """
     if curr_cong < 0.3:
         cong_index = 0
     elif 0.3 <= curr_cong < 0.7:
@@ -537,9 +560,16 @@ def classify_cong(curr_cong: float):
 
 
 def parse_yaml_file(yaml_file: str):
-    with open(yaml_file, "r") as f:
+    """
+    Parses a YAML file.
+
+    :param yaml_file: YAML file name.
+    :return: The YAML data as an object.
+    :rtype: object
+    """
+    with open(yaml_file, "r", encoding='utf-8') as f:
         try:
             yaml_data = yaml.safe_load(f)
             return yaml_data
         except yaml.YAMLError as exc:
-            print(exc)
+            return exc

@@ -2,7 +2,7 @@ import os
 import copy
 import subprocess
 
-import torch.nn as nn
+from torch import nn  # pylint: disable=unused-import
 import gymnasium as gym
 import numpy as np
 from stable_baselines3 import PPO
@@ -29,7 +29,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     metadata = dict()
 
-    def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None, **kwargs):
+    def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None, **kwargs): # pylint: disable=unused-argument
         super().__init__()
 
         self.rl_props = copy.deepcopy(empty_rl_props)
@@ -404,11 +404,11 @@ def _get_trained_model(env: object, sim_dict: dict):
 
 def _run_rl_zoo(sim_dict: dict):
     for command in SETUP_RL_COMMANDS:
-        subprocess.run(command, shell=True)
+        subprocess.run(command, shell=True, check=True)
 
     if sim_dict['spectrum_algorithm'] == 'ppo':
         subprocess.run('python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file '
-                       './sb3_scripts/yml/ppo.yml -optimize --n-trials 5 --n-timesteps 20000', shell=True)
+                       './sb3_scripts/yml/ppo.yml -optimize --n-trials 5 --n-timesteps 20000', shell=True, check=True)
     else:
         raise NotImplementedError
 
