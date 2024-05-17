@@ -295,7 +295,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress_bar.setVisible(True)
 
         self.simulation_thread = SimulationThread()
-        self.simulation_thread.progress_changed_sig.connect(
+        self.simulation_thread.output_hints_signal.connect(
+            self.output_hints
+        )
         self.simulation_thread.progress_changed.connect(
             self.update_progress
         )
@@ -303,6 +305,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.simulation_finished
         )
         self.simulation_thread.start()
+
+    def output_hints(self, message):
+        self.bottom_right_pane1.appendPlainText(message)
 
     def start_simulation(self):
         """
