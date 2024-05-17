@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from matplotlib import pyplot as plt
 
 from data_scripts.structure_data import create_network
-from gui.sim_thread.simulation_thread import SimulationThread
+from helper_scripts.gui_helpers import SettingsDialog, SimulationThread
 
 
 # TODO: Double check coding guidelines document:
@@ -247,6 +247,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stop_button.setText("Stop")
         self.stop_button.triggered.connect(self.stop_simulation)
 
+        # settings work now
         settings_button = QtWidgets.QToolButton()
         resource_name = "gear.png"
         settings_button.setIcon(
@@ -436,20 +437,14 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Opens the settings panel.
         """
-        print("Opening settings")
-
-    def update_progress(self, value):
-        """
-        Updates the progress bar.
-        """
-        self.progress_bar.setValue(value)
-
-    def simulation_finished(self):
-        """
-        Finish the simulation.
-        """
-        self.progress_bar.setVisible(False)
-        self.progress_bar.setValue(0)
+        settings_dialog = SettingsDialog()
+        settings_dialog.setModal(True)
+        settings_dialog.setStyleSheet("""
+            background-color: white;
+            background-color: white;
+        """)
+        if settings_dialog.exec() == QtWidgets.QDialog.Accepted:
+            print(settings_dialog.get_settings())
 
     @staticmethod
     def on_hover_change(label, data, hovered):
