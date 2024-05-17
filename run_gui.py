@@ -304,6 +304,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.simulation_thread.finished_signal.connect(
             self.simulation_finished
         )
+        self.simulation_thread.finished.connect(
+            self.simulation_thread.deleteLater
+        )
         self.simulation_thread.start()
 
     def output_hints(self, message):
