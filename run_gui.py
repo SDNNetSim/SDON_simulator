@@ -209,6 +209,10 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Adds controls to the toolbar.
         """
+        self.start_button = QtWidgets.QAction()
+        self.pause_button = QtWidgets.QAction()
+        self.stop_button = QtWidgets.QAction()
+
         # Create toolbar and add actions
         mw_toolbar = QtWidgets.QToolBar()
         self.addToolBar(QtCore.Qt.TopToolBarArea, mw_toolbar)
@@ -225,11 +229,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
         )
         self.start_button.setText("Start")
-        self.start_button.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
-        self.start_button.setStyleSheet(
-            "background-color: transparent;"
-        )
-        self.start_button.clicked.connect(self.start_simulation)
+        self.start_button.triggered.connect(self.start_simulation)
 
         # set up for pause button
         resource_name = "pause.png"
@@ -237,10 +237,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
         )
         self.pause_button.setText("Pause")
-        self.pause_button.setStyleSheet(
-            "background-color: transparent;"
-        )
-        self.pause_button.clicked.connect(self.pause_simulation)
+        self.pause_button.triggered.connect(self.pause_simulation)
 
         # set up for stop button
         resource_name = "light-red-stop-button.png"
@@ -248,10 +245,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
         )
         self.stop_button.setText("Stop")
-        self.stop_button.setStyleSheet(
-            "background-color: transparent;"
-        )
-        self.stop_button.clicked.connect(self.stop_simulation)
+        self.stop_button.triggered.connect(self.stop_simulation)
 
         settings_button = QtWidgets.QToolButton()
         resource_name = "gear.png"
@@ -265,9 +259,9 @@ class MainWindow(QtWidgets.QMainWindow):
         settings_button.clicked.connect(self.open_settings)
 
         mw_toolbar.addSeparator()
-        mw_toolbar.addWidget(self.start_button)
-        mw_toolbar.addWidget(self.pause_button)
-        mw_toolbar.addWidget(self.stop_button)
+        mw_toolbar.addAction(self.start_button)
+        mw_toolbar.addAction(self.pause_button)
+        mw_toolbar.addAction(self.stop_button)
         mw_toolbar.addSeparator()
         mw_toolbar.addWidget(settings_button)
 
