@@ -357,8 +357,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.simulation_thread.stop()
             self.progress_bar.setValue(0)
             self.progress_bar.setVisible(False)
+            self.simulation_thread = None
         self.start_button.setText("Start")
 
+        self.simulation_thread = None
     # Placeholder methods for menu actions
     def open_file(self):
         """
