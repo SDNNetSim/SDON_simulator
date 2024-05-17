@@ -296,9 +296,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.simulation_thread = SimulationThread()
         self.simulation_thread.progress_changed_sig.connect(
+        self.simulation_thread.progress_changed.connect(
             self.update_progress
         )
-        self.simulation_thread.finished_sig.connect(self.simulation_finished)
+        self.simulation_thread.finished_signal.connect(
+            self.simulation_finished
+        )
         self.simulation_thread.start()
 
     def start_simulation(self):
