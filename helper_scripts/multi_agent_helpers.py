@@ -39,8 +39,7 @@ class PathAgent:
 
         self.agent_obj.setup_env()
 
-    @staticmethod
-    def get_reward(was_allocated: bool):
+    def get_reward(self, was_allocated: bool):
         """
         Get the current reward for the last agent's action.
 
@@ -49,9 +48,9 @@ class PathAgent:
         :rtype: float
         """
         if was_allocated:
-            return 1.0
+            return self.engine_props['reward']
 
-        return -1.0
+        return self.engine_props['penalty']
 
     def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int):
         """
@@ -151,8 +150,7 @@ class CoreAgent:
 
         self.agent_obj.setup_env()
 
-    @staticmethod
-    def get_reward(was_allocated: bool):
+    def get_reward(self, was_allocated: bool):
         """
         Gets the core agent's reward based on the last action taken.
 
@@ -161,9 +159,9 @@ class CoreAgent:
         :rtype: float
         """
         if was_allocated:
-            return 1.0
+            return self.engine_props['reward']
 
-        return -1.0
+        return self.engine_props['penalty']
 
     def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int):
         """
