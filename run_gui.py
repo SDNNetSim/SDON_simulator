@@ -328,7 +328,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Pauses the simulation.
         """
-        # print("Simulation paused")
         if self.simulation_thread and self.simulation_thread.isRunning():
             self.simulation_thread.pause()
             self.start_button.setText("Resume")
@@ -352,7 +351,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Stops the simulation.
         """
-        # print("Simulation stopped")
         if self.simulation_thread and self.simulation_thread.isRunning():
             self.simulation_thread.stop()
             self.progress_bar.setValue(0)
@@ -360,7 +358,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self.simulation_thread = None
         self.start_button.setText("Start")
 
+    def update_progress(self, value):
+        """
+        Updates the progress bar.
+        """
+        self.progress_bar.setValue(value)
+
+    def simulation_finished(self):
+        """
+        Finish the simulation.
+        """
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setValue(0)
         self.simulation_thread = None
+
     # Placeholder methods for menu actions
     def open_file(self):
         """
