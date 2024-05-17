@@ -320,6 +320,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.simulation_thread.resume()
             self.start_button.setText("Start")
         else:
+            self.bottom_right_pane1.clear()
             if (not self.simulation_thread or
                     not self.simulation_thread.isRunning()):
                 self.setup_simulation_thread()
