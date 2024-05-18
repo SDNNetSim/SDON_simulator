@@ -25,8 +25,6 @@ class SettingsDialog(QtWidgets.QDialog):
         general_settings_layout.addRow("Sim Type:", self.sim_type)
 
         self.holding_time = QtWidgets.QDoubleSpinBox()
-        # what is the maximum and minimum holding times?
-        self.holding_time.setMaximum(1.0)
         self.holding_time.setMinimum(0.0)
         self.holding_time.setValue(0.2)
         general_settings_layout.addRow("Holding Time:", self.holding_time)
