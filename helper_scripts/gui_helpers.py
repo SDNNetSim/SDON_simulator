@@ -20,7 +20,8 @@ class SettingsDialog(QtWidgets.QDialog):
         general_tab = QtWidgets.QWidget()
         general_settings_layout = QtWidgets.QFormLayout()
 
-        self.sim_type = QtWidgets.QLineEdit("yue")
+        self.sim_type = QtWidgets.QComboBox()
+        self.sim_type.addItems(["yue", "arash"])
         general_settings_layout.addRow("Sim Type:", self.sim_type)
 
         self.holding_time = QtWidgets.QDoubleSpinBox()
@@ -225,7 +226,7 @@ class SettingsDialog(QtWidgets.QDialog):
         return {
             "s1": {
                 "general_settings": {
-                    "sim_type": self.sim_type.text(),
+                    "sim_type": self.sim_type.currentText(),
                     "holding_time": self.holding_time.value(),
                     "arrival_rate": {
                         "start": self.arrival_rate_start.value(),
@@ -277,6 +278,7 @@ class SettingsDialog(QtWidgets.QDialog):
                 }
             }
         }
+
 
 class SimulationThread(QtCore.QThread):
     progress_changed = QtCore.pyqtSignal(int)
