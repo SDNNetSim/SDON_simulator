@@ -26,6 +26,10 @@ class SettingsDialog(QtWidgets.QDialog):
 
         self.holding_time = QtWidgets.QDoubleSpinBox()
         self.holding_time.setMinimum(0.0)
+        self.holding_time.setSingleStep(0.1)
+        self.holding_time.setStepType(
+            QtWidgets.QAbstractSpinBox.AdaptiveDecimalStepType
+        )
         self.holding_time.setValue(0.2)
         general_settings_layout.addRow("Holding Time:", self.holding_time)
 
