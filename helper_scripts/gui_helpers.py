@@ -110,6 +110,9 @@ class SettingsDialog(QtWidgets.QDialog):
 
         self.print_step = QtWidgets.QSpinBox()
         self.print_step.setValue(1)
+        self.print_step.setToolTip(
+            "Interval for printing simulator information"
+        )
         general_settings_layout.addRow("Print Step:", self.print_step)
 
         general_tab.setLayout(general_settings_layout)
