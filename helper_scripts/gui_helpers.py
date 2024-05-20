@@ -108,6 +108,7 @@ class SettingsDialog(QtWidgets.QDialog):
         general_settings_layout.addRow("K Paths:", self.k_paths)
 
         self.route_method = QtWidgets.QLineEdit("shortest_path")
+        self.route_method.setToolTip("Method for routing a request")
         general_settings_layout.addRow("Route Method:", self.route_method)
 
         self.save_snapshots = QtWidgets.QCheckBox()
