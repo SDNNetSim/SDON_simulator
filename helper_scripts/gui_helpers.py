@@ -37,6 +37,9 @@ class SettingsDialog(QtWidgets.QDialog):
             QtWidgets.QAbstractSpinBox.AdaptiveDecimalStepType
         )
         self.holding_time.setValue(0.2)
+        self.holding_time.setToolTip(
+            "Mean holding time for request generation"
+        )
         general_settings_layout.addRow("Holding Time:", self.holding_time)
 
         self.arrival_rate_start = QtWidgets.QSpinBox()
