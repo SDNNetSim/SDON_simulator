@@ -62,6 +62,7 @@ class SettingsDialog(QtWidgets.QDialog):
         general_settings_layout.addRow("Thread Erlangs:", self.thread_erlangs)
 
         self.guard_slots = QtWidgets.QSpinBox()
+        self.guard_slots.setMinimum(1)
         self.guard_slots.setValue(1)
         general_settings_layout.addRow("Guard Slots:", self.guard_slots)
 
