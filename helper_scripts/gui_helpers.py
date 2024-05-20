@@ -90,6 +90,9 @@ class SettingsDialog(QtWidgets.QDialog):
         general_settings_layout.addRow("Dynamic LPS:", self.dynamic_lps)
 
         self.allocation_method = QtWidgets.QLineEdit("first_fit")
+        self.allocation_method.setToolTip(
+            "Method for assigning a request to a spectrum"
+        )
         general_settings_layout.addRow("Allocation Method:",
                                        self.allocation_method)
 
