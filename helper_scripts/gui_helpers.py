@@ -22,6 +22,12 @@ class SettingsDialog(QtWidgets.QDialog):
 
         self.sim_type = QtWidgets.QComboBox()
         self.sim_type.addItems(["yue", "arash"])
+        self.sim_type.setToolTip(
+            """
+            Simulation assumptions for calculating\
+            the Erlang and optical reach
+            """
+        )
         general_settings_layout.addRow("Sim Type:", self.sim_type)
 
         self.holding_time = QtWidgets.QDoubleSpinBox()
