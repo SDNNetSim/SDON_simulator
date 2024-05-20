@@ -106,6 +106,9 @@ class SettingsDialog(QtWidgets.QDialog):
 
         self.snapshot_step = QtWidgets.QSpinBox()
         self.snapshot_step.setValue(10)
+        self.snapshot_step.setToolTip(
+            "Interval for saving snapshot results"
+        )
         general_settings_layout.addRow("Snapshot Step:", self.snapshot_step)
 
         self.print_step = QtWidgets.QSpinBox()
