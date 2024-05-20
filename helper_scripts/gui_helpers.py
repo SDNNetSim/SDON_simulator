@@ -112,6 +112,9 @@ class SettingsDialog(QtWidgets.QDialog):
 
         self.save_snapshots = QtWidgets.QCheckBox()
         self.save_snapshots.setChecked(False)
+        self.save_snapshots.setToolTip(
+            "To save information at certain request intervals"
+        )
         general_settings_layout.addRow("Save Snapshots:", self.save_snapshots)
 
         self.snapshot_step = QtWidgets.QSpinBox()
