@@ -78,6 +78,7 @@ class SettingsDialog(QtWidgets.QDialog):
 
         self.max_iters = QtWidgets.QSpinBox()
         self.max_iters.setValue(10)
+        self.setToolTip("Maximum iterations to run")
         general_settings_layout.addRow("Max Iters:", self.max_iters)
 
         self.max_segments = QtWidgets.QSpinBox()
