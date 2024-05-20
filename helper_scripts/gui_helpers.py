@@ -89,7 +89,11 @@ class SettingsDialog(QtWidgets.QDialog):
         self.dynamic_lps.setChecked(False)
         general_settings_layout.addRow("Dynamic LPS:", self.dynamic_lps)
 
-        self.allocation_method = QtWidgets.QLineEdit("first_fit")
+        self.allocation_method = QtWidgets.QComboBox()
+        self.allocation_method.addItems(
+            ["best_fit", "first_fit", "last_fit", "priority_first",
+             "priority_last", "xt_aware"]
+        )
         self.allocation_method.setToolTip(
             "Method for assigning a request to a spectrum"
         )
