@@ -87,6 +87,9 @@ class SettingsDialog(QtWidgets.QDialog):
 
         self.dynamic_lps = QtWidgets.QCheckBox()
         self.dynamic_lps.setChecked(False)
+        self.dynamic_lps.setToolTip(
+            "Use dynamic light path/segment slicing or not"
+        )
         general_settings_layout.addRow("Dynamic LPS:", self.dynamic_lps)
 
         self.allocation_method = QtWidgets.QComboBox()
