@@ -110,7 +110,11 @@ class SettingsDialog(QtWidgets.QDialog):
         self.k_paths.setValue(1)
         general_settings_layout.addRow("K Paths:", self.k_paths)
 
-        self.route_method = QtWidgets.QLineEdit("shortest_path")
+        self.route_method = QtWidgets.QComboBox()
+        self.route_method.addItems(
+            ["nli_aware", "xt_aware", "least_congested",
+             "shortest_path", "k_shortest_path"]
+        )
         self.route_method.setToolTip("Method for routing a request")
         general_settings_layout.addRow("Route Method:", self.route_method)
 
