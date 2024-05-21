@@ -83,6 +83,7 @@ class SettingsDialog(QtWidgets.QDialog):
         general_settings_layout.addRow("Max Iters:", self.max_iters)
 
         self.max_segments = QtWidgets.QSpinBox()
+        self.max_segments.setMinimum(1)
         self.max_segments.setValue(1)
         self.max_segments.setToolTip("Maximum segments for a single request")
         general_settings_layout.addRow("Max Segments:", self.max_segments)
