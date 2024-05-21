@@ -107,6 +107,7 @@ class SettingsDialog(QtWidgets.QDialog):
                                        self.allocation_method)
 
         self.k_paths = QtWidgets.QSpinBox()
+        self.k_paths.setMinimum(1)
         self.k_paths.setValue(1)
         general_settings_layout.addRow("K Paths:", self.k_paths)
 
