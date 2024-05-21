@@ -83,6 +83,7 @@ class SettingsDialog(QtWidgets.QDialog):
 
         self.max_segments = QtWidgets.QSpinBox()
         self.max_segments.setValue(1)
+        self.max_segments.setToolTip("Maximum segments for a single request")
         general_settings_layout.addRow("Max Segments:", self.max_segments)
 
         self.dynamic_lps = QtWidgets.QCheckBox()
