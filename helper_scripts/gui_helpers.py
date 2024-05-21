@@ -130,6 +130,7 @@ class SettingsDialog(QtWidgets.QDialog):
         general_settings_layout.addRow("Snapshot Step:", self.snapshot_step)
 
         self.print_step = QtWidgets.QSpinBox()
+        self.print_step.setMinimum(1)
         self.print_step.setValue(1)
         self.print_step.setToolTip(
             "Interval for printing simulator information"
