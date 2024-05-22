@@ -73,11 +73,15 @@ class SimStats:
 
     def update_train_data(self, req_dict: dict, req_info_dict: dict, net_spec_dict: dict):
         path_list = req_info_dict['path']
-        spec_util_list = np.zeros(self.engine_props['spectral_slots'])
-        for source, dest in zip(path_list, path_list[1:]):
-            for core_num in range(self.engine_props['cores_per_link']):
+        spec_util_matrix = list()
+
+        for core_num in range(self.engine_props['cores_per_link']):
+            spec_util_arr = np.zeros(self.engine_props['spectral_slots'])
+            for source, dest in zip(path_list, path_list[1:]):
                 core_arr = net_spec_dict[(source, dest)]['cores_matrix'][core_num]
-                spec_util_list = combine_and_one_hot(spec_util_list, core_arr)
+                spec_util_arr = combine_and_one_hot(spec_util_arr, core_arr)
+
+            spec_util_matrix.append(spec_util_arr.tolist())
 
         path_length = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
         tmp_info_dict = {
@@ -86,7 +90,7 @@ class SimStats:
             'mod_format': req_info_dict['mod_format'],
             'source': req_dict['source'],
             'destination': req_dict['destination'],
-            'spec_util_list': spec_util_list,
+            'spec_util_matrix': spec_util_matrix,
             'was_sliced': req_info_dict['is_sliced'],
             'num_slices': self.curr_trans,
         }
@@ -284,6 +288,9 @@ class SimStats:
 
         return False
 
+    def save_train_data(self, base_fp: str):
+        raise NotImplementedError
+
     def save_stats(self, base_fp: str):
         """
         Saves simulations stats as either a json or csv file.
@@ -328,6 +335,9 @@ class SimStats:
                 json.dump(self.save_dict, file_path, indent=4)
         else:
             raise NotImplementedError
+
+        if self.engine_props['output_train_data']:
+            self.save_train_data(base_fp=base_fp)
 
     def print_iter_stats(self, max_iters: int, print_flag: bool):
         """
