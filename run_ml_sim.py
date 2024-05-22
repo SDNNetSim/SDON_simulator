@@ -1,21 +1,15 @@
-# Import necessary libraries and modules
-
-
-# Define the custom environment for the ML simulation
-class SimEnv:
-    def __init__(self):
-        pass
-
-    def reset(self):
-        pass
-
-    def step(self, action):
-        pass
-
-
-# Define helper functions
+# TODO: This is the main script that will run the machine learning simulation.
+#   - Helper functions in ml_helpers.py to set up models
+#   - Any arguments for this script in ml_args.py
+#   - The scikit learn library does it's thing
+#   - I control the result output and saving.
 def _run_iters():
-    pass
+    """
+    Handles the main training or testing iterations.
+
+    :return:
+    """
+    raise NotImplementedError
 
 
 def _get_model():
@@ -26,24 +20,40 @@ def _print_info():
     pass
 
 
-def _get_trained_model():
-    pass
+# TODO: I'm not sure if we need an environment object here.
+# TODO: The if-else logic for train/test will be implemented in the _run function.
+#   - Getting a trained model
+#   - Running the trained model
+#   - Else, training the model
+#   - Calls _run_iters
+def _run():
+    """
+    Controls the simulation of the machine learning model.
 
-
-def _run_ml_sim(env: object):
-    pass
+    :return: None
+    """
+    raise NotImplementedError
 
 
 def _setup_ml_sim():
-    pass
+    """
+    Gets the simulation input parameters.
+
+    :return: The simulation input parameters.
+    :rtype: dict
+    """
+    raise NotImplementedError
 
 
-# Define the main function that controls the ML simulations
 def run_ml_sim():
-    env = SimEnv()
-    _run_ml_sim(env=env)
+    """
+    Controls the simulation of the machine learning model.
+
+    :return: None
+    """
+    _setup_ml_sim()
+    _run()
 
 
-# If the script is run directly, start the simulation
 if __name__ == '__main__':
     run_ml_sim()
