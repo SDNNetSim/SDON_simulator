@@ -45,7 +45,6 @@ class Engine:
         """
         sdn_props = self.sdn_obj.sdn_props
         self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props)
-        # TODO: If it wasn't allocated we'd still like that information for training data?
         if sdn_props['was_routed']:
             self.stats_obj.curr_trans = sdn_props['num_trans']
 
@@ -54,6 +53,7 @@ class Engine:
                 "path": sdn_props['path_list'],
                 "is_sliced": sdn_props['is_sliced'],
                 "was_routed": sdn_props['was_routed'],
+                "core_list": sdn_props['core_list'],
             }})
 
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,

@@ -75,20 +75,21 @@ class SimStats:
         path_list = req_info_dict['path']
         spec_util_list = np.zeros(self.engine_props['spectral_slots'])
         for source, dest in zip(path_list, path_list[1:]):
-            core_arr = net_spec_dict[(source, dest)]['cores_matrix'][req_info_dict['core_num']]
-            spec_util_list = combine_and_one_hot(spec_util_list, core_arr)
+            for core_num in range(self.engine_props['cores_per_link']):
+                core_arr = net_spec_dict[(source, dest)]['cores_matrix'][core_num]
+                spec_util_list = combine_and_one_hot(spec_util_list, core_arr)
 
+        path_length = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
         tmp_info_dict = {
             'bandwidth': req_dict['bandwidth'],
-            'path_length': req_info_dict['path_length'],
+            'path_length': path_length,
             'mod_format': req_info_dict['mod_format'],
             'source': req_dict['source'],
             'destination': req_dict['destination'],
             'spec_util_list': spec_util_list,
             'was_sliced': req_info_dict['is_sliced'],
-            'light_segment_slices': req_info_dict['num_slices'],
+            'num_slices': self.curr_trans,
         }
-
         self.train_data_list.append(tmp_info_dict)
 
     def update_snapshot(self, net_spec_dict: dict, req_num: int, path_list: list = None):
