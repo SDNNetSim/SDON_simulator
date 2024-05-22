@@ -125,6 +125,10 @@ OTHER_OPTIONS = {
         'reward': float,
         'penalty': float,
     },
+    # TODO: Make sure to add to the command line
+    'ml_settings': {
+
+    },
     'file_settings': {
     },
 }
