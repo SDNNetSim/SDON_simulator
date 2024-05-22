@@ -325,8 +325,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if not self.sim_dict['is_training'] and self.iteration == 0:
             self._load_models()
         if seed is None:
-            # seed = self.iteration
-            seed = 0
+            seed = self.iteration + 1
+            # seed = 0
 
         self.rl_help_obj.reset_reqs_dict(seed=seed)
         obs = self._get_obs()

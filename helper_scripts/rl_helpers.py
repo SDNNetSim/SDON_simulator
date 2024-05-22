@@ -145,9 +145,14 @@ class RLHelpers:
         else:
             forced_index = None
 
-        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props['chosen_path'],
-                                       force_core=self.rl_props['core_index'],
-                                       forced_index=forced_index)
+        # self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props['chosen_path'],
+        #                                force_core=self.rl_props['core_index'],
+        #                                forced_index=forced_index)
+
+        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=None,
+                                       force_core=None,
+                                       forced_index=None)
+
 
     def update_mock_sdn(self, curr_req: dict):
         """
