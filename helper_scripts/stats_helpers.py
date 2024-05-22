@@ -41,6 +41,9 @@ class SimStats:
         self.topology = None
         self.iteration = None
 
+        # TODO: Make sure this isn't reset after multiple iterations
+        self.train_data = dict()
+
     @staticmethod
     def _get_snapshot_info(net_spec_dict: dict, path_list: list):
         """
@@ -67,6 +70,14 @@ class SimStats:
                 guard_slots += len(np.where(core < 0)[0])
 
         return occupied_slots, guard_slots, len(active_reqs_set)
+
+    # TODO: Maybe a dictionary and then dict to csv
+    #   - {'req_num': {'bandwidth': 50, 'path_length': 1000, 'mod_format': '16-QAM', 'source': 1, 'destination': 5,
+    #       spec_util_vec: [0, 0, 0, 0, 1], 'was_allocated': True, 'light_segment_slices': 4}}
+    # TODO: Req num does not matter to be honest
+    # TODO: Need spectrum utilization beforehand (input)
+    def update_train_data(self, req_dict: dict, was_allocated: bool):
+        raise NotImplementedError
 
     def update_snapshot(self, net_spec_dict: dict, req_num: int, path_list: list = None):
         """

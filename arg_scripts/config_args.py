@@ -127,7 +127,7 @@ OTHER_OPTIONS = {
     },
     # TODO: Make sure to add to the command line
     'ml_settings': {
-
+        'output_train_data': str_to_bool,
     },
     'file_settings': {
     },
@@ -187,6 +187,7 @@ COMMAND_LINE_PARAMS = [
     ['optimize_hyperparameters', str, ''],
     ['reward', float, ''],
     ['penalty', float, ''],
+    ['output_train_data', bool, ''],
 
     # For StableBaselines3
     ['algo', str, ''],

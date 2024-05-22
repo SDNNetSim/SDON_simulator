@@ -134,6 +134,11 @@ class Engine:
             if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
                 self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
 
+            if self.engine_props['output_train_data']:
+                # TODO: Need to know if allocated or not
+                was_allocated = self.sdn_obj.sdn_props['was_allocated']
+                self.stats_obj.update_train_data(req_dict=self.reqs_dict[curr_time], was_allocated=was_allocated)
+
         elif req_type == "release":
             self.handle_release(curr_time=curr_time)
         else:
