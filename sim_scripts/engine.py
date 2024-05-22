@@ -140,26 +140,28 @@ class Engine:
             raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '
                                       f'got: {req_type}')
 
-    def end_iter(self, iteration: int, print_flag: bool = True, ai_flag: bool = False, base_fp: str = None):
+    def end_iter(self, iteration: int, print_flag: bool = True, base_fp: str = None):
         """
         Updates iteration statistics.
 
         :param iteration: The current iteration.
         :param print_flag: Whether to print or not.
-        :param ai_flag: To determine if AI is used or not.
         :param base_fp: The base file path to save output statistics.
         """
         self.stats_obj.get_blocking()
         self.stats_obj.end_iter_update()
         # Some form of ML/RL is being used, ignore confidence intervals for training and testing
-        if not ai_flag:
+        if not self.engine_props['is_training']:
             if self.stats_obj.get_conf_inter():
-                return
+                return True
+            else:
+                return False
+        else:
+            if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
+                self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], print_flag=print_flag)
 
-        if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
-            self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], print_flag=print_flag)
-
-        self.stats_obj.save_stats(base_fp=base_fp)
+            self.stats_obj.save_stats(base_fp=base_fp)
+            return False
 
     def init_iter(self, iteration: int):
         """
@@ -200,7 +202,9 @@ class Engine:
                 if self.reqs_dict[curr_time]['request_type'] == 'arrival':
                     req_num += 1
 
-            self.end_iter(iteration=iteration)
+            end_iter = self.end_iter(iteration=iteration)
+            if end_iter:
+                break
 
         print(f"Erlang: {self.engine_props['erlang']} finished for "
               f"simulation number: {self.engine_props['thread_num']}.")
