@@ -8,7 +8,7 @@ import numpy as np
 
 from arg_scripts.stats_args import empty_props
 from arg_scripts.stats_args import SNAP_KEYS_LIST
-from helper_scripts.sim_helpers import find_path_len
+from helper_scripts.sim_helpers import find_path_len, combine_and_one_hot
 from helper_scripts.os_helpers import create_dir
 
 
@@ -42,7 +42,7 @@ class SimStats:
         self.iteration = None
 
         # TODO: Make sure this isn't reset after multiple iterations
-        self.train_data = dict()
+        self.train_data_list = list()
 
     @staticmethod
     def _get_snapshot_info(net_spec_dict: dict, path_list: list):
@@ -71,13 +71,25 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
-    # TODO: Maybe a dictionary and then dict to csv
-    #   - {'req_num': {'bandwidth': 50, 'path_length': 1000, 'mod_format': '16-QAM', 'source': 1, 'destination': 5,
-    #       spec_util_vec: [0, 0, 0, 0, 1], 'was_allocated': True, 'light_segment_slices': 4}}
-    # TODO: Req num does not matter to be honest
-    # TODO: Need spectrum utilization beforehand (input)
-    def update_train_data(self, req_dict: dict, was_allocated: bool):
-        raise NotImplementedError
+    def update_train_data(self, req_dict: dict, req_info_dict: dict, net_spec_dict: dict):
+        path_list = req_info_dict['path']
+        spec_util_list = np.zeros(self.engine_props['spectral_slots'])
+        for source, dest in zip(path_list, path_list[1:]):
+            core_arr = net_spec_dict[(source, dest)]['cores_matrix'][req_info_dict['core_num']]
+            spec_util_list = combine_and_one_hot(spec_util_list, core_arr)
+
+        tmp_info_dict = {
+            'bandwidth': req_dict['bandwidth'],
+            'path_length': req_info_dict['path_length'],
+            'mod_format': req_info_dict['mod_format'],
+            'source': req_dict['source'],
+            'destination': req_dict['destination'],
+            'spec_util_list': spec_util_list,
+            'was_sliced': req_info_dict['is_sliced'],
+            'light_segment_slices': req_info_dict['num_slices'],
+        }
+
+        self.train_data_list.append(tmp_info_dict)
 
     def update_snapshot(self, net_spec_dict: dict, req_num: int, path_list: list = None):
         """
