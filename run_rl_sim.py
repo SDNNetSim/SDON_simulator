@@ -73,7 +73,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 self.path_agent.end_iter()
             elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
                 self.core_agent.end_iter()
-            self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
+            self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, base_fp=base_fp)
             self.iteration += 1
         else:
             terminated = False
