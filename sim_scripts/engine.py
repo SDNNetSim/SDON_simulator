@@ -162,16 +162,13 @@ class Engine:
         self.stats_obj.end_iter_update()
         # Some form of ML/RL is being used, ignore confidence intervals for training and testing
         if not self.engine_props['is_training']:
-            if self.stats_obj.get_conf_inter():
-                return True
-            else:
-                return False
-        else:
-            if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
-                self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], print_flag=print_flag)
+            return bool(self.stats_obj.get_conf_inter())
 
-            self.stats_obj.save_stats(base_fp=base_fp)
-            return False
+        if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
+            self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], print_flag=print_flag)
+
+        self.stats_obj.save_stats(base_fp=base_fp)
+        return False
 
     def init_iter(self, iteration: int):
         """
