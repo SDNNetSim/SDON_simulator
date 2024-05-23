@@ -125,9 +125,10 @@ OTHER_OPTIONS = {
         'reward': float,
         'penalty': float,
     },
-    # TODO: Make sure to add to the command line
     'ml_settings': {
         'output_train_data': str_to_bool,
+        'ml_training': str_to_bool,
+        'train_file_path': str,
     },
     'file_settings': {
     },
@@ -188,6 +189,8 @@ COMMAND_LINE_PARAMS = [
     ['reward', float, ''],
     ['penalty', float, ''],
     ['output_train_data', bool, ''],
+    ['ml_training', bool, ''],
+    ['train_file_path', str, ''],
 
     # For StableBaselines3
     ['algo', str, ''],
