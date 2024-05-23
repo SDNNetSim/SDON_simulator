@@ -1,6 +1,9 @@
 import os
+from ast import literal_eval
 
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -35,6 +38,23 @@ def _print_info():
     pass
 
 
+def plot_clusters(kmeans, df):
+    df['cluster'] = kmeans.labels_
+    # Create a scatter plot
+    plt.figure(figsize=(10, 7))
+    scatter = plt.scatter(df['column1'], df['column2'], c=df['cluster'], cmap='viridis')
+
+    # Add labels to the points
+    for i in range(len(df)):
+        plt.text(df['column1'].iloc[i], df['column2'].iloc[i], df['num_slices'].iloc[i])
+
+    plt.title('KMeans Clusters')
+    plt.xlabel('column1')
+    plt.ylabel('column2')
+    plt.colorbar(scatter)
+    plt.show()
+
+
 # TODO: I'm not sure if we need an environment object here.
 # TODO: The if-else logic for train/test will be implemented in the _run function.
 #   - Getting a trained model
@@ -58,9 +78,18 @@ def _run(sim_dict: dict):
 
         df_processed = process_data(input_df=df)
         scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(df_processed)
+        feat_scale_list = ['path_length']
+        df_processed[feat_scale_list] = scaler.fit_transform(df_processed[feat_scale_list])
+        # Print out the string before it's converted to an array
+        df['spec_util_matrix'].apply(lambda x: print(x))
 
-        X_train, X_val = train_test_split(X_scaled, test_size=0.3, random_state=42)
+        # Convert the string to a 1D array
+        df_processed['spec_util_matrix'] = df_processed['spec_util_matrix'].apply(
+            lambda x: np.fromstring(x.strip('[]'), sep=' '))
+
+        # Print out the array after it's converted from the string
+        df_processed['spec_util_matrix'].apply(lambda x: print(x))
+        X_train, X_val = train_test_split(df_processed, test_size=0.3, random_state=42)
 
         kmeans = KMeans(n_clusters=3, random_state=0)
         kmeans.fit(X_train)
@@ -70,6 +99,8 @@ def _run(sim_dict: dict):
 
         silhouette_avg = silhouette_score(X_val, kmeans.predict(X_val))
         print(f"Silhouette Score: {silhouette_avg}")
+
+        plot_clusters(kmeans=kmeans, df=df_processed)
     else:
         raise NotImplementedError
 
