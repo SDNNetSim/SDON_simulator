@@ -73,6 +73,13 @@ class SimStats:
         return occupied_slots, guard_slots, len(active_reqs_set)
 
     def update_train_data(self, req_dict: dict, req_info_dict: dict, net_spec_dict: dict):
+        """
+        Updates the training data list with the current request information.
+
+        :param req_dict: Request dictionary.
+        :param req_info_dict: A second request dictionary with additional information.
+        :param net_spec_dict: Network spectrum database.
+        """
         path_list = req_info_dict['path']
         spec_util_matrix = list()
 
@@ -89,8 +96,6 @@ class SimStats:
             'bandwidth': req_dict['bandwidth'],
             'path_length': path_length,
             'mod_format': req_info_dict['mod_format'],
-            # 'source': req_dict['source'],
-            # 'destination': req_dict['destination'],
             'spec_util_matrix': spec_util_matrix,
             'was_sliced': req_info_dict['is_sliced'],
             'num_slices': self.curr_trans,
@@ -290,6 +295,11 @@ class SimStats:
         return False
 
     def save_train_data(self, base_fp: str):
+        """
+        Saves training data file.
+
+        :param base_fp: Base file path.
+        """
         if self.iteration == (self.engine_props['max_iters'] - 1):
             save_df = pd.DataFrame(self.train_data_list)
             save_df.to_csv(f"{base_fp}/output/{self.sim_info}/{self.engine_props['erlang']}_train_data.csv",

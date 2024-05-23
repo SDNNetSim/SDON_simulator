@@ -44,12 +44,12 @@ def plot_clusters(df_pca, kmeans):
     plt.figure(figsize=(10, 8))
 
     # Create a scatter plot of the PCA-reduced data, colored by "num_slices" value
-    scatter = plt.scatter(df_pca["PC1"], df_pca["PC2"], c=df_pca["true_label"], cmap='viridis')
+    scatter = plt.scatter(df_pca["PC1"], df_pca["PC2"], c=df_pca["true_label"], cmap='Set1')
 
     # Plot the centroids of the clusters
     centers = kmeans.cluster_centers_
-    plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
-
+    for i, center in enumerate(centers):
+        plt.text(center[0], center[1], f'Center {i}', ha='center', va='center', color='red')
     plt.title("K-Means Clustering Results (PCA-reduced Data)")
     plt.xlabel("Principal Component 1 (PC1)")
     plt.ylabel("Principal Component 2 (PC2)")
@@ -97,7 +97,7 @@ def _run(sim_dict: dict):
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_train)
 
-        kmeans = KMeans(n_clusters=4, random_state=0)
+        kmeans = KMeans(n_clusters=8, random_state=0)
         kmeans.fit(X_pca)
 
         # inertia = kmeans.inertia_

@@ -18,6 +18,13 @@ def save_model():
 
 
 def process_data(input_df: pd.DataFrame):
+    """
+    Process data for machine learning model.
+
+    :param input_df: Input dataframe.
+    :return: Modified processed dataframe.
+    :rtype: pd.DataFrame
+    """
     input_df['mod_format'] = input_df['mod_format'].str.replace('-', '')
     df_processed = pd.get_dummies(input_df, columns=['bandwidth', 'mod_format'])
 
