@@ -5,6 +5,7 @@ import copy
 from statistics import mean, variance, stdev
 
 import numpy as np
+import pandas as pd
 
 from arg_scripts.stats_args import empty_props
 from arg_scripts.stats_args import SNAP_KEYS_LIST
@@ -289,7 +290,10 @@ class SimStats:
         return False
 
     def save_train_data(self, base_fp: str):
-        raise NotImplementedError
+        if self.iteration == (self.engine_props['max_iters'] - 1):
+            save_df = pd.DataFrame(self.train_data_list)
+            save_df.to_csv(f"{base_fp}/output/{self.sim_info}/{self.engine_props['erlang']}_train_data.csv",
+                           index=False)
 
     def save_stats(self, base_fp: str):
         """
