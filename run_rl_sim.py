@@ -443,6 +443,7 @@ def _run(env: object, sim_dict: dict):
         model.save(save_fp)
 
 
+# TODO: Move to a helpers file
 def _setup_rl_sim():
     args_obj = parse_args()
     config_path = os.path.join('ini', 'run_ini', 'config.ini')
