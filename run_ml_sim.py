@@ -1,14 +1,16 @@
 import os
-from ast import literal_eval
+import ast
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import silhouette_score
 import joblib
+import seaborn as sns
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
@@ -38,20 +40,20 @@ def _print_info():
     pass
 
 
-def plot_clusters(kmeans, df):
-    df['cluster'] = kmeans.labels_
-    # Create a scatter plot
-    plt.figure(figsize=(10, 7))
-    scatter = plt.scatter(df['column1'], df['column2'], c=df['cluster'], cmap='viridis')
+def plot_clusters(df_pca, kmeans):
+    plt.figure(figsize=(10, 8))
 
-    # Add labels to the points
-    for i in range(len(df)):
-        plt.text(df['column1'].iloc[i], df['column2'].iloc[i], df['num_slices'].iloc[i])
+    # Create a scatter plot of the PCA-reduced data, colored by "num_slices" value
+    scatter = plt.scatter(df_pca["PC1"], df_pca["PC2"], c=df_pca["true_label"], cmap='viridis')
 
-    plt.title('KMeans Clusters')
-    plt.xlabel('column1')
-    plt.ylabel('column2')
-    plt.colorbar(scatter)
+    # Plot the centroids of the clusters
+    centers = kmeans.cluster_centers_
+    plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
+
+    plt.title("K-Means Clustering Results (PCA-reduced Data)")
+    plt.xlabel("Principal Component 1 (PC1)")
+    plt.ylabel("Principal Component 2 (PC2)")
+    plt.colorbar(scatter, label='num_slices')
     plt.show()
 
 
@@ -74,33 +76,40 @@ def _run(sim_dict: dict):
     train_fp = os.path.join(base_fp, sim_dict['train_file_path'])
     train_fp = os.path.join(train_fp, '700.0_train_data.csv')
     if sim_dict['is_training']:
-        df = pd.read_csv(train_fp)
-
+        # df = pd.read_csv(train_fp)
+        df = pd.read_csv(train_fp, converters={'spec_util_matrix': ast.literal_eval})
         df_processed = process_data(input_df=df)
         scaler = StandardScaler()
         feat_scale_list = ['path_length']
         df_processed[feat_scale_list] = scaler.fit_transform(df_processed[feat_scale_list])
-        # Print out the string before it's converted to an array
-        df['spec_util_matrix'].apply(lambda x: print(x))
 
-        # Convert the string to a 1D array
-        df_processed['spec_util_matrix'] = df_processed['spec_util_matrix'].apply(
-            lambda x: np.fromstring(x.strip('[]'), sep=' '))
+        # num_cores = len(df['spec_util_matrix'][0])
+        # for core_index in range(num_cores):
+        #     column_name = f'core_{core_index}'
+        #     df_processed[column_name] = df_processed['spec_util_matrix'].apply(lambda x: x[core_index])
+        #
+        # matrix_columns = [col for col in df_processed.columns if col.startswith('core_')]
+        # for col in matrix_columns:
+        #     df_processed[col] = df_processed[col].apply(lambda x: [float(i) for i in x])
 
-        # Print out the array after it's converted from the string
-        df_processed['spec_util_matrix'].apply(lambda x: print(x))
+        df_processed = df_processed.drop(columns=['spec_util_matrix', 'num_slices'])
         X_train, X_val = train_test_split(df_processed, test_size=0.3, random_state=42)
+        pca = PCA(n_components=2)
+        X_pca = pca.fit_transform(X_train)
 
-        kmeans = KMeans(n_clusters=3, random_state=0)
-        kmeans.fit(X_train)
+        kmeans = KMeans(n_clusters=4, random_state=0)
+        kmeans.fit(X_pca)
 
-        inertia = kmeans.inertia_
-        print(f"Inertia: {inertia}")
+        # inertia = kmeans.inertia_
+        # print(f"Inertia: {inertia}")
 
-        silhouette_avg = silhouette_score(X_val, kmeans.predict(X_val))
-        print(f"Silhouette Score: {silhouette_avg}")
+        # silhouette_avg = silhouette_score(X_val, kmeans.predict(X_val))
+        # print(f"Silhouette Score: {silhouette_avg}")
 
-        plot_clusters(kmeans=kmeans, df=df_processed)
+        df_pca = pd.DataFrame(data=X_pca, columns=["PC1", "PC2"])
+        df_pca["cluster"] = kmeans.labels_
+        df_pca["true_label"] = df['num_slices']
+        plot_clusters(df_pca=df_pca, kmeans=kmeans)
     else:
         raise NotImplementedError
 

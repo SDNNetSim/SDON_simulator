@@ -21,4 +21,8 @@ def process_data(input_df: pd.DataFrame):
     input_df['mod_format'] = input_df['mod_format'].str.replace('-', '')
     df_processed = pd.get_dummies(input_df, columns=['bandwidth', 'mod_format'])
 
+    for col in df_processed.columns:
+        if df_processed[col].dtype == bool:
+            df_processed[col] = df_processed[col].astype(int)
+
     return df_processed
