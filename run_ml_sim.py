@@ -6,51 +6,48 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-# TODO: Save model
-import joblib
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 from helper_scripts.ml_helpers import process_data, plot_2d_clusters, plot_3d_clusters, plot_confusion
 
 
-# TODO: Something for feature importance?
-def _print_info():
-    pass
+# TODO: Add metric for feature importance
+# TODO: Maybe have YAML's like RL for parameters
+def _train_test_kmeans(df_processed: pd.DataFrame, sim_dict: dict):
+    x_train, _ = train_test_split(df_processed, test_size=sim_dict['test_size'], random_state=42)
+    pca = PCA(n_components=3)
+    x_pca = pca.fit_transform(x_train)
+    kmeans = KMeans(n_clusters=4, random_state=0)
+    kmeans.fit(x_pca)
+
+    df_pca = pd.DataFrame(data=x_pca, columns=["PC1", "PC2", "PC3"])
+    df_pca["cluster"] = kmeans.labels_
+    df_pca["true_label"] = df_processed['num_segments']
+    plot_2d_clusters(df_pca=df_pca, kmeans=kmeans)
+    plot_3d_clusters(df_pca=df_pca, kmeans=kmeans)
 
 
-def _handle_testing():
-    raise NotImplementedError
+def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict):
+    predictor_df = df_processed['num_segments']
+    feature_df = df_processed.drop('num_segments', axis=1)
+
+    x_train, x_test, y_train, y_test = train_test_split(feature_df, predictor_df, test_size=sim_dict['test_size'],
+                                                        random_state=42)
+    lr_obj = LogisticRegression(random_state=0)
+    lr_obj.fit(x_train, y_train)
+    y_pred = lr_obj.predict(x_test)
+    plot_confusion(y_test=y_test, y_pred=y_pred)
 
 
 def _handle_training(sim_dict: dict, file_path: str):
     data_frame = pd.read_csv(file_path, converters={'spec_util_matrix': ast.literal_eval})
     df_processed = process_data(input_df=data_frame)
 
-    # TODO: Generalize test set size and number of pca components
-    x_train, x_vals = train_test_split(df_processed, test_size=0.3, random_state=42)
-
-    # TODO: Split to other functions eventually?
     if sim_dict['ml_model'] == 'kmeans':
-        pca = PCA(n_components=3)
-        x_pca = pca.fit_transform(x_train)
-        kmeans = KMeans(n_clusters=4, random_state=0)
-        kmeans.fit(x_pca)
-
-        df_pca = pd.DataFrame(data=x_pca, columns=["PC1", "PC2", "PC3"])
-        df_pca["cluster"] = kmeans.labels_
-        df_pca["true_label"] = df_processed['num_segments']
-        plot_2d_clusters(df_pca=df_pca, kmeans=kmeans)
-        plot_3d_clusters(df_pca=df_pca, kmeans=kmeans)
+        _train_test_kmeans(df_processed=df_processed, sim_dict=sim_dict)
     elif sim_dict['ml_model'] == 'logistic_regression':
-        predictor_df = df_processed['num_segments']
-        feature_df = df_processed.drop('num_segments', axis=1)
-
-        x_train, x_test, y_train, y_test = train_test_split(feature_df, predictor_df, test_size=0.3, random_state=42)
-        lr_obj = LogisticRegression(random_state=0)
-        lr_obj.fit(x_train, y_train)
-        y_pred = lr_obj.predict(x_test)
-        plot_confusion(y_test=y_test, y_pred=y_pred)
+        _train_test_lr(df_processed=df_processed, sim_dict=sim_dict)
     else:
         raise NotImplementedError
 
@@ -63,15 +60,12 @@ def _run(sim_dict: dict):
     """
     # TODO: Only support for running one process.
     sim_dict = sim_dict['s1']
-
     base_fp = 'data/output/'
-    if sim_dict['is_training']:
-        train_fp = os.path.join(base_fp, sim_dict['train_file_path'])
-        # TODO: We need Erlang here (generalize)
-        train_fp = os.path.join(train_fp, '50.0_train_data.csv')
-        _handle_training(sim_dict=sim_dict, file_path=train_fp)
-    else:
-        raise NotImplementedError
+
+    # TODO: Run for all Erlang values
+    train_fp = os.path.join(base_fp, sim_dict['train_file_path'])
+    train_fp = os.path.join(train_fp, '50.0_train_data.csv')
+    _handle_training(sim_dict=sim_dict, file_path=train_fp)
 
 
 def _setup_ml_sim():

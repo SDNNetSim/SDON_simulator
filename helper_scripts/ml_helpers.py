@@ -1,11 +1,13 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import joblib
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import silhouette_score
 import seaborn as sns
 
 
+# TODO: Save results and models
 def load_model():
     """
     Loads a previously trained machine learning model.
@@ -22,16 +24,15 @@ def save_model():
     raise NotImplementedError
 
 
-def get_kmeans_stats():
+def get_kmeans_stats(kmeans: object, x_val):
     """
     Get statistics for KMeans clustering.
     """
-    # inertia = kmeans.inertia_
-    # print(f"Inertia: {inertia}")
+    inertia = kmeans.inertia_
+    print(f"Inertia: {inertia}")
 
-    # silhouette_avg = silhouette_score(X_val, kmeans.predict(X_val))
-    # print(f"Silhouette Score: {silhouette_avg}")
-    raise NotImplementedError
+    silhouette_avg = silhouette_score(x_val, kmeans.predict(x_val))
+    print(f"Silhouette Score: {silhouette_avg}")
 
 
 def process_data(input_df: pd.DataFrame):
@@ -57,27 +58,31 @@ def process_data(input_df: pd.DataFrame):
 
 
 def plot_confusion(y_test, y_pred):
+    """
+    Plots a confusion matrix and prints out the accuracy, precision, recall, and F1 score.
+
+    :param y_test: Testing data.
+    :param y_pred: Predictions.
+    """
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred, average='weighted')
     recall = recall_score(y_test, y_pred, average='weighted')
-    f1 = f1_score(y_test, y_pred, average='weighted')
+    f_score = f1_score(y_test, y_pred, average='weighted')
     print(f'Accuracy: {accuracy}')
     print(f'Precision: {precision}')
     print(f'Recall: {recall}')
-    print(f'F1 Score: {f1}')
+    print(f'F1 Score: {f_score}')
 
     # Plot a confusion matrix
-    cm = confusion_matrix(y_test, y_pred)
+    conf_mat = confusion_matrix(y_test, y_pred)
     plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d')
+    sns.heatmap(conf_mat, annot=True, fmt='d')
     plt.title('Confusion Matrix')
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.show()
 
 
-# TODO: Save results
-# Convert this code to three dimensions (three pca components)
 def plot_2d_clusters(df_pca: pd.DataFrame, kmeans: object):
     """
     Plot the clusters of the KMeans algorithm.
@@ -109,19 +114,19 @@ def plot_3d_clusters(df_pca: pd.DataFrame, kmeans: object):
     :param kmeans: Kmeans algorithm object.
     """
     fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection='3d')
+    axis = fig.add_subplot(111, projection='3d')
 
     # Create a scatter plot of the PCA-reduced data, colored by "true_label" value
-    scatter = ax.scatter(df_pca["PC1"], df_pca["PC2"], df_pca["PC3"], c=df_pca["true_label"], cmap='Set1')
+    scatter = axis.scatter(df_pca["PC1"], df_pca["PC2"], df_pca["PC3"], c=df_pca["true_label"], cmap='Set1')
 
     # Plot the centroids of the clusters
     centers = kmeans.cluster_centers_
     for i, center in enumerate(centers):
-        ax.text(center[0], center[1], center[2], f'Center {i}', ha='center', va='center', color='red')
+        axis.text(center[0], center[1], center[2], f'Center {i}', ha='center', va='center', color='red')
 
-    ax.set_title("K-Means Clustering Results (PCA-reduced Data)")
-    ax.set_xlabel("Principal Component 1 (PC1)")
-    ax.set_ylabel("Principal Component 2 (PC2)")
-    ax.set_zlabel("Principal Component 3 (PC3)")
+    axis.set_title("K-Means Clustering Results (PCA-reduced Data)")
+    axis.set_xlabel("Principal Component 1 (PC1)")
+    axis.set_ylabel("Principal Component 2 (PC2)")
+    axis.set_zlabel("Principal Component 3 (PC3)")
     fig.colorbar(scatter, label='num_slices')
     plt.show()
