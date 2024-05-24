@@ -130,6 +130,7 @@ OTHER_OPTIONS = {
         'ml_training': str_to_bool,
         'train_file_path': str,
         'ml_model': str,
+        'test_size': float,
     },
     'file_settings': {
     },
@@ -193,6 +194,7 @@ COMMAND_LINE_PARAMS = [
     ['ml_training', bool, ''],
     ['train_file_path', str, ''],
     ['ml_model', str, ''],
+    ['test_size', float, ''],
 
     # For StableBaselines3
     ['algo', str, ''],
