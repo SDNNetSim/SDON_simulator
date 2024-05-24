@@ -9,7 +9,7 @@ import pandas as pd
 
 from arg_scripts.stats_args import empty_props
 from arg_scripts.stats_args import SNAP_KEYS_LIST
-from helper_scripts.sim_helpers import find_path_len, combine_and_one_hot
+from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_hfrag
 from helper_scripts.os_helpers import create_dir
 
 
@@ -81,24 +81,28 @@ class SimStats:
         :param net_spec_dict: Network spectrum database.
         """
         path_list = req_info_dict['path']
-        spec_util_matrix = list()
+        cong_arr = np.array([])
+        shannon_arr = np.array([])
 
         for core_num in range(self.engine_props['cores_per_link']):
-            spec_util_arr = np.zeros(self.engine_props['spectral_slots'])
-            for source, dest in zip(path_list, path_list[1:]):
-                core_arr = net_spec_dict[(source, dest)]['cores_matrix'][core_num]
-                spec_util_arr = combine_and_one_hot(spec_util_arr, core_arr)
+            slots_needed = req_dict['mod_formats'][req_info_dict['mod_format']]['slots_needed']
+            _, hfrag_list = get_hfrag(path_list=path_list, core_num=core_num, slots_needed=slots_needed,
+                                      spectral_slots=self.engine_props['spectral_slots'], net_spec_dict=net_spec_dict)
 
-            spec_util_matrix.append(spec_util_arr.tolist())
+            curr_cong = find_core_cong(core_index=core_num, net_spec_dict=net_spec_dict, path_list=path_list)
+            hfrag_list = hfrag_list[np.isfinite(hfrag_list)]
+            shannon_arr = np.append(shannon_arr, np.sum(hfrag_list))
+            cong_arr = np.append(cong_arr, curr_cong)
 
         path_length = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
         tmp_info_dict = {
             'bandwidth': req_dict['bandwidth'],
             'path_length': path_length,
             'mod_format': req_info_dict['mod_format'],
-            'spec_util_matrix': spec_util_matrix,
             'was_sliced': req_info_dict['is_sliced'],
-            'num_slices': self.curr_trans,
+            'num_segments': self.curr_trans,
+            'ave_cong': float(np.mean(cong_arr)),
+            'ave_shannon': float(np.mean(shannon_arr)),
         }
         self.train_data_list.append(tmp_info_dict)
 
