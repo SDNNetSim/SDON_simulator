@@ -1,6 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import seaborn as sns
 
 
 def load_model():
@@ -60,9 +62,30 @@ def process_data(input_df: pd.DataFrame):
     # for col in matrix_columns:
     #     df_processed[col] = df_processed[col].apply(lambda x: [float(i) for i in x])
 
-    df_processed = df_processed.drop(columns=['spec_util_matrix', 'num_slices'])
+    # df_processed = df_processed.drop(columns=['spec_util_matrix', 'num_slices'])
+    # df_processed = df_processed.drop(columns=['spec_util_matrix'])
 
     return df_processed
+
+
+def plot_confusion(y_test, y_pred):
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, average='weighted')
+    recall = recall_score(y_test, y_pred, average='weighted')
+    f1 = f1_score(y_test, y_pred, average='weighted')
+    print(f'Accuracy: {accuracy}')
+    print(f'Precision: {precision}')
+    print(f'Recall: {recall}')
+    print(f'F1 Score: {f1}')
+
+    # Plot a confusion matrix
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d')
+    plt.title('Confusion Matrix')
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.show()
 
 
 # TODO: Save results

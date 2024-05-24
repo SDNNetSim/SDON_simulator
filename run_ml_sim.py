@@ -5,12 +5,13 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
 # TODO: Save model
 import joblib
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
-from helper_scripts.ml_helpers import process_data, plot_clusters
+from helper_scripts.ml_helpers import process_data, plot_clusters, plot_confusion
 
 
 def _print_info():
@@ -28,7 +29,7 @@ def _handle_training(sim_dict: dict, file_path: str):
     # TODO: Generalize test set size and number of pca components
     x_train, x_vals = train_test_split(df_processed, test_size=0.3, random_state=42)
 
-    # TODO: Split to other functions eventually
+    # TODO: Split to other functions eventually?
     if sim_dict['ml_model'] == 'kmeans':
         pca = PCA(n_components=2)
         x_pca = pca.fit_transform(x_train)
@@ -37,10 +38,17 @@ def _handle_training(sim_dict: dict, file_path: str):
 
         df_pca = pd.DataFrame(data=x_pca, columns=["PC1", "PC2"])
         df_pca["cluster"] = kmeans.labels_
-        df_pca["true_label"] = df['num_slices']
+        df_pca["true_label"] = df_processed['num_slices']
         plot_clusters(df_pca=df_pca, kmeans=kmeans)
     elif sim_dict['ml_model'] == 'logistic_regression':
-        raise NotImplementedError
+        predictor_df = df_processed['num_slices']
+        feature_df = df_processed.drop('num_slices', axis=1)
+
+        x_train, x_test, y_train, y_test = train_test_split(feature_df, predictor_df, test_size=0.3, random_state=42)
+        lr_obj = LogisticRegression(random_state=0)
+        lr_obj.fit(x_train, y_train)
+        y_pred = lr_obj.predict(x_test)
+        plot_confusion(y_test=y_test, y_pred=y_pred)
     else:
         raise NotImplementedError
 
