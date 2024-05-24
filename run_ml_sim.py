@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 from helper_scripts.ml_helpers import process_data, plot_2d_clusters, plot_3d_clusters, plot_confusion
+from helper_scripts.ml_helpers import save_model
 
 
 # TODO: Add metric for feature importance
@@ -27,6 +28,8 @@ def _train_test_kmeans(df_processed: pd.DataFrame, sim_dict: dict):
     plot_2d_clusters(df_pca=df_pca, kmeans=kmeans)
     plot_3d_clusters(df_pca=df_pca, kmeans=kmeans)
 
+    save_model(model=kmeans, algorithm='kmeans')
+
 
 def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict):
     predictor_df = df_processed['num_segments']
@@ -38,6 +41,8 @@ def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict):
     lr_obj.fit(x_train, y_train)
     y_pred = lr_obj.predict(x_test)
     plot_confusion(y_test=y_test, y_pred=y_pred)
+
+    save_model(model=lr_obj, algorithm='logistic_regression')
 
 
 def _handle_training(sim_dict: dict, file_path: str):

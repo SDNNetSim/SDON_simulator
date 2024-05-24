@@ -1,10 +1,15 @@
+import os
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import joblib
+import seaborn as sns
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from sklearn.metrics import silhouette_score
-import seaborn as sns
+
+from helper_scripts.os_helpers import create_dir
 
 
 # TODO: Save results and models
@@ -16,12 +21,19 @@ def load_model():
     raise NotImplementedError
 
 
-def save_model():
+# TODO: Add times the simulation was run (start time)
+def save_model(model, algorithm: str):
     """
     Saves a trained machine learning model.
-    :return:
+
+    :param model: The trained model.
+    :param algorithm: The filename to save the model as.
     """
-    raise NotImplementedError
+    base_fp = os.path.join('logs', algorithm)
+    create_dir(file_path=base_fp)
+
+    save_fp = os.path.join(base_fp, f'{algorithm}.joblib')
+    joblib.dump(model, save_fp)
 
 
 def get_kmeans_stats(kmeans: object, x_val):
@@ -57,6 +69,7 @@ def process_data(input_df: pd.DataFrame):
     return df_processed
 
 
+# TODO: Save plots to correct directory
 def plot_confusion(y_test, y_pred):
     """
     Plots a confusion matrix and prints out the accuracy, precision, recall, and F1 score.
