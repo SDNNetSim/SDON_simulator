@@ -11,9 +11,10 @@ import joblib
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
-from helper_scripts.ml_helpers import process_data, plot_clusters, plot_confusion
+from helper_scripts.ml_helpers import process_data, plot_2d_clusters, plot_3d_clusters, plot_confusion
 
 
+# TODO: Something for feature importance?
 def _print_info():
     pass
 
@@ -31,18 +32,19 @@ def _handle_training(sim_dict: dict, file_path: str):
 
     # TODO: Split to other functions eventually?
     if sim_dict['ml_model'] == 'kmeans':
-        pca = PCA(n_components=2)
+        pca = PCA(n_components=3)
         x_pca = pca.fit_transform(x_train)
-        kmeans = KMeans(n_clusters=8, random_state=0)
+        kmeans = KMeans(n_clusters=4, random_state=0)
         kmeans.fit(x_pca)
 
-        df_pca = pd.DataFrame(data=x_pca, columns=["PC1", "PC2"])
+        df_pca = pd.DataFrame(data=x_pca, columns=["PC1", "PC2", "PC3"])
         df_pca["cluster"] = kmeans.labels_
-        df_pca["true_label"] = df_processed['num_slices']
-        plot_clusters(df_pca=df_pca, kmeans=kmeans)
+        df_pca["true_label"] = df_processed['num_segments']
+        plot_2d_clusters(df_pca=df_pca, kmeans=kmeans)
+        plot_3d_clusters(df_pca=df_pca, kmeans=kmeans)
     elif sim_dict['ml_model'] == 'logistic_regression':
-        predictor_df = df_processed['num_slices']
-        feature_df = df_processed.drop('num_slices', axis=1)
+        predictor_df = df_processed['num_segments']
+        feature_df = df_processed.drop('num_segments', axis=1)
 
         x_train, x_test, y_train, y_test = train_test_split(feature_df, predictor_df, test_size=0.3, random_state=42)
         lr_obj = LogisticRegression(random_state=0)
@@ -66,7 +68,7 @@ def _run(sim_dict: dict):
     if sim_dict['is_training']:
         train_fp = os.path.join(base_fp, sim_dict['train_file_path'])
         # TODO: We need Erlang here (generalize)
-        train_fp = os.path.join(train_fp, '700.0_train_data.csv')
+        train_fp = os.path.join(train_fp, '50.0_train_data.csv')
         _handle_training(sim_dict=sim_dict, file_path=train_fp)
     else:
         raise NotImplementedError

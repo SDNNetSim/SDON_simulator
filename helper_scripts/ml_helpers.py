@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 import seaborn as sns
@@ -49,21 +50,8 @@ def process_data(input_df: pd.DataFrame):
             df_processed[col] = df_processed[col].astype(int)
 
     scaler = StandardScaler()
-    feat_scale_list = ['path_length']
+    feat_scale_list = ['path_length', 'ave_shannon', 'ave_cong']
     df_processed[feat_scale_list] = scaler.fit_transform(df_processed[feat_scale_list])
-
-    # TODO: Can't input matrix for kmeans but for other algorithms?
-    # num_cores = len(df['spec_util_matrix'][0])
-    # for core_index in range(num_cores):
-    #     column_name = f'core_{core_index}'
-    #     df_processed[column_name] = df_processed['spec_util_matrix'].apply(lambda x: x[core_index])
-    #
-    # matrix_columns = [col for col in df_processed.columns if col.startswith('core_')]
-    # for col in matrix_columns:
-    #     df_processed[col] = df_processed[col].apply(lambda x: [float(i) for i in x])
-
-    # df_processed = df_processed.drop(columns=['spec_util_matrix', 'num_slices'])
-    # df_processed = df_processed.drop(columns=['spec_util_matrix'])
 
     return df_processed
 
@@ -89,7 +77,8 @@ def plot_confusion(y_test, y_pred):
 
 
 # TODO: Save results
-def plot_clusters(df_pca: pd.DataFrame, kmeans: object):
+# Convert this code to three dimensions (three pca components)
+def plot_2d_clusters(df_pca: pd.DataFrame, kmeans: object):
     """
     Plot the clusters of the KMeans algorithm.
 
@@ -109,4 +98,30 @@ def plot_clusters(df_pca: pd.DataFrame, kmeans: object):
     plt.xlabel("Principal Component 1 (PC1)")
     plt.ylabel("Principal Component 2 (PC2)")
     plt.colorbar(scatter, label='num_slices')
+    plt.show()
+
+
+def plot_3d_clusters(df_pca: pd.DataFrame, kmeans: object):
+    """
+    Plot the clusters of the KMeans algorithm in 3D.
+
+    :param df_pca: A dataframe normalized with PCA.
+    :param kmeans: Kmeans algorithm object.
+    """
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Create a scatter plot of the PCA-reduced data, colored by "true_label" value
+    scatter = ax.scatter(df_pca["PC1"], df_pca["PC2"], df_pca["PC3"], c=df_pca["true_label"], cmap='Set1')
+
+    # Plot the centroids of the clusters
+    centers = kmeans.cluster_centers_
+    for i, center in enumerate(centers):
+        ax.text(center[0], center[1], center[2], f'Center {i}', ha='center', va='center', color='red')
+
+    ax.set_title("K-Means Clustering Results (PCA-reduced Data)")
+    ax.set_xlabel("Principal Component 1 (PC1)")
+    ax.set_ylabel("Principal Component 2 (PC2)")
+    ax.set_zlabel("Principal Component 3 (PC3)")
+    fig.colorbar(scatter, label='num_slices')
     plt.show()
