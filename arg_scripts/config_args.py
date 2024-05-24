@@ -125,6 +125,13 @@ OTHER_OPTIONS = {
         'reward': float,
         'penalty': float,
     },
+    'ml_settings': {
+        'output_train_data': str_to_bool,
+        'ml_training': str_to_bool,
+        'train_file_path': str,
+        'ml_model': str,
+        'test_size': float,
+    },
     'file_settings': {
     },
 }
@@ -183,6 +190,11 @@ COMMAND_LINE_PARAMS = [
     ['optimize_hyperparameters', str, ''],
     ['reward', float, ''],
     ['penalty', float, ''],
+    ['output_train_data', bool, ''],
+    ['ml_training', bool, ''],
+    ['train_file_path', str, ''],
+    ['ml_model', str, ''],
+    ['test_size', float, ''],
 
     # For StableBaselines3
     ['algo', str, ''],

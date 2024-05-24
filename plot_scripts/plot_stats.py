@@ -184,15 +184,15 @@ def main():
         ]
     }
 
-    sims_info_dict = find_times(dates_dict={'0503': 'NSFNet'}, filter_dict=filter_dict)
+    sims_info_dict = find_times(dates_dict={'0523': 'Pan-European'}, filter_dict=filter_dict)
     plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
-    plot_obj.plot_blocking(ai=True)
+    plot_obj.plot_blocking(ai=False)
     # plot_obj.plot_path_length()
     # plot_obj.plot_hops()
     # plot_obj.plot_block_reasons()
-    plot_obj.plot_rewards(erlang_list=[250])
-    plot_obj.plot_errors(erlang_list=[250])
+    # plot_obj.plot_rewards(erlang_list=[250])
+    # plot_obj.plot_errors(erlang_list=[250])
 
 
 if __name__ == '__main__':

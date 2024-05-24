@@ -1,4 +1,5 @@
 # Standard library imports
+import copy
 import os
 import signal
 
@@ -52,6 +53,7 @@ class Engine:
                 "path": sdn_props['path_list'],
                 "is_sliced": sdn_props['is_sliced'],
                 "was_routed": sdn_props['was_routed'],
+                "core_list": sdn_props['core_list'],
             }})
 
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,
@@ -129,10 +131,18 @@ class Engine:
         """
         req_type = self.reqs_dict[curr_time]["request_type"]
         if req_type == "arrival":
+            old_net_spec_dict = copy.deepcopy(self.net_spec_dict)
             self.handle_arrival(curr_time=curr_time)
 
             if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
                 self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
+
+            if self.engine_props['output_train_data']:
+                was_routed = self.sdn_obj.sdn_props['was_routed']
+                if was_routed:
+                    req_info_dict = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]
+                    self.stats_obj.update_train_data(req_dict=self.reqs_dict[curr_time], req_info_dict=req_info_dict,
+                                                     net_spec_dict=old_net_spec_dict)
 
         elif req_type == "release":
             self.handle_release(curr_time=curr_time)
@@ -140,26 +150,25 @@ class Engine:
             raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '
                                       f'got: {req_type}')
 
-    def end_iter(self, iteration: int, print_flag: bool = True, ai_flag: bool = False, base_fp: str = None):
+    def end_iter(self, iteration: int, print_flag: bool = True, base_fp: str = None):
         """
         Updates iteration statistics.
 
         :param iteration: The current iteration.
         :param print_flag: Whether to print or not.
-        :param ai_flag: To determine if AI is used or not.
         :param base_fp: The base file path to save output statistics.
         """
         self.stats_obj.get_blocking()
         self.stats_obj.end_iter_update()
         # Some form of ML/RL is being used, ignore confidence intervals for training and testing
-        if not ai_flag:
-            if self.stats_obj.get_conf_inter():
-                return
+        if not self.engine_props['is_training']:
+            return bool(self.stats_obj.get_conf_inter())
 
         if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
             self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], print_flag=print_flag)
 
         self.stats_obj.save_stats(base_fp=base_fp)
+        return False
 
     def init_iter(self, iteration: int):
         """
@@ -200,7 +209,9 @@ class Engine:
                 if self.reqs_dict[curr_time]['request_type'] == 'arrival':
                     req_num += 1
 
-            self.end_iter(iteration=iteration)
+            end_iter = self.end_iter(iteration=iteration)
+            if end_iter:
+                break
 
         print(f"Erlang: {self.engine_props['erlang']} finished for "
               f"simulation number: {self.engine_props['thread_num']}.")

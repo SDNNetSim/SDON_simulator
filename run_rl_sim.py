@@ -73,7 +73,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 self.path_agent.end_iter()
             elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
                 self.core_agent.end_iter()
-            self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, ai_flag=True, base_fp=base_fp)
+            self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, base_fp=base_fp)
             self.iteration += 1
         else:
             terminated = False
@@ -325,8 +325,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if not self.sim_dict['is_training'] and self.iteration == 0:
             self._load_models()
         if seed is None:
-            # seed = self.iteration
-            seed = 0
+            seed = self.iteration + 1
+            # seed = 0
 
         self.rl_help_obj.reset_reqs_dict(seed=seed)
         obs = self._get_obs()
@@ -443,6 +443,7 @@ def _run(env: object, sim_dict: dict):
         model.save(save_fp)
 
 
+# TODO: Move to a helpers file
 def _setup_rl_sim():
     args_obj = parse_args()
     config_path = os.path.join('ini', 'run_ini', 'config.ini')

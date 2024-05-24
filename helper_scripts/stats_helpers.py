@@ -5,10 +5,11 @@ import copy
 from statistics import mean, variance, stdev
 
 import numpy as np
+import pandas as pd
 
 from arg_scripts.stats_args import empty_props
 from arg_scripts.stats_args import SNAP_KEYS_LIST
-from helper_scripts.sim_helpers import find_path_len
+from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_hfrag
 from helper_scripts.os_helpers import create_dir
 
 
@@ -41,6 +42,9 @@ class SimStats:
         self.topology = None
         self.iteration = None
 
+        # TODO: Make sure this isn't reset after multiple iterations
+        self.train_data_list = list()
+
     @staticmethod
     def _get_snapshot_info(net_spec_dict: dict, path_list: list):
         """
@@ -67,6 +71,40 @@ class SimStats:
                 guard_slots += len(np.where(core < 0)[0])
 
         return occupied_slots, guard_slots, len(active_reqs_set)
+
+    def update_train_data(self, req_dict: dict, req_info_dict: dict, net_spec_dict: dict):
+        """
+        Updates the training data list with the current request information.
+
+        :param req_dict: Request dictionary.
+        :param req_info_dict: A second request dictionary with additional information.
+        :param net_spec_dict: Network spectrum database.
+        """
+        path_list = req_info_dict['path']
+        cong_arr = np.array([])
+        shannon_arr = np.array([])
+
+        for core_num in range(self.engine_props['cores_per_link']):
+            slots_needed = req_dict['mod_formats'][req_info_dict['mod_format']]['slots_needed']
+            _, hfrag_list = get_hfrag(path_list=path_list, core_num=core_num, slots_needed=slots_needed,
+                                      spectral_slots=self.engine_props['spectral_slots'], net_spec_dict=net_spec_dict)
+
+            curr_cong = find_core_cong(core_index=core_num, net_spec_dict=net_spec_dict, path_list=path_list)
+            hfrag_list = hfrag_list[np.isfinite(hfrag_list)]
+            shannon_arr = np.append(shannon_arr, np.sum(hfrag_list))
+            cong_arr = np.append(cong_arr, curr_cong)
+
+        path_length = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
+        tmp_info_dict = {
+            'bandwidth': req_dict['bandwidth'],
+            'path_length': path_length,
+            'mod_format': req_info_dict['mod_format'],
+            'was_sliced': req_info_dict['is_sliced'],
+            'num_segments': self.curr_trans,
+            'ave_cong': float(np.mean(cong_arr)),
+            'ave_shannon': float(np.mean(shannon_arr)),
+        }
+        self.train_data_list.append(tmp_info_dict)
 
     def update_snapshot(self, net_spec_dict: dict, req_num: int, path_list: list = None):
         """
@@ -260,6 +298,17 @@ class SimStats:
 
         return False
 
+    def save_train_data(self, base_fp: str):
+        """
+        Saves training data file.
+
+        :param base_fp: Base file path.
+        """
+        if self.iteration == (self.engine_props['max_iters'] - 1):
+            save_df = pd.DataFrame(self.train_data_list)
+            save_df.to_csv(f"{base_fp}/output/{self.sim_info}/{self.engine_props['erlang']}_train_data.csv",
+                           index=False)
+
     def save_stats(self, base_fp: str):
         """
         Saves simulations stats as either a json or csv file.
@@ -304,6 +353,9 @@ class SimStats:
                 json.dump(self.save_dict, file_path, indent=4)
         else:
             raise NotImplementedError
+
+        if self.engine_props['output_train_data']:
+            self.save_train_data(base_fp=base_fp)
 
     def print_iter_stats(self, max_iters: int, print_flag: bool):
         """
