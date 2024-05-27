@@ -99,7 +99,7 @@ class SimStats:
             'bandwidth': req_dict['bandwidth'],
             'path_length': path_length,
             'mod_format': req_info_dict['mod_format'],
-            'was_sliced': req_info_dict['is_sliced'],
+            # 'was_sliced': req_info_dict['is_sliced'],
             'num_segments': self.curr_trans,
             'ave_cong': float(np.mean(cong_arr)),
             # 'ave_shannon': float(np.mean(shannon_arr)),

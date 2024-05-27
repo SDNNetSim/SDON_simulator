@@ -1,8 +1,10 @@
 import time
 
+import pandas as pd
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 
-from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len
+from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len, find_core_cong
 from arg_scripts.sdn_args import empty_props
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
@@ -103,7 +105,7 @@ class SDNController:
                 self.release()
                 break
 
-    def _handle_slicing(self, path_list: list):
+    def _handle_slicing(self, path_list: list, num_segments: int):
         bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
         for bandwidth, mods_dict in bw_mod_dict.items():
             # We can't slice to a larger or equal bandwidth
@@ -131,13 +133,37 @@ class SDNController:
 
             self.sdn_props['is_sliced'] = False
 
+    # TODO: Input to model: path length, mod format, average congestion
+    # TODO: Force the number of slices (output from the model)
+    def _get_ml_obs(self):
+        path_length = find_path_len(path_list=self.sdn_props['path_list'], topology=self.engine_props['topology'])
+        cong_arr = np.array([])
+        # TODO: Add to helper functions
+        for core_num in range(self.engine_props['cores_per_link']):
+            curr_cong = find_core_cong(core_index=core_num, net_spec_dict=net_spec_dict, path_list=path_list)
+            cong_arr = np.append(cong_arr, curr_cong)
+
+        tmp_dict = {
+            'bandwidth': self.sdn_props['bandwidth'],
+            'path_length': path_length,
+            'mod_format': get_path_mod(mods_dict=self.sdn_props['mods_dict'], path_len=path_length),
+            'ave_cong': float(np.mean(cong_arr)),
+        }
+        df_processed = pd.DataFrame(tmp_dict)
+
+        scaler = StandardScaler()
+        feat_scale_list = ['path_length', 'ave_cong']
+        df_processed[feat_scale_list] = scaler.fit_transform(df_processed[feat_scale_list])
+
+        return df_processed
+
     def _init_req_stats(self):
         self.sdn_props['bandwidth_list'] = list()
         for stat_key in self.sdn_props['stat_key_list']:
             self.sdn_props[stat_key] = list()
 
     def handle_event(self, request_type: str, force_slicing: bool = False, force_route_matrix: list = None,
-                     forced_index: int = None, force_core: int = None):
+                     forced_index: int = None, force_core: int = None, ml_model=None):
         """
         Handles any event that occurs in the simulation, controls this class.
 
@@ -145,6 +171,7 @@ class SDNController:
         :param force_slicing: Whether to force light segment slicing or not.
         :param force_route_matrix: Whether to force a path or not.
         :param forced_index: Whether to force a start index for a request.
+        :param ml_model: An optional machine learning model.
         """
         self._init_req_stats()
         # Even if the request is blocked, we still consider one transponder
@@ -170,8 +197,14 @@ class SDNController:
                     self.sdn_props['path_list'] = path_list
                     mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
 
-                    if segment_slicing or force_slicing:
-                        self._handle_slicing(path_list=path_list)
+                    if segment_slicing or force_slicing or ml_model is not None:
+                        if ml_model is not None:
+                            input_df = self._get_ml_obs()
+                            num_segments = ml_model.predict(input_df)
+                        else:
+                            num_segments = None
+
+                        self._handle_slicing(path_list=path_list, num_segments=num_segments)
                         if not self.sdn_props['was_routed']:
                             self.sdn_props['num_trans'] = 1
                             continue

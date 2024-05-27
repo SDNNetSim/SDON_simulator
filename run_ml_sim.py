@@ -42,7 +42,7 @@ def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict):
     y_pred = lr_obj.predict(x_test)
     plot_confusion(y_test=y_test, y_pred=y_pred)
 
-    save_model(model=lr_obj, algorithm='logistic_regression')
+    save_model(sim_dict=sim_dict, model=lr_obj, algorithm='logistic_regression')
 
 
 def _handle_training(sim_dict: dict, file_path: str):

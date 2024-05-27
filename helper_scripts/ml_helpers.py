@@ -22,17 +22,19 @@ def load_model():
 
 
 # TODO: Add times the simulation was run (start time)
-def save_model(model, algorithm: str):
+def save_model(sim_dict: dict, model, algorithm: str):
     """
     Saves a trained machine learning model.
 
+    :param sim_dict: The simulation dictionary.
     :param model: The trained model.
     :param algorithm: The filename to save the model as.
     """
-    base_fp = os.path.join('logs', algorithm)
+    # TODO: Update Erlang
+    base_fp = os.path.join('logs', algorithm, sim_dict['train_file_path'])
     create_dir(file_path=base_fp)
 
-    save_fp = os.path.join(base_fp, f'{algorithm}.joblib')
+    save_fp = os.path.join(base_fp, f'{algorithm}_50.joblib')
     joblib.dump(model, save_fp)
 
 
@@ -63,7 +65,7 @@ def process_data(input_df: pd.DataFrame):
             df_processed[col] = df_processed[col].astype(int)
 
     scaler = StandardScaler()
-    feat_scale_list = ['path_length', 'ave_shannon', 'ave_cong']
+    feat_scale_list = ['path_length', 'ave_cong']
     df_processed[feat_scale_list] = scaler.fit_transform(df_processed[feat_scale_list])
 
     return df_processed

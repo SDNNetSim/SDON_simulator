@@ -6,6 +6,7 @@ import signal
 # Third party library imports
 import networkx as nx
 import numpy as np
+from joblib import load
 
 # Local application imports
 from sim_scripts.request_generator import get_requests
@@ -36,6 +37,8 @@ class Engine:
 
         self.sdn_obj = SDNController(engine_props=self.engine_props)
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
+
+        self.ml_model = None
 
     def update_arrival_params(self, curr_time: float):
         """
@@ -70,7 +73,8 @@ class Engine:
             self.sdn_obj.sdn_props[req_key] = req_value
 
         self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
-                                  force_slicing=force_slicing, forced_index=forced_index, force_core=force_core)
+                                  force_slicing=force_slicing, forced_index=forced_index, force_core=force_core,
+                                  ml_model=self.ml_model)
         self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
         self.update_arrival_params(curr_time=curr_time)
 
@@ -191,6 +195,13 @@ class Engine:
         if iteration == 0:
             print(f"Simulation started for Erlang: {self.engine_props['erlang']} "
                   f"simulation number: {self.engine_props['thread_num']}.")
+
+            if self.engine_props['deploy_model']:
+                # TODO: Hard coded Erlang
+                model_fp = os.path.join('logs', self.engine_props['ml_model'],
+                                        self.engine_props['train_file_path'],
+                                        f"{self.engine_props['ml_model']}_50.joblib")
+                self.ml_model = load(filename=model_fp)
 
         seed = self.engine_props["seeds"][iteration] if self.engine_props["seeds"] else iteration + 1
         self.generate_requests(seed)

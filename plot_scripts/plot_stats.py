@@ -166,7 +166,7 @@ class PlotStats:
                                   legend_val_list=['QRC', 'k=3', 'k=1'], force_legend=True, file_name='average_bp')
         else:
             # TODO: Make block per iter a matrix, for each Erlang
-            self._plot_helper_two(y_vals_list=['block_per_iter'], erlang=250, file_name='bp_e{250}')
+            self._plot_helper_two(y_vals_list=['block_per_iter'], erlang=700, file_name='bp_e{250}')
 
 
 def main():
@@ -184,15 +184,15 @@ def main():
         ]
     }
 
-    sims_info_dict = find_times(dates_dict={'0523': 'Pan-European'}, filter_dict=filter_dict)
+    sims_info_dict = find_times(dates_dict={'0518': 'NSFNet'}, filter_dict=filter_dict)
     plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
-    plot_obj.plot_blocking(ai=False)
+    plot_obj.plot_blocking(ai=True)
     # plot_obj.plot_path_length()
     # plot_obj.plot_hops()
     # plot_obj.plot_block_reasons()
-    # plot_obj.plot_rewards(erlang_list=[250])
-    # plot_obj.plot_errors(erlang_list=[250])
+    plot_obj.plot_rewards(erlang_list=[700])
+    plot_obj.plot_errors(erlang_list=[700])
 
 
 if __name__ == '__main__':
