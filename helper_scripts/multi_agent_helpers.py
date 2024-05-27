@@ -181,6 +181,7 @@ class CoreAgent:
     def _ql_core(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         cores_matrix = self.agent_obj.props['cores_matrix']
+        cores_matrix = cores_matrix[self.rl_props['source']][self.rl_props['destination']]
         self.rl_props['cores_list'] = cores_matrix[self.rl_props['path_index']]
         self.cong_list = self.rl_help_obj.classify_cores(cores_list=self.rl_props['cores_list'])
 

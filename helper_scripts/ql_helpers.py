@@ -44,7 +44,7 @@ class QLearningHelpers:
                         for core_action in range(self.engine_props['cores_per_link']):
                             core_tuple = (curr_path, core_action, 0.0)
                             self.props['cores_matrix'][
-                                k, core_action, level_index] = core_tuple
+                                source, destination, k, core_action, level_index] = core_tuple
 
     def setup_env(self):
         """
@@ -57,8 +57,9 @@ class QLearningHelpers:
         self.props['routes_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
                                                 self.rl_props['k_paths'], self.path_levels), dtype=route_types)
 
-        self.props['cores_matrix'] = np.empty((self.rl_props['k_paths'],
-                                               self.engine_props['cores_per_link'], self.path_levels), dtype=core_types)
+        self.props['cores_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
+                                               self.rl_props['k_paths'], self.engine_props['cores_per_link'],
+                                               self.path_levels), dtype=core_types)
 
         self._init_q_tables()
 
@@ -119,7 +120,8 @@ class QLearningHelpers:
         :param level_index: Index to determine the current state.
         :param net_spec_dict: The network spectrum database.
         """
-        cores_matrix = self.props['cores_matrix'][self.rl_props['path_index']]
+        cores_matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
+        cores_matrix = cores_matrix[self.rl_props['path_index']]
         cores_list = cores_matrix[self.rl_props['core_index']][level_index]
         current_q = cores_list['q_value']
 
@@ -148,7 +150,8 @@ class QLearningHelpers:
                 matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
                 sub_flag = 'paths_list'
             elif matrix_flag == 'cores_matrix':
-                matrix = self.props['cores_matrix'][self.rl_props['path_index']]
+                matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
+                matrix = matrix[self.rl_props['path_index']]
                 sub_flag = 'cores_list'
             else:
                 raise ValueError

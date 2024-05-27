@@ -16,7 +16,6 @@ class RLHelpers:
         self.route_obj = route_obj
 
         self.topology = None
-        self.net_spec_dict = None
 
         self.core_num = None
         self.super_channel = None
@@ -145,14 +144,9 @@ class RLHelpers:
         else:
             forced_index = None
 
-        # self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props['chosen_path'],
-        #                                force_core=self.rl_props['core_index'],
-        #                                forced_index=forced_index)
-
-        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=None,
-                                       force_core=None,
-                                       forced_index=None)
-
+        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props['chosen_path'],
+                                       force_core=self.rl_props['core_index'],
+                                       forced_index=forced_index)
 
     def update_mock_sdn(self, curr_req: dict):
         """
@@ -167,7 +161,7 @@ class RLHelpers:
             'source': curr_req['source'],
             'destination': curr_req['destination'],
             'bandwidth': curr_req['bandwidth'],
-            'net_spec_dict': self.net_spec_dict,
+            'net_spec_dict': self.engine_obj.net_spec_dict,
             'topology': self.topology,
             'mod_formats': curr_req['mod_formats'],
             'num_trans': 1.0,
