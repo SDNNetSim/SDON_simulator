@@ -81,18 +81,18 @@ class SimStats:
         :param net_spec_dict: Network spectrum database.
         """
         path_list = req_info_dict['path']
+        slots_needed = req_dict['mod_formats'][req_info_dict['mod_format']]['slots_needed']
         cong_arr = np.array([])
-        shannon_arr = np.array([])
+        # shannon_arr = np.array([])
 
         for core_num in range(self.engine_props['cores_per_link']):
-            slots_needed = req_dict['mod_formats'][req_info_dict['mod_format']]['slots_needed']
-            _, hfrag_list = get_hfrag(path_list=path_list, core_num=core_num, slots_needed=slots_needed,
-                                      spectral_slots=self.engine_props['spectral_slots'], net_spec_dict=net_spec_dict)
+            # _, hfrag_list = get_hfrag(path_list=path_list, core_num=core_num, slots_needed=slots_needed,
+            #                           spectral_slots=self.engine_props['spectral_slots'], net_spec_dict=net_spec_dict)
 
             curr_cong = find_core_cong(core_index=core_num, net_spec_dict=net_spec_dict, path_list=path_list)
-            hfrag_list = hfrag_list[np.isfinite(hfrag_list)]
-            shannon_arr = np.append(shannon_arr, np.sum(hfrag_list))
             cong_arr = np.append(cong_arr, curr_cong)
+            # hfrag_list = hfrag_list[np.isfinite(hfrag_list)]
+            # shannon_arr = np.append(shannon_arr, np.sum(hfrag_list))
 
         path_length = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
         tmp_info_dict = {
@@ -102,7 +102,7 @@ class SimStats:
             'was_sliced': req_info_dict['is_sliced'],
             'num_segments': self.curr_trans,
             'ave_cong': float(np.mean(cong_arr)),
-            'ave_shannon': float(np.mean(shannon_arr)),
+            # 'ave_shannon': float(np.mean(shannon_arr)),
         }
         self.train_data_list.append(tmp_info_dict)
 
