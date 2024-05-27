@@ -100,8 +100,8 @@ class SimStats:
             'path_length': path_length,
             'mod_format': req_info_dict['mod_format'],
             # 'was_sliced': req_info_dict['is_sliced'],
-            'num_segments': self.curr_trans,
             'ave_cong': float(np.mean(cong_arr)),
+            'num_segments': self.curr_trans,
             # 'ave_shannon': float(np.mean(shannon_arr)),
         }
         self.train_data_list.append(tmp_info_dict)

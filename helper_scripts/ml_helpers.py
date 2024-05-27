@@ -57,6 +57,7 @@ def process_data(input_df: pd.DataFrame):
     :return: Modified processed dataframe.
     :rtype: pd.DataFrame
     """
+    # TODO: DO NOT scale when training
     input_df['mod_format'] = input_df['mod_format'].str.replace('-', '')
     df_processed = pd.get_dummies(input_df, columns=['bandwidth', 'mod_format'])
 
@@ -64,9 +65,9 @@ def process_data(input_df: pd.DataFrame):
         if df_processed[col].dtype == bool:
             df_processed[col] = df_processed[col].astype(int)
 
-    scaler = StandardScaler()
-    feat_scale_list = ['path_length', 'ave_cong']
-    df_processed[feat_scale_list] = scaler.fit_transform(df_processed[feat_scale_list])
+    # scaler = StandardScaler()
+    # feat_scale_list = ['path_length', 'ave_cong']
+    # df_processed[feat_scale_list] = scaler.fit_transform(df_processed[feat_scale_list])
 
     return df_processed
 
