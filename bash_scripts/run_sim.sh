@@ -3,7 +3,7 @@
 #SBATCH -p cpu-long
 #SBATCH -c 1
 #SBATCH -G 0
-#SBATCH --mem=16000
+#SBATCH --mem=32000
 #SBATCH -t 2-00:00:00
 #SBATCH -o slurm-%j.out
 
@@ -14,9 +14,9 @@ cd /work/pi_vinod_vokkarane_uml_edu/git/sdn_simulator/
 
 # Make and activate virtual environment
 # rm -rf venvs/unity_venv/venv
-module load python/3.11.0
+# module load python/3.11.0
 # ./bash_scripts/make_venv.sh venvs/unity_venv python3.11
-source venvs/unity_venv/venv/bin/activate
+# source venvs/unity_venv/venv/bin/activate
 
 # Download requirements
 pip install -r requirements.txt
@@ -41,7 +41,7 @@ EPSILON_START=${epsilon_start_list[$INDEX]}
 REWARD=${reward_list[$INDEX]}
 PENALTY=${penalty_list[$INDEX]}
 
-python run_rl_sim.py --path_algorithm q_learning --core_algorithm first_fit --spectrum_algorithm first_fit --learn_rate $LEARN_RATE --discount_factor $DISC_FACTOR --epsilon_start $EPSILON_START --reward $REWARD --penalty $PENALTY
+# python run_rl_sim.py --path_algorithm q_learning --core_algorithm first_fit --spectrum_algorithm first_fit --learn_rate $LEARN_RATE --discount_factor $DISC_FACTOR --epsilon_start $EPSILON_START --reward $REWARD --penalty $PENALTY
 
 # Run regular simulation
-# python run_sim.py --max_segments 1 --k_paths 3
+python run_sim.py --network USNet
