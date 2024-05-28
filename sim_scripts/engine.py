@@ -75,7 +75,7 @@ class Engine:
 
         self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
                                   force_slicing=force_slicing, forced_index=forced_index, force_core=force_core,
-                                  ml_model=self.ml_model)
+                                  ml_model=self.ml_model, req_dict=self.reqs_dict[curr_time])
         self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
         self.update_arrival_params(curr_time=curr_time)
 
@@ -90,7 +90,7 @@ class Engine:
 
         if self.reqs_dict[curr_time]['req_id'] in self.reqs_status_dict:
             self.sdn_obj.sdn_props['path_list'] = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']
-            self.sdn_obj.handle_event(request_type='release')
+            self.sdn_obj.handle_event(req_dict=self.reqs_dict[curr_time], request_type='release')
             self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
         # Request was blocked, nothing to release
         else:

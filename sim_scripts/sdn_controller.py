@@ -141,11 +141,13 @@ class SDNController:
         for stat_key in self.sdn_props['stat_key_list']:
             self.sdn_props[stat_key] = list()
 
-    def handle_event(self, request_type: str, force_slicing: bool = False, force_route_matrix: list = None,
-                     forced_index: int = None, force_core: int = None, ml_model=None):
+    def handle_event(self, req_dict: dict, request_type: str, force_slicing: bool = False,
+                     force_route_matrix: list = None, forced_index: int = None,
+                     force_core: int = None, ml_model=None):
         """
         Handles any event that occurs in the simulation, controls this class.
 
+        :param req_dict: Request dictionary.
         :param request_type: Whether the request is an arrival or departure.
         :param force_slicing: Whether to force light segment slicing or not.
         :param force_route_matrix: Whether to force a path or not.
@@ -177,11 +179,9 @@ class SDNController:
                     mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
 
                     if ml_model is not None:
-                        input_df = get_ml_obs(engine_props=self.engine_props, sdn_props=self.sdn_props)
-                        if input_df is False:
-                            continue
-                        else:
-                            forced_segments = ml_model.predict(input_df)[0]
+                        input_df = get_ml_obs(req_dict=req_dict, engine_props=self.engine_props,
+                                              sdn_props=self.sdn_props)
+                        forced_segments = ml_model.predict(input_df)[0]
                     else:
                         forced_segments = -1.0
 

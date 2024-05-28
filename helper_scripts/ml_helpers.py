@@ -16,7 +16,7 @@ from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_path_m
 # TODO: Double check this function as well
 def _get_ml_obs(tmp_dict: dict, engine_props: dict, sdn_props: dict):
     df_processed = pd.DataFrame(tmp_dict, index=[0])
-    df_processed = pd.get_dummies(df_processed, columns=['bandwidth'])
+    df_processed = pd.get_dummies(df_processed, columns=['old_bandwidth'])
 
     for col in df_processed.columns:
         if df_processed[col].dtype == bool:
@@ -25,16 +25,16 @@ def _get_ml_obs(tmp_dict: dict, engine_props: dict, sdn_props: dict):
     for bandwidth, percent in engine_props['request_distribution'].items():
         if percent > 0:
             if bandwidth != sdn_props['bandwidth']:
-                df_processed[f'bandwidth_{bandwidth}'] = 0
+                df_processed[f'old_bandwidth_{bandwidth}'] = 0
 
-    column_order_list = ['path_length', 'ave_cong', 'longest_reach', 'bandwidth_100', 'bandwidth_200',
-                         'bandwidth_400']
+    column_order_list = ['path_length', 'longest_reach', 'ave_cong', 'old_bandwidth_50',
+                         'old_bandwidth_100', 'old_bandwidth_200', 'old_bandwidth_400']
     df_processed = df_processed.reindex(columns=column_order_list)
 
     return df_processed
 
 
-def get_ml_obs(engine_props: dict, sdn_props: dict):
+def get_ml_obs(req_dict: dict, engine_props: dict, sdn_props: dict):
     path_length = find_path_len(path_list=sdn_props['path_list'], topology=engine_props['topology'])
     cong_arr = np.array([])
     # TODO: Repeat code
@@ -43,15 +43,12 @@ def get_ml_obs(engine_props: dict, sdn_props: dict):
                                    path_list=sdn_props['path_list'])
         cong_arr = np.append(cong_arr, curr_cong)
 
-    # TODO: Make sure you're getting the correct variables here, the above will have to be updated
     tmp_dict = {
-        'old_bandwidth': sdn_props['bandwidth'],
+        'old_bandwidth': req_dict['bandwidth'],
         'path_length': path_length,
-        'longest_reach': get_path_mod(mods_dict=sdn_props['mod_formats'], path_len=path_length),
+        'longest_reach': req_dict['mod_formats']['QPSK']['max_length'],
         'ave_cong': float(np.mean(cong_arr)),
     }
-    if tmp_dict['mod_format'] is False:
-        return False
 
     return _get_ml_obs(engine_props=engine_props, sdn_props=sdn_props, tmp_dict=tmp_dict)
 
