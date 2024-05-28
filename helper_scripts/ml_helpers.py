@@ -106,9 +106,7 @@ def process_data(input_df: pd.DataFrame):
     :return: Modified processed dataframe.
     :rtype: pd.DataFrame
     """
-    input_df['mod_format'] = input_df['mod_format'].str.replace('-', '')
-    df_processed = pd.get_dummies(input_df, columns=['bandwidth'])
-    df_processed = df_processed.drop('was_sliced', axis=1)
+    df_processed = pd.get_dummies(input_df, columns=['old_bandwidth'])
 
     for col in df_processed.columns:
         if df_processed[col].dtype == bool:
