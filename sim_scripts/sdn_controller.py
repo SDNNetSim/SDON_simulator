@@ -3,6 +3,7 @@ import time
 import numpy as np
 
 from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len
+from helper_scripts.ml_helpers import get_ml_obs
 from arg_scripts.sdn_args import empty_props
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
@@ -103,7 +104,7 @@ class SDNController:
                 self.release()
                 break
 
-    def _handle_slicing(self, path_list: list):
+    def _handle_slicing(self, path_list: list, forced_segments: int):
         bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
         for bandwidth, mods_dict in bw_mod_dict.items():
             # We can't slice to a larger or equal bandwidth
@@ -122,6 +123,10 @@ class SDNController:
                 self.sdn_props['block_reason'] = 'max_segments'
                 break
 
+            if forced_segments != -1 and forced_segments != num_segments:
+                self.sdn_props['was_routed'] = False
+                continue
+
             self._allocate_slicing(num_segments=num_segments, mod_format=mod_format, path_list=path_list,
                                    bandwidth=bandwidth)
 
@@ -136,15 +141,18 @@ class SDNController:
         for stat_key in self.sdn_props['stat_key_list']:
             self.sdn_props[stat_key] = list()
 
-    def handle_event(self, request_type: str, force_slicing: bool = False, force_route_matrix: list = None,
-                     forced_index: int = None, force_core: int = None):
+    def handle_event(self, req_dict: dict, request_type: str, force_slicing: bool = False,
+                     force_route_matrix: list = None, forced_index: int = None,
+                     force_core: int = None, ml_model=None):
         """
         Handles any event that occurs in the simulation, controls this class.
 
+        :param req_dict: Request dictionary.
         :param request_type: Whether the request is an arrival or departure.
         :param force_slicing: Whether to force light segment slicing or not.
         :param force_route_matrix: Whether to force a path or not.
         :param forced_index: Whether to force a start index for a request.
+        :param ml_model: An optional machine learning model.
         """
         self._init_req_stats()
         # Even if the request is blocked, we still consider one transponder
@@ -170,8 +178,18 @@ class SDNController:
                     self.sdn_props['path_list'] = path_list
                     mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
 
-                    if segment_slicing or force_slicing:
-                        self._handle_slicing(path_list=path_list)
+                    if ml_model is not None:
+                        input_df = get_ml_obs(req_dict=req_dict, engine_props=self.engine_props,
+                                              sdn_props=self.sdn_props)
+                        forced_segments = ml_model.predict(input_df)[0]
+                    else:
+                        forced_segments = -1.0
+
+                    # fixme: Looping twice (Due to segment slicing flag)
+                    if segment_slicing or force_slicing or forced_segments > 1:
+                        force_slicing = True
+
+                        self._handle_slicing(path_list=path_list, forced_segments=forced_segments)
                         if not self.sdn_props['was_routed']:
                             self.sdn_props['num_trans'] = 1
                             continue

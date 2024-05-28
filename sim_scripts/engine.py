@@ -6,11 +6,13 @@ import signal
 # Third party library imports
 import networkx as nx
 import numpy as np
+from joblib import load
 
 # Local application imports
 from sim_scripts.request_generator import get_requests
 from sim_scripts.sdn_controller import SDNController
 from helper_scripts.stats_helpers import SimStats
+from helper_scripts.ml_helpers import load_model
 
 
 class Engine:
@@ -36,6 +38,8 @@ class Engine:
 
         self.sdn_obj = SDNController(engine_props=self.engine_props)
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
+
+        self.ml_model = None
 
     def update_arrival_params(self, curr_time: float):
         """
@@ -70,7 +74,8 @@ class Engine:
             self.sdn_obj.sdn_props[req_key] = req_value
 
         self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
-                                  force_slicing=force_slicing, forced_index=forced_index, force_core=force_core)
+                                  force_slicing=force_slicing, forced_index=forced_index, force_core=force_core,
+                                  ml_model=self.ml_model, req_dict=self.reqs_dict[curr_time])
         self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
         self.update_arrival_params(curr_time=curr_time)
 
@@ -85,7 +90,7 @@ class Engine:
 
         if self.reqs_dict[curr_time]['req_id'] in self.reqs_status_dict:
             self.sdn_obj.sdn_props['path_list'] = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']
-            self.sdn_obj.handle_event(request_type='release')
+            self.sdn_obj.handle_event(req_dict=self.reqs_dict[curr_time], request_type='release')
             self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
         # Request was blocked, nothing to release
         else:
@@ -132,6 +137,7 @@ class Engine:
         req_type = self.reqs_dict[curr_time]["request_type"]
         if req_type == "arrival":
             old_net_spec_dict = copy.deepcopy(self.net_spec_dict)
+            old_req_info_dict = copy.deepcopy(self.reqs_dict[curr_time])
             self.handle_arrival(curr_time=curr_time)
 
             if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
@@ -141,7 +147,7 @@ class Engine:
                 was_routed = self.sdn_obj.sdn_props['was_routed']
                 if was_routed:
                     req_info_dict = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]
-                    self.stats_obj.update_train_data(req_dict=self.reqs_dict[curr_time], req_info_dict=req_info_dict,
+                    self.stats_obj.update_train_data(old_req_info_dict=old_req_info_dict, req_info_dict=req_info_dict,
                                                      net_spec_dict=old_net_spec_dict)
 
         elif req_type == "release":
@@ -192,6 +198,10 @@ class Engine:
             print(f"Simulation started for Erlang: {self.engine_props['erlang']} "
                   f"simulation number: {self.engine_props['thread_num']}.")
 
+            if self.engine_props['deploy_model']:
+                self.ml_model = load_model(engine_props=self.engine_props)
+
+        # TODO: Change seeds (start at 21)
         seed = self.engine_props["seeds"][iteration] if self.engine_props["seeds"] else iteration + 1
         self.generate_requests(seed)
 
@@ -204,6 +214,8 @@ class Engine:
             self.init_iter(iteration=iteration)
             req_num = 1
             for curr_time in self.reqs_dict:
+                if req_num == 7:
+                    print('Line 218 engine.')
                 self.handle_request(curr_time=curr_time, req_num=req_num)
 
                 if self.reqs_dict[curr_time]['request_type'] == 'arrival':

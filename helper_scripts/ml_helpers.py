@@ -1,38 +1,86 @@
 import os
 
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import joblib
 import seaborn as sns
 
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from sklearn.metrics import silhouette_score
 
 from helper_scripts.os_helpers import create_dir
+from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_path_mod
 
 
-# TODO: Save results and models
-def load_model():
+# TODO: Double check this function as well
+def _get_ml_obs(tmp_dict: dict, engine_props: dict, sdn_props: dict):
+    df_processed = pd.DataFrame(tmp_dict, index=[0])
+    df_processed = pd.get_dummies(df_processed, columns=['old_bandwidth'])
+
+    for col in df_processed.columns:
+        if df_processed[col].dtype == bool:
+            df_processed[col] = df_processed[col].astype(int)
+
+    for bandwidth, percent in engine_props['request_distribution'].items():
+        if percent > 0:
+            if bandwidth != sdn_props['bandwidth']:
+                df_processed[f'old_bandwidth_{bandwidth}'] = 0
+
+    column_order_list = ['path_length', 'longest_reach', 'ave_cong', 'old_bandwidth_50',
+                         'old_bandwidth_100', 'old_bandwidth_200', 'old_bandwidth_400']
+    df_processed = df_processed.reindex(columns=column_order_list)
+
+    return df_processed
+
+
+def get_ml_obs(req_dict: dict, engine_props: dict, sdn_props: dict):
+    path_length = find_path_len(path_list=sdn_props['path_list'], topology=engine_props['topology'])
+    cong_arr = np.array([])
+    # TODO: Repeat code
+    for core_num in range(engine_props['cores_per_link']):
+        curr_cong = find_core_cong(core_index=core_num, net_spec_dict=sdn_props['net_spec_dict'],
+                                   path_list=sdn_props['path_list'])
+        cong_arr = np.append(cong_arr, curr_cong)
+
+    tmp_dict = {
+        'old_bandwidth': req_dict['bandwidth'],
+        'path_length': path_length,
+        'longest_reach': req_dict['mod_formats']['QPSK']['max_length'],
+        'ave_cong': float(np.mean(cong_arr)),
+    }
+
+    return _get_ml_obs(engine_props=engine_props, sdn_props=sdn_props, tmp_dict=tmp_dict)
+
+
+def load_model(engine_props: dict):
     """
-    Loads a previously trained machine learning model.
-    :return:
+    Loads a trained machine learning model.
+
+    :param engine_props: Properties from engine.
+    :return: The trained model.
     """
-    raise NotImplementedError
+
+    model_fp = os.path.join('logs', engine_props['ml_model'], engine_props['train_file_path'],
+                            f"{engine_props['ml_model']}_{str(int(engine_props['erlang']))}.joblib")
+    resp = joblib.load(filename=model_fp)
+
+    return resp
 
 
-# TODO: Add times the simulation was run (start time)
-def save_model(model, algorithm: str):
+def save_model(sim_dict: dict, model, algorithm: str, erlang: str):
     """
     Saves a trained machine learning model.
 
+    :param sim_dict: The simulation dictionary.
     :param model: The trained model.
     :param algorithm: The filename to save the model as.
+    :param erlang: The Erlang value.
     """
-    base_fp = os.path.join('logs', algorithm)
+    base_fp = os.path.join('logs', algorithm, sim_dict['train_file_path'])
     create_dir(file_path=base_fp)
 
-    save_fp = os.path.join(base_fp, f'{algorithm}.joblib')
+    save_fp = os.path.join(base_fp, f'{algorithm}_{erlang}.joblib')
     joblib.dump(model, save_fp)
 
 
@@ -55,44 +103,49 @@ def process_data(input_df: pd.DataFrame):
     :return: Modified processed dataframe.
     :rtype: pd.DataFrame
     """
-    input_df['mod_format'] = input_df['mod_format'].str.replace('-', '')
-    df_processed = pd.get_dummies(input_df, columns=['bandwidth', 'mod_format'])
+    df_processed = pd.get_dummies(input_df, columns=['old_bandwidth'])
 
     for col in df_processed.columns:
         if df_processed[col].dtype == bool:
             df_processed[col] = df_processed[col].astype(int)
 
-    scaler = StandardScaler()
-    feat_scale_list = ['path_length', 'ave_shannon', 'ave_cong']
-    df_processed[feat_scale_list] = scaler.fit_transform(df_processed[feat_scale_list])
-
     return df_processed
 
 
-# TODO: Save plots to correct directory
-def plot_confusion(y_test, y_pred):
+def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str):
     """
     Plots a confusion matrix and prints out the accuracy, precision, recall, and F1 score.
 
+    :param sim_dict: The simulation dictionary.
     :param y_test: Testing data.
     :param y_pred: Predictions.
+    :param erlang: The Erlang value.
     """
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred, average='weighted')
     recall = recall_score(y_test, y_pred, average='weighted')
     f_score = f1_score(y_test, y_pred, average='weighted')
-    print(f'Accuracy: {accuracy}')
-    print(f'Precision: {precision}')
-    print(f'Recall: {recall}')
-    print(f'F1 Score: {f_score}')
 
     # Plot a confusion matrix
     conf_mat = confusion_matrix(y_test, y_pred)
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(10, 8), dpi=300)  # Increase the quality by increasing dpi
     sns.heatmap(conf_mat, annot=True, fmt='d')
     plt.title('Confusion Matrix')
     plt.xlabel('Predicted')
     plt.ylabel('True')
+
+    # Add accuracy, precision, recall, and F1 score to the plot
+    plt.text(0.5, 1.1, f'Accuracy: {accuracy:.2f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.5, 1.2, f'Precision: {precision:.2f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.5, 1.3, f'Recall: {recall:.2f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.5, 1.4, f'F1 Score: {f_score:.2f}', fontsize=12, transform=plt.gca().transAxes)
+
+    save_fp = os.path.join('data', 'plots', sim_dict['train_file_path'])
+    create_dir(file_path=save_fp)
+
+    save_fp = os.path.join(save_fp, f'confusion_matrix_{erlang}.png')
+    plt.savefig(save_fp, bbox_inches='tight')
+
     plt.show()
 
 

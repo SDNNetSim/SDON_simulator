@@ -72,37 +72,28 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
-    def update_train_data(self, req_dict: dict, req_info_dict: dict, net_spec_dict: dict):
+    def update_train_data(self, old_req_info_dict: dict, req_info_dict: dict, net_spec_dict: dict):
         """
         Updates the training data list with the current request information.
 
-        :param req_dict: Request dictionary.
-        :param req_info_dict: A second request dictionary with additional information.
+        :param old_req_info_dict: Request dictionary before any potential slicing.
+        :param req_info_dict: Request dictionary after potential slicing.
         :param net_spec_dict: Network spectrum database.
         """
         path_list = req_info_dict['path']
-        slots_needed = req_dict['mod_formats'][req_info_dict['mod_format']]['slots_needed']
         cong_arr = np.array([])
-        # shannon_arr = np.array([])
 
         for core_num in range(self.engine_props['cores_per_link']):
-            # _, hfrag_list = get_hfrag(path_list=path_list, core_num=core_num, slots_needed=slots_needed,
-            #                           spectral_slots=self.engine_props['spectral_slots'], net_spec_dict=net_spec_dict)
-
             curr_cong = find_core_cong(core_index=core_num, net_spec_dict=net_spec_dict, path_list=path_list)
             cong_arr = np.append(cong_arr, curr_cong)
-            # hfrag_list = hfrag_list[np.isfinite(hfrag_list)]
-            # shannon_arr = np.append(shannon_arr, np.sum(hfrag_list))
 
         path_length = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
         tmp_info_dict = {
-            'bandwidth': req_dict['bandwidth'],
+            'old_bandwidth': old_req_info_dict['bandwidth'],
             'path_length': path_length,
-            'mod_format': req_info_dict['mod_format'],
-            'was_sliced': req_info_dict['is_sliced'],
-            'num_segments': self.curr_trans,
+            'longest_reach': np.max(old_req_info_dict['mod_formats']['QPSK']['max_length']),
             'ave_cong': float(np.mean(cong_arr)),
-            # 'ave_shannon': float(np.mean(shannon_arr)),
+            'num_segments': self.curr_trans,
         }
         self.train_data_list.append(tmp_info_dict)
 
