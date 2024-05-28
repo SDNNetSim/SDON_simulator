@@ -1,10 +1,9 @@
 import time
 
-import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 
-from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len, find_core_cong
+from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len
+from helper_scripts.ml_helpers import get_ml_obs
 from arg_scripts.sdn_args import empty_props
 from sim_scripts.routing import Routing
 from sim_scripts.spectrum_assignment import SpectrumAssignment
@@ -124,7 +123,8 @@ class SDNController:
                 self.sdn_props['block_reason'] = 'max_segments'
                 break
 
-            if forced_segments is not None and forced_segments != num_segments:
+            if forced_segments != -1 and forced_segments != num_segments:
+                self.sdn_props['was_routed'] = False
                 continue
 
             self._allocate_slicing(num_segments=num_segments, mod_format=mod_format, path_list=path_list,
@@ -135,54 +135,6 @@ class SDNController:
                 return
 
             self.sdn_props['is_sliced'] = False
-
-    # TODO: Move to ml helpers
-    def _get_ml_obs(self):
-        path_length = find_path_len(path_list=self.sdn_props['path_list'], topology=self.engine_props['topology'])
-        cong_arr = np.array([])
-        # TODO: Add to helper functions (repeat code)
-        # TODO: Need to add other columns of data (all bandwidths and all modulation formats)
-        for core_num in range(self.engine_props['cores_per_link']):
-            curr_cong = find_core_cong(core_index=core_num, net_spec_dict=self.sdn_props['net_spec_dict'],
-                                       path_list=self.sdn_props['path_list'])
-            cong_arr = np.append(cong_arr, curr_cong)
-
-        # TODO: If mod format is False, the agent should still have the ability to predict and slice
-        #   - Give it the highest available modulation format? How did we save modulation format before?
-        #   - Might have to re-train based on this premise
-        #   - The feature should be max reach, not the modulation format
-        tmp_dict = {
-            'bandwidth': self.sdn_props['bandwidth'],
-            'path_length': path_length,
-            'mod_format': get_path_mod(mods_dict=self.sdn_props['mod_formats'], path_len=path_length),
-            'ave_cong': float(np.mean(cong_arr)),
-        }
-        if tmp_dict['mod_format'] is False:
-            return False
-
-        df_processed = pd.DataFrame(tmp_dict, index=[0])
-        df_processed['mod_format'] = df_processed['mod_format'].str.replace('-', '')
-        df_processed = pd.get_dummies(df_processed, columns=['bandwidth', 'mod_format'])
-
-        for col in df_processed.columns:
-            if df_processed[col].dtype == bool:
-                df_processed[col] = df_processed[col].astype(int)
-
-        for bandwidth, percent in self.engine_props['request_distribution'].items():
-            if percent > 0:
-                if bandwidth != self.sdn_props['bandwidth']:
-                    df_processed[f'bandwidth_{bandwidth}'] = 0
-
-        for modulation in self.sdn_props['mod_formats']:
-            if modulation != tmp_dict['mod_format']:
-                clean_mod = modulation.replace('-', '')
-                df_processed[f'mod_format_{clean_mod}'] = 0
-
-        column_order_list = ['path_length', 'ave_cong', 'bandwidth_50', 'bandwidth_100', 'bandwidth_200',
-                             'bandwidth_400', 'mod_format_16QAM', 'mod_format_64QAM', 'mod_format_QPSK', ]
-        df_processed = df_processed.reindex(columns=column_order_list)
-
-        return df_processed
 
     def _init_req_stats(self):
         self.sdn_props['bandwidth_list'] = list()
@@ -224,11 +176,8 @@ class SDNController:
                     self.sdn_props['path_list'] = path_list
                     mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
 
-                    # TODO: Check to make sure this is correct
                     if ml_model is not None:
-                        input_df = self._get_ml_obs()
-
-                        # TODO: No idea what to do
+                        input_df = get_ml_obs(engine_props=self.engine_props, sdn_props=self.sdn_props)
                         if input_df is False:
                             continue
                         else:
@@ -236,8 +185,7 @@ class SDNController:
                     else:
                         forced_segments = -1.0
 
-                    # TODO: Make more efficient (force slicing)
-                    # TODO: Loops twice (segment slicing is False originally)
+                    # fixme: Looping twice (Due to segment slicing flag)
                     if segment_slicing or force_slicing or forced_segments > 1:
                         force_slicing = True
 

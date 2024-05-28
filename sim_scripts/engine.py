@@ -214,6 +214,8 @@ class Engine:
             self.init_iter(iteration=iteration)
             req_num = 1
             for curr_time in self.reqs_dict:
+                if req_num == 7:
+                    print('Line 218 engine.')
                 self.handle_request(curr_time=curr_time, req_num=req_num)
 
                 if self.reqs_dict[curr_time]['request_type'] == 'arrival':
