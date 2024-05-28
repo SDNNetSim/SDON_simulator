@@ -22,19 +22,19 @@ def load_model():
 
 
 # TODO: Add times the simulation was run (start time)
-def save_model(sim_dict: dict, model, algorithm: str):
+def save_model(sim_dict: dict, model, algorithm: str, erlang: str):
     """
     Saves a trained machine learning model.
 
     :param sim_dict: The simulation dictionary.
     :param model: The trained model.
     :param algorithm: The filename to save the model as.
+    :param erlang: The Erlang value.
     """
-    # TODO: Update Erlang
     base_fp = os.path.join('logs', algorithm, sim_dict['train_file_path'])
     create_dir(file_path=base_fp)
 
-    save_fp = os.path.join(base_fp, f'{algorithm}_50.joblib')
+    save_fp = os.path.join(base_fp, f'{algorithm}_{erlang}.joblib')
     joblib.dump(model, save_fp)
 
 
@@ -57,7 +57,6 @@ def process_data(input_df: pd.DataFrame):
     :return: Modified processed dataframe.
     :rtype: pd.DataFrame
     """
-    # TODO: DO NOT scale when training
     input_df['mod_format'] = input_df['mod_format'].str.replace('-', '')
     df_processed = pd.get_dummies(input_df, columns=['bandwidth', 'mod_format'])
 
@@ -72,30 +71,39 @@ def process_data(input_df: pd.DataFrame):
     return df_processed
 
 
-# TODO: Save plots to correct directory
-def plot_confusion(y_test, y_pred):
+def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str):
     """
     Plots a confusion matrix and prints out the accuracy, precision, recall, and F1 score.
 
     :param y_test: Testing data.
     :param y_pred: Predictions.
+    :param erlang: The Erlang value.
     """
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred, average='weighted')
     recall = recall_score(y_test, y_pred, average='weighted')
     f_score = f1_score(y_test, y_pred, average='weighted')
-    print(f'Accuracy: {accuracy}')
-    print(f'Precision: {precision}')
-    print(f'Recall: {recall}')
-    print(f'F1 Score: {f_score}')
 
     # Plot a confusion matrix
     conf_mat = confusion_matrix(y_test, y_pred)
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(10, 8), dpi=300)  # Increase the quality by increasing dpi
     sns.heatmap(conf_mat, annot=True, fmt='d')
     plt.title('Confusion Matrix')
     plt.xlabel('Predicted')
     plt.ylabel('True')
+
+    # Add accuracy, precision, recall, and F1 score to the plot
+    plt.text(0.5, 1.1, f'Accuracy: {accuracy:.2f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.5, 1.2, f'Precision: {precision:.2f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.5, 1.3, f'Recall: {recall:.2f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.5, 1.4, f'F1 Score: {f_score:.2f}', fontsize=12, transform=plt.gca().transAxes)
+
+    save_fp = os.path.join('data', 'plots', sim_dict['train_file_path'])
+    create_dir(file_path=save_fp)
+
+    save_fp = os.path.join(save_fp, f'confusion_matrix_{erlang}.png')
+    plt.savefig(save_fp, bbox_inches='tight')
+
     plt.show()
 
 

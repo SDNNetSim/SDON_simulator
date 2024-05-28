@@ -1,5 +1,6 @@
 import os
 import ast
+import glob
 
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -31,7 +32,7 @@ def _train_test_kmeans(df_processed: pd.DataFrame, sim_dict: dict):
     save_model(model=kmeans, algorithm='kmeans')
 
 
-def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict):
+def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     predictor_df = df_processed['num_segments']
     feature_df = df_processed.drop('num_segments', axis=1)
 
@@ -40,9 +41,19 @@ def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict):
     lr_obj = LogisticRegression(random_state=0)
     lr_obj.fit(x_train, y_train)
     y_pred = lr_obj.predict(x_test)
-    plot_confusion(y_test=y_test, y_pred=y_pred)
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang)
 
-    save_model(sim_dict=sim_dict, model=lr_obj, algorithm='logistic_regression')
+    save_model(sim_dict=sim_dict, model=lr_obj, algorithm='logistic_regression', erlang=erlang)
+
+
+def extract_value(path: str):
+    parts = path.split('/')
+    filename = parts[-1]
+    filename_parts = filename.split('_')
+    value = filename_parts[0]
+    if '.' in value:
+        value = value.split('.')[0]
+    return value
 
 
 def _handle_training(sim_dict: dict, file_path: str):
@@ -52,7 +63,8 @@ def _handle_training(sim_dict: dict, file_path: str):
     if sim_dict['ml_model'] == 'kmeans':
         _train_test_kmeans(df_processed=df_processed, sim_dict=sim_dict)
     elif sim_dict['ml_model'] == 'logistic_regression':
-        _train_test_lr(df_processed=df_processed, sim_dict=sim_dict)
+        erlang = extract_value(path=file_path)
+        _train_test_lr(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
     else:
         raise NotImplementedError
 
@@ -67,10 +79,11 @@ def _run(sim_dict: dict):
     sim_dict = sim_dict['s1']
     base_fp = 'data/output/'
 
-    # TODO: Run for all Erlang values
-    train_fp = os.path.join(base_fp, sim_dict['train_file_path'])
-    train_fp = os.path.join(train_fp, '50.0_train_data.csv')
-    _handle_training(sim_dict=sim_dict, file_path=train_fp)
+    train_dir = os.path.join(base_fp, sim_dict['train_file_path'])
+    train_files = glob.glob(os.path.join(train_dir, "*.csv"))
+
+    for train_fp in train_files:
+        _handle_training(sim_dict=sim_dict, file_path=train_fp)
 
 
 def _setup_ml_sim():
