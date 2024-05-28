@@ -147,6 +147,10 @@ class SDNController:
                                        path_list=self.sdn_props['path_list'])
             cong_arr = np.append(cong_arr, curr_cong)
 
+        # TODO: If mod format is False, the agent should still have the ability to predict and slice
+        #   - Give it the highest available modulation format? How did we save modulation format before?
+        #   - Might have to re-train based on this premise
+        #   - The feature should be max reach, not the modulation format
         tmp_dict = {
             'bandwidth': self.sdn_props['bandwidth'],
             'path_length': path_length,
@@ -174,9 +178,6 @@ class SDNController:
                 clean_mod = modulation.replace('-', '')
                 df_processed[f'mod_format_{clean_mod}'] = 0
 
-        # scaler = StandardScaler()
-        # feat_scale_list = ['path_length', 'ave_cong']
-        # df_processed[feat_scale_list] = scaler.fit_transform(df_processed[feat_scale_list])
         column_order_list = ['path_length', 'ave_cong', 'bandwidth_50', 'bandwidth_100', 'bandwidth_200',
                              'bandwidth_400', 'mod_format_16QAM', 'mod_format_64QAM', 'mod_format_QPSK', ]
         df_processed = df_processed.reindex(columns=column_order_list)
@@ -223,20 +224,22 @@ class SDNController:
                     self.sdn_props['path_list'] = path_list
                     mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
 
+                    # TODO: Check to make sure this is correct
+                    if ml_model is not None:
+                        input_df = self._get_ml_obs()
+
+                        # TODO: No idea what to do
+                        if input_df is False:
+                            continue
+                        else:
+                            forced_segments = ml_model.predict(input_df)[0]
+                    else:
+                        forced_segments = -1.0
+
                     # TODO: Make more efficient (force slicing)
                     # TODO: Loops twice (segment slicing is False originally)
-                    if segment_slicing or force_slicing or ml_model is not None:
+                    if segment_slicing or force_slicing or forced_segments > 1:
                         force_slicing = True
-                        if ml_model is not None:
-                            input_df = self._get_ml_obs()
-
-                            # TODO: No idea what to do
-                            if input_df is False:
-                                continue
-                            else:
-                                forced_segments = ml_model.predict(input_df)[0]
-                        else:
-                            forced_segments = None
 
                         self._handle_slicing(path_list=path_list, forced_segments=forced_segments)
                         if not self.sdn_props['was_routed']:
