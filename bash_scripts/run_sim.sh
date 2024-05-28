@@ -1,10 +1,10 @@
 #!/bin/bash
 
 #SBATCH -p cpu-long
-#SBATCH -c 1
+#SBATCH -c 13
 #SBATCH -G 0
-#SBATCH --mem=32000
-#SBATCH -t 2-00:00:00
+#SBATCH --mem=16000
+#SBATCH -t 1-00:00:00
 #SBATCH -o slurm-%j.out
 
 # shellcheck disable=SC2164
