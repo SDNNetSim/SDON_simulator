@@ -5,23 +5,27 @@ import matplotlib.pyplot as plt
 import joblib
 import seaborn as sns
 
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from sklearn.metrics import silhouette_score
 
 from helper_scripts.os_helpers import create_dir
 
 
-# TODO: Save results and models
-def load_model():
+def load_model(engine_props: dict):
     """
-    Loads a previously trained machine learning model.
-    :return:
+    Loads a trained machine learning model.
+
+    :param engine_props: Properties from engine.
+    :return: The trained model.
     """
-    raise NotImplementedError
+
+    model_fp = os.path.join('logs', engine_props['ml_model'], engine_props['train_file_path'],
+                            f"{engine_props['ml_model']}_{str(int(engine_props['erlang']))}.joblib")
+    resp = joblib.load(filename=model_fp)
+
+    return resp
 
 
-# TODO: Add times the simulation was run (start time)
 def save_model(sim_dict: dict, model, algorithm: str, erlang: str):
     """
     Saves a trained machine learning model.
@@ -58,15 +62,12 @@ def process_data(input_df: pd.DataFrame):
     :rtype: pd.DataFrame
     """
     input_df['mod_format'] = input_df['mod_format'].str.replace('-', '')
-    df_processed = pd.get_dummies(input_df, columns=['bandwidth', 'mod_format'])
+    df_processed = pd.get_dummies(input_df, columns=['bandwidth'])
+    df_processed = df_processed.drop('was_sliced', axis=1)
 
     for col in df_processed.columns:
         if df_processed[col].dtype == bool:
             df_processed[col] = df_processed[col].astype(int)
-
-    # scaler = StandardScaler()
-    # feat_scale_list = ['path_length', 'ave_cong']
-    # df_processed[feat_scale_list] = scaler.fit_transform(df_processed[feat_scale_list])
 
     return df_processed
 
@@ -75,6 +76,7 @@ def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str):
     """
     Plots a confusion matrix and prints out the accuracy, precision, recall, and F1 score.
 
+    :param sim_dict: The simulation dictionary.
     :param y_test: Testing data.
     :param y_pred: Predictions.
     :param erlang: The Erlang value.

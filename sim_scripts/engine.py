@@ -12,6 +12,7 @@ from joblib import load
 from sim_scripts.request_generator import get_requests
 from sim_scripts.sdn_controller import SDNController
 from helper_scripts.stats_helpers import SimStats
+from helper_scripts.ml_helpers import load_model
 
 
 class Engine:
@@ -197,12 +198,9 @@ class Engine:
                   f"simulation number: {self.engine_props['thread_num']}.")
 
             if self.engine_props['deploy_model']:
-                # TODO: Hard coded Erlang
-                model_fp = os.path.join('logs', self.engine_props['ml_model'],
-                                        self.engine_props['train_file_path'],
-                                        f"{self.engine_props['ml_model']}_50.joblib")
-                self.ml_model = load(filename=model_fp)
+                self.ml_model = load_model(engine_props=self.engine_props)
 
+        # TODO: Change seeds (start at 21)
         seed = self.engine_props["seeds"][iteration] if self.engine_props["seeds"] else iteration + 1
         self.generate_requests(seed)
 
