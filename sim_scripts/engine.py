@@ -137,6 +137,7 @@ class Engine:
         req_type = self.reqs_dict[curr_time]["request_type"]
         if req_type == "arrival":
             old_net_spec_dict = copy.deepcopy(self.net_spec_dict)
+            old_req_info_dict = copy.deepcopy(self.reqs_dict[curr_time])
             self.handle_arrival(curr_time=curr_time)
 
             if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
@@ -146,7 +147,7 @@ class Engine:
                 was_routed = self.sdn_obj.sdn_props['was_routed']
                 if was_routed:
                     req_info_dict = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]
-                    self.stats_obj.update_train_data(req_dict=self.reqs_dict[curr_time], req_info_dict=req_info_dict,
+                    self.stats_obj.update_train_data(old_req_info_dict=old_req_info_dict, req_info_dict=req_info_dict,
                                                      net_spec_dict=old_net_spec_dict)
 
         elif req_type == "release":
