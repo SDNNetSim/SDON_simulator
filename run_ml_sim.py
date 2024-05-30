@@ -34,7 +34,7 @@ def _train_test_sgd(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     sgd_obj = SGDClassifier(random_state=0)
     sgd_obj.fit(x_train, y_train)
     y_pred = sgd_obj.predict(x_test)
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang)
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='SGD')
 
     save_model(sim_dict=sim_dict, model=sgd_obj, algorithm='sgd', erlang=erlang)
 
@@ -48,7 +48,7 @@ def _train_test_gpc(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     gpc_obj = GaussianProcessClassifier(random_state=0)
     gpc_obj.fit(x_train, y_train)
     y_pred = gpc_obj.predict(x_test)
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang)
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='GPC')
 
     save_model(sim_dict=sim_dict, model=gpc_obj, algorithm='gpc', erlang=erlang)
 
@@ -62,7 +62,7 @@ def _train_test_svc(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     svc_obj = SVC(random_state=0)
     svc_obj.fit(x_train, y_train)
     y_pred = svc_obj.predict(x_test)
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang)
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='SVC')
 
     save_model(sim_dict=sim_dict, model=svc_obj, algorithm='svc', erlang=erlang)
 
@@ -78,7 +78,7 @@ def _train_test_knn(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
 
     y_pred = knn.predict(x_test)
 
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang)
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='KNN')
 
     save_model(sim_dict=sim_dict, model=knn, algorithm='knn', erlang=erlang)
 
@@ -92,7 +92,7 @@ def _train_test_dt(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     dt_obj = DecisionTreeClassifier(random_state=0)
     dt_obj.fit(x_train, y_train)
     y_pred = dt_obj.predict(x_test)
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang , algorithm='Decision Tree')
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='Decision Tree')
 
     save_model(sim_dict=sim_dict, model=dt_obj, algorithm='decision_tree', erlang=erlang)
 
@@ -103,9 +103,10 @@ def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
 
     x_train, x_test, y_train, y_test = train_test_split(feature_df, predictor_df, test_size=sim_dict['test_size'],
                                                         random_state=42)
-    lr_obj = LogisticRegression(random_state=0)
+    lr_obj = LogisticRegression(random_state=0, n_jobs=-1)
     lr_obj.fit(x_train, y_train)
     y_pred = lr_obj.predict(x_test)
+
     plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang,
                    algorithm='Logistic Regression')
 
@@ -131,6 +132,14 @@ def _handle_training(sim_dict: dict, file_path: str, train_dir: str):
         _train_test_knn(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
     elif sim_dict['ml_model'] == 'logistic_regression':
         _train_test_lr(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
+    elif sim_dict['ml_model'] == 'decision_tree':
+        _train_test_dt(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
+    elif sim_dict['ml_model'] == 'svc':
+        _train_test_svc(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
+    elif sim_dict['ml_model'] == 'gpc':
+        _train_test_gpc(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
+    elif sim_dict['ml_model'] == 'sgd':
+        _train_test_sgd(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
     else:
         raise NotImplementedError
 
