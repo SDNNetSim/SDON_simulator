@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 import joblib
 import seaborn as sns
 
+from mpl_toolkits.mplot3d import Axes3D
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from sklearn.metrics import silhouette_score
 
 from helper_scripts.os_helpers import create_dir
-from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_path_mod
+from helper_scripts.sim_helpers import find_path_len, find_core_cong
 
 
 # TODO: Double check this function as well
@@ -149,50 +150,37 @@ def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str):
     plt.show()
 
 
-def plot_2d_clusters(df_pca: pd.DataFrame, kmeans: object):
+def plot_2d_clusters(df_pca: pd.DataFrame):
     """
-    Plot the clusters of the KMeans algorithm.
+    Plot the test data points and their predicted labels.
 
     :param df_pca: A dataframe normalized with PCA.
-    :param kmeans: Kmeans algorithm object.
     """
     plt.figure(figsize=(10, 8))
 
-    # Create a scatter plot of the PCA-reduced data, colored by "num_slices" value
-    scatter = plt.scatter(df_pca["PC1"], df_pca["PC2"], c=df_pca["true_label"], cmap='Set1')
-
-    # Plot the centroids of the clusters
-    centers = kmeans.cluster_centers_
-    for i, center in enumerate(centers):
-        plt.text(center[0], center[1], f'Center {i}', ha='center', va='center', color='red')
-    plt.title("K-Means Clustering Results (PCA-reduced Data)")
+    # Plot the test data points, colored by their predicted labels
+    scatter = plt.scatter(df_pca["PC1"], df_pca["PC2"], c=df_pca["predicted_label"], cmap='Set1')
+    plt.title("KNN Predicted Labels (PCA-reduced Data)")
     plt.xlabel("Principal Component 1 (PC1)")
     plt.ylabel("Principal Component 2 (PC2)")
     plt.colorbar(scatter, label='num_slices')
     plt.show()
 
 
-def plot_3d_clusters(df_pca: pd.DataFrame, kmeans: object):
+def plot_3d_clusters(df_pca: pd.DataFrame):
     """
-    Plot the clusters of the KMeans algorithm in 3D.
+    Plot the test data points and their predicted labels in 3D.
 
     :param df_pca: A dataframe normalized with PCA.
-    :param kmeans: Kmeans algorithm object.
     """
     fig = plt.figure(figsize=(10, 8))
-    axis = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(111, projection='3d')
 
-    # Create a scatter plot of the PCA-reduced data, colored by "true_label" value
-    scatter = axis.scatter(df_pca["PC1"], df_pca["PC2"], df_pca["PC3"], c=df_pca["true_label"], cmap='Set1')
-
-    # Plot the centroids of the clusters
-    centers = kmeans.cluster_centers_
-    for i, center in enumerate(centers):
-        axis.text(center[0], center[1], center[2], f'Center {i}', ha='center', va='center', color='red')
-
-    axis.set_title("K-Means Clustering Results (PCA-reduced Data)")
-    axis.set_xlabel("Principal Component 1 (PC1)")
-    axis.set_ylabel("Principal Component 2 (PC2)")
-    axis.set_zlabel("Principal Component 3 (PC3)")
+    # Plot the test data points, colored by their predicted labels
+    scatter = ax.scatter(df_pca["PC1"], df_pca["PC2"], df_pca["PC3"], c=df_pca["predicted_label"], cmap='Set1')
+    ax.set_title("KNN Predicted Labels (PCA-reduced Data)")
+    ax.set_xlabel("Principal Component 1 (PC1)")
+    ax.set_ylabel("Principal Component 2 (PC2)")
+    ax.set_zlabel("Principal Component 3 (PC3)")
     fig.colorbar(scatter, label='num_slices')
     plt.show()

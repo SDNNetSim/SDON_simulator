@@ -3,7 +3,7 @@ import ast
 import glob
 
 import pandas as pd
-from sklearn.cluster import KMeans
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
@@ -16,20 +16,29 @@ from helper_scripts.ml_helpers import save_model
 
 # TODO: Add metric for feature importance
 # TODO: Maybe have YAML's like RL for parameters
-def _train_test_kmeans(df_processed: pd.DataFrame, sim_dict: dict):
-    x_train, _ = train_test_split(df_processed, test_size=sim_dict['test_size'], random_state=42)
-    pca = PCA(n_components=3)
-    x_pca = pca.fit_transform(x_train)
-    kmeans = KMeans(n_clusters=4, random_state=0)
-    kmeans.fit(x_pca)
+def _train_test_knn(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
+    x_train, x_test, y_train, y_test = train_test_split(df_processed.drop('old_bandwidth_50', axis=1), df_processed['old_bandwidth_50'], test_size=sim_dict['test_size'], random_state=42)
+    knn = KNeighborsClassifier(n_neighbors=5)
+    knn.fit(x_train, y_train)
 
-    df_pca = pd.DataFrame(data=x_pca, columns=["PC1", "PC2", "PC3"])
-    df_pca["cluster"] = kmeans.labels_
-    df_pca["true_label"] = df_processed['num_segments']
-    plot_2d_clusters(df_pca=df_pca, kmeans=kmeans)
-    plot_3d_clusters(df_pca=df_pca, kmeans=kmeans)
+    y_pred = knn.predict(x_test)
+    x_test_with_predictions = x_test.copy()
+    x_test_with_predictions['predicted_label'] = y_pred
 
-    save_model(model=kmeans, algorithm='kmeans')
+    pca = PCA(n_components=3)  # Perform PCA with 3 components for 3D plotting
+    x_test_pca = pca.fit_transform(x_test_with_predictions.drop('predicted_label', axis=1))
+    df_pca = pd.DataFrame(data=x_test_pca, columns=["PC1", "PC2", "PC3"])  # Create a DataFrame with 3 principal components
+    df_pca["predicted_label"] = x_test_with_predictions['predicted_label']
+
+    # Check the number of principal components and call the appropriate plotting function
+    if pca.n_components_ == 2:
+        plot_2d_clusters(df_pca=df_pca)
+    elif pca.n_components_ == 3:
+        plot_3d_clusters(df_pca=df_pca)
+    else:
+        print("Cannot plot clusters for more than 3 dimensions.")
+
+    save_model(sim_dict=sim_dict, model=knn, algorithm='knn', erlang=erlang)
 
 
 def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
@@ -41,9 +50,10 @@ def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     lr_obj = LogisticRegression(random_state=0)
     lr_obj.fit(x_train, y_train)
     y_pred = lr_obj.predict(x_test)
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang)
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang='All')
 
-    save_model(sim_dict=sim_dict, model=lr_obj, algorithm='logistic_regression', erlang=erlang)
+    for new_erl in range(50, 650, 50):
+        save_model(sim_dict=sim_dict, model=lr_obj, algorithm='logistic_regression', erlang=str(new_erl))
 
 
 def extract_value(path: str):
@@ -56,15 +66,24 @@ def extract_value(path: str):
     return value
 
 
-def _handle_training(sim_dict: dict, file_path: str):
-    data_frame = pd.read_csv(file_path, converters={'spec_util_matrix': ast.literal_eval})
+def _handle_training(sim_dict: dict, file_path: str, train_dir: str):
+    # data_frame = None
+    # for erlang in range(50, 650, 50):
+    #     curr_fp = os.path.join(train_dir, f'{float(erlang)}_train_data.csv')
+    #
+    #     if data_frame is None:
+    #         data_frame = pd.read_csv(curr_fp)
+    #     else:
+    #         tmp_df = pd.read_csv(curr_fp)
+    #         data_frame = pd.concat([data_frame, tmp_df])
+    data_frame = pd.read_csv(file_path)
     df_processed = process_data(input_df=data_frame)
 
+    erlang = extract_value(path=file_path)
     if sim_dict['ml_model'] == 'kmeans':
-        _train_test_kmeans(df_processed=df_processed, sim_dict=sim_dict)
+        _train_test_knn(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
     elif sim_dict['ml_model'] == 'logistic_regression':
-        erlang = extract_value(path=file_path)
-        _train_test_lr(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
+        _train_test_lr(df_processed=df_processed, sim_dict=sim_dict, erlang=None)
     else:
         raise NotImplementedError
 
@@ -83,7 +102,7 @@ def _run(sim_dict: dict):
     train_files = glob.glob(os.path.join(train_dir, "*.csv"))
 
     for train_fp in train_files:
-        _handle_training(sim_dict=sim_dict, file_path=train_fp)
+        _handle_training(sim_dict=sim_dict, file_path=train_fp, train_dir=train_dir)
 
 
 def _setup_ml_sim():
