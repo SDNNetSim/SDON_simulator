@@ -115,6 +115,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         """
         req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
         req_id = req_info_dict['req_id']
+
+        if req_id == 9000:
+            print('Line 120 run_rl_sim')
+
         bandwidth = req_info_dict['bandwidth']
 
         self._update_helper_obj(action=action, bandwidth=bandwidth)

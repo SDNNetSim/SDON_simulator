@@ -92,7 +92,7 @@ def _train_test_dt(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     dt_obj = DecisionTreeClassifier(random_state=0)
     dt_obj.fit(x_train, y_train)
     y_pred = dt_obj.predict(x_test)
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang)
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang , algorithm='Decision Tree')
 
     save_model(sim_dict=sim_dict, model=dt_obj, algorithm='decision_tree', erlang=erlang)
 
@@ -106,7 +106,8 @@ def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     lr_obj = LogisticRegression(random_state=0)
     lr_obj.fit(x_train, y_train)
     y_pred = lr_obj.predict(x_test)
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang)
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang,
+                   algorithm='Logistic Regression')
 
     save_model(sim_dict=sim_dict, model=lr_obj, algorithm='logistic_regression', erlang=erlang)
 

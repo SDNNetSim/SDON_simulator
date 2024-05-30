@@ -112,7 +112,7 @@ def process_data(input_df: pd.DataFrame):
     return df_processed
 
 
-def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str):
+def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str, algorithm: str):
     """
     Plots a confusion matrix and prints out the accuracy, precision, recall, and F1 score.
 
@@ -120,6 +120,7 @@ def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str):
     :param y_test: Testing data.
     :param y_pred: Predictions.
     :param erlang: The Erlang value.
+    :param algorithm: The algorithm used.
     """
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred, average='weighted')
@@ -131,7 +132,7 @@ def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str):
     conf_mat = confusion_matrix(y_test, y_pred, labels=labels)
     plt.figure(figsize=(10, 8), dpi=300)  # Increase the quality by increasing dpi
     sns.heatmap(conf_mat, annot=True, fmt='d', xticklabels=labels, yticklabels=labels)
-    plt.title('Confusion Matrix', weight='bold')
+    plt.title(f'Confusion Matrix - {algorithm}', weight='bold')
     plt.xlabel('Predicted Segments', weight='bold')
     plt.ylabel('Actual Segments', weight='bold')
 
