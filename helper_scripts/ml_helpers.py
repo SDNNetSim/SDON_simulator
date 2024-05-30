@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import joblib
 import seaborn as sns
 
-from mpl_toolkits.mplot3d import Axes3D
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from sklearn.metrics import silhouette_score
 
@@ -127,19 +126,20 @@ def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str):
     recall = recall_score(y_test, y_pred, average='weighted')
     f_score = f1_score(y_test, y_pred, average='weighted')
 
+    labels = np.unique(np.concatenate((y_test, y_pred)))
     # Plot a confusion matrix
-    conf_mat = confusion_matrix(y_test, y_pred)
+    conf_mat = confusion_matrix(y_test, y_pred, labels=labels)
     plt.figure(figsize=(10, 8), dpi=300)  # Increase the quality by increasing dpi
-    sns.heatmap(conf_mat, annot=True, fmt='d')
-    plt.title('Confusion Matrix')
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
+    sns.heatmap(conf_mat, annot=True, fmt='d', xticklabels=labels, yticklabels=labels)
+    plt.title('Confusion Matrix', weight='bold')
+    plt.xlabel('Predicted Segments', weight='bold')
+    plt.ylabel('Actual Segments', weight='bold')
 
     # Add accuracy, precision, recall, and F1 score to the plot
-    plt.text(0.5, 1.1, f'Accuracy: {accuracy:.2f}', fontsize=12, transform=plt.gca().transAxes)
-    plt.text(0.5, 1.2, f'Precision: {precision:.2f}', fontsize=12, transform=plt.gca().transAxes)
-    plt.text(0.5, 1.3, f'Recall: {recall:.2f}', fontsize=12, transform=plt.gca().transAxes)
-    plt.text(0.5, 1.4, f'F1 Score: {f_score:.2f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.5, 1.1, f'Accuracy: {accuracy:.5f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.5, 1.2, f'Precision: {precision:.5f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.5, 1.3, f'Recall: {recall:.5f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.5, 1.4, f'F1 Score: {f_score:.5f}', fontsize=12, transform=plt.gca().transAxes)
 
     save_fp = os.path.join('data', 'plots', sim_dict['train_file_path'])
     create_dir(file_path=save_fp)
