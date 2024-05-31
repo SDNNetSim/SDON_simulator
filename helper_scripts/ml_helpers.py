@@ -95,6 +95,10 @@ def get_kmeans_stats(kmeans: object, x_val):
     print(f"Silhouette Score: {silhouette_avg}")
 
 
+# TODO: No scaling no 50/50 split
+# TODO: No scaling w/ 50/50 split
+# TODO: Scaling no 50/50 split
+# TODO: Scaling w/ 50/50 split
 def process_data(input_df: pd.DataFrame):
     """
     Process data for machine learning model.
@@ -104,6 +108,31 @@ def process_data(input_df: pd.DataFrame):
     :rtype: pd.DataFrame
     """
     df_processed = pd.get_dummies(input_df, columns=['old_bandwidth'])
+
+    for col in df_processed.columns:
+        if df_processed[col].dtype == bool:
+            df_processed[col] = df_processed[col].astype(int)
+
+    return df_processed
+
+
+def even_process_data(input_df: pd.DataFrame):
+    """
+    Process data for machine learning model.
+
+    :param input_df: Input dataframe.
+    :return: Modified processed dataframe.
+    :rtype: pd.DataFrame
+    """
+    df1 = input_df[input_df['num_segments'] == 1]
+    df2 = input_df[input_df['num_segments'] > 1]
+    min_size = min(len(df1), len(df2))
+
+    df1 = df1.sample(n=min_size, random_state=42)
+    df2 = df2.sample(n=min_size, random_state=42)
+    df_processed = pd.concat([df1, df2])
+    df_processed = df_processed.sample(frac=1, random_state=42)
+    df_processed = pd.get_dummies(df_processed, columns=['old_bandwidth'])
 
     for col in df_processed.columns:
         if df_processed[col].dtype == bool:
