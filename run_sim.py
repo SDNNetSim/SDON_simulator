@@ -1,6 +1,7 @@
 # Standard library imports
 import time
 import copy
+import os
 from datetime import datetime
 
 # Third-party library imports
@@ -147,5 +148,6 @@ def run(sims_dict: dict):
 
 if __name__ == '__main__':
     args_obj = parse_args()
-    all_sims_dict = read_config(args_obj=args_obj)
+    config_path = os.path.join('ini', 'run_ini', 'ml_config.ini')
+    all_sims_dict = read_config(args_obj=args_obj, config_path=config_path)
     run(sims_dict=all_sims_dict)
