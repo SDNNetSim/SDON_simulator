@@ -12,7 +12,8 @@ from sklearn.linear_model import LogisticRegression
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
-from helper_scripts.ml_helpers import process_data, plot_confusion
+from helper_scripts.ml_helpers import process_data, even_process_data, plot_feature_importance, plot_confusion
+from helper_scripts.ml_helpers import plot_data
 from helper_scripts.ml_helpers import save_model
 
 
@@ -25,48 +26,6 @@ from helper_scripts.ml_helpers import save_model
 #           - Whichever has the best accuracy
 
 
-def _train_test_sgd(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
-    predictor_df = df_processed['num_segments']
-    feature_df = df_processed.drop('num_segments', axis=1)
-
-    x_train, x_test, y_train, y_test = train_test_split(feature_df, predictor_df,
-                                                        test_size=sim_dict['test_size'], random_state=42)
-    sgd_obj = SGDClassifier(random_state=0)
-    sgd_obj.fit(x_train, y_train)
-    y_pred = sgd_obj.predict(x_test)
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='SGD')
-
-    save_model(sim_dict=sim_dict, model=sgd_obj, algorithm='sgd', erlang=erlang)
-
-
-def _train_test_gpc(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
-    predictor_df = df_processed['num_segments']
-    feature_df = df_processed.drop('num_segments', axis=1)
-
-    x_train, x_test, y_train, y_test = train_test_split(feature_df, predictor_df,
-                                                        test_size=sim_dict['test_size'], random_state=42)
-    gpc_obj = GaussianProcessClassifier(random_state=0)
-    gpc_obj.fit(x_train, y_train)
-    y_pred = gpc_obj.predict(x_test)
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='GPC')
-
-    save_model(sim_dict=sim_dict, model=gpc_obj, algorithm='gpc', erlang=erlang)
-
-
-def _train_test_svc(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
-    predictor_df = df_processed['num_segments']
-    feature_df = df_processed.drop('num_segments', axis=1)
-
-    x_train, x_test, y_train, y_test = train_test_split(feature_df, predictor_df,
-                                                        test_size=sim_dict['test_size'], random_state=42)
-    svc_obj = SVC(random_state=0)
-    svc_obj.fit(x_train, y_train)
-    y_pred = svc_obj.predict(x_test)
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='SVC')
-
-    save_model(sim_dict=sim_dict, model=svc_obj, algorithm='svc', erlang=erlang)
-
-
 def _train_test_knn(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     predictor_df = df_processed['num_segments']
     feature_df = df_processed.drop('num_segments', axis=1)
@@ -77,7 +36,8 @@ def _train_test_knn(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     knn.fit(x_train, y_train)
 
     y_pred = knn.predict(x_test)
-
+    # plot_feature_importance(sim_dict=sim_dict, model=knn, feature_names=feature_df.columns, erlang=erlang,
+    #                         x_test=x_test, y_test=y_test)
     plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='KNN')
 
     save_model(sim_dict=sim_dict, model=knn, algorithm='knn', erlang=erlang)
@@ -92,6 +52,7 @@ def _train_test_dt(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     dt_obj = DecisionTreeClassifier(random_state=0)
     dt_obj.fit(x_train, y_train)
     y_pred = dt_obj.predict(x_test)
+    plot_feature_importance(sim_dict=sim_dict, model=dt_obj, feature_names=feature_df.columns, erlang=erlang)
     plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='Decision Tree')
 
     save_model(sim_dict=sim_dict, model=dt_obj, algorithm='decision_tree', erlang=erlang)
@@ -107,6 +68,7 @@ def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     lr_obj.fit(x_train, y_train)
     y_pred = lr_obj.predict(x_test)
 
+    plot_feature_importance(sim_dict=sim_dict, model=lr_obj, feature_names=feature_df.columns, erlang=erlang)
     plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang,
                    algorithm='Logistic Regression')
 
@@ -125,23 +87,20 @@ def extract_value(path: str):
 
 def _handle_training(sim_dict: dict, file_path: str, train_dir: str):
     data_frame = pd.read_csv(file_path)
-    df_processed = process_data(input_df=data_frame)
+    # df_processed = process_data(input_df=data_frame)
+    df_processed = even_process_data(input_df=data_frame)
 
     erlang = extract_value(path=file_path)
-    if sim_dict['ml_model'] == 'knn':
-        _train_test_knn(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
-    elif sim_dict['ml_model'] == 'logistic_regression':
-        _train_test_lr(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
-    elif sim_dict['ml_model'] == 'decision_tree':
-        _train_test_dt(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
-    elif sim_dict['ml_model'] == 'svc':
-        _train_test_svc(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
-    elif sim_dict['ml_model'] == 'gpc':
-        _train_test_gpc(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
-    elif sim_dict['ml_model'] == 'sgd':
-        _train_test_sgd(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
-    else:
-        raise NotImplementedError
+    plot_data(df=df_processed, erlang=erlang)
+    print('Here')
+    # if sim_dict['ml_model'] == 'knn':
+    #     _train_test_knn(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
+    # elif sim_dict['ml_model'] == 'logistic_regression':
+    #     _train_test_lr(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
+    # elif sim_dict['ml_model'] == 'decision_tree':
+    #     _train_test_dt(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
+    # else:
+    #     raise NotImplementedError
 
 
 def _run(sim_dict: dict):

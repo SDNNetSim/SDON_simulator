@@ -6,11 +6,33 @@ import matplotlib.pyplot as plt
 import joblib
 import seaborn as sns
 
+from sklearn.inspection import permutation_importance
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from sklearn.metrics import silhouette_score
 
 from helper_scripts.os_helpers import create_dir
 from helper_scripts.sim_helpers import find_path_len, find_core_cong
+
+
+def plot_data(df, erlang):
+    for column in ['old_bandwidth', 'num_segments']:
+        plt.figure(figsize=(6, 6))
+        df[column].value_counts().plot(kind='pie', autopct='%1.1f%%')
+        plt.title(f'Pie chart for {column} - {erlang}')
+        plt.show()
+
+    for column in ['path_length', 'longest_reach', 'ave_cong']:
+        plt.figure(figsize=(12, 6))
+
+        plt.subplot(1, 2, 1)
+        sns.histplot(df[column], kde=True)
+        plt.title(f'Histogram for {column} - {erlang}')
+
+        plt.subplot(1, 2, 2)
+        sns.boxplot(x=df[column])
+        plt.title(f'Box plot for {column}')
+
+        plt.show()
 
 
 # TODO: Double check this function as well
@@ -99,7 +121,7 @@ def get_kmeans_stats(kmeans: object, x_val):
 # TODO: No scaling w/ 50/50 split
 # TODO: Scaling no 50/50 split
 # TODO: Scaling w/ 50/50 split
-def process_data(input_df: pd.DataFrame):
+def process_data(input_df: pd.DataFrame, erlang):
     """
     Process data for machine learning model.
 
@@ -107,6 +129,7 @@ def process_data(input_df: pd.DataFrame):
     :return: Modified processed dataframe.
     :rtype: pd.DataFrame
     """
+    plot_data(df=input_df, erlang=erlang)
     df_processed = pd.get_dummies(input_df, columns=['old_bandwidth'])
 
     for col in df_processed.columns:
@@ -141,10 +164,52 @@ def even_process_data(input_df: pd.DataFrame):
     return df_processed
 
 
+def plot_feature_importance(sim_dict, model, feature_names, erlang, x_test, y_test):
+    """
+    Plots the feature importance for a model.
+
+    :param sim_dict: The simulation dictionary.
+    :param model: Trained model.
+    :param feature_names: List of feature names.
+    :param erlang: The Erlang value.
+    :param X_test: The test data.
+    :param y_test: The test labels.
+    """
+    try:
+        # Tree-based models
+        importances = model.feature_importances_
+    except AttributeError:
+        try:
+            # Logistic Regression
+            importances = np.abs(model.coef_[0])
+        except AttributeError:
+            # KNN
+            perm_importance = permutation_importance(model, x_test, y_test)
+            importances = perm_importance.importances_mean
+
+    # Sort the feature importances in descending order
+    indices = np.argsort(importances)[::-1]
+
+    plt.figure(figsize=(10, 6), dpi=300)
+    plt.title("Feature Rankings", weight='bold')
+    plt.bar(range(len(importances)), importances[indices],
+            color="b", align="center")
+    plt.xticks(range(len(importances)), [feature_names[i] for i in indices], rotation='vertical')
+    plt.xlim([-1, len(importances)])
+
+    save_fp = os.path.join('data', 'plots', sim_dict['train_file_path'])
+    create_dir(file_path=save_fp)
+
+    save_fp = os.path.join(save_fp, f'feature_rankings_{erlang}.png')
+    plt.savefig(save_fp, bbox_inches='tight')
+
+    plt.show()
+
+
 def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str, algorithm: str):
     """
     Plots a confusion matrix and prints out the accuracy, precision, recall, and F1 score.
-
+e
     :param sim_dict: The simulation dictionary.
     :param y_test: Testing data.
     :param y_pred: Predictions.
@@ -165,11 +230,22 @@ def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str, algorithm: str):
     plt.xlabel('Predicted Segments', weight='bold')
     plt.ylabel('Actual Segments', weight='bold')
 
+    # Calculate accuracy for each unique num_segments value
+    unique_segments = np.unique(y_test)
+    accuracy_per_segment = []
+    for segment in unique_segments:
+        mask = (y_test == segment)
+        segment_accuracy = accuracy_score(y_test[mask], y_pred[mask])
+        accuracy_per_segment.append(f"NS={segment}: {segment_accuracy:.4f}")
+
+    # Convert the list of accuracies to a single string
+    accuracy_str = ', '.join(accuracy_per_segment)
+
     # Add accuracy, precision, recall, and F1 score to the plot
-    plt.text(0.5, 1.1, f'Accuracy: {accuracy:.5f}', fontsize=12, transform=plt.gca().transAxes)
-    plt.text(0.5, 1.2, f'Precision: {precision:.5f}', fontsize=12, transform=plt.gca().transAxes)
-    plt.text(0.5, 1.3, f'Recall: {recall:.5f}', fontsize=12, transform=plt.gca().transAxes)
-    plt.text(0.5, 1.4, f'F1 Score: {f_score:.5f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.2, 1.1, f'Accuracy: {accuracy:.4f}, {accuracy_str}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.2, 1.2, f'Precision: {precision:.4f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.2, 1.3, f'Recall: {recall:.4f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.2, 1.4, f'F1 Score: {f_score:.4f}', fontsize=12, transform=plt.gca().transAxes)
 
     save_fp = os.path.join('data', 'plots', sim_dict['train_file_path'])
     create_dir(file_path=save_fp)
