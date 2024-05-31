@@ -87,12 +87,10 @@ def extract_value(path: str):
 
 def _handle_training(sim_dict: dict, file_path: str, train_dir: str):
     data_frame = pd.read_csv(file_path)
-    # df_processed = process_data(input_df=data_frame)
-    df_processed = even_process_data(input_df=data_frame)
 
     erlang = extract_value(path=file_path)
-    plot_data(df=df_processed, erlang=erlang)
-    print('Here')
+    df_processed = process_data(sim_dict=sim_dict, input_df=data_frame, erlang=erlang)
+    # df_processed = even_process_data(input_df=data_frame)
     # if sim_dict['ml_model'] == 'knn':
     #     _train_test_knn(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
     # elif sim_dict['ml_model'] == 'logistic_regression':

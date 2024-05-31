@@ -8,30 +8,45 @@ import seaborn as sns
 
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-from sklearn.metrics import silhouette_score
 
 from helper_scripts.os_helpers import create_dir
 from helper_scripts.sim_helpers import find_path_len, find_core_cong
 
 
-def plot_data(df, erlang):
-    for column in ['old_bandwidth', 'num_segments']:
-        plt.figure(figsize=(6, 6))
-        df[column].value_counts().plot(kind='pie', autopct='%1.1f%%')
-        plt.title(f'Pie chart for {column} - {erlang}')
+def plot_data(sim_dict, df, erlang):
+    # TODO: Repeat code
+    save_fp = os.path.join('data', 'plots', sim_dict['train_file_path'], 'input_analysis')
+    create_dir(file_path=save_fp)
+
+    for column in ['old_bandwidth', 'num_segments', 'longest_reach']:
+        plt.figure(figsize=(6, 6), dpi=300)
+        counts = df[column].value_counts()
+        df[column].value_counts().plot(kind='pie', autopct=lambda p: f'{p:.1f}%',
+                                       textprops={'color': 'white', 'weight': 'bold'})
+        plt.title(f'Pie Chart for {column} - Erlang {erlang}', weight='bold')
+
+        # Create custom labels for the legend
+        labels = [f'{label}: {count:,}' for label, count in counts.items()]
+        plt.legend(labels, loc='best')
+
+        tmp_fp = os.path.join(save_fp, f'pie_chart_{column}_{erlang}.png')
+        plt.savefig(tmp_fp, bbox_inches='tight')
         plt.show()
 
-    for column in ['path_length', 'longest_reach', 'ave_cong']:
-        plt.figure(figsize=(12, 6))
+    for column in ['path_length', 'ave_cong']:
+        plt.figure(figsize=(12, 6), dpi=300)
 
         plt.subplot(1, 2, 1)
         sns.histplot(df[column], kde=True)
-        plt.title(f'Histogram for {column} - {erlang}')
+        plt.title(f'Histogram for {column} - Erlang {erlang}', weight='bold')
+        plt.grid(True)
 
         plt.subplot(1, 2, 2)
         sns.boxplot(x=df[column])
-        plt.title(f'Box plot for {column}')
+        plt.title(f'Box Plot for {column} - Erlang {erlang}', weight='bold')
 
+        tmp_fp = os.path.join(save_fp, f'hist_box_{column}_{erlang}.png')
+        plt.savefig(tmp_fp, bbox_inches='tight')
         plt.show()
 
 
@@ -106,22 +121,7 @@ def save_model(sim_dict: dict, model, algorithm: str, erlang: str):
     joblib.dump(model, save_fp)
 
 
-def get_kmeans_stats(kmeans: object, x_val):
-    """
-    Get statistics for KMeans clustering.
-    """
-    inertia = kmeans.inertia_
-    print(f"Inertia: {inertia}")
-
-    silhouette_avg = silhouette_score(x_val, kmeans.predict(x_val))
-    print(f"Silhouette Score: {silhouette_avg}")
-
-
-# TODO: No scaling no 50/50 split
-# TODO: No scaling w/ 50/50 split
-# TODO: Scaling no 50/50 split
-# TODO: Scaling w/ 50/50 split
-def process_data(input_df: pd.DataFrame, erlang):
+def process_data(sim_dict, input_df: pd.DataFrame, erlang):
     """
     Process data for machine learning model.
 
@@ -129,7 +129,7 @@ def process_data(input_df: pd.DataFrame, erlang):
     :return: Modified processed dataframe.
     :rtype: pd.DataFrame
     """
-    plot_data(df=input_df, erlang=erlang)
+    plot_data(df=input_df, erlang=erlang, sim_dict=sim_dict)
     df_processed = pd.get_dummies(input_df, columns=['old_bandwidth'])
 
     for col in df_processed.columns:
