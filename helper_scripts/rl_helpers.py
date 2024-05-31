@@ -1,5 +1,6 @@
 import numpy as np
 
+from sim_scripts.spectrum_assignment import SpectrumAssignment
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
 from helper_scripts.sim_helpers import find_path_cong, classify_cong, find_core_cong
 
@@ -147,6 +148,20 @@ class RLHelpers:
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props['chosen_path'],
                                        force_core=self.rl_props['core_index'],
                                        forced_index=forced_index)
+
+    @staticmethod
+    def mock_handle_arrival(engine_props: dict, sdn_props: dict, path_list: list, mod_format_list: list):
+        spectrum_obj = SpectrumAssignment(engine_props=engine_props, sdn_props=sdn_props)
+
+        spectrum_obj.spectrum_props['forced_index'] = None
+        spectrum_obj.spectrum_props['forced_core'] = None
+        spectrum_obj.spectrum_props['path_list'] = path_list
+        spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
+        # Request was blocked for this path
+        if spectrum_obj.spectrum_props['is_free'] is not True:
+            return False
+
+        return True
 
     def update_mock_sdn(self, curr_req: dict):
         """

@@ -150,8 +150,10 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                     self._find_mod_info()
                     self._find_snapshot_usage()
                     self._find_misc_stats()
+                    # TODO: Commented out
                     if input_dict['path_algorithm'] is not None and input_dict['path_algorithm'] != 'None':
-                        self._find_ai_stats(cores_per_link=input_dict['cores_per_link'])
+                        pass
+                        # self._find_ai_stats(cores_per_link=input_dict['cores_per_link'])
 
     def get_file_info(self, sims_info_dict: dict):
         """
@@ -171,6 +173,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                 curr_dir = os.path.join(self.plot_props['output_dir'], network, date, time)
                 # Sort by sim number
                 sim_dirs_list = os.listdir(curr_dir)
+                sim_dirs_list = [sim_dir for sim_dir in os.listdir(curr_dir) if 'train_data' not in sim_dir]
                 sim_dirs_list = sorted(sim_dirs_list, key=lambda x: int(x[1:]))
 
                 for sim in sim_dirs_list:

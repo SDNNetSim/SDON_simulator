@@ -1,35 +1,61 @@
 import os
-import ast
 import glob
 
 import pandas as pd
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.linear_model import SGDClassifier
+from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
-from helper_scripts.ml_helpers import process_data, plot_2d_clusters, plot_3d_clusters, plot_confusion
+from helper_scripts.ml_helpers import process_data, even_process_data, plot_feature_importance, plot_confusion
+from helper_scripts.ml_helpers import plot_data
 from helper_scripts.ml_helpers import save_model
 
 
-# TODO: Add metric for feature importance
 # TODO: Maybe have YAML's like RL for parameters
-def _train_test_kmeans(df_processed: pd.DataFrame, sim_dict: dict):
-    x_train, _ = train_test_split(df_processed, test_size=sim_dict['test_size'], random_state=42)
-    pca = PCA(n_components=3)
-    x_pca = pca.fit_transform(x_train)
-    kmeans = KMeans(n_clusters=4, random_state=0)
-    kmeans.fit(x_pca)
+# TODO: Add metric for feature importance
+# TODO: Jobs to be run (13 cores for each)
+#       - Testing on 3 models minimum (ones with highest accuracy you find here) (13 * 3 * 2)
+#       - Two networks: USNet and Pan-European
+#       - Training on a 50/50 split with slice vs. no slice data?
+#           - Whichever has the best accuracy
 
-    df_pca = pd.DataFrame(data=x_pca, columns=["PC1", "PC2", "PC3"])
-    df_pca["cluster"] = kmeans.labels_
-    df_pca["true_label"] = df_processed['num_segments']
-    plot_2d_clusters(df_pca=df_pca, kmeans=kmeans)
-    plot_3d_clusters(df_pca=df_pca, kmeans=kmeans)
 
-    save_model(model=kmeans, algorithm='kmeans')
+def _train_test_knn(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
+    predictor_df = df_processed['num_segments']
+    feature_df = df_processed.drop('num_segments', axis=1)
+
+    x_train, x_test, y_train, y_test = train_test_split(feature_df, predictor_df,
+                                                        test_size=sim_dict['test_size'], random_state=42)
+    knn = KNeighborsClassifier(n_neighbors=5)
+    knn.fit(x_train, y_train)
+
+    y_pred = knn.predict(x_test)
+    # plot_feature_importance(sim_dict=sim_dict, model=knn, feature_names=feature_df.columns, erlang=erlang,
+    #                         x_test=x_test, y_test=y_test)
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='KNN')
+
+    save_model(sim_dict=sim_dict, model=knn, algorithm='knn', erlang=erlang)
+
+
+def _train_test_dt(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
+    predictor_df = df_processed['num_segments']
+    feature_df = df_processed.drop('num_segments', axis=1)
+
+    x_train, x_test, y_train, y_test = train_test_split(feature_df, predictor_df, test_size=sim_dict['test_size'],
+                                                        random_state=42)
+    dt_obj = DecisionTreeClassifier(random_state=0)
+    dt_obj.fit(x_train, y_train)
+    y_pred = dt_obj.predict(x_test)
+    plot_feature_importance(sim_dict=sim_dict, model=dt_obj, feature_names=feature_df.columns, erlang=erlang)
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='Decision Tree')
+
+    save_model(sim_dict=sim_dict, model=dt_obj, algorithm='decision_tree', erlang=erlang)
 
 
 def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
@@ -38,10 +64,13 @@ def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
 
     x_train, x_test, y_train, y_test = train_test_split(feature_df, predictor_df, test_size=sim_dict['test_size'],
                                                         random_state=42)
-    lr_obj = LogisticRegression(random_state=0)
+    lr_obj = LogisticRegression(random_state=0, n_jobs=-1)
     lr_obj.fit(x_train, y_train)
     y_pred = lr_obj.predict(x_test)
-    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang)
+
+    plot_feature_importance(sim_dict=sim_dict, model=lr_obj, feature_names=feature_df.columns, erlang=erlang)
+    plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang,
+                   algorithm='Logistic Regression')
 
     save_model(sim_dict=sim_dict, model=lr_obj, algorithm='logistic_regression', erlang=erlang)
 
@@ -56,17 +85,20 @@ def extract_value(path: str):
     return value
 
 
-def _handle_training(sim_dict: dict, file_path: str):
-    data_frame = pd.read_csv(file_path, converters={'spec_util_matrix': ast.literal_eval})
-    df_processed = process_data(input_df=data_frame)
+def _handle_training(sim_dict: dict, file_path: str, train_dir: str):
+    data_frame = pd.read_csv(file_path)
 
-    if sim_dict['ml_model'] == 'kmeans':
-        _train_test_kmeans(df_processed=df_processed, sim_dict=sim_dict)
-    elif sim_dict['ml_model'] == 'logistic_regression':
-        erlang = extract_value(path=file_path)
-        _train_test_lr(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
-    else:
-        raise NotImplementedError
+    erlang = extract_value(path=file_path)
+    df_processed = process_data(sim_dict=sim_dict, input_df=data_frame, erlang=erlang)
+    # df_processed = even_process_data(input_df=data_frame)
+    # if sim_dict['ml_model'] == 'knn':
+    #     _train_test_knn(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
+    # elif sim_dict['ml_model'] == 'logistic_regression':
+    #     _train_test_lr(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
+    # elif sim_dict['ml_model'] == 'decision_tree':
+    #     _train_test_dt(df_processed=df_processed, sim_dict=sim_dict, erlang=erlang)
+    # else:
+    #     raise NotImplementedError
 
 
 def _run(sim_dict: dict):
@@ -83,7 +115,7 @@ def _run(sim_dict: dict):
     train_files = glob.glob(os.path.join(train_dir, "*.csv"))
 
     for train_fp in train_files:
-        _handle_training(sim_dict=sim_dict, file_path=train_fp)
+        _handle_training(sim_dict=sim_dict, file_path=train_fp, train_dir=train_dir)
 
 
 def _setup_ml_sim():

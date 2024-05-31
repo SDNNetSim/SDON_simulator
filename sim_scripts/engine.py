@@ -201,7 +201,7 @@ class Engine:
             if self.engine_props['deploy_model']:
                 self.ml_model = load_model(engine_props=self.engine_props)
 
-        # TODO: Change seeds (start at 21)
+        # TODO: Remember to change seed for testing
         seed = self.engine_props["seeds"][iteration] if self.engine_props["seeds"] else iteration + 1
         self.generate_requests(seed)
 
@@ -214,8 +214,6 @@ class Engine:
             self.init_iter(iteration=iteration)
             req_num = 1
             for curr_time in self.reqs_dict:
-                if req_num == 7:
-                    print('Line 218 engine.')
                 self.handle_request(curr_time=curr_time, req_num=req_num)
 
                 if self.reqs_dict[curr_time]['request_type'] == 'arrival':

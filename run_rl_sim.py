@@ -19,17 +19,14 @@ from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAge
 from arg_scripts.rl_args import empty_rl_props, SETUP_RL_COMMANDS
 
 
-# TODO: Re-order functions
-# TODO: Check if props needs to be reset
-# TODO: Check if props updated in other objects
-# TODO: RLZoo handled via command line
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
     Controls all reinforcement learning assisted simulations.
     """
     metadata = dict()
 
-    def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None, **kwargs): # pylint: disable=unused-argument
+    def __init__(self, render_mode: str = None, custom_callback: object = None, sim_dict: dict = None,
+                 **kwargs):  # pylint: disable=unused-argument
         super().__init__()
 
         self.rl_props = copy.deepcopy(empty_rl_props)
@@ -118,6 +115,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         """
         req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
         req_id = req_info_dict['req_id']
+
+        if req_id == 9000:
+            print('Line 120 run_rl_sim')
+
         bandwidth = req_info_dict['bandwidth']
 
         self._update_helper_obj(action=action, bandwidth=bandwidth)
@@ -150,12 +151,26 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _handle_core_train(self):
         self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
-        self.route_obj.engine_props['route_method'] = 'shortest_path'
+        self.route_obj.engine_props['route_method'] = 'k_shortest_path'
         self.route_obj.get_route()
 
-        self.rl_props['chosen_path'] = self.route_obj.route_props['paths_list']
-        # Always the shortest path
+        # Default to first fit if all paths fail
+        self.rl_props['chosen_path'] = self.route_obj.route_props['paths_list'][0]
         self.rl_props['path_index'] = 0
+        for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
+            mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
+            was_allocated = self.rl_help_obj.mock_handle_arrival(engine_props=self.engine_obj.engine_props,
+                                                                 sdn_props=self.rl_props['mock_sdn_dict'],
+                                                                 mod_format_list=mod_format_list, path_list=path_list)
+
+            if was_allocated:
+                self.rl_props['chosen_path'] = [path_list]
+                self.rl_props['path_index'] = path_index
+                self.core_agent.no_penalty = False
+                break
+            else:
+                self.core_agent.no_penalty = True
+
         self.rl_props['forced_index'] = None
         self.core_agent.get_core()
 

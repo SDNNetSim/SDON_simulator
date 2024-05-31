@@ -6,11 +6,48 @@ import matplotlib.pyplot as plt
 import joblib
 import seaborn as sns
 
+from sklearn.inspection import permutation_importance
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-from sklearn.metrics import silhouette_score
 
 from helper_scripts.os_helpers import create_dir
-from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_path_mod
+from helper_scripts.sim_helpers import find_path_len, find_core_cong
+
+
+def plot_data(sim_dict, df, erlang):
+    # TODO: Repeat code
+    save_fp = os.path.join('data', 'plots', sim_dict['train_file_path'], 'input_analysis')
+    create_dir(file_path=save_fp)
+
+    for column in ['old_bandwidth', 'num_segments', 'longest_reach']:
+        plt.figure(figsize=(6, 6), dpi=300)
+        counts = df[column].value_counts()
+        df[column].value_counts().plot(kind='pie', autopct=lambda p: f'{p:.1f}%',
+                                       textprops={'color': 'white', 'weight': 'bold'})
+        plt.title(f'Pie Chart for {column} - Erlang {erlang}', weight='bold')
+
+        # Create custom labels for the legend
+        labels = [f'{label}: {count:,}' for label, count in counts.items()]
+        plt.legend(labels, loc='best')
+
+        tmp_fp = os.path.join(save_fp, f'pie_chart_{column}_{erlang}.png')
+        plt.savefig(tmp_fp, bbox_inches='tight')
+        plt.show()
+
+    for column in ['path_length', 'ave_cong']:
+        plt.figure(figsize=(12, 6), dpi=300)
+
+        plt.subplot(1, 2, 1)
+        sns.histplot(df[column], kde=True)
+        plt.title(f'Histogram for {column} - Erlang {erlang}', weight='bold')
+        plt.grid(True)
+
+        plt.subplot(1, 2, 2)
+        sns.boxplot(x=df[column])
+        plt.title(f'Box Plot for {column} - Erlang {erlang}', weight='bold')
+
+        tmp_fp = os.path.join(save_fp, f'hist_box_{column}_{erlang}.png')
+        plt.savefig(tmp_fp, bbox_inches='tight')
+        plt.show()
 
 
 # TODO: Double check this function as well
@@ -84,18 +121,7 @@ def save_model(sim_dict: dict, model, algorithm: str, erlang: str):
     joblib.dump(model, save_fp)
 
 
-def get_kmeans_stats(kmeans: object, x_val):
-    """
-    Get statistics for KMeans clustering.
-    """
-    inertia = kmeans.inertia_
-    print(f"Inertia: {inertia}")
-
-    silhouette_avg = silhouette_score(x_val, kmeans.predict(x_val))
-    print(f"Silhouette Score: {silhouette_avg}")
-
-
-def process_data(input_df: pd.DataFrame):
+def process_data(sim_dict, input_df: pd.DataFrame, erlang):
     """
     Process data for machine learning model.
 
@@ -103,6 +129,7 @@ def process_data(input_df: pd.DataFrame):
     :return: Modified processed dataframe.
     :rtype: pd.DataFrame
     """
+    plot_data(df=input_df, erlang=erlang, sim_dict=sim_dict)
     df_processed = pd.get_dummies(input_df, columns=['old_bandwidth'])
 
     for col in df_processed.columns:
@@ -112,33 +139,113 @@ def process_data(input_df: pd.DataFrame):
     return df_processed
 
 
-def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str):
+def even_process_data(input_df: pd.DataFrame):
+    """
+    Process data for machine learning model.
+
+    :param input_df: Input dataframe.
+    :return: Modified processed dataframe.
+    :rtype: pd.DataFrame
+    """
+    df1 = input_df[input_df['num_segments'] == 1]
+    df2 = input_df[input_df['num_segments'] > 1]
+    min_size = min(len(df1), len(df2))
+
+    df1 = df1.sample(n=min_size, random_state=42)
+    df2 = df2.sample(n=min_size, random_state=42)
+    df_processed = pd.concat([df1, df2])
+    df_processed = df_processed.sample(frac=1, random_state=42)
+    df_processed = pd.get_dummies(df_processed, columns=['old_bandwidth'])
+
+    for col in df_processed.columns:
+        if df_processed[col].dtype == bool:
+            df_processed[col] = df_processed[col].astype(int)
+
+    return df_processed
+
+
+def plot_feature_importance(sim_dict, model, feature_names, erlang, x_test, y_test):
+    """
+    Plots the feature importance for a model.
+
+    :param sim_dict: The simulation dictionary.
+    :param model: Trained model.
+    :param feature_names: List of feature names.
+    :param erlang: The Erlang value.
+    :param X_test: The test data.
+    :param y_test: The test labels.
+    """
+    try:
+        # Tree-based models
+        importances = model.feature_importances_
+    except AttributeError:
+        try:
+            # Logistic Regression
+            importances = np.abs(model.coef_[0])
+        except AttributeError:
+            # KNN
+            perm_importance = permutation_importance(model, x_test, y_test)
+            importances = perm_importance.importances_mean
+
+    # Sort the feature importances in descending order
+    indices = np.argsort(importances)[::-1]
+
+    plt.figure(figsize=(10, 6), dpi=300)
+    plt.title("Feature Rankings", weight='bold')
+    plt.bar(range(len(importances)), importances[indices],
+            color="b", align="center")
+    plt.xticks(range(len(importances)), [feature_names[i] for i in indices], rotation='vertical')
+    plt.xlim([-1, len(importances)])
+
+    save_fp = os.path.join('data', 'plots', sim_dict['train_file_path'])
+    create_dir(file_path=save_fp)
+
+    save_fp = os.path.join(save_fp, f'feature_rankings_{erlang}.png')
+    plt.savefig(save_fp, bbox_inches='tight')
+
+    plt.show()
+
+
+def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str, algorithm: str):
     """
     Plots a confusion matrix and prints out the accuracy, precision, recall, and F1 score.
-
+e
     :param sim_dict: The simulation dictionary.
     :param y_test: Testing data.
     :param y_pred: Predictions.
     :param erlang: The Erlang value.
+    :param algorithm: The algorithm used.
     """
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred, average='weighted')
     recall = recall_score(y_test, y_pred, average='weighted')
     f_score = f1_score(y_test, y_pred, average='weighted')
 
+    labels = np.unique(np.concatenate((y_test, y_pred)))
     # Plot a confusion matrix
-    conf_mat = confusion_matrix(y_test, y_pred)
+    conf_mat = confusion_matrix(y_test, y_pred, labels=labels)
     plt.figure(figsize=(10, 8), dpi=300)  # Increase the quality by increasing dpi
-    sns.heatmap(conf_mat, annot=True, fmt='d')
-    plt.title('Confusion Matrix')
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
+    sns.heatmap(conf_mat, annot=True, fmt='d', xticklabels=labels, yticklabels=labels)
+    plt.title(f'Confusion Matrix - {algorithm}', weight='bold')
+    plt.xlabel('Predicted Segments', weight='bold')
+    plt.ylabel('Actual Segments', weight='bold')
+
+    # Calculate accuracy for each unique num_segments value
+    unique_segments = np.unique(y_test)
+    accuracy_per_segment = []
+    for segment in unique_segments:
+        mask = (y_test == segment)
+        segment_accuracy = accuracy_score(y_test[mask], y_pred[mask])
+        accuracy_per_segment.append(f"NS={segment}: {segment_accuracy:.4f}")
+
+    # Convert the list of accuracies to a single string
+    accuracy_str = ', '.join(accuracy_per_segment)
 
     # Add accuracy, precision, recall, and F1 score to the plot
-    plt.text(0.5, 1.1, f'Accuracy: {accuracy:.2f}', fontsize=12, transform=plt.gca().transAxes)
-    plt.text(0.5, 1.2, f'Precision: {precision:.2f}', fontsize=12, transform=plt.gca().transAxes)
-    plt.text(0.5, 1.3, f'Recall: {recall:.2f}', fontsize=12, transform=plt.gca().transAxes)
-    plt.text(0.5, 1.4, f'F1 Score: {f_score:.2f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.2, 1.1, f'Accuracy: {accuracy:.4f}, {accuracy_str}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.2, 1.2, f'Precision: {precision:.4f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.2, 1.3, f'Recall: {recall:.4f}', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.2, 1.4, f'F1 Score: {f_score:.4f}', fontsize=12, transform=plt.gca().transAxes)
 
     save_fp = os.path.join('data', 'plots', sim_dict['train_file_path'])
     create_dir(file_path=save_fp)
@@ -149,50 +256,37 @@ def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str):
     plt.show()
 
 
-def plot_2d_clusters(df_pca: pd.DataFrame, kmeans: object):
+def plot_2d_clusters(df_pca: pd.DataFrame):
     """
-    Plot the clusters of the KMeans algorithm.
+    Plot the test data points and their predicted labels.
 
     :param df_pca: A dataframe normalized with PCA.
-    :param kmeans: Kmeans algorithm object.
     """
     plt.figure(figsize=(10, 8))
 
-    # Create a scatter plot of the PCA-reduced data, colored by "num_slices" value
-    scatter = plt.scatter(df_pca["PC1"], df_pca["PC2"], c=df_pca["true_label"], cmap='Set1')
-
-    # Plot the centroids of the clusters
-    centers = kmeans.cluster_centers_
-    for i, center in enumerate(centers):
-        plt.text(center[0], center[1], f'Center {i}', ha='center', va='center', color='red')
-    plt.title("K-Means Clustering Results (PCA-reduced Data)")
+    # Plot the test data points, colored by their predicted labels
+    scatter = plt.scatter(df_pca["PC1"], df_pca["PC2"], c=df_pca["predicted_label"], cmap='Set1')
+    plt.title("KNN Predicted Labels (PCA-reduced Data)")
     plt.xlabel("Principal Component 1 (PC1)")
     plt.ylabel("Principal Component 2 (PC2)")
     plt.colorbar(scatter, label='num_slices')
     plt.show()
 
 
-def plot_3d_clusters(df_pca: pd.DataFrame, kmeans: object):
+def plot_3d_clusters(df_pca: pd.DataFrame):
     """
-    Plot the clusters of the KMeans algorithm in 3D.
+    Plot the test data points and their predicted labels in 3D.
 
     :param df_pca: A dataframe normalized with PCA.
-    :param kmeans: Kmeans algorithm object.
     """
     fig = plt.figure(figsize=(10, 8))
-    axis = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(111, projection='3d')
 
-    # Create a scatter plot of the PCA-reduced data, colored by "true_label" value
-    scatter = axis.scatter(df_pca["PC1"], df_pca["PC2"], df_pca["PC3"], c=df_pca["true_label"], cmap='Set1')
-
-    # Plot the centroids of the clusters
-    centers = kmeans.cluster_centers_
-    for i, center in enumerate(centers):
-        axis.text(center[0], center[1], center[2], f'Center {i}', ha='center', va='center', color='red')
-
-    axis.set_title("K-Means Clustering Results (PCA-reduced Data)")
-    axis.set_xlabel("Principal Component 1 (PC1)")
-    axis.set_ylabel("Principal Component 2 (PC2)")
-    axis.set_zlabel("Principal Component 3 (PC3)")
+    # Plot the test data points, colored by their predicted labels
+    scatter = ax.scatter(df_pca["PC1"], df_pca["PC2"], df_pca["PC3"], c=df_pca["predicted_label"], cmap='Set1')
+    ax.set_title("KNN Predicted Labels (PCA-reduced Data)")
+    ax.set_xlabel("Principal Component 1 (PC1)")
+    ax.set_ylabel("Principal Component 2 (PC2)")
+    ax.set_zlabel("Principal Component 3 (PC3)")
     fig.colorbar(scatter, label='num_slices')
     plt.show()

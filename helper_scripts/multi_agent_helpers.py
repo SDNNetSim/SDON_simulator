@@ -131,6 +131,7 @@ class CoreAgent:
 
         self.level_index = None
         self.cong_list = list()
+        self.no_penalty = False
 
     def end_iter(self):
         """
@@ -160,6 +161,8 @@ class CoreAgent:
         """
         if was_allocated:
             return self.engine_props['reward']
+        elif self.no_penalty:
+            return 0.0
 
         return self.engine_props['penalty']
 
