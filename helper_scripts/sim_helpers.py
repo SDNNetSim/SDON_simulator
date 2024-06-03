@@ -547,12 +547,28 @@ def classify_cong(curr_cong: float):
     :return: The congestion indexes or level.
     :rtype: int
     """
-    if curr_cong < 0.3:
+    if curr_cong < 0.05:
         cong_index = 0
-    elif 0.3 <= curr_cong < 0.7:
+    elif 0.05 <= curr_cong < 0.10:
         cong_index = 1
-    elif curr_cong >= 0.7:
+    elif 0.10 <= curr_cong < 0.15:
         cong_index = 2
+    elif 0.15 <= curr_cong < 0.20:
+        cong_index = 3
+    elif 0.20 <= curr_cong < 0.25:
+        cong_index = 4
+    elif 0.25 <= curr_cong < 0.30:
+        cong_index = 5
+    elif 0.30 <= curr_cong < 0.35:
+        cong_index = 6
+    elif 0.35 <= curr_cong < 0.40:
+        cong_index = 7
+    elif 0.40 <= curr_cong < 0.45:
+        cong_index = 8
+    elif 0.45 <= curr_cong < 0.50:
+        cong_index = 9
+    elif curr_cong >= 0.50:
+        cong_index = 10
     else:
         raise ValueError('Congestion value not recognized.')
 
