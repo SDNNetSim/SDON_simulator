@@ -115,10 +115,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         """
         req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
         req_id = req_info_dict['req_id']
-
-        if req_id == 9000:
-            print('Line 120 run_rl_sim')
-
         bandwidth = req_info_dict['bandwidth']
 
         self._update_helper_obj(action=action, bandwidth=bandwidth)
@@ -216,16 +212,16 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props['mock_sdn_dict'] = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
 
         path_mod = self._handle_test_train_obs(curr_req=curr_req)
-        if path_mod is not False:
-            slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
-            super_channels, no_penalty = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
-                                                                             num_channels=self.rl_props[
-                                                                                 'super_channel_space'])
+        # if path_mod is not False:
+        #     slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
+            # super_channels, no_penalty = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
+            #                                                                  num_channels=self.rl_props[
+            #                                                                      'super_channel_space'])
         # No penalty for DRL agent, mistake not made by it
-        else:
-            slots_needed = -1
-            no_penalty = True
-            super_channels = np.array([100.0, 100.0, 100.0])
+        # else:
+        slots_needed = -1
+        no_penalty = True
+        super_channels = np.array([100.0, 100.0, 100.0])
 
         self.spectrum_agent.no_penalty = no_penalty
         source_obs = np.zeros(self.rl_props['num_nodes'])

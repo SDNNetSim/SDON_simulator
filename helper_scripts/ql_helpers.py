@@ -21,7 +21,7 @@ class QLearningHelpers:
         self.engine_props = engine_props
         self.rl_props = rl_props
 
-        self.path_levels = 3
+        self.path_levels = 11
         self.completed_sim = False
         self.iteration = 0
 
@@ -109,7 +109,7 @@ class QLearningHelpers:
         new_q = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
 
         routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        routes_matrix[self.rl_props['path_index']]['q_value'] = new_q
+        routes_matrix[self.rl_props['path_index']][level_index]['q_value'] = new_q
 
     def update_cores_matrix(self, reward: float, core_index: int, level_index: int, net_spec_dict: dict):
         """
