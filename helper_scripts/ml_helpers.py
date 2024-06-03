@@ -7,6 +7,7 @@ import joblib
 import seaborn as sns
 
 from sklearn.inspection import permutation_importance
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
 from helper_scripts.os_helpers import create_dir
@@ -129,6 +130,10 @@ def process_data(sim_dict, input_df: pd.DataFrame, erlang):
     :return: Modified processed dataframe.
     :rtype: pd.DataFrame
     """
+    # Apply MinMax scaling to 'path_length' and 'ave_cong' columns
+    scaler = MinMaxScaler()
+    input_df[['path_length', 'longest_reach', 'ave_cong']] = scaler.fit_transform(
+        input_df[['path_length', 'longest_reach', 'ave_cong']])
     plot_data(df=input_df, erlang=erlang, sim_dict=sim_dict)
     df_processed = pd.get_dummies(input_df, columns=['old_bandwidth'])
 
@@ -139,22 +144,41 @@ def process_data(sim_dict, input_df: pd.DataFrame, erlang):
     return df_processed
 
 
-def even_process_data(input_df: pd.DataFrame):
+def even_process_data(input_df: pd.DataFrame, per_slice: bool, erlang, sim_dict):
     """
     Process data for machine learning model.
 
     :param input_df: Input dataframe.
+    :param per_slice: Boolean flag to indicate if equal entries for each num_segments are required.
     :return: Modified processed dataframe.
     :rtype: pd.DataFrame
     """
-    df1 = input_df[input_df['num_segments'] == 1]
-    df2 = input_df[input_df['num_segments'] > 1]
-    min_size = min(len(df1), len(df2))
+    # scaler = MinMaxScaler()
+    # input_df[['path_length', 'longest_reach', 'ave_cong']] = scaler.fit_transform(
+    #     input_df[['path_length', 'longest_reach', 'ave_cong']])
+    if per_slice:
+        unique_segments = input_df['num_segments'].unique()
+        dfs = [input_df[input_df['num_segments'] == segment] for segment in unique_segments]
+        min_size = min(len(df) for df in dfs)
+        sampled_dfs = [df.sample(n=min_size, random_state=42) for df in dfs]
+        df_processed = pd.concat(sampled_dfs).sample(frac=1, random_state=42)
+    else:
+        df1 = input_df[input_df['num_segments'] == 1]
+        df2 = input_df[input_df['num_segments'] == 2]
+        df4 = input_df[input_df['num_segments'] == 4]
+        df8 = input_df[input_df['num_segments'] == 8]
 
-    df1 = df1.sample(n=min_size, random_state=42)
-    df2 = df2.sample(n=min_size, random_state=42)
-    df_processed = pd.concat([df1, df2])
-    df_processed = df_processed.sample(frac=1, random_state=42)
+        min_size = min(len(df1), len(df2), len(df4), len(df8))
+
+        df1 = df1.sample(n=int(min_size * 0.05), random_state=42)  # 10% of the smallest group size
+        df2 = df2.sample(n=int(min_size * 0.35), random_state=42)  # 30% of the smallest group size
+        df4 = df4.sample(n=int(min_size * 0.35), random_state=42)  # 30% of the smallest group size
+        df8 = df8.sample(n=int(min_size * 0.25), random_state=42)  # 30% of the smallest group size
+
+        df_processed = pd.concat([df1, df2, df4, df8]).sample(frac=1, random_state=42)
+
+    plot_data(df=df_processed, erlang=erlang, sim_dict=sim_dict)
+    # df_processed = df_processed.loc[:, ['num_segments', 'longest_reach', 'path_length']]
     df_processed = pd.get_dummies(df_processed, columns=['old_bandwidth'])
 
     for col in df_processed.columns:
@@ -172,7 +196,7 @@ def plot_feature_importance(sim_dict, model, feature_names, erlang, x_test, y_te
     :param model: Trained model.
     :param feature_names: List of feature names.
     :param erlang: The Erlang value.
-    :param X_test: The test data.
+    :param x_test: The test data.
     :param y_test: The test labels.
     """
     try:
