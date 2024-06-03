@@ -32,7 +32,8 @@ def plot_data(sim_dict, df, erlang):
 
         tmp_fp = os.path.join(save_fp, f'pie_chart_{column}_{erlang}.png')
         plt.savefig(tmp_fp, bbox_inches='tight')
-        plt.show()
+        plt.close()
+       #  plt.show()
 
     for column in ['path_length', 'ave_cong']:
         plt.figure(figsize=(12, 6), dpi=300)
@@ -48,7 +49,8 @@ def plot_data(sim_dict, df, erlang):
 
         tmp_fp = os.path.join(save_fp, f'hist_box_{column}_{erlang}.png')
         plt.savefig(tmp_fp, bbox_inches='tight')
-        plt.show()
+        # plt.show()
+        plt.close()
 
 
 # TODO: Double check this function as well
@@ -131,9 +133,9 @@ def process_data(sim_dict, input_df: pd.DataFrame, erlang):
     :rtype: pd.DataFrame
     """
     # Apply MinMax scaling to 'path_length' and 'ave_cong' columns
-    scaler = MinMaxScaler()
-    input_df[['path_length', 'longest_reach', 'ave_cong']] = scaler.fit_transform(
-        input_df[['path_length', 'longest_reach', 'ave_cong']])
+    # scaler = MinMaxScaler()
+    # input_df[['path_length', 'longest_reach', 'ave_cong']] = scaler.fit_transform(
+        # input_df[['path_length', 'longest_reach', 'ave_cong']])
     plot_data(df=input_df, erlang=erlang, sim_dict=sim_dict)
     df_processed = pd.get_dummies(input_df, columns=['old_bandwidth'])
 
@@ -227,7 +229,8 @@ def plot_feature_importance(sim_dict, model, feature_names, erlang, x_test, y_te
     save_fp = os.path.join(save_fp, f'feature_rankings_{erlang}.png')
     plt.savefig(save_fp, bbox_inches='tight')
 
-    plt.show()
+    # plt.show()
+    # plt.close()
 
 
 def plot_confusion(sim_dict: dict, y_test, y_pred, erlang: str, algorithm: str):
@@ -277,7 +280,8 @@ e
     save_fp = os.path.join(save_fp, f'confusion_matrix_{erlang}.png')
     plt.savefig(save_fp, bbox_inches='tight')
 
-    plt.show()
+    # plt.show()
+    plt.close()
 
 
 def plot_2d_clusters(df_pca: pd.DataFrame):
@@ -294,7 +298,7 @@ def plot_2d_clusters(df_pca: pd.DataFrame):
     plt.xlabel("Principal Component 1 (PC1)")
     plt.ylabel("Principal Component 2 (PC2)")
     plt.colorbar(scatter, label='num_slices')
-    plt.show()
+    # plt.show()
 
 
 def plot_3d_clusters(df_pca: pd.DataFrame):
@@ -313,4 +317,4 @@ def plot_3d_clusters(df_pca: pd.DataFrame):
     ax.set_ylabel("Principal Component 2 (PC2)")
     ax.set_zlabel("Principal Component 3 (PC3)")
     fig.colorbar(scatter, label='num_slices')
-    plt.show()
+    # plt.show()

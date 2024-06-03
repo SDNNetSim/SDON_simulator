@@ -38,8 +38,8 @@ def _train_test_dt(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     dt_obj = DecisionTreeClassifier(random_state=0)
     dt_obj.fit(x_train, y_train)
     y_pred = dt_obj.predict(x_test)
-    plot_feature_importance(sim_dict=sim_dict, model=dt_obj, feature_names=feature_df.columns, erlang=erlang,
-                            x_test=x_test, y_test=y_test)
+    # plot_feature_importance(sim_dict=sim_dict, model=dt_obj, feature_names=feature_df.columns, erlang=erlang,
+                            # x_test=x_test, y_test=y_test)
     plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='Decision Tree')
 
     save_model(sim_dict=sim_dict, model=dt_obj, algorithm='decision_tree', erlang=erlang)
@@ -55,8 +55,8 @@ def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     lr_obj.fit(x_train, y_train)
     y_pred = lr_obj.predict(x_test)
 
-    plot_feature_importance(sim_dict=sim_dict, model=lr_obj, feature_names=feature_df.columns, erlang=erlang,
-                            x_test=x_test, y_test=y_test)
+    # plot_feature_importance(sim_dict=sim_dict, model=lr_obj, feature_names=feature_df.columns, erlang=erlang,
+                            # x_test=x_test, y_test=y_test)
     plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang,
                    algorithm='Logistic Regression')
 
