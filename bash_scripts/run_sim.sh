@@ -4,7 +4,7 @@
 #SBATCH -c 13
 #SBATCH -G 0
 #SBATCH --mem=16000
-#SBATCH -t 1-00:00:00
+#SBATCH -t 2-00:00:00
 #SBATCH -o slurm-%j.out
 
 # shellcheck disable=SC2164
@@ -44,4 +44,4 @@ PENALTY=${penalty_list[$INDEX]}
 # python run_rl_sim.py --path_algorithm q_learning --core_algorithm first_fit --spectrum_algorithm first_fit --learn_rate $LEARN_RATE --discount_factor $DISC_FACTOR --epsilon_start $EPSILON_START --reward $REWARD --penalty $PENALTY
 
 # Run regular simulation
-python run_sim.py --network USNet
+python run_sim.py --network Pan-European
