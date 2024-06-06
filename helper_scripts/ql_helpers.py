@@ -21,7 +21,7 @@ class QLearningHelpers:
         self.engine_props = engine_props
         self.rl_props = rl_props
 
-        self.path_levels = 11
+        self.path_levels = 2
         self.completed_sim = False
         self.iteration = 0
 
