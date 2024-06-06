@@ -3,8 +3,8 @@
 #SBATCH -p cpu-long
 #SBATCH -c 1
 #SBATCH -G 0
-#SBATCH --mem=32000
-#SBATCH -t 3-00:00:00
+#SBATCH --mem=16000
+#SBATCH -t 0-02:00:00
 #SBATCH -o slurm-%j.out
 
 # shellcheck disable=SC2164
@@ -27,21 +27,39 @@ pip install -r requirements.txt
 # Learning rate, discount factor, epsilon
 
 # Variables for outer loop
-learn_rate_list=("0.1" "0.1" "0.01" "0.01" "0.1" "0.1" "0.01" "0.01" "0.1" "0.1" "0.01" "0.01")
-disc_factor_list=("0.9" "0.1" "0.9" "0.1" "0.9" "0.1" "0.9" "0.1" "0.9" "0.1" "0.9" "0.1")
-epsilon_start_list=("0.30" "0.30" "0.30" "0.30" "0.30" "0.30" "0.30" "0.30" "0.30" "0.30" "0.30" "0.30")
-reward_list=("1.0" "1.0" "1.0" "1.0" "1.0" "1.0" "1.0" "1.0" "1.0" "1.0" "1.0" "1.0")
-penalty_list=("-1.0" "-1.0" "-1.0" "-1.0" "0.0" "0.0" "0.0" "0.0" "-10.0" "-10.0" "-10.0" "-10.0")
+# Declare arrays for parameter values
+learn_rate_list=("0.1" "0.01" "0.5")
+disc_factor_list=("0.1" "0.01" "0.9")
+reward_list=("1" "10" "100")
+penalty_list=("0" "-1" "-10" "-100")
 
-INDEX=$SLURM_ARRAY_TASK_ID
-# Extract values based on index
-LEARN_RATE=${learn_rate_list[$INDEX]}
-DISC_FACTOR=${disc_factor_list[$INDEX]}
-EPSILON_START=${epsilon_start_list[$INDEX]}
-REWARD=${reward_list[$INDEX]}
-PENALTY=${penalty_list[$INDEX]}
+# Calculate total number of combinations
+total_combinations=$((${#learn_rate_list[@]} * ${#disc_factor_list[@]} * ${#reward_list[@]} * ${#penalty_list[@]}))
 
-python run_rl_sim.py --path_algorithm q_learning --core_algorithm first_fit --spectrum_algorithm first_fit --learn_rate $LEARN_RATE --discount_factor $DISC_FACTOR --epsilon_start $EPSILON_START --reward $REWARD --penalty $PENALTY
+# Iterate through every combination
+index=0  # Track the current combination index
+for lr in "${learn_rate_list[@]}"; do
+    for df in "${disc_factor_list[@]}"; do
+        for r in "${reward_list[@]}"; do
+            for p in "${penalty_list[@]}"; do
+
+                # Ensure the index matches the SLURM array task ID
+                while [ $index -ne $SLURM_ARRAY_TASK_ID ]; do
+                    index=$((index + 1)) 
+                    if [ $index -eq $total_combinations ]; then
+                        index=0  # Reset if we reach the end
+                    fi
+                done
+
+                # Run the Python script with the current combination
+                python run_rl_sim.py --learn_rate $lr --discount_factor $df --reward $r --penalty $p 
+                
+                # Increment the index for the next combination
+                index=$((index + 1))
+            done
+        done
+    done
+done
 
 # Run regular simulation
 # python run_sim.py --network Pan-European --train_file_path "Pan-European/0531/22_00_16_630834" --ml_model knn
