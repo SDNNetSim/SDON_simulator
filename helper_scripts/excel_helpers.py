@@ -28,7 +28,7 @@ counter = 0
 dict_list = []
 batch_size = 200
 
-save_fp = os.path.join('..', 'data', 'output', 'excel')
+save_fp = os.path.join('..', 'data', 'excel')
 create_dir(file_path=save_fp)
 csv_file = os.path.join(save_fp, 'analysis.csv')
 

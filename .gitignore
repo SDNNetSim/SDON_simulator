@@ -17,6 +17,7 @@ data/ai
 data/input
 data/output
 data/plots
+data/excel
 
 logs/*
 
