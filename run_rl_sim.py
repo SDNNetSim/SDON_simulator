@@ -151,10 +151,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj.get_route()
 
         # Default to first fit if all paths fail
-        self.rl_props['chosen_path'] = self.route_obj.route_props['paths_list'][0]
+        self.rl_props['chosen_path'] = [self.route_obj.route_props['paths_list'][0]]
         self.rl_props['path_index'] = 0
         for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
             mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
+
             was_allocated = self.rl_help_obj.mock_handle_arrival(engine_props=self.engine_obj.engine_props,
                                                                  sdn_props=self.rl_props['mock_sdn_dict'],
                                                                  mod_format_list=mod_format_list, path_list=path_list)
