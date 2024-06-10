@@ -20,7 +20,7 @@ filter_dict = {
     ]
 }
 
-sims_info_dict = find_times(dates_dict={'0606': 'NSFNet', '0607': 'NSFNet'}, filter_dict=filter_dict)
+sims_info_dict = find_times(dates_dict={'0606': 'NSFNet', '0607': 'NSFNet', '0610': 'NSFNet'}, filter_dict=filter_dict)
 helpers_obj = PlotHelpers(plot_props=empty_props, net_names_list=sims_info_dict['networks_matrix'])
 helpers_obj.get_file_info(sims_info_dict=sims_info_dict)
 
@@ -70,6 +70,8 @@ def get_dict(input_dict: dict, output_dict: dict):
     tmp_dict['Penalty'] = input_dict['penalty']
     tmp_dict['Epsilon Start'] = input_dict['epsilon_start']
     tmp_dict['Epsilon End'] = input_dict['epsilon_end']
+    tmp_dict['Path Algorithm'] = input_dict['path_algorithm']
+    tmp_dict['Core Algorithm'] = input_dict['core_algorithm']
 
     return tmp_dict
 
