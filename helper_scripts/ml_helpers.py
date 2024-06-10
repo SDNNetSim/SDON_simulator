@@ -32,7 +32,7 @@ def plot_data(sim_dict, df, erlang):
 
         tmp_fp = os.path.join(save_fp, f'pie_chart_{column}_{erlang}.png')
         plt.savefig(tmp_fp, bbox_inches='tight')
-        plt.close()
+        # plt.close()
        #  plt.show()
 
     for column in ['path_length', 'ave_cong']:
@@ -50,7 +50,7 @@ def plot_data(sim_dict, df, erlang):
         tmp_fp = os.path.join(save_fp, f'hist_box_{column}_{erlang}.png')
         plt.savefig(tmp_fp, bbox_inches='tight')
         # plt.show()
-        plt.close()
+        # plt.close()
 
 
 # TODO: Double check this function as well
@@ -244,6 +244,7 @@ e
     :param algorithm: The algorithm used.
     """
     accuracy = accuracy_score(y_test, y_pred)
+    print(erlang, accuracy, algorithm)
     precision = precision_score(y_test, y_pred, average='weighted')
     recall = recall_score(y_test, y_pred, average='weighted')
     f_score = f1_score(y_test, y_pred, average='weighted')
@@ -253,6 +254,7 @@ e
     conf_mat = confusion_matrix(y_test, y_pred, labels=labels)
     plt.figure(figsize=(10, 8), dpi=300)  # Increase the quality by increasing dpi
     sns.heatmap(conf_mat, annot=True, fmt='d', xticklabels=labels, yticklabels=labels)
+    print(algorithm)
     plt.title(f'Confusion Matrix - {algorithm}', weight='bold')
     plt.xlabel('Predicted Segments', weight='bold')
     plt.ylabel('Actual Segments', weight='bold')
@@ -280,8 +282,8 @@ e
     save_fp = os.path.join(save_fp, f'confusion_matrix_{erlang}.png')
     plt.savefig(save_fp, bbox_inches='tight')
 
-    # plt.show()
-    plt.close()
+   #  plt.show()
+    # plt.close()
 
 
 def plot_2d_clusters(df_pca: pd.DataFrame):
