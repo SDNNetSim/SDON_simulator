@@ -17,10 +17,11 @@ data/ai
 data/input
 data/output
 data/plots
+data/excel
 
 logs/*
 
-ini/run_ini/config.ini
+ini/run_ini/*
 bash_scripts/slurm/*
 
 .vscode/
