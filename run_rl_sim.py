@@ -216,9 +216,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         path_mod = self._handle_test_train_obs(curr_req=curr_req)
         # if path_mod is not False:
         #     slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
-            # super_channels, no_penalty = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
-            #                                                                  num_channels=self.rl_props[
-            #                                                                      'super_channel_space'])
+        # super_channels, no_penalty = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
+        #                                                                  num_channels=self.rl_props[
+        #                                                                      'super_channel_space'])
         # No penalty for DRL agent, mistake not made by it
         # else:
         slots_needed = -1

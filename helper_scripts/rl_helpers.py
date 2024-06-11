@@ -111,10 +111,10 @@ class RLHelpers:
         :param bandwidth: Bandwidth of the current request.
         :param chosen_path: Path of the current request.
         """
-        self.route_obj.route_props['paths_list'] = [chosen_path]
-        path_len = find_path_len(path_list=chosen_path, topology=self.engine_obj.engine_props['topology'])
+        self.route_obj.route_props['paths_list'] = chosen_path
+        path_len = find_path_len(path_list=chosen_path[0], topology=self.engine_obj.engine_props['topology'])
         mod_format = get_path_mod(mods_dict=self.engine_obj.engine_props['mod_per_bw'][bandwidth], path_len=path_len)
-        self.route_obj.route_props['mod_formats_list'].append([mod_format])
+        self.route_obj.route_props['mod_formats_list'] = [[mod_format]]
         self.route_obj.route_props['weights_list'].append(path_len)
 
     def handle_releases(self):

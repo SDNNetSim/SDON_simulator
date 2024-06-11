@@ -148,6 +148,5 @@ def run(sims_dict: dict):
 
 if __name__ == '__main__':
     args_obj = parse_args()
-    config_path = os.path.join('ini', 'run_ini', 'ml_config.ini')
-    all_sims_dict = read_config(args_obj=args_obj, config_path=config_path)
+    all_sims_dict = read_config(args_obj=args_obj)
     run(sims_dict=all_sims_dict)
