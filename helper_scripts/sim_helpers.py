@@ -547,11 +547,11 @@ def classify_cong(curr_cong: float):
     :return: The congestion indexes or level.
     :rtype: int
     """
-    cong_index = None
-    if curr_cong < 0.10:
+    if curr_cong < 0.30:
         cong_index = 0
-    elif curr_cong >= 0.10:
+    else:
         cong_index = 1
+    # elif 0.05 <= curr_cong < 0.10:
     #     cong_index = 1
     # elif 0.10 <= curr_cong < 0.15:
     #     cong_index = 2
