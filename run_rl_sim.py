@@ -1,6 +1,7 @@
 import os
 import copy
 import subprocess
+import time
 
 from torch import nn  # pylint: disable=unused-import
 import gymnasium as gym
@@ -475,4 +476,5 @@ def run_rl_sim():
 
 
 if __name__ == '__main__':
+    time.sleep(1)
     run_rl_sim()
