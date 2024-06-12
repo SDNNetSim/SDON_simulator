@@ -121,7 +121,10 @@ class RLHelpers:
         """
         Checks if a request or multiple requests need to be released.
         """
-        curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
+        try:
+            curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
+        except IndexError:
+            curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count'] - 1]['arrive']
 
         for _, req_obj in enumerate(self.rl_props['depart_list']):
             if req_obj['depart'] <= curr_time:

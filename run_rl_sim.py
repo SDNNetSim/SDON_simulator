@@ -92,11 +92,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_help_obj.handle_releases()
         self.rl_help_obj.update_route_props(chosen_path=self.rl_props['chosen_path'], bandwidth=bandwidth)
 
-    def _handle_test_train_step(self, was_allocated: bool):
+    def _handle_test_train_step(self, was_allocated: bool, path_length: int):
         if self.sim_dict['is_training']:
             if self.sim_dict['path_algorithm'] == 'q_learning':
                 self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
-                                       iteration=self.iteration)
+                                       iteration=self.iteration, path_length=path_length)
             elif self.sim_dict['core_algorithm'] == 'q_learning':
                 self.core_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                        iteration=self.iteration)
@@ -123,7 +123,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         reqs_status_dict = self.engine_obj.reqs_status_dict
 
         was_allocated = req_id in reqs_status_dict
-        self._handle_test_train_step(was_allocated=was_allocated)
+        path_length = self.route_obj.route_props['weights_list'][0]
+        self._handle_test_train_step(was_allocated=was_allocated, path_length=path_length)
         self.rl_help_obj.update_snapshots()
         drl_reward = self.spectrum_agent.get_reward(was_allocated=was_allocated)
 
@@ -209,6 +210,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             curr_req = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
 
+        self.rl_help_obj.handle_releases()
         self.rl_props['source'] = int(curr_req['source'])
         self.rl_props['destination'] = int(curr_req['destination'])
         self.rl_props['mock_sdn_dict'] = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
