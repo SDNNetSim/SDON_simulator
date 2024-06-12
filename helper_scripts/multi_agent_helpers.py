@@ -39,20 +39,22 @@ class PathAgent:
 
         self.agent_obj.setup_env()
 
-    def get_reward(self, was_allocated: bool):
+    def get_reward(self, was_allocated: bool, path_length: int):
         """
         Get the current reward for the last agent's action.
 
         :param was_allocated: If the request was allocated or not.
+        :param path_length: The path length.
         :return: The reward.
         :rtype: float
         """
+        beta = 0.0
         if was_allocated:
             return self.engine_props['reward']
 
-        return self.engine_props['penalty']
+        return (self.engine_props['penalty'] * (1 - beta)) - (path_length * beta)
 
-    def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int):
+    def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int, path_length):
         """
         Makes updates to the agent for each time step.
 
@@ -60,7 +62,7 @@ class PathAgent:
         :param net_spec_dict: The current network spectrum database.
         :param iteration: The current iteration.
         """
-        reward = self.get_reward(was_allocated=was_allocated)
+        reward = self.get_reward(was_allocated=was_allocated, path_length=path_length)
 
         if self.path_algorithm == 'q_learning':
             self.agent_obj.iteration = iteration
@@ -162,7 +164,7 @@ class CoreAgent:
         if was_allocated:
             return self.engine_props['reward']
         elif self.no_penalty:
-            return 0.0
+            return self.engine_props['penalty']
 
         return self.engine_props['penalty']
 

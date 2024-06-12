@@ -22,6 +22,7 @@ class RLHelpers:
         self.super_channel = None
         self.super_channel_indexes = list()
         self.mod_format = None
+        self._last_processed_index = 0
 
     def update_snapshots(self):
         """
@@ -117,18 +118,34 @@ class RLHelpers:
         self.route_obj.route_props['mod_formats_list'] = [[mod_format]]
         self.route_obj.route_props['weights_list'].append(path_len)
 
+    # def handle_releases(self):
+    #     """
+    #     Checks if a request or multiple requests need to be released.
+    #     """
+    #     try:
+    #         curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
+    #     except IndexError:
+    #         curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count'] - 1]['arrive']
+    #
+    #     for _, req_obj in enumerate(self.rl_props['depart_list']):
+    #         if req_obj['depart'] <= curr_time:
+    #             self.engine_obj.handle_release(curr_time=req_obj['depart'])
+
     def handle_releases(self):
         """
         Checks if a request or multiple requests need to be released.
         """
-        try:
-            curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
-        except IndexError:
-            curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count'] - 1]['arrive']
+        curr_time = self.rl_props['arrival_list'][min(self.rl_props['arrival_count'],
+                                                      len(self.rl_props['arrival_list']) - 1)]['arrive']
 
-        for _, req_obj in enumerate(self.rl_props['depart_list']):
-            if req_obj['depart'] <= curr_time:
-                self.engine_obj.handle_release(curr_time=req_obj['depart'])
+        depart_list = self.rl_props['depart_list']
+        while self._last_processed_index < len(depart_list):
+            req_obj = depart_list[self._last_processed_index]
+            if req_obj['depart'] > curr_time:
+                break
+
+            self.engine_obj.handle_release(curr_time=req_obj['depart'])
+            self._last_processed_index += 1
 
     def allocate(self):
         """
@@ -203,6 +220,7 @@ class RLHelpers:
 
         :param seed: The random seed.
         """
+        self._last_processed_index = 0
         self.engine_obj.generate_requests(seed=seed)
 
         for req_time in self.engine_obj.reqs_dict:
