@@ -28,10 +28,10 @@ class MultiBanditHelpers:
         value = self.values[arm]
         self.values[arm] = value + (reward - value) / n
 
-        if len(self.props['rewards_matrix']) == 0:
-            self.props['rewards_matrix'].append([reward])
-        else:
+        try:
             self.props['rewards_matrix'][self.iteration].append(reward)
+        except IndexError:
+            self.props['rewards_matrix'].append([reward])
 
     def setup_env(self):
         pass

@@ -119,6 +119,7 @@ class PathAgent:
         else:
             raise NotImplementedError
 
+    # TODO: Doesn't work if multi-armed bandit
     def load_model(self, model_path: str, erlang: float, num_cores: int):
         """
         Loads a previously trained path agent model.
