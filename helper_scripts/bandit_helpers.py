@@ -3,7 +3,6 @@ import numpy as np
 from arg_scripts.rl_args import empty_bandit_props
 
 
-# TODO: Only epsilon greedy for now but will add another one
 class MultiBanditHelpers:
     def __init__(self, rl_props: dict, engine_props: dict):
         self.props = empty_bandit_props
@@ -12,7 +11,6 @@ class MultiBanditHelpers:
         self.completed_sim = False
         self.iteration = 0
 
-        # TODO: Change off of engine props
         self.n_arms = engine_props['k_paths']
         self.epsilon = engine_props['epsilon_start']
         self.counts = np.zeros(self.n_arms)
@@ -20,16 +18,20 @@ class MultiBanditHelpers:
 
     def select_arm(self):
         if np.random.rand() < self.epsilon:
-            # Exploration: choose a random arm
             return np.random.randint(self.n_arms)
         else:
-            # Exploitation: choose the best-known arm
             return np.argmax(self.values)
 
-    def update(self, arm, reward):
-        # Update counts and values (using incremental formula)
+    def update(self, arm: int, reward: int):
         self.counts[arm] += 1
         n = self.counts[arm]
         value = self.values[arm]
-        # Incremental update of the mean
         self.values[arm] = value + (reward - value) / n
+
+        if len(self.props['rewards_matrix']) == 0:
+            self.props['rewards_matrix'].append([reward])
+        else:
+            self.props['rewards_matrix'][self.iteration].append(reward)
+
+    def setup_env(self):
+        pass

@@ -48,16 +48,11 @@ empty_q_props = {
     }
 }
 
-# TODO: Probably need state values
+# TODO: Update for state values
 empty_bandit_props = {
-    'rewards_dict': {
-        'routes_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}},
-        'cores_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}}
-    },
-    'errors_dict': {
-        'routes_dict': {'average': [], 'min': [], 'max': [], 'errors': {}},
-        'cores_dict': {'average': [], 'min': [], 'max': [], 'errors': {}}
-    },
+    'rewards_matrix': [],
+    'counts_list': [],
+    'state_values_list:': [],
 }
 
 empty_drl_props = {

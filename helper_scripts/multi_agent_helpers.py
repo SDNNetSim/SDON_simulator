@@ -67,10 +67,12 @@ class PathAgent:
         """
         reward = self.get_reward(was_allocated=was_allocated, path_length=path_length)
 
+        self.agent_obj.iteration = iteration
         if self.path_algorithm == 'q_learning':
-            self.agent_obj.iteration = iteration
             self.agent_obj.update_routes_matrix(reward=reward, level_index=self.level_index,
                                                 net_spec_dict=net_spec_dict)
+        elif self.path_algorithm == 'armed_bandit':
+            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'])
 
     def __ql_route(self, random_float: float):
         if random_float < self.agent_obj.props['epsilon']:
@@ -100,12 +102,20 @@ class PathAgent:
         if len(self.rl_props['chosen_path']) == 0:
             raise ValueError('The chosen path can not be None')
 
-    def get_route(self):
+    # TODO: Ideally q-learning should be like this (agent_obj.something)
+    #   - Need access to the actual path
+    def _bandit_route(self, route_obj: object):
+        self.rl_props['chosen_path_index'] = self.agent_obj.select_arm()
+        self.rl_props['chosen_path'] = route_obj.route_props['paths_list'][self.rl_props['chosen_path_index']]
+
+    def get_route(self, **kwargs):
         """
         Assign a route for the current request.
         """
         if self.path_algorithm == 'q_learning':
             self._ql_route()
+        elif self.path_algorithm == 'armed_bandit':
+            self._bandit_route(route_obj=kwargs['route_obj'])
         else:
             raise NotImplementedError
 

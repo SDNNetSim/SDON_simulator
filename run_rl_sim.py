@@ -94,12 +94,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _handle_test_train_step(self, was_allocated: bool, path_length: int):
         if self.sim_dict['is_training']:
-            if self.sim_dict['path_algorithm'] == 'q_learning':
+            if self.sim_dict['path_algorithm'] in ('q_learning', 'armed_bandit'):
                 self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                        iteration=self.iteration, path_length=path_length)
             elif self.sim_dict['core_algorithm'] == 'q_learning':
                 self.core_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                        iteration=self.iteration)
+            else:
+                raise NotImplementedError
         else:
             self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                    iteration=self.iteration)
@@ -141,7 +143,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return dict()
 
     def _handle_path_train_test(self):
-        self.path_agent.get_route()
+        if self.sim_dict['path_algorithm'] == 'armed_bandit':
+            self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
+            self.route_obj.engine_props['route_method'] = 'k_shortest_path'
+            self.route_obj.get_route()
+
+        self.path_agent.get_route(route_obj=self.route_obj)
         self.rl_help_obj.rl_props['chosen_path'] = [self.rl_props['chosen_path']]
         self.route_obj.route_props['paths_list'] = self.rl_help_obj.rl_props['chosen_path']
         self.rl_props['core_index'] = None
@@ -184,7 +191,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _handle_test_train_obs(self, curr_req: dict):
         if self.sim_dict['is_training']:
-            if self.sim_dict['path_algorithm'] == 'q_learning':
+            if self.sim_dict['path_algorithm'] in ('q_learning', 'armed_bandit'):
                 self._handle_path_train_test()
             elif self.sim_dict['core_algorithm'] == 'q_learning':
                 self._handle_core_train()
@@ -393,7 +400,7 @@ def _get_model(algorithm: str, device: str, env: object):
 
 
 def _print_info(sim_dict: dict):
-    if sim_dict['path_algorithm'] == 'q_learning':
+    if sim_dict['path_algorithm'] in ('q_learning', 'armed_bandit'):
         print(f'Beginning training process for the PATH AGENT using the '
               f'{sim_dict["path_algorithm"].title()} algorithm.')
     elif sim_dict['core_algorithm'] == 'q_learning':
