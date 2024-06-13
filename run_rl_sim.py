@@ -478,5 +478,5 @@ def run_rl_sim():
 
 
 if __name__ == '__main__':
-    time.sleep(1)
+    time.sleep(5)
     run_rl_sim()
