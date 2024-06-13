@@ -114,7 +114,10 @@ class PathAgent:
     # TODO: Ideally q-learning should be like this (agent_obj.something)
     #   - Need access to the actual path
     def _bandit_route(self, route_obj: object):
-        self.rl_props['chosen_path_index'] = self.agent_obj.select_arm()
+        paths_list = route_obj.route_props['paths_list']
+        source = paths_list[0][0]
+        dest = paths_list[0][-1]
+        self.rl_props['chosen_path_index'] = self.agent_obj.select_arm(source=int(source), dest=int(dest))
         self.rl_props['chosen_path'] = route_obj.route_props['paths_list'][self.rl_props['chosen_path_index']]
 
     def _context_bandit_route(self, route_obj: object):

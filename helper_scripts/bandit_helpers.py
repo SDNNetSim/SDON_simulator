@@ -1,14 +1,9 @@
 import numpy as np
-
 from sklearn.linear_model import LinearRegression
 
 from arg_scripts.rl_args import empty_bandit_props
 
 
-# TODO: Save model and other results (Use this as a baseline?)
-#   - For a contextual bandit, similar to the q-table:
-#       - Source, destination, each of the k-paths
-#       - Later on, congestion levels?
 class MultiBanditHelpers:
     def __init__(self, rl_props: dict, engine_props: dict):
         self.props = empty_bandit_props
@@ -17,27 +12,43 @@ class MultiBanditHelpers:
         self.completed_sim = False
         self.iteration = 0
 
+        self.source = None
+        self.dest = None
+
         self.n_arms = engine_props['k_paths']
         self.epsilon = engine_props['epsilon_start']
-        self.counts = np.zeros(self.n_arms)
-        self.values = np.zeros(self.n_arms)
 
-    def select_arm(self):
+        self.num_nodes = rl_props['num_nodes']
+        self.counts = {}
+        self.values = {}
+
+        # Initialize counts and values for each source-destination pair
+        for source in range(self.num_nodes):
+            for destination in range(self.num_nodes):
+                if source == destination:
+                    continue
+                self.counts[(source, destination)] = np.zeros(self.n_arms)
+                self.values[(source, destination)] = np.zeros(self.n_arms)
+
+    def select_arm(self, source: int, dest: int):
+        self.source = source
+        self.dest = dest
+        pair = (source, dest)
         if np.random.rand() < self.epsilon:
             return np.random.randint(self.n_arms)
         else:
-            return np.argmax(self.values)
+            return np.argmax(self.values[pair])
 
     def update(self, arm: int, reward: int):
-        self.counts[arm] += 1
-        n = self.counts[arm]
-        value = self.values[arm]
-        self.values[arm] = value + (reward - value) / n
+        pair = (self.source, self.dest)
+        self.counts[pair][arm] += 1
+        n = self.counts[pair][arm]
+        value = self.values[pair][arm]
+        self.values[pair][arm] = value + (reward - value) / n
 
-        try:
-            self.props['rewards_matrix'][self.iteration].append(reward)
-        except IndexError:
-            self.props['rewards_matrix'].append([reward])
+        if self.iteration >= len(self.props['rewards_matrix']):
+            self.props['rewards_matrix'].append([])
+        self.props['rewards_matrix'][self.iteration].append(reward)
 
     def setup_env(self):
         pass
