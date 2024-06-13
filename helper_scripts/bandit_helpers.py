@@ -70,10 +70,7 @@ class ContextualGreedyHelpers:
             return np.argmax(estimated_rewards)
 
     def update(self, arm, context, reward):
-        try:
-            self.X[arm] = np.vstack([self.X[arm], context])
-        except:
-            print('Line 76 bandit helpers.')
+        self.X[arm] = np.vstack([self.X[arm], context])
         self.y[arm] = np.append(self.y[arm], reward)
 
         self.models[arm].fit(self.X[arm], self.y[arm])
