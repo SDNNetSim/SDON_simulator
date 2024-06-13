@@ -43,14 +43,18 @@ class MultiBanditHelpers:
         pass
 
 
-class ContextualEpsilonGreedyHelpers:
-    def __init__(self, n_arms: int, n_features: int, epsilon: float):
-        self.n_arms = n_arms
-        self.epsilon = epsilon
-        self.models = [LinearRegression() for _ in range(n_arms)]
-        self.X = [np.empty((0, n_features)) for _ in range(n_arms)]
-        self.y = [np.empty((0,)) for _ in range(n_arms)]
-        self.is_fitted = [False] * n_arms
+class ContextualGreedyHelpers:
+    def __init__(self, rl_props: dict, engine_props: dict):
+        self.n_arms = engine_props['k_paths']
+        self.epsilon = engine_props['epsilon_start']
+        self.rl_props = rl_props
+
+        # To consider the source, destination, and congestion of all K-paths
+        n_features = 2 + engine_props['k_paths']
+        self.models = [LinearRegression() for _ in range(self.n_arms)]
+        self.X = [np.empty((0, n_features)) for _ in range(self.n_arms)]
+        self.y = [np.empty((0,)) for _ in range(self.n_arms)]
+        self.is_fitted = [False] * self.n_arms
 
     def select_arm(self, context):
         if np.random.rand() < self.epsilon:
@@ -72,19 +76,22 @@ class ContextualEpsilonGreedyHelpers:
         self.models[arm].fit(self.X[arm], self.y[arm])
         self.is_fitted[arm] = True
 
+    def setup_env(self):
+        pass
+
 
 class ContextGenerator:
-    def __init__(self, num_sources: int, num_destinations: int, num_paths: int):
-        self.num_sources = num_sources
-        self.num_destinations = num_destinations
-        self.num_paths = num_paths
+    def __init__(self, rl_props: dict, engine_props: dict):
+        self.num_sources = engine_props['topology'].number_of_nodes()
+        self.num_destinations = engine_props['topology'].number_of_nodes()
+        self.num_paths = engine_props['k_paths']
 
-    def generate_context(self, source, destination, congestion_levels):
+        self.curr_context = None
+
+    def generate_context(self, source, dest, congestion_levels):
         source_vec = np.zeros(self.num_sources)
         source_vec[source] = 1
 
         dest_vec = np.zeros(self.num_destinations)
-        dest_vec[destination] = 1
-
-        context = np.concatenate([source_vec, dest_vec, congestion_levels])
-        return context
+        dest_vec[dest] = 1
+        self.curr_context = np.concatenate([source_vec, dest_vec, congestion_levels])

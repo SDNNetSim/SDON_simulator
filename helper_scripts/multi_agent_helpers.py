@@ -1,10 +1,11 @@
 import os
 
 import numpy as np
-
 from gymnasium import spaces
+
+from .sim_helpers import find_path_cong
 from .ql_helpers import QLearningHelpers
-from .bandit_helpers import MultiBanditHelpers
+from .bandit_helpers import MultiBanditHelpers, ContextualGreedyHelpers, ContextGenerator
 
 
 class PathAgent:
@@ -18,6 +19,7 @@ class PathAgent:
         self.rl_props = rl_props
         self.rl_help_obj = rl_help_obj
         self.agent_obj = None
+        self.context_obj = None
 
         self.level_index = None
         self.cong_list = None
@@ -37,6 +39,9 @@ class PathAgent:
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
         elif self.path_algorithm == 'armed_bandit':
             self.agent_obj = MultiBanditHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
+        elif self.path_algorithm == 'context_bandit':
+            self.agent_obj = ContextualGreedyHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
+            self.context_obj = ContextGenerator(rl_props=self.rl_props, engine_props=self.engine_props)
         else:
             raise NotImplementedError
 
@@ -51,6 +56,7 @@ class PathAgent:
         :return: The reward.
         :rtype: float
         """
+        # TODO: Incorporate or delete
         beta = 0.0
         if was_allocated:
             return self.engine_props['reward']
@@ -73,6 +79,9 @@ class PathAgent:
                                                 net_spec_dict=net_spec_dict)
         elif self.path_algorithm == 'armed_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'])
+        elif self.path_algorithm == 'context_bandit':
+            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'],
+                                  context=self.context_obj.curr_context)
 
     def __ql_route(self, random_float: float):
         if random_float < self.agent_obj.props['epsilon']:
@@ -108,6 +117,24 @@ class PathAgent:
         self.rl_props['chosen_path_index'] = self.agent_obj.select_arm()
         self.rl_props['chosen_path'] = route_obj.route_props['paths_list'][self.rl_props['chosen_path_index']]
 
+    def _context_bandit_route(self, route_obj: object):
+        cong_list = list()
+        source = None
+        dest = None
+        # TODO: Make sure net_spec_db is correct and updated
+        for path_list in route_obj.route_props['paths_list']:
+            net_spec_dict = self.rl_help_obj.engine_obj.net_spec_dict
+            curr_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
+            cong_list.append(curr_cong)
+
+            if source is None:
+                source = path_list[0]
+                dest = path_list[-1]
+
+        self.context_obj.generate_context(source=source, dest=dest, congestion_levels=cong_list)
+        self.rl_props['chosen_path_index'] = self.agent_obj.select_arm(context=self.context_obj.curr_context)
+        self.rl_props['chosen_path'] = route_obj.route_props['paths_list'][self.rl_props['chosen_path_index']]
+
     def get_route(self, **kwargs):
         """
         Assign a route for the current request.
@@ -116,10 +143,12 @@ class PathAgent:
             self._ql_route()
         elif self.path_algorithm == 'armed_bandit':
             self._bandit_route(route_obj=kwargs['route_obj'])
+        elif self.path_algorithm == 'context_bandit':
+            self._context_bandit_route(route_obj=kwargs['route_obj'])
         else:
             raise NotImplementedError
 
-    # TODO: Doesn't work if multi-armed bandit
+    # TODO: Doesn't work for other models
     def load_model(self, model_path: str, erlang: float, num_cores: int):
         """
         Loads a previously trained path agent model.
