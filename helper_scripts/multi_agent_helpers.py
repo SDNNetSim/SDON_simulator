@@ -4,6 +4,7 @@ import numpy as np
 
 from gymnasium import spaces
 from .ql_helpers import QLearningHelpers
+from .bandit_helpers import MultiBanditHelpers
 
 
 class PathAgent:
@@ -34,6 +35,8 @@ class PathAgent:
         """
         if self.path_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
+        elif self.path_algorithm == 'armed_bandit':
+            self.agent_obj = MultiBanditHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
         else:
             raise NotImplementedError
 

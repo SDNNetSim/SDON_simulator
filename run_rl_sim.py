@@ -243,7 +243,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _init_envs(self):
         # SB3 will init the environment for us, but not for non-DRL algorithms we've added
-        if self.sim_dict['path_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
+        if self.sim_dict['path_algorithm'] in ('q_learning', 'armed_bandit') and self.sim_dict['is_training']:
             self.path_agent.engine_props = self.engine_obj.engine_props
             self.path_agent.setup_env()
         elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
@@ -432,7 +432,8 @@ def _run(env: object, sim_dict: dict):
     _print_info(sim_dict=sim_dict)
 
     if sim_dict['is_training']:
-        if sim_dict['path_algorithm'] == 'q_learning' or sim_dict['core_algorithm'] == 'q_learning':
+        if sim_dict['path_algorithm'] in ('q_learning', 'armed_bandit') \
+                or sim_dict['core_algorithm'] in ('q_learning', 'armed_bandit'):
             _run_iters(env=env, sim_dict=sim_dict, is_training=True)
         elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
             if sim_dict['optimize_hyperparameters']:

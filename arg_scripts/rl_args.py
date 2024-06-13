@@ -48,6 +48,18 @@ empty_q_props = {
     }
 }
 
+# TODO: Probably need state values
+empty_bandit_props = {
+    'rewards_dict': {
+        'routes_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}},
+        'cores_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}}
+    },
+    'errors_dict': {
+        'routes_dict': {'average': [], 'min': [], 'max': [], 'errors': {}},
+        'cores_dict': {'average': [], 'min': [], 'max': [], 'errors': {}}
+    },
+}
+
 empty_drl_props = {
     'min_arrival': np.inf,
     'max_arrival': -1 * np.inf,
