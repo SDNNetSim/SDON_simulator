@@ -60,32 +60,52 @@ class ContextualGreedyHelpers:
         self.epsilon = engine_props['epsilon_start']
         self.rl_props = rl_props
 
-        # To consider the source, destination, and congestion of all K-paths
+        # Consider the source, destination, and congestion of all K-paths
         n_features = (engine_props['topology'].number_of_nodes() * 2) + engine_props['k_paths']
-        self.models = [LinearRegression() for _ in range(self.n_arms)]
-        self.X = [np.empty((0, n_features)) for _ in range(self.n_arms)]
-        self.y = [np.empty((0,)) for _ in range(self.n_arms)]
-        self.is_fitted = [False] * self.n_arms
 
-    def select_arm(self, context):
+        self.num_nodes = rl_props['num_nodes']
+        self.models = {}
+        self.X = {}
+        self.y = {}
+        self.is_fitted = {}
+
+        self.source = None
+        self.dest = None
+
+        # Initialize models, X, y, and is_fitted for each source-destination pair
+        for source in range(self.num_nodes):
+            for destination in range(self.num_nodes):
+                if source == destination:
+                    continue
+                pair = (source, destination)
+                self.models[pair] = [LinearRegression() for _ in range(self.n_arms)]
+                self.X[pair] = [np.empty((0, n_features)) for _ in range(self.n_arms)]
+                self.y[pair] = [np.empty((0,)) for _ in range(self.n_arms)]
+                self.is_fitted[pair] = [False] * self.n_arms
+
+    def select_arm(self, source: int, dest: int, context):
+        self.source = source
+        self.dest = dest
+        pair = (source, dest)
         if np.random.rand() < self.epsilon:
             return np.random.randint(self.n_arms)
         else:
             estimated_rewards = []
-            for i, model in enumerate(self.models):
-                if self.is_fitted[i]:
+            for i, model in enumerate(self.models[pair]):
+                if self.is_fitted[pair][i]:
                     estimated_reward = model.predict(context.reshape(1, -1))[0]
                 else:
                     estimated_reward = 0
                 estimated_rewards.append(estimated_reward)
             return np.argmax(estimated_rewards)
 
-    def update(self, arm, context, reward):
-        self.X[arm] = np.vstack([self.X[arm], context])
-        self.y[arm] = np.append(self.y[arm], reward)
+    def update(self, arm: int, context, reward):
+        pair = (self.source, self.dest)
+        self.X[pair][arm] = np.vstack([self.X[pair][arm], context])
+        self.y[pair][arm] = np.append(self.y[pair][arm], reward)
 
-        self.models[arm].fit(self.X[arm], self.y[arm])
-        self.is_fitted[arm] = True
+        self.models[pair][arm].fit(self.X[pair][arm], self.y[pair][arm])
+        self.is_fitted[pair][arm] = True
 
     def setup_env(self):
         pass
