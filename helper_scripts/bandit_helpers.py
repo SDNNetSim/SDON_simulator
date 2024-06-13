@@ -50,7 +50,7 @@ class ContextualGreedyHelpers:
         self.rl_props = rl_props
 
         # To consider the source, destination, and congestion of all K-paths
-        n_features = 2 + engine_props['k_paths']
+        n_features = (engine_props['topology'].number_of_nodes() * 2) + engine_props['k_paths']
         self.models = [LinearRegression() for _ in range(self.n_arms)]
         self.X = [np.empty((0, n_features)) for _ in range(self.n_arms)]
         self.y = [np.empty((0,)) for _ in range(self.n_arms)]
@@ -70,7 +70,10 @@ class ContextualGreedyHelpers:
             return np.argmax(estimated_rewards)
 
     def update(self, arm, context, reward):
-        self.X[arm] = np.vstack([self.X[arm], context])
+        try:
+            self.X[arm] = np.vstack([self.X[arm], context])
+        except:
+            print('Line 76 bandit helpers.')
         self.y[arm] = np.append(self.y[arm], reward)
 
         self.models[arm].fit(self.X[arm], self.y[arm])

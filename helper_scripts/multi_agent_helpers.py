@@ -131,7 +131,8 @@ class PathAgent:
                 source = path_list[0]
                 dest = path_list[-1]
 
-        self.context_obj.generate_context(source=source, dest=dest, congestion_levels=cong_list)
+        # TODO: Make sure converting to int doesn't cause any discrepancies
+        self.context_obj.generate_context(source=int(source), dest=int(dest), congestion_levels=cong_list)
         self.rl_props['chosen_path_index'] = self.agent_obj.select_arm(context=self.context_obj.curr_context)
         self.rl_props['chosen_path'] = route_obj.route_props['paths_list'][self.rl_props['chosen_path_index']]
 
