@@ -54,6 +54,104 @@ class EpsilonGreedyBandit:
         pass
 
 
+class UCBBandit:
+    def __init__(self, rl_props: dict, engine_props: dict):
+        self.props = {'rewards_matrix': []}
+        self.engine_props = engine_props
+        self.rl_props = rl_props
+        self.completed_sim = False
+        self.iteration = 0
+
+        self.source = None
+        self.dest = None
+
+        self.n_arms = engine_props['k_paths']
+        self.num_nodes = rl_props['num_nodes']
+        self.counts = {}
+        self.values = {}
+
+        # Initialize counts and values for each source-destination pair
+        for source in range(self.num_nodes):
+            for destination in range(self.num_nodes):
+                if source == destination:
+                    continue
+                self.counts[(source, destination)] = np.zeros(self.n_arms)
+                self.values[(source, destination)] = np.zeros(self.n_arms)
+
+    def select_arm(self, source: int, dest: int):
+        self.source = source
+        self.dest = dest
+        pair = (source, dest)
+
+        if 0 in self.counts[pair]:
+            return np.argmin(self.counts[pair])  # Ensure each arm is tried at least once
+        else:
+            total_counts = sum(self.counts[pair])
+            ucb_values = self.values[pair] + np.sqrt(2 * np.log(total_counts) / self.counts[pair])
+            return np.argmax(ucb_values)
+
+    def update(self, arm: int, reward: int):
+        pair = (self.source, self.dest)
+        self.counts[pair][arm] += 1
+        n = self.counts[pair][arm]
+        value = self.values[pair][arm]
+        self.values[pair][arm] = value + (reward - value) / n
+
+        if self.iteration >= len(self.props['rewards_matrix']):
+            self.props['rewards_matrix'].append([])
+        self.props['rewards_matrix'][self.iteration].append(reward)
+
+    def setup_env(self):
+        pass
+
+
+class ThompsonSamplingBandit:
+    def __init__(self, rl_props: dict, engine_props: dict):
+        self.props = {'rewards_matrix': []}
+        self.engine_props = engine_props
+        self.rl_props = rl_props
+        self.completed_sim = False
+        self.iteration = 0
+
+        self.source = None
+        self.dest = None
+
+        self.n_arms = engine_props['k_paths']
+        self.num_nodes = rl_props['num_nodes']
+        self.successes = {}
+        self.failures = {}
+
+        # Initialize successes and failures for each source-destination pair
+        for source in range(self.num_nodes):
+            for destination in range(self.num_nodes):
+                if source == destination:
+                    continue
+                self.successes[(source, destination)] = np.ones(self.n_arms)  # Beta(1,1) prior
+                self.failures[(source, destination)] = np.ones(self.n_arms)
+
+    def select_arm(self, source: int, dest: int):
+        self.source = source
+        self.dest = dest
+        pair = (source, dest)
+
+        samples = np.random.beta(self.successes[pair], self.failures[pair])
+        return np.argmax(samples)
+
+    def update(self, arm: int, reward: int):
+        pair = (self.source, self.dest)
+        if reward > 0:
+            self.successes[pair][arm] += 1
+        else:
+            self.failures[pair][arm] += 1
+
+        if self.iteration >= len(self.props['rewards_matrix']):
+            self.props['rewards_matrix'].append([])
+        self.props['rewards_matrix'][self.iteration].append(reward)
+
+    def setup_env(self):
+        pass
+
+
 class ContextualEpsilonGreedyBandit:
     def __init__(self, rl_props: dict, engine_props: dict):
         self.n_arms = engine_props['k_paths']

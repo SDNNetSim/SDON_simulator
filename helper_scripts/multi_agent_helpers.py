@@ -6,6 +6,7 @@ from gymnasium import spaces
 from .sim_helpers import find_path_cong
 from .ql_helpers import QLearningHelpers
 from .bandit_helpers import EpsilonGreedyBandit, ContextualEpsilonGreedyBandit, ContextGenerator
+from .bandit_helpers import ThompsonSamplingBandit, UCBBandit
 
 
 class PathAgent:
@@ -42,6 +43,10 @@ class PathAgent:
         elif self.path_algorithm == 'context_epsilon_greedy_bandit':
             self.agent_obj = ContextualEpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props)
             self.context_obj = ContextGenerator(rl_props=self.rl_props, engine_props=self.engine_props)
+        elif self.path_algorithm == 'ucb_bandit':
+            self.agent_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props)
+        elif self.path_algorithm == 'thompson_sampling_bandit':
+            self.agent_obj = ThompsonSamplingBandit(rl_props=self.rl_props, engine_props=self.engine_props)
         else:
             raise NotImplementedError
 
@@ -146,9 +151,9 @@ class PathAgent:
         """
         if self.path_algorithm == 'q_learning':
             self._ql_route()
-        elif self.path_algorithm == 'armed_bandit':
+        elif self.path_algorithm in ('epsilon_greedy_bandit', 'thompson_sampling_bandit', 'ucb_bandit'):
             self._bandit_route(route_obj=kwargs['route_obj'])
-        elif self.path_algorithm == 'context_bandit':
+        elif self.path_algorithm == 'context_epsilon_greedy_bandit':
             self._context_bandit_route(route_obj=kwargs['route_obj'])
         else:
             raise NotImplementedError
