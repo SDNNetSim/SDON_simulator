@@ -5,7 +5,7 @@ from gymnasium import spaces
 
 from .sim_helpers import find_path_cong
 from .ql_helpers import QLearningHelpers
-from .bandit_helpers import MultiBanditHelpers, ContextualGreedyHelpers, ContextGenerator
+from .bandit_helpers import EpsilonGreedyBandit, ContextualEpsilonGreedyBandit, ContextGenerator
 
 
 class PathAgent:
@@ -37,10 +37,10 @@ class PathAgent:
         """
         if self.path_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
-        elif self.path_algorithm == 'armed_bandit':
-            self.agent_obj = MultiBanditHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
-        elif self.path_algorithm == 'context_bandit':
-            self.agent_obj = ContextualGreedyHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
+        elif self.path_algorithm == 'epsilon_greedy_bandit':
+            self.agent_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props)
+        elif self.path_algorithm == 'context_epsilon_greedy_bandit':
+            self.agent_obj = ContextualEpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props)
             self.context_obj = ContextGenerator(rl_props=self.rl_props, engine_props=self.engine_props)
         else:
             raise NotImplementedError

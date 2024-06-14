@@ -4,7 +4,7 @@ from sklearn.linear_model import LinearRegression
 from arg_scripts.rl_args import empty_bandit_props
 
 
-class MultiBanditHelpers:
+class EpsilonGreedyBandit:
     def __init__(self, rl_props: dict, engine_props: dict):
         self.props = empty_bandit_props
         self.engine_props = engine_props
@@ -54,7 +54,7 @@ class MultiBanditHelpers:
         pass
 
 
-class ContextualGreedyHelpers:
+class ContextualEpsilonGreedyBandit:
     def __init__(self, rl_props: dict, engine_props: dict):
         self.n_arms = engine_props['k_paths']
         self.epsilon = engine_props['epsilon_start']

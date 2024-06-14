@@ -95,7 +95,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _handle_test_train_step(self, was_allocated: bool, path_length: int):
         if self.sim_dict['is_training']:
-            if self.sim_dict['path_algorithm'] in ('q_learning', 'armed_bandit', 'context_bandit'):
+            if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit',
+                                                   'context_epsilon_greedy_bandit'):
                 self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                        iteration=self.iteration, path_length=path_length)
             elif self.sim_dict['core_algorithm'] == 'q_learning':
@@ -144,7 +145,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         return dict()
 
     def _handle_path_train_test(self):
-        if self.sim_dict['path_algorithm'] in ('armed_bandit', 'context_bandit'):
+        if self.sim_dict['path_algorithm'] in ('epsilon_greedy_bandit', 'context_epsilon_greedy_bandit'):
             self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
             self.route_obj.engine_props['route_method'] = 'k_shortest_path'
             self.route_obj.get_route()
@@ -192,7 +193,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _handle_test_train_obs(self, curr_req: dict):
         if self.sim_dict['is_training']:
-            if self.sim_dict['path_algorithm'] in ('q_learning', 'armed_bandit', 'context_bandit'):
+            if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit',
+                                                   'context_epsilon_greedy_bandit'):
                 self._handle_path_train_test()
             elif self.sim_dict['core_algorithm'] == 'q_learning':
                 self._handle_core_train()
@@ -251,7 +253,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _init_envs(self):
         # SB3 will init the environment for us, but not for non-DRL algorithms we've added
-        if self.sim_dict['path_algorithm'] in ('q_learning', 'armed_bandit', 'context_bandit') \
+        if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit') \
                 and self.sim_dict['is_training']:
             self.path_agent.engine_props = self.engine_obj.engine_props
             self.path_agent.setup_env()
@@ -402,7 +404,7 @@ def _get_model(algorithm: str, device: str, env: object):
 
 
 def _print_info(sim_dict: dict):
-    if sim_dict['path_algorithm'] in ('q_learning', 'armed_bandit', 'context_bandit'):
+    if sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit'):
         print(f'Beginning training process for the PATH AGENT using the '
               f'{sim_dict["path_algorithm"].title()} algorithm.')
     elif sim_dict['core_algorithm'] == 'q_learning':
@@ -442,8 +444,9 @@ def _run(env: object, sim_dict: dict):
 
     if sim_dict['is_training']:
         # TODO: Maybe change these algorithms to lists (constants)
-        if sim_dict['path_algorithm'] in ('q_learning', 'armed_bandit', 'context_bandit') \
-                or sim_dict['core_algorithm'] in ('q_learning', 'armed_bandit'):
+        if sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit') \
+                or sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit',
+                                                  'context_epsilon_greedy_bandit'):
             _run_iters(env=env, sim_dict=sim_dict, is_training=True)
         elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
             if sim_dict['optimize_hyperparameters']:
