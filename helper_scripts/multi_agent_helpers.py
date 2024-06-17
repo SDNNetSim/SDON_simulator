@@ -209,8 +209,8 @@ class CoreAgent:
         if self.core_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
         elif self.core_algorithm == 'epsilon_greedy_bandit':
-            pass
-            # self.agent_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props)
+            self.agent_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=False,
+                                                 is_core=True)
         else:
             raise NotImplementedError
 
@@ -241,10 +241,14 @@ class CoreAgent:
         """
         reward = self.get_reward(was_allocated=was_allocated)
 
+        self.agent_obj.iteration = iteration
         if self.core_algorithm == 'q_learning':
-            self.agent_obj.iteration = iteration
             self.agent_obj.update_cores_matrix(reward=reward, level_index=self.level_index,
                                                net_spec_dict=net_spec_dict, core_index=self.rl_props['core_index'])
+        elif self.core_algorithm == 'epsilon_greedy_bandit':
+            self.agent_obj.update(reward=reward, arm=self.rl_props['core_index'], iteration=iteration)
+        else:
+            raise NotImplementedError
 
     def _ql_core(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
@@ -262,12 +266,21 @@ class CoreAgent:
                 matrix_flag='cores_matrix')
             self.level_index = self.cong_list[self.rl_props['core_index']][-1]
 
+    def _bandit_core(self, path_index: int, source: str, dest: str):
+        self.rl_props['core_index'] = self.agent_obj.select_core_arm(source=int(source), dest=int(dest),
+                                                                     path_index=path_index)
+
     def get_core(self):
         """
         Assigns a core to the current request.
         """
         if self.core_algorithm == 'q_learning':
             self._ql_core()
+        elif self.core_algorithm == 'epsilon_greedy_bandit':
+            self._bandit_core(path_index=self.rl_props['path_index'], source=self.rl_props['chosen_path'][0][0],
+                              dest=self.rl_props['chosen_path'][0][-1])
+        else:
+            raise NotImplementedError
 
     def load_model(self, model_path: str, erlang: float, num_cores: int):
         """
@@ -278,8 +291,9 @@ class CoreAgent:
         :param num_cores: The number of cores the model was trained on.
         """
         self.setup_env()
-        model_path = os.path.join('logs', model_path, f'e{erlang}_cores_c{num_cores}.npy')
-        self.agent_obj.props['cores_matrix'] = np.load(model_path, allow_pickle=True)
+        if self.core_algorithm == 'q_learning':
+            model_path = os.path.join('logs', model_path, f'e{erlang}_cores_c{num_cores}.npy')
+            self.agent_obj.props['cores_matrix'] = np.load(model_path, allow_pickle=True)
 
 
 class SpectrumAgent:

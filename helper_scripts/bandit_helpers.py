@@ -58,6 +58,7 @@ class EpsilonGreedyBandit:
 
         self.source = None
         self.dest = None
+        self.path_index = None
 
         if is_path:
             self.n_arms = engine_props['k_paths']
@@ -74,10 +75,16 @@ class EpsilonGreedyBandit:
             for destination in range(self.num_nodes):
                 if source == destination:
                     continue
-                self.counts[(source, destination)] = np.zeros(self.n_arms)
-                self.values[(source, destination)] = np.zeros(self.n_arms)
 
-    def select_arm(self, source: int, dest: int):
+                if is_path:
+                    self.counts[(source, destination)] = np.zeros(self.n_arms)
+                    self.values[(source, destination)] = np.zeros(self.n_arms)
+                else:
+                    for path_index in range(self.engine_props['k_paths']):
+                        self.counts[(source, destination, path_index)] = np.zeros(self.n_arms)
+                        self.values[(source, destination, path_index)] = np.zeros(self.n_arms)
+
+    def select_path_arm(self, source: int, dest: int):
         self.source = source
         self.dest = dest
         pair = (source, dest)
@@ -86,8 +93,22 @@ class EpsilonGreedyBandit:
         else:
             return np.argmax(self.values[pair])
 
+    def select_core_arm(self, source: int, dest: int, path_index: int):
+        self.source = source
+        self.dest = dest
+        self.path_index = path_index
+        pair = (source, dest, path_index)
+        if np.random.rand() < self.epsilon:
+            return np.random.randint(self.n_arms)
+        else:
+            return np.argmax(self.values[pair])
+
     def update(self, arm: int, reward: int, iteration: int):
-        pair = (self.source, self.dest)
+        if self.is_path:
+            pair = (self.source, self.dest)
+        else:
+            pair = (self.source, self.dest, self.path_index)
+
         self.counts[pair][arm] += 1
         n = self.counts[pair][arm]
         value = self.values[pair][arm]

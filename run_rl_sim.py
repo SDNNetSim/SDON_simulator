@@ -67,10 +67,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             terminated = True
             base_fp = os.path.join('data')
             # The spectrum agent is handled by SB3 automatically
-            if self.sim_dict['path_algorithm'] in ('q_learning', 'multi_bandit', 'context_bandit') \
+            # TODO: Here
+            if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit') \
                     and self.sim_dict['is_training']:
                 self.path_agent.end_iter()
-            elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
+            elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit') and self.sim_dict[
+                'is_training']:
                 self.core_agent.end_iter()
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, base_fp=base_fp)
             self.iteration += 1
@@ -100,7 +102,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                                                    'thompson_sampling_bandit'):
                 self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                        iteration=self.iteration, path_length=path_length)
-            elif self.sim_dict['core_algorithm'] == 'q_learning':
+            elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit',
+                                                     'context_epsilon_greedy_bandit', 'ucb_bandit',
+                                                     'thompson_sampling_bandit'):
                 self.core_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                        iteration=self.iteration)
             else:
@@ -198,7 +202,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                                                    'context_epsilon_greedy_bandit', 'ucb_bandit',
                                                    'thompson_sampling_bandit'):
                 self._handle_path_train_test()
-            elif self.sim_dict['core_algorithm'] == 'q_learning':
+            elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit',
+                                                     'context_epsilon_greedy_bandit', 'ucb_bandit',
+                                                     'thompson_sampling_bandit'):
                 self._handle_core_train()
             elif self.sim_dict['spectrum_algorithm'] not in ('first_fit', 'best_fit', ' last_fit'):
                 self._handle_spectrum_train()
@@ -260,7 +266,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 and self.sim_dict['is_training']:
             self.path_agent.engine_props = self.engine_obj.engine_props
             self.path_agent.setup_env()
-        elif self.sim_dict['core_algorithm'] == 'q_learning' and self.sim_dict['is_training']:
+        elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit',
+                                                 'ucb_bandit', 'thompson_sampling_bandit') \
+                and self.sim_dict['is_training']:
             self.core_agent.engine_props = self.engine_obj.engine_props
             self.core_agent.setup_env()
 
@@ -411,7 +419,8 @@ def _print_info(sim_dict: dict):
                                       'ucb_bandit', 'thompson_sampling_bandit'):
         print(f'Beginning training process for the PATH AGENT using the '
               f'{sim_dict["path_algorithm"].title()} algorithm.')
-    elif sim_dict['core_algorithm'] == 'q_learning':
+    elif sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit',
+                                        'ucb_bandit', 'thompson_sampling_bandit'):
         print(f'Beginning training process for the CORE AGENT using the '
               f'{sim_dict["core_algorithm"].title()} algorithm.')
     elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
