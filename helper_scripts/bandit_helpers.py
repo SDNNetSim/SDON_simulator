@@ -1,5 +1,6 @@
 import os
 import json
+import ast
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -8,8 +9,12 @@ from helper_scripts.os_helpers import create_dir
 from arg_scripts.rl_args import empty_bandit_props
 
 
-def load_model():
-    raise NotImplementedError
+def load_model(train_fp: str):
+    train_fp = os.path.join('logs', train_fp)
+    with open(train_fp, 'r') as file_obj:
+        state_vals_dict = json.load(file_obj)
+
+    return state_vals_dict
 
 
 def save_model(iteration: int, max_iters: int, len_rewards: int, num_requests: int, rewards_matrix: list,
@@ -101,7 +106,8 @@ class EpsilonGreedyBandit:
 
     def setup_env(self):
         if not self.engine_props['is_training']:
-            load_model()
+            self.values = load_model(train_fp=self.engine_props['path_model'])
+            self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
 
 
 class UCBBandit:

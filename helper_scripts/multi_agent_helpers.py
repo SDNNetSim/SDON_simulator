@@ -165,7 +165,6 @@ class PathAgent:
         else:
             raise NotImplementedError
 
-    # TODO: Doesn't work for other models
     def load_model(self, model_path: str, erlang: float, num_cores: int):
         """
         Loads a previously trained path agent model.
@@ -175,8 +174,9 @@ class PathAgent:
         :param num_cores: The number of cores the model was trained with.
         """
         self.setup_env()
-        model_path = os.path.join('logs', model_path, f'e{erlang}_routes_c{num_cores}.npy')
-        self.agent_obj.props['routes_matrix'] = np.load(model_path, allow_pickle=True)
+        if self.engine_props['path_model'] == 'q_learning':
+            model_path = os.path.join('logs', model_path, f'e{erlang}_routes_c{num_cores}.npy')
+            self.agent_obj.props['routes_matrix'] = np.load(model_path, allow_pickle=True)
 
 
 class CoreAgent:
@@ -208,6 +208,9 @@ class CoreAgent:
         """
         if self.core_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
+        elif self.core_algorithm == 'epsilon_greedy_bandit':
+            pass
+            # self.agent_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props)
         else:
             raise NotImplementedError
 
