@@ -1,4 +1,5 @@
 import os
+import json
 
 import numpy as np
 from gymnasium import spaces
@@ -129,7 +130,7 @@ class PathAgent:
         paths_list = route_obj.route_props['paths_list']
         source = paths_list[0][0]
         dest = paths_list[0][-1]
-        self.rl_props['chosen_path_index'] = self.agent_obj.select_arm(source=int(source), dest=int(dest))
+        self.rl_props['chosen_path_index'] = self.agent_obj.select_path_arm(source=int(source), dest=int(dest))
         self.rl_props['chosen_path'] = route_obj.route_props['paths_list'][self.rl_props['chosen_path_index']]
 
     def _context_bandit_route(self, route_obj: object):
@@ -174,9 +175,11 @@ class PathAgent:
         :param num_cores: The number of cores the model was trained with.
         """
         self.setup_env()
-        if self.engine_props['path_model'] == 'q_learning':
+        if self.engine_props['path_algorithm'] == 'q_learning':
             model_path = os.path.join('logs', model_path, f'e{erlang}_routes_c{num_cores}.npy')
             self.agent_obj.props['routes_matrix'] = np.load(model_path, allow_pickle=True)
+        else:
+            pass
 
 
 class CoreAgent:
@@ -277,7 +280,7 @@ class CoreAgent:
         if self.core_algorithm == 'q_learning':
             self._ql_core()
         elif self.core_algorithm == 'epsilon_greedy_bandit':
-            self._bandit_core(path_index=self.rl_props['path_index'], source=self.rl_props['chosen_path'][0][0],
+            self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],
                               dest=self.rl_props['chosen_path'][0][-1])
         else:
             raise NotImplementedError

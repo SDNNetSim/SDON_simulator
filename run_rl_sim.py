@@ -111,7 +111,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 raise NotImplementedError
         else:
             self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
-                                   iteration=self.iteration)
+                                   iteration=self.iteration, path_length=path_length)
             self.core_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                    iteration=self.iteration)
 
@@ -168,7 +168,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # Default to first fit if all paths fail
         self.rl_props['chosen_path'] = [self.route_obj.route_props['paths_list'][0]]
-        self.rl_props['path_index'] = 0
+        self.rl_props['chosen_path_index'] = 0
         for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
             mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
 
@@ -178,7 +178,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
             if was_allocated:
                 self.rl_props['chosen_path'] = [path_list]
-                self.rl_props['path_index'] = path_index
+                self.rl_props['chosen_path_index'] = path_index
                 self.core_agent.no_penalty = False
                 break
             else:
@@ -378,7 +378,8 @@ def _run_iters(env: object, sim_dict: dict, is_training: bool, model=None):
         if is_training:
             obs, _, is_terminated, is_truncated, _ = env.step([0])
         else:
-            action, _states = model.predict(obs)
+            # action, _states = model.predict(obs)
+            action = [0]
             obs, _, is_terminated, is_truncated, _ = env.step(action)
 
         if completed_episodes >= sim_dict['max_iters']:
@@ -386,6 +387,10 @@ def _run_iters(env: object, sim_dict: dict, is_training: bool, model=None):
         if is_terminated or is_truncated:
             obs, _ = env.reset()
             completed_episodes += 1
+
+            if completed_episodes == 50:
+                print('Line 391 run rl sim.')
+
             print(f'{completed_episodes} episodes completed out of {sim_dict["max_iters"]}.')
 
 
@@ -436,7 +441,7 @@ def _get_trained_model(env: object, sim_dict: dict):
     if sim_dict['spectrum_algorithm'] == 'ppo':
         model = PPO.load(os.path.join('logs', sim_dict['spectrum_model'], 'ppo_model.zip'), env=env)
     else:
-        raise NotImplementedError
+        model = None
 
     return model
 
@@ -481,9 +486,9 @@ def _run(env: object, sim_dict: dict):
     else:
         model = _get_trained_model(env=env, sim_dict=sim_dict)
         _run_iters(env=env, sim_dict=sim_dict, is_training=False, model=model)
-        save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
-                               env.modified_props['sim_start'], 'ppo_model.zip')
-        model.save(save_fp)
+        # save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
+        #                        env.modified_props['sim_start'], 'ppo_model.zip')
+        # model.save(save_fp)
 
 
 # TODO: Move to a helpers file

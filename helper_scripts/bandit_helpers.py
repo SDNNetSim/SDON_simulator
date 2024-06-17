@@ -41,7 +41,11 @@ def save_model(iteration: int, max_iters: int, len_rewards: int, num_requests: i
 
         # Convert tuples to strings and arrays to lists for JSON format
         state_values_dict = {str(key): value.tolist() for key, value in state_values_dict.items()}
-        state_vals_fp = f"state_vals_e{erlang}_routes_c{cores_per_link}.json"
+
+        if is_path:
+            state_vals_fp = f"state_vals_e{erlang}_routes_c{cores_per_link}.json"
+        else:
+            state_vals_fp = f"state_vals_e{erlang}_cores_c{cores_per_link}.json"
         save_fp = os.path.join(os.getcwd(), save_dir, state_vals_fp)
         with open(save_fp, 'w') as file_obj:
             json.dump(state_values_dict, file_obj)
@@ -101,7 +105,10 @@ class EpsilonGreedyBandit:
         if np.random.rand() < self.epsilon:
             return np.random.randint(self.n_arms)
         else:
-            return np.argmax(self.values[pair])
+            try:
+                return np.argmax(self.values[pair])
+            except:
+                print('Line 111 bandit helpers.')
 
     def update(self, arm: int, reward: int, iteration: int):
         if self.is_path:
@@ -127,8 +134,13 @@ class EpsilonGreedyBandit:
 
     def setup_env(self):
         if not self.engine_props['is_training']:
-            self.values = load_model(train_fp=self.engine_props['path_model'])
-            self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
+            if self.is_path:
+                self.values = load_model(train_fp=self.engine_props['path_model'])
+                self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
+            else:
+                self.values = load_model(train_fp=self.engine_props['core_model'])
+                self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
+
 
 
 class UCBBandit:
