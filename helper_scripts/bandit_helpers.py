@@ -4,6 +4,30 @@ from sklearn.linear_model import LinearRegression
 from arg_scripts.rl_args import empty_bandit_props
 
 
+# TODO: Check to make sure rewards matrix is correctly gathered (and then take the average here)
+# TODO: Don't forget about counts (state values)
+# TODO: Return the correct value
+def save_model(iteration: int, max_iters: int, len_rewards: int, num_requests: int, rewards_matrix: list,
+               is_training: bool):
+    # Saves every 50 iterations
+    # TODO: Add save every 'x' iters to the configuration file
+    if (iteration in (max_iters - 1, (max_iters - 1) % 50)) and len_rewards == num_requests:
+        # TODO: I don't think rewards is a dictionary
+        if iteration == (max_iters - 1):
+            # TODO: Calculate the average
+            rewards_matrix = None
+        else:
+            rewards_matrix = None
+
+        # TODO: Update
+        if not is_training:
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+
+    return None
+
+
 class EpsilonGreedyBandit:
     def __init__(self, rl_props: dict, engine_props: dict):
         self.props = empty_bandit_props
@@ -49,6 +73,10 @@ class EpsilonGreedyBandit:
         if self.iteration >= len(self.props['rewards_matrix']):
             self.props['rewards_matrix'].append([])
         self.props['rewards_matrix'][self.iteration].append(reward)
+
+        # Check if we need to save the model
+        save_model(iteration=None, max_iters=None, len_rewards=None, num_requests=None,
+                   rewards_matrix=self.props['rewards_matrix'], is_training=None)
 
     def setup_env(self):
         pass

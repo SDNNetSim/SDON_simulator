@@ -124,6 +124,7 @@ OTHER_OPTIONS = {
         'policy': str,
         'reward': float,
         'penalty': float,
+        'path_levels': int,
     },
     'ml_settings': {
         'output_train_data': str_to_bool,
@@ -197,6 +198,7 @@ COMMAND_LINE_PARAMS = [
     ['ml_model', str, ''],
     ['test_size', float, ''],
     ['deploy_model', bool, ''],
+    ['path_levels', int, ''],
 
     # For StableBaselines3
     ['algo', str, ''],

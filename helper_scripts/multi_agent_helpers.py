@@ -82,11 +82,17 @@ class PathAgent:
         if self.path_algorithm == 'q_learning':
             self.agent_obj.update_routes_matrix(reward=reward, level_index=self.level_index,
                                                 net_spec_dict=net_spec_dict)
-        elif self.path_algorithm == 'armed_bandit':
+        elif self.path_algorithm == 'epsilon_greedy_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'])
-        elif self.path_algorithm == 'context_bandit':
+        elif self.path_algorithm == 'ucb_bandit':
+            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'])
+        elif self.path_algorithm == 'thompson_sampling_bandit':
+            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'])
+        elif self.path_algorithm == 'context_epsilon_greedy_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'],
                                   context=self.context_obj.curr_context)
+        else:
+            raise NotImplementedError
 
     def __ql_route(self, random_float: float):
         if random_float < self.agent_obj.props['epsilon']:
