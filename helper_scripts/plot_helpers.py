@@ -172,7 +172,12 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                 self.file_info[time] = {'network': network, 'date': date, 'sim_dict': dict()}
                 curr_dir = os.path.join(self.plot_props['output_dir'], network, date, time)
                 # Sort by sim number
-                sim_dirs_list = os.listdir(curr_dir)
+                try:
+                    sim_dirs_list = os.listdir(curr_dir)
+                except FileNotFoundError:
+                    print(f'File: {curr_dir} was not found. Skipping!')
+                    continue
+
                 sim_dirs_list = [sim_dir for sim_dir in os.listdir(curr_dir) if 'train_data' not in sim_dir]
                 sim_dirs_list = sorted(sim_dirs_list, key=lambda x: int(x[1:]))
 
@@ -290,7 +295,11 @@ def find_times(dates_dict: dict, filter_dict: dict):
             for input_file in input_file_list:
                 file_path = os.path.join(sims_path, input_file)
                 with open(file_path, 'r', encoding='utf-8') as file_obj:
-                    file_dict = json.load(file_obj)
+                    try:
+                        file_dict = json.load(file_obj)
+                    except json.JSONDecodeError:
+                        print('Skipping file, it did not complete writing.')
+                        continue
 
                 keep_config = _check_filters(file_dict=file_dict, filter_dict=filter_dict)
                 if keep_config:

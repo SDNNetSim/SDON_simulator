@@ -39,7 +39,8 @@ class PathAgent:
         if self.path_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
         elif self.path_algorithm == 'epsilon_greedy_bandit':
-            self.agent_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props)
+            self.agent_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=True,
+                                                 is_core=False)
         elif self.path_algorithm == 'context_epsilon_greedy_bandit':
             self.agent_obj = ContextualEpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props)
             self.context_obj = ContextGenerator(rl_props=self.rl_props, engine_props=self.engine_props)
@@ -83,7 +84,7 @@ class PathAgent:
             self.agent_obj.update_routes_matrix(reward=reward, level_index=self.level_index,
                                                 net_spec_dict=net_spec_dict)
         elif self.path_algorithm == 'epsilon_greedy_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'])
+            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'], iteration=iteration)
         elif self.path_algorithm == 'ucb_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'])
         elif self.path_algorithm == 'thompson_sampling_bandit':

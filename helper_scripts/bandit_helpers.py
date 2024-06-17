@@ -1,47 +1,65 @@
+import os
+import json
+
 import numpy as np
 from sklearn.linear_model import LinearRegression
 
+from helper_scripts.os_helpers import create_dir
 from arg_scripts.rl_args import empty_bandit_props
 
 
-# TODO: Check to make sure rewards matrix is correctly gathered (and then take the average here)
-# TODO: Don't forget about counts (state values)
-# TODO: Return the correct value
+def load_model():
+    raise NotImplementedError
+
+
 def save_model(iteration: int, max_iters: int, len_rewards: int, num_requests: int, rewards_matrix: list,
-               is_training: bool):
-    # Saves every 50 iterations
+               state_values_dict: dict, engine_props: dict, algorithm: str, is_path: bool):
     # TODO: Add save every 'x' iters to the configuration file
     if (iteration in (max_iters - 1, (max_iters - 1) % 50)) and len_rewards == num_requests:
-        # TODO: I don't think rewards is a dictionary
-        if iteration == (max_iters - 1):
-            # TODO: Calculate the average
-            rewards_matrix = None
-        else:
-            rewards_matrix = None
+        rewards_matrix = np.array(rewards_matrix)
+        rewards_arr = rewards_matrix.mean(axis=0)
 
-        # TODO: Update
-        if not is_training:
-            raise NotImplementedError
-        else:
-            raise NotImplementedError
+        date_time = os.path.join(engine_props['network'], engine_props['date'], engine_props['sim_start'])
+        save_dir = os.path.join('logs', algorithm, date_time)
+        create_dir(file_path=save_dir)
 
-    return None
+        erlang = engine_props['erlang']
+        cores_per_link = engine_props['cores_per_link']
+        if is_path:
+            base_fp = f"e{erlang}_routes_c{cores_per_link}.npy"
+        else:
+            base_fp = f"e{erlang}_cores_c{cores_per_link}.npy"
+
+        rewards_fp = f'rewards_{base_fp}'
+        save_fp = os.path.join(os.getcwd(), save_dir, rewards_fp)
+        np.save(save_fp, rewards_arr)
+
+        # Convert tuples to strings and arrays to lists for JSON format
+        state_values_dict = {str(key): value.tolist() for key, value in state_values_dict.items()}
+        state_vals_fp = f"state_vals_e{erlang}_routes_c{cores_per_link}.json"
+        save_fp = os.path.join(os.getcwd(), save_dir, state_vals_fp)
+        with open(save_fp, 'w') as file_obj:
+            json.dump(state_values_dict, file_obj)
 
 
 class EpsilonGreedyBandit:
-    def __init__(self, rl_props: dict, engine_props: dict):
+    def __init__(self, rl_props: dict, engine_props: dict, is_path: bool, is_core: bool):
         self.props = empty_bandit_props
         self.engine_props = engine_props
         self.rl_props = rl_props
         self.completed_sim = False
         self.iteration = 0
+        self.is_path = is_path
 
         self.source = None
         self.dest = None
 
-        self.n_arms = engine_props['k_paths']
-        self.epsilon = engine_props['epsilon_start']
+        if is_path:
+            self.n_arms = engine_props['k_paths']
+        else:
+            self.n_arms = engine_props['cores_per_link']
 
+        self.epsilon = engine_props['epsilon_start']
         self.num_nodes = rl_props['num_nodes']
         self.counts = {}
         self.values = {}
@@ -63,7 +81,7 @@ class EpsilonGreedyBandit:
         else:
             return np.argmax(self.values[pair])
 
-    def update(self, arm: int, reward: int):
+    def update(self, arm: int, reward: int, iteration: int):
         pair = (self.source, self.dest)
         self.counts[pair][arm] += 1
         n = self.counts[pair][arm]
@@ -75,11 +93,15 @@ class EpsilonGreedyBandit:
         self.props['rewards_matrix'][self.iteration].append(reward)
 
         # Check if we need to save the model
-        save_model(iteration=None, max_iters=None, len_rewards=None, num_requests=None,
-                   rewards_matrix=self.props['rewards_matrix'], is_training=None)
+        save_model(iteration=iteration, max_iters=self.engine_props['max_iters'],
+                   len_rewards=len(self.props['rewards_matrix'][iteration]),
+                   num_requests=self.engine_props['num_requests'],
+                   rewards_matrix=self.props['rewards_matrix'], engine_props=self.engine_props,
+                   algorithm='greedy_bandit', is_path=self.is_path, state_values_dict=self.values)
 
     def setup_env(self):
-        pass
+        if not self.engine_props['is_training']:
+            load_model()
 
 
 class UCBBandit:
