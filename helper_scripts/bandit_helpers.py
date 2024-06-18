@@ -105,10 +105,7 @@ class EpsilonGreedyBandit:
         if np.random.rand() < self.epsilon:
             return np.random.randint(self.n_arms)
         else:
-            try:
-                return np.argmax(self.values[pair])
-            except:
-                print('Line 111 bandit helpers.')
+            return np.argmax(self.values[pair])
 
     def update(self, arm: int, reward: int, iteration: int):
         if self.is_path:
