@@ -225,7 +225,7 @@ class CoreAgent:
     def calculate_dynamic_reward(self, core_index, req_id):
         core_decay = self.engine_props['reward'] / (1 + self.engine_props['decay_factor'] * core_index)
         request_weight = ((self.engine_props['num_requests'] - req_id) /
-                          self.engine_props['num_requests']) ** self.engine_props['beta']
+                          self.engine_props['num_requests']) ** self.engine_props['core_beta']
         return core_decay * request_weight
 
     def get_reward(self, was_allocated: bool):

@@ -125,7 +125,7 @@ OTHER_OPTIONS = {
         'reward': float,
         'penalty': float,
         'path_levels': int,
-        'beta': float,
+        'core_beta': float,
         'gamma': float,
         'decay_factor': float,
     },
@@ -202,7 +202,7 @@ COMMAND_LINE_PARAMS = [
     ['test_size', float, ''],
     ['deploy_model', bool, ''],
     ['path_levels', int, ''],
-    ['beta', float, ''],
+    ['core_beta', float, ''],
     ['gamma', float, ],
     ['decay_factor', float, ''],
 
