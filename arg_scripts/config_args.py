@@ -125,6 +125,9 @@ OTHER_OPTIONS = {
         'reward': float,
         'penalty': float,
         'path_levels': int,
+        'beta': float,
+        'gamma': float,
+        'decay_factor': float,
     },
     'ml_settings': {
         'output_train_data': str_to_bool,
@@ -199,6 +202,9 @@ COMMAND_LINE_PARAMS = [
     ['test_size', float, ''],
     ['deploy_model', bool, ''],
     ['path_levels', int, ''],
+    ['beta', float, ''],
+    ['gamma', float, ],
+    ['decay_factor', float, ''],
 
     # For StableBaselines3
     ['algo', str, ''],

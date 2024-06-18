@@ -4,7 +4,7 @@ import json
 import numpy as np
 from gymnasium import spaces
 
-from .sim_helpers import find_path_cong
+from .sim_helpers import find_path_cong, find_core_cong
 from .ql_helpers import QLearningHelpers
 from .bandit_helpers import EpsilonGreedyBandit, ContextualEpsilonGreedyBandit, ContextGenerator
 from .bandit_helpers import ThompsonSamplingBandit, UCBBandit
@@ -219,6 +219,15 @@ class CoreAgent:
 
         self.agent_obj.setup_env()
 
+    def calculate_dynamic_penalty(self, core_index, req_id):
+        return self.engine_props['penalty'] * (1 + self.engine_props['gamma'] * core_index / req_id)
+
+    def calculate_dynamic_reward(self, core_index, req_id):
+        core_decay = self.engine_props['reward'] / (1 + self.engine_props['decay_factor'] * core_index)
+        request_weight = ((self.engine_props['num_requests'] - req_id) /
+                          self.engine_props['num_requests']) ** self.engine_props['beta']
+        return core_decay * request_weight
+
     def get_reward(self, was_allocated: bool):
         """
         Gets the core agent's reward based on the last action taken.
@@ -227,12 +236,15 @@ class CoreAgent:
         :return: The reward.
         :rtype: float
         """
-        if was_allocated:
-            return self.engine_props['reward']
-        elif self.no_penalty:
-            return self.engine_props['penalty']
+        req_id = float(self.rl_help_obj.sdn_props['req_id'])
+        core_index = self.rl_props['core_index']
 
-        return self.engine_props['penalty']
+        if was_allocated:
+            reward = self.calculate_dynamic_reward(core_index, req_id)
+            return reward
+        else:
+            penalty = self.calculate_dynamic_penalty(core_index, req_id)
+            return penalty
 
     def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int):
         """
@@ -242,7 +254,7 @@ class CoreAgent:
         :param net_spec_dict: The current network spectrum database.
         :param iteration: The current iteration
         """
-        reward = self.get_reward(was_allocated=was_allocated)
+        reward = self.get_reward(was_allocated=was_allocated, net_spec_dict=net_spec_dict)
 
         self.agent_obj.iteration = iteration
         if self.core_algorithm == 'q_learning':
