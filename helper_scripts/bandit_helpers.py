@@ -39,6 +39,8 @@ def save_model(iteration: int, max_iters: int, len_rewards: int, num_requests: i
         save_fp = os.path.join(os.getcwd(), save_dir, rewards_fp)
         np.save(save_fp, rewards_arr)
 
+        if state_values_dict is None:
+            return
         # Convert tuples to strings and arrays to lists for JSON format
         state_values_dict = {str(key): value.tolist() for key, value in state_values_dict.items()}
 
@@ -259,12 +261,12 @@ class ThompsonSamplingBandit:
                 if source == destination:
                     continue
                 if is_path:
-                    self.successes[(source, destination)] = np.zeros(self.n_arms)
-                    self.failures[(source, destination)] = np.zeros(self.n_arms)
+                    self.successes[(source, destination)] = np.ones(self.n_arms)
+                    self.failures[(source, destination)] = np.ones(self.n_arms)
                 else:
                     for path_index in range(self.engine_props['k_paths']):
-                        self.successes[(source, destination, path_index)] = np.zeros(self.n_arms)
-                        self.failures[(source, destination, path_index)] = np.zeros(self.n_arms)
+                        self.successes[(source, destination, path_index)] = np.ones(self.n_arms)
+                        self.failures[(source, destination, path_index)] = np.ones(self.n_arms)
 
     # TODO: Debug these functions (can probably use one function for all)
     def select_path_arm(self, source: int, dest: int):
@@ -304,16 +306,11 @@ class ThompsonSamplingBandit:
                    len_rewards=len(self.props['rewards_matrix'][iteration]),
                    num_requests=self.engine_props['num_requests'],
                    rewards_matrix=self.props['rewards_matrix'], engine_props=self.engine_props,
-                   algorithm='thompson_sampling_bandit', is_path=self.is_path, state_values_dict=self.values)
+                   algorithm='thompson_sampling_bandit', is_path=self.is_path, state_values_dict=None)
 
+    # TODO: Complete
     def setup_env(self):
-        if not self.engine_props['is_training']:
-            if self.is_path:
-                self.values = load_model(train_fp=self.engine_props['path_model'])
-                self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
-            else:
-                self.values = load_model(train_fp=self.engine_props['core_model'])
-                self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
+        pass
 
 
 class ContextualEpsilonGreedyBandit:
