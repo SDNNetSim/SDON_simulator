@@ -121,7 +121,7 @@ class QLearningHelpers:
         :param net_spec_dict: The network spectrum database.
         """
         cores_matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        cores_matrix = cores_matrix[self.rl_props['path_index']]
+        cores_matrix = cores_matrix[self.rl_props['chosen_path_index']]
         cores_list = cores_matrix[self.rl_props['core_index']][level_index]
         current_q = cores_list['q_value']
 
@@ -151,7 +151,7 @@ class QLearningHelpers:
                 sub_flag = 'paths_list'
             elif matrix_flag == 'cores_matrix':
                 matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
-                matrix = matrix[self.rl_props['path_index']]
+                matrix = matrix[self.rl_props['chosen_path_index']]
                 sub_flag = 'cores_list'
             else:
                 raise ValueError
