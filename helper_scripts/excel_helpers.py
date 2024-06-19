@@ -20,7 +20,7 @@ filter_dict = {
     ]
 }
 
-sims_info_dict = find_times(dates_dict={'0606': 'NSFNet', '0607': 'NSFNet', '0610': 'NSFNet'}, filter_dict=filter_dict)
+sims_info_dict = find_times(dates_dict={'0613': 'NSFNet'}, filter_dict=filter_dict)
 helpers_obj = PlotHelpers(plot_props=empty_props, net_names_list=sims_info_dict['networks_matrix'])
 helpers_obj.get_file_info(sims_info_dict=sims_info_dict)
 
@@ -49,11 +49,13 @@ def read_files():
     return input_dict, output_dict
 
 
+# TODO: Add standard deviation and the range for the last X episodes
 def get_dict(input_dict: dict, output_dict: dict):
     tmp_dict = dict()
     last_key = list(output_dict['iter_stats'].keys())[-1]
-    tmp_dict['Blocking'] = np.mean(output_dict['iter_stats'][last_key]['sim_block_list'][-5:])
+    tmp_dict['Blocking'] = np.mean(output_dict['iter_stats'][last_key]['sim_block_list'][-10:])
     tmp_dict['Completed Iters'] = len(output_dict['iter_stats'][last_key]['sim_block_list'])
+    tmp_dict['Sim Start'] = input_dict['sim_start'].split('_')[-1]
 
     # tmp_dict['Mean Hops'] = output_dict['hops_mean']
     # tmp_dict['Min Hops'] = output_dict['hops_min']
@@ -89,6 +91,9 @@ for run_time, run_obj in helpers_obj.file_info.items():
         print(f'No data found in dictionary. Skipping: {run_time}')
 
     input_dict, output_dict = read_files()
+
+    if '19' in input_dict['sim_start'][0:2]:
+        continue
     if not input_dict:
         continue
 
