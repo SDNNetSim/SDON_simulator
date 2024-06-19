@@ -203,7 +203,7 @@ COMMAND_LINE_PARAMS = [
     ['deploy_model', bool, ''],
     ['path_levels', int, ''],
     ['core_beta', float, ''],
-    ['gamma', float, ],
+    ['gamma', float, ''],
     ['decay_factor', float, ''],
 
     # For StableBaselines3

@@ -46,7 +46,8 @@ class PathAgent:
             self.agent_obj = ContextualEpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props)
             self.context_obj = ContextGenerator(rl_props=self.rl_props, engine_props=self.engine_props)
         elif self.path_algorithm == 'ucb_bandit':
-            self.agent_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props)
+            self.agent_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=True,
+                                       is_core=False)
         elif self.path_algorithm == 'thompson_sampling_bandit':
             self.agent_obj = ThompsonSamplingBandit(rl_props=self.rl_props, engine_props=self.engine_props)
         else:
@@ -214,6 +215,9 @@ class CoreAgent:
         elif self.core_algorithm == 'epsilon_greedy_bandit':
             self.agent_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=False,
                                                  is_core=True)
+        elif self.core_algorithm == 'ucb_bandit':
+            self.agent_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=False,
+                                       is_core=True)
         else:
             raise NotImplementedError
 
@@ -236,7 +240,7 @@ class CoreAgent:
         :return: The reward.
         :rtype: float
         """
-        req_id = float(self.rl_help_obj.sdn_props['req_id'])
+        req_id = float(self.rl_help_obj.route_obj.sdn_props['req_id'])
         core_index = self.rl_props['core_index']
 
         if was_allocated:
@@ -254,13 +258,15 @@ class CoreAgent:
         :param net_spec_dict: The current network spectrum database.
         :param iteration: The current iteration
         """
-        reward = self.get_reward(was_allocated=was_allocated, net_spec_dict=net_spec_dict)
+        reward = self.get_reward(was_allocated=was_allocated)
 
         self.agent_obj.iteration = iteration
         if self.core_algorithm == 'q_learning':
             self.agent_obj.update_cores_matrix(reward=reward, level_index=self.level_index,
                                                net_spec_dict=net_spec_dict, core_index=self.rl_props['core_index'])
         elif self.core_algorithm == 'epsilon_greedy_bandit':
+            self.agent_obj.update(reward=reward, arm=self.rl_props['core_index'], iteration=iteration)
+        elif self.core_algorithm == 'ucb_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props['core_index'], iteration=iteration)
         else:
             raise NotImplementedError
@@ -292,6 +298,9 @@ class CoreAgent:
         if self.core_algorithm == 'q_learning':
             self._ql_core()
         elif self.core_algorithm == 'epsilon_greedy_bandit':
+            self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],
+                              dest=self.rl_props['chosen_path'][0][-1])
+        elif self.core_algorithm == 'ucb_bandit':
             self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],
                               dest=self.rl_props['chosen_path'][0][-1])
         else:

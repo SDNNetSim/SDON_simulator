@@ -139,35 +139,57 @@ class EpsilonGreedyBandit:
                 self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
 
 
-
 class UCBBandit:
-    def __init__(self, rl_props: dict, engine_props: dict):
+    def __init__(self, rl_props: dict, engine_props: dict, is_core: bool, is_path: bool):
         self.props = {'rewards_matrix': []}
         self.engine_props = engine_props
         self.rl_props = rl_props
         self.completed_sim = False
         self.iteration = 0
+        self.is_path = is_path
 
         self.source = None
         self.dest = None
 
-        self.n_arms = engine_props['k_paths']
         self.num_nodes = rl_props['num_nodes']
         self.counts = {}
         self.values = {}
+
+        if is_path:
+            self.n_arms = engine_props['k_paths']
+        else:
+            self.n_arms = engine_props['cores_per_link']
 
         # Initialize counts and values for each source-destination pair
         for source in range(self.num_nodes):
             for destination in range(self.num_nodes):
                 if source == destination:
                     continue
-                self.counts[(source, destination)] = np.zeros(self.n_arms)
-                self.values[(source, destination)] = np.zeros(self.n_arms)
+                if is_path:
+                    self.counts[(source, destination)] = np.zeros(self.n_arms)
+                    self.values[(source, destination)] = np.zeros(self.n_arms)
+                else:
+                    for path_index in range(self.engine_props['k_paths']):
+                        self.counts[(source, destination, path_index)] = np.zeros(self.n_arms)
+                        self.values[(source, destination, path_index)] = np.zeros(self.n_arms)
 
-    def select_arm(self, source: int, dest: int):
+    # TODO: Debug these functions
+    def select_path_arm(self, source: int, dest: int):
         self.source = source
         self.dest = dest
         pair = (source, dest)
+        if 0 in self.counts[pair]:
+            return np.argmin(self.counts[pair])
+        else:
+            total_counts = sum(self.counts[pair])
+            ucb_values = self.values[pair] + np.sqrt(2 * np.log(total_counts) / self.counts[pair])
+            return np.argmax(ucb_values)
+
+    def select_core_arm(self, source: int, dest: int, path_index: int):
+        self.source = source
+        self.dest = dest
+        self.path_index = path_index
+        pair = (source, dest, path_index)
 
         if 0 in self.counts[pair]:
             return np.argmin(self.counts[pair])  # Ensure each arm is tried at least once
@@ -177,7 +199,11 @@ class UCBBandit:
             return np.argmax(ucb_values)
 
     def update(self, arm: int, reward: int):
-        pair = (self.source, self.dest)
+        if self.is_path:
+            pair = (self.source, self.dest)
+        else:
+            pair = (self.source, self.dest, self.path_index)
+
         self.counts[pair][arm] += 1
         n = self.counts[pair][arm]
         value = self.values[pair][arm]

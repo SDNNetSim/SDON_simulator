@@ -67,12 +67,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             terminated = True
             base_fp = os.path.join('data')
             # The spectrum agent is handled by SB3 automatically
-            # TODO: Here
-            if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit') \
+            if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'ucb_bandit') \
                     and self.sim_dict['is_training']:
                 self.path_agent.end_iter()
-            elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit') and self.sim_dict[
-                'is_training']:
+            elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'ucb_bandit') and \
+                    self.sim_dict['is_training']:
                 self.core_agent.end_iter()
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, base_fp=base_fp)
             self.iteration += 1
@@ -465,7 +464,7 @@ def _run(env: object, sim_dict: dict):
         if sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit',
                                           'ucb_bandit', 'thompson_sampling_bandit') \
                 or sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit',
-                                                  'context_epsilon_greedy_bandit'):
+                                                  'context_epsilon_greedy_bandit', 'ucb_bandit'):
             _run_iters(env=env, sim_dict=sim_dict, is_training=True)
         elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
             if sim_dict['optimize_hyperparameters']:
