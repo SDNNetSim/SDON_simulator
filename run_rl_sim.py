@@ -465,7 +465,7 @@ def _run(env: object, sim_dict: dict):
         # TODO: Maybe change these algorithms to lists (constants)
         if sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit',
                                           'ucb_bandit', 'thompson_sampling_bandit') \
-                or sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit',
+                or sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'thompson_sampling_bandit',
                                                   'context_epsilon_greedy_bandit', 'ucb_bandit'):
             _run_iters(env=env, sim_dict=sim_dict, is_training=True)
         elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
