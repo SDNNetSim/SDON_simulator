@@ -44,12 +44,14 @@ class PathAgent:
                                                  is_core=False)
         elif self.path_algorithm == 'context_epsilon_greedy_bandit':
             self.agent_obj = ContextualEpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props)
-            self.context_obj = ContextGenerator(rl_props=self.rl_props, engine_props=self.engine_props)
+            self.context_obj = ContextGenerator(rl_props=self.rl_props, engine_props=self.engine_props, is_path=True,
+                                                is_core=False)
         elif self.path_algorithm == 'ucb_bandit':
             self.agent_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=True,
                                        is_core=False)
         elif self.path_algorithm == 'thompson_sampling_bandit':
-            self.agent_obj = ThompsonSamplingBandit(rl_props=self.rl_props, engine_props=self.engine_props)
+            self.agent_obj = ThompsonSamplingBandit(rl_props=self.rl_props, engine_props=self.engine_props,
+                                                    is_path=True, is_core=False)
         else:
             raise NotImplementedError
 
@@ -90,10 +92,11 @@ class PathAgent:
         elif self.path_algorithm == 'ucb_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'], iteration=iteration)
         elif self.path_algorithm == 'thompson_sampling_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'])
+            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'], iteration=iteration)
+        # TODO: Update context
         elif self.path_algorithm == 'context_epsilon_greedy_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'],
-                                  context=self.context_obj.curr_context)
+                                  context=self.context_obj.curr_context, iteration=iteration)
         else:
             raise NotImplementedError
 
@@ -218,6 +221,12 @@ class CoreAgent:
         elif self.core_algorithm == 'ucb_bandit':
             self.agent_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=False,
                                        is_core=True)
+        elif self.core_algorithm == 'thompson_sampling_bandit':
+            self.agent_obj = ThompsonSamplingBandit(rl_props=self.rl_props, engine_props=self.engine_props,
+                                                    is_path=False, is_core=True)
+        elif self.core_algorithm == 'context_epsilon_greedy_bandit':
+            self.agent_obj = ContextualEpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props,
+                                                           is_path=False, is_core=True)
         else:
             raise NotImplementedError
 
@@ -268,6 +277,10 @@ class CoreAgent:
             self.agent_obj.update(reward=reward, arm=self.rl_props['core_index'], iteration=iteration)
         elif self.core_algorithm == 'ucb_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props['core_index'], iteration=iteration)
+        elif self.core_algorithm == 'thompson_sampling_bandit':
+            self.agent_obj.update(reward=reward, arm=self.rl_props['core_index'], iteration=iteration)
+        elif self.core_algorithm == 'context_epsilon_greedy_bandit':
+            self.agent_obj.update(reward=reward, arm=self.rl_props['core_index'], iteration=iteration)
         else:
             raise NotImplementedError
 
@@ -301,6 +314,12 @@ class CoreAgent:
             self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],
                               dest=self.rl_props['chosen_path'][0][-1])
         elif self.core_algorithm == 'ucb_bandit':
+            self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],
+                              dest=self.rl_props['chosen_path'][0][-1])
+        elif self.core_algorithm == 'thompson_sampling_bandit':
+            self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],
+                              dest=self.rl_props['chosen_path'][0][-1])
+        elif self.core_algorithm == 'context_epsilon_greedy_bandit':
             self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],
                               dest=self.rl_props['chosen_path'][0][-1])
         else:

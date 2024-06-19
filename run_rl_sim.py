@@ -67,10 +67,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             terminated = True
             base_fp = os.path.join('data')
             # The spectrum agent is handled by SB3 automatically
-            if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'ucb_bandit') \
+            if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'ucb_bandit',
+                                                   'thompson_sampling_bandit', 'context_epsilon_greedy_bandit') \
                     and self.sim_dict['is_training']:
                 self.path_agent.end_iter()
-            elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'ucb_bandit') and \
+            elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'ucb_bandit',
+                                                     'thompson_sampling_bandit', 'context_epsilon_greedy_bandit') and \
                     self.sim_dict['is_training']:
                 self.core_agent.end_iter()
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, base_fp=base_fp)
