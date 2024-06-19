@@ -198,7 +198,7 @@ class UCBBandit:
             ucb_values = self.values[pair] + np.sqrt(2 * np.log(total_counts) / self.counts[pair])
             return np.argmax(ucb_values)
 
-    def update(self, arm: int, reward: int):
+    def update(self, arm: int, reward: int, iteration: int):
         if self.is_path:
             pair = (self.source, self.dest)
         else:
@@ -213,8 +213,21 @@ class UCBBandit:
             self.props['rewards_matrix'].append([])
         self.props['rewards_matrix'][self.iteration].append(reward)
 
+        # Check if we need to save the model
+        save_model(iteration=iteration, max_iters=self.engine_props['max_iters'],
+                   len_rewards=len(self.props['rewards_matrix'][iteration]),
+                   num_requests=self.engine_props['num_requests'],
+                   rewards_matrix=self.props['rewards_matrix'], engine_props=self.engine_props,
+                   algorithm='ucb_bandit', is_path=self.is_path, state_values_dict=self.values)
+
     def setup_env(self):
-        pass
+        if not self.engine_props['is_training']:
+            if self.is_path:
+                self.values = load_model(train_fp=self.engine_props['path_model'])
+                self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
+            else:
+                self.values = load_model(train_fp=self.engine_props['core_model'])
+                self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
 
 
 class ThompsonSamplingBandit:

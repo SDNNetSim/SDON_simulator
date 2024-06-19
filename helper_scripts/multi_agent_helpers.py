@@ -88,7 +88,7 @@ class PathAgent:
         elif self.path_algorithm == 'epsilon_greedy_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'], iteration=iteration)
         elif self.path_algorithm == 'ucb_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'])
+            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'], iteration=iteration)
         elif self.path_algorithm == 'thompson_sampling_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'])
         elif self.path_algorithm == 'context_epsilon_greedy_bandit':
