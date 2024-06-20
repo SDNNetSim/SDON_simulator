@@ -59,6 +59,7 @@ ARASH_REQUIRED_OPTIONS = {
         'save_snapshots': str_to_bool,
         'snapshot_step': int,
         'print_step': int,
+        'saving_data_type': str,
     },
     'topology_settings': {
         'network': str,
@@ -197,6 +198,7 @@ COMMAND_LINE_PARAMS = [
     ['ml_model', str, ''],
     ['test_size', float, ''],
     ['deploy_model', bool, ''],
+    ['saving_data_type', str, ''],
 
     # For StableBaselines3
     ['algo', str, ''],
