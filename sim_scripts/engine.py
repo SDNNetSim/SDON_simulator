@@ -12,6 +12,7 @@ from joblib import load
 from sim_scripts.request_generator import get_requests
 from sim_scripts.sdn_controller import SDNController
 from helper_scripts.stats_helpers import SimStats
+from helper_scripts.supervised_ml_helpers import SupervisedStats
 from helper_scripts.ml_helpers import load_model
 
 
@@ -38,6 +39,7 @@ class Engine:
 
         self.sdn_obj = SDNController(engine_props=self.engine_props)
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
+        self.ml_stats_obj = SupervisedStats(engine_props=self.engine_props, sim_info=self.sim_info, saving_data_type = engine_props)
 
         self.ml_model = None
 
@@ -142,13 +144,27 @@ class Engine:
 
             if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
                 self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
-
-            if self.engine_props['output_train_data']:
+            if self.engine_props['saving_data_type'] == 'xt':
+                self.ml_stats_obj.update_train_xtar_data(train_list = copy.deepcopy(self.sdn_obj.route_obj.training_set),
+                                                         save = req_num % self.engine_props['snapshot_step'] == 0,
+                                                         base_fp = 'data')
+                self.sdn_obj.route_obj.training_set.clear()
+            elif self.engine_props['saving_data_type'] == 'slicing':
                 was_routed = self.sdn_obj.sdn_props['was_routed']
                 if was_routed:
                     req_info_dict = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]
-                    self.stats_obj.update_train_data(old_req_info_dict=old_req_info_dict, req_info_dict=req_info_dict,
-                                                     net_spec_dict=old_net_spec_dict)
+                    self.ml_stats_obj.update_train_slicing_data(old_req_info_dict=old_req_info_dict, req_info_dict=req_info_dict,
+                                                                net_spec_dict=old_net_spec_dict,
+                                                                curr_trans = self.stats_obj.curr_trans,
+                                                                save = self.iteration == (self.engine_props['max_iters'] - 1),
+                                                                base_fp = 'data')
+
+            # if self.engine_props['output_train_data']:
+            #     was_routed = self.sdn_obj.sdn_props['was_routed']
+            #     if was_routed:
+            #         req_info_dict = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]
+            #         self.stats_obj.update_train_data(old_req_info_dict=old_req_info_dict, req_info_dict=req_info_dict,
+            #                                                     net_spec_dict=old_net_spec_dict,)
 
         elif req_type == "release":
             self.handle_release(curr_time=curr_time)
