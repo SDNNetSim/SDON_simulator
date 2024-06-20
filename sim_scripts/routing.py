@@ -1,3 +1,4 @@
+import copy
 import networkx as nx
 import numpy as np
 
@@ -18,6 +19,7 @@ class Routing:
 
         self.route_help_obj = RoutingHelpers(engine_props=self.engine_props, sdn_props=self.sdn_props,
                                              route_props=self.route_props)
+        self.training_set = list()
 
     def _find_most_cong_link(self, path_list: list):
         most_cong_link = None
@@ -153,6 +155,10 @@ class Routing:
 
             free_slots_dict = find_free_slots(net_spec_dict=self.sdn_props['net_spec_dict'], link_tuple=link_list)
             xt_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=free_slots_dict, link_list=link_list)
+            self.training_set.append({
+                                    'link_state': copy.deepcopy(self.route_help_obj.sdn_props['net_spec_dict'][link_list]['cores_matrix']),
+                                    'xt_cost': copy.deepcopy(xt_cost),
+                                })
 
             if self.engine_props['xt_type'] == 'with_length':
                 if self.route_props['max_link_length'] is None:
