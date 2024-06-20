@@ -30,7 +30,7 @@ class SupervisedStats:
         # TODO: Make sure this isn't reset after multiple iterations
         self.train_data_list = list()
 
-    @staticmethod
+    
     def update_train_slicing_data(self, old_req_info_dict: dict, req_info_dict: dict, net_spec_dict: dict,
                                   curr_trans: int, save: bool, base_fp: str):
         """
