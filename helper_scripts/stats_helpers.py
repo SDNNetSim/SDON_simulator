@@ -72,30 +72,30 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
-    def update_train_data(self, old_req_info_dict: dict, req_info_dict: dict, net_spec_dict: dict):
-        """
-        Updates the training data list with the current request information.
+    # def update_train_data(self, old_req_info_dict: dict, req_info_dict: dict, net_spec_dict: dict):
+    #     """
+    #     Updates the training data list with the current request information.
 
-        :param old_req_info_dict: Request dictionary before any potential slicing.
-        :param req_info_dict: Request dictionary after potential slicing.
-        :param net_spec_dict: Network spectrum database.
-        """
-        path_list = req_info_dict['path']
-        cong_arr = np.array([])
+    #     :param old_req_info_dict: Request dictionary before any potential slicing.
+    #     :param req_info_dict: Request dictionary after potential slicing.
+    #     :param net_spec_dict: Network spectrum database.
+    #     """
+    #     path_list = req_info_dict['path']
+    #     cong_arr = np.array([])
 
-        for core_num in range(self.engine_props['cores_per_link']):
-            curr_cong = find_core_cong(core_index=core_num, net_spec_dict=net_spec_dict, path_list=path_list)
-            cong_arr = np.append(cong_arr, curr_cong)
+    #     for core_num in range(self.engine_props['cores_per_link']):
+    #         curr_cong = find_core_cong(core_index=core_num, net_spec_dict=net_spec_dict, path_list=path_list)
+    #         cong_arr = np.append(cong_arr, curr_cong)
 
-        path_length = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
-        tmp_info_dict = {
-            'old_bandwidth': old_req_info_dict['bandwidth'],
-            'path_length': path_length,
-            'longest_reach': np.max(old_req_info_dict['mod_formats']['QPSK']['max_length']),
-            'ave_cong': float(np.mean(cong_arr)),
-            'num_segments': self.curr_trans,
-        }
-        self.train_data_list.append(tmp_info_dict)
+    #     path_length = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
+    #     tmp_info_dict = {
+    #         'old_bandwidth': old_req_info_dict['bandwidth'],
+    #         'path_length': path_length,
+    #         'longest_reach': np.max(old_req_info_dict['mod_formats']['QPSK']['max_length']),
+    #         'ave_cong': float(np.mean(cong_arr)),
+    #         'num_segments': self.curr_trans,
+    #     }
+    #     self.train_data_list.append(tmp_info_dict)
 
     def update_snapshot(self, net_spec_dict: dict, req_num: int, path_list: list = None):
         """
@@ -289,16 +289,16 @@ class SimStats:
 
         return False
 
-    def save_train_data(self, base_fp: str):
-        """
-        Saves training data file.
+    # def save_train_data(self, base_fp: str):
+    #     """
+    #     Saves training data file.
 
-        :param base_fp: Base file path.
-        """
-        if self.iteration == (self.engine_props['max_iters'] - 1):
-            save_df = pd.DataFrame(self.train_data_list)
-            save_df.to_csv(f"{base_fp}/output/{self.sim_info}/{self.engine_props['erlang']}_train_data.csv",
-                           index=False)
+    #     :param base_fp: Base file path.
+    #     """
+    #     if self.iteration == (self.engine_props['max_iters'] - 1):
+    #         save_df = pd.DataFrame(self.train_data_list)
+    #         save_df.to_csv(f"{base_fp}/output/{self.sim_info}/{self.engine_props['erlang']}_train_data.csv",
+    #                        index=False)
 
     def save_stats(self, base_fp: str):
         """
