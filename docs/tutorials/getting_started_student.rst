@@ -55,5 +55,3 @@ Once completed, this should look like:
 
 With your simulations completed, it's time to visualize and interpret the results. Let's move on to plotting and
 analyzing the simulator's output.
-
-
