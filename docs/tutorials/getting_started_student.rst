@@ -26,7 +26,7 @@ The file directory should look like:
 .. image:: _images/config_set_up.png
    :alt: Example config set up image
    :width: 700px
-   :height: 600px
+   :height: 500px
    :align: center
 
 .. raw:: html
@@ -34,11 +34,11 @@ The file directory should look like:
     <br>
 
 With your configuration file set up, let's run your first simulation. If you're not using artificial
-intelligence, execute the script ''run_sim.py''.
+intelligence, execute the script ``run_sim.py``.
 
-During simulation execution, important input data is saved in the ''input'' directory within the ''data'' directory,
+During simulation execution, important input data is saved in the ``input`` directory within the ``data`` directory,
 organized by date and time down to the millisecond for easy reference. Once the simulation concludes, navigate to the
-'output' directory. Here, you'll find corresponding output data organized by simulation runs ('s1', 's2', etc.), each
+``output`` directory. Here, you'll find corresponding output data organized by simulation runs ('s1', 's2', etc.), each
 containing results specific to the traffic volume simulated.
 
 Once completed, this should look like:
@@ -46,7 +46,7 @@ Once completed, this should look like:
 .. image:: _images/first_sim_run.png
    :alt: Example simulation run
    :width: 700px
-   :height: 600px
+   :height: 500px
    :align: center
 
 .. raw:: html
