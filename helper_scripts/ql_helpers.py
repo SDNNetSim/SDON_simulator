@@ -78,7 +78,7 @@ class QLearningHelpers:
         if flag == 'path':
             new_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
             new_cong_index = classify_cong(curr_cong=new_cong)
-            max_future_q = matrix[self.rl_props['path_index']][new_cong_index]['q_value']
+            max_future_q = matrix[self.rl_props['chosen_path_index']][new_cong_index]['q_value']
         elif flag == 'core':
             new_cong = find_core_cong(core_index=core_index, net_spec_dict=net_spec_dict, path_list=path_list)
             new_cong_index = classify_cong(curr_cong=new_cong)
@@ -97,10 +97,10 @@ class QLearningHelpers:
         :param net_spec_dict: The network spectrum database.
         """
         routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        path_list = routes_matrix[self.rl_props['path_index']][level_index]
+        path_list = routes_matrix[self.rl_props['chosen_path_index']][level_index]
         current_q = path_list['q_value']
 
-        max_future_q = self.get_max_future_q(path_list=routes_matrix[self.rl_props['path_index']][0][0],
+        max_future_q = self.get_max_future_q(path_list=routes_matrix[self.rl_props['chosen_path_index']][0][0],
                                              net_spec_dict=net_spec_dict, matrix=routes_matrix, flag='path')
 
         delta = reward + self.engine_props['discount_factor'] * max_future_q
@@ -109,7 +109,7 @@ class QLearningHelpers:
         new_q = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
 
         routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        routes_matrix[self.rl_props['path_index']][level_index]['q_value'] = new_q
+        routes_matrix[self.rl_props['chosen_path_index']][level_index]['q_value'] = new_q
 
     def update_cores_matrix(self, reward: float, core_index: int, level_index: int, net_spec_dict: dict):
         """

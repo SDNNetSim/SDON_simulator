@@ -102,17 +102,17 @@ class PathAgent:
 
     def __ql_route(self, random_float: float):
         if random_float < self.agent_obj.props['epsilon']:
-            self.rl_props['path_index'] = np.random.choice(self.rl_props['k_paths'])
+            self.rl_props['chosen_path_index'] = np.random.choice(self.rl_props['k_paths'])
             # The level will always be the last index
-            self.level_index = self.cong_list[self.rl_props['path_index']][-1]
+            self.level_index = self.cong_list[self.rl_props['chosen_path_index']][-1]
 
-            if self.rl_props['path_index'] == 1 and self.rl_props['k_paths'] == 1:
-                self.rl_props['path_index'] = 0
-            self.rl_props['chosen_path'] = self.rl_props['paths_list'][self.rl_props['path_index']]
+            if self.rl_props['chosen_path_index'] == 1 and self.rl_props['k_paths'] == 1:
+                self.rl_props['chosen_path_index'] = 0
+            self.rl_props['chosen_path'] = self.rl_props['paths_list'][self.rl_props['chosen_path_index']]
         else:
-            self.rl_props['path_index'], self.rl_props['chosen_path'] = self.agent_obj.get_max_curr_q(
+            self.rl_props['chosen_path_index'], self.rl_props['chosen_path'] = self.agent_obj.get_max_curr_q(
                 cong_list=self.cong_list, matrix_flag='routes_matrix')
-            self.level_index = self.cong_list[self.rl_props['path_index']][-1]
+            self.level_index = self.cong_list[self.rl_props['chosen_path_index']][-1]
 
     def _ql_route(self):
         random_float = float(np.round(np.random.uniform(0, 1), decimals=1))
@@ -253,10 +253,16 @@ class CoreAgent:
         core_index = self.rl_props['core_index']
 
         if was_allocated:
-            reward = self.calculate_dynamic_reward(core_index, req_id)
+            if self.engine_props['dynamic_reward']:
+                reward = self.calculate_dynamic_reward(core_index, req_id)
+            else:
+                reward = self.engine_props['reward']
             return reward
         else:
-            penalty = self.calculate_dynamic_penalty(core_index, req_id)
+            if self.engine_props['dynamic_reward']:
+                penalty = self.calculate_dynamic_penalty(core_index, req_id)
+            else:
+                penalty = self.engine_props['penalty']
             return penalty
 
     def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int):
@@ -288,7 +294,7 @@ class CoreAgent:
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         cores_matrix = self.agent_obj.props['cores_matrix']
         cores_matrix = cores_matrix[self.rl_props['source']][self.rl_props['destination']]
-        self.rl_props['cores_list'] = cores_matrix[self.rl_props['path_index']]
+        self.rl_props['cores_list'] = cores_matrix[self.rl_props['chosen_path_index']]
         self.cong_list = self.rl_help_obj.classify_cores(cores_list=self.rl_props['cores_list'])
 
         if random_float < self.agent_obj.props['epsilon']:

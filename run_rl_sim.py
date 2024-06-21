@@ -389,9 +389,6 @@ def _run_iters(env: object, sim_dict: dict, is_training: bool, model=None):
             obs, _ = env.reset()
             completed_episodes += 1
 
-            if completed_episodes == 15:
-                print('Line 391 run rl sim.')
-
             print(f'{completed_episodes} episodes completed out of {sim_dict["max_iters"]}.')
 
 
