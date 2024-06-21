@@ -22,6 +22,7 @@ networking.
    run_sim.rst
    run_rl_sim.rst
    tests/tests_modules.rst
+   helpful_links/helpful_links.rst
 
 Indices and tables
 ==================
