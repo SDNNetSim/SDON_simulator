@@ -128,6 +128,7 @@ OTHER_OPTIONS = {
         'core_beta': float,
         'gamma': float,
         'decay_factor': float,
+        'dynamic_reward': str_to_bool,
     },
     'ml_settings': {
         'output_train_data': str_to_bool,
@@ -205,6 +206,7 @@ COMMAND_LINE_PARAMS = [
     ['core_beta', float, ''],
     ['gamma', float, ''],
     ['decay_factor', float, ''],
+    ['dynamic_reward', bool, ''],
 
     # For StableBaselines3
     ['algo', str, ''],

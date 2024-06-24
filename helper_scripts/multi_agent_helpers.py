@@ -201,6 +201,7 @@ class CoreAgent:
         self.level_index = None
         self.cong_list = list()
         self.no_penalty = False
+        self.ramp_up = False
 
     def end_iter(self):
         """
@@ -252,17 +253,24 @@ class CoreAgent:
         req_id = float(self.rl_help_obj.route_obj.sdn_props['req_id'])
         core_index = self.rl_props['core_index']
 
+        reqs_completed = req_id / float(self.engine_props['num_requests'])
         if was_allocated:
             if self.engine_props['dynamic_reward']:
                 reward = self.calculate_dynamic_reward(core_index, req_id)
             else:
-                reward = self.engine_props['reward']
+                if reqs_completed < 0.5:
+                    reward = 0
+                else:
+                    reward = self.engine_props['reward']
             return reward
         else:
             if self.engine_props['dynamic_reward']:
                 penalty = self.calculate_dynamic_penalty(core_index, req_id)
             else:
-                penalty = self.engine_props['penalty']
+                if reqs_completed < 0.5:
+                    penalty = 0
+                else:
+                    penalty = self.engine_props['penalty']
             return penalty
 
     def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int):
@@ -276,7 +284,9 @@ class CoreAgent:
         reward = self.get_reward(was_allocated=was_allocated)
 
         self.agent_obj.iteration = iteration
-        if self.core_algorithm == 'q_learning':
+        if self.ramp_up:
+            pass
+        elif self.core_algorithm == 'q_learning':
             self.agent_obj.update_cores_matrix(reward=reward, level_index=self.level_index,
                                                net_spec_dict=net_spec_dict, core_index=self.rl_props['core_index'])
         elif self.core_algorithm == 'epsilon_greedy_bandit':
@@ -310,11 +320,16 @@ class CoreAgent:
         self.rl_props['core_index'] = self.agent_obj.select_core_arm(source=int(source), dest=int(dest),
                                                                      path_index=path_index)
 
-    def get_core(self):
+    def get_core(self, req_id: int):
         """
         Assigns a core to the current request.
         """
-        if self.core_algorithm == 'q_learning':
+        reqs_completed = req_id / float(self.engine_props['num_requests'])
+        self.ramp_up = False
+        if reqs_completed < 0.5:
+            self.ramp_up = True
+            self.rl_props['core_index'] = None
+        elif self.core_algorithm == 'q_learning':
             self._ql_core()
         elif self.core_algorithm == 'epsilon_greedy_bandit':
             self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],

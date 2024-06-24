@@ -186,7 +186,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 self.core_agent.no_penalty = True
 
         self.rl_props['forced_index'] = None
-        self.core_agent.get_core()
+        # TODO: Check to make sure this doesn't affect anything
+        try:
+            req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count']]
+        except IndexError:
+            req_info_dict = self.rl_props['arrival_list'][self.rl_props['arrival_count'] - 1]
+
+        req_id = req_info_dict['req_id']
+        self.core_agent.get_core(req_id=req_id)
 
     def _handle_spectrum_train(self):
         self.route_obj.sdn_props = self.rl_props['mock_sdn_dict']
@@ -277,7 +284,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         base_fp = os.path.join('data')
         self.sim_dict['thread_num'] = 's1'
         # Added only for structure consistency
-        get_start_time(sim_dict={'s1': self.sim_dict})
+        time.sleep(20)
+        self.sim_dict = get_start_time(sim_dict={'s1': self.sim_dict})
         file_name = "sim_input_s1.json"
 
         self.engine_obj = Engine(engine_props=self.sim_dict)
@@ -509,5 +517,4 @@ def run_rl_sim():
 
 
 if __name__ == '__main__':
-    time.sleep(5)
     run_rl_sim()
