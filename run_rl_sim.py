@@ -284,8 +284,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         base_fp = os.path.join('data')
         self.sim_dict['thread_num'] = 's1'
         # Added only for structure consistency
-        time.sleep(20)
-        self.sim_dict = get_start_time(sim_dict={'s1': self.sim_dict})
+        # time.sleep(20)
+        get_start_time(sim_dict={'s1': self.sim_dict})
         file_name = "sim_input_s1.json"
 
         self.engine_obj = Engine(engine_props=self.sim_dict)
