@@ -40,9 +40,16 @@ To get started with the SDN Simulator, follow these steps to set up your environ
    pip install -r requirements.txt
    ```
 5. Navigate to the docs directory and generate the Sphinx documentation:
+
+   On Unix:
    ```
    cd docs
    make html
+   ```
+   On Windows:
+   ```
+   cd docs
+   .\make html
    ```
 6. Finally, navigate to `_build/html/` and open `index.html` in a browser of your choice to view the documentation.
 
