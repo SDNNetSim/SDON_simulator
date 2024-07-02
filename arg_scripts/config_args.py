@@ -1,6 +1,7 @@
 import ast
 
 
+# TODO: There are arguments here that no longer exist
 def str_to_bool(string: str):
     """
     Convert any giving string to a boolean.
@@ -208,7 +209,7 @@ COMMAND_LINE_PARAMS = [
     ['decay_factor', float, ''],
     ['dynamic_reward', bool, ''],
 
-    # For StableBaselines3
+    # StableBaselines3 arguments
     ['algo', str, ''],
     ['env-id', str, ''],
     ['env', str, ''],
