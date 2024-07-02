@@ -13,9 +13,9 @@ class PlotStats:
     """
 
     def __init__(self, sims_info_dict: dict):
-        self.props_obj = EmptyPlotProps()
+        self.props = EmptyPlotProps()
         self.sims_info_dict = sims_info_dict
-        self.plot_help_obj = PlotHelpers(plot_props=self.props_obj, net_names_list=sims_info_dict['networks_matrix'])
+        self.plot_help_obj = PlotHelpers(plot_props=self.props, net_names_list=sims_info_dict['networks_matrix'])
 
         self.plot_help_obj.get_file_info(sims_info_dict=sims_info_dict)
 
@@ -33,7 +33,7 @@ class PlotStats:
     def _setup_plot(self, title: str, y_lim: list, y_label: str, x_label: str, grid: bool = True, y_ticks: bool = True,
                     x_ticks: bool = True):
         plt.figure(figsize=(7, 5), dpi=300)
-        plt.title(f"{self.props_obj.title_names} {title}")
+        plt.title(f"{self.props.title_names} {title}")
         plt.ylabel(y_label)
         plt.xlabel(x_label)
 
@@ -46,8 +46,8 @@ class PlotStats:
             plt.ylim(y_lim[0], y_lim[1])
 
         if x_ticks:
-            plt.xticks(self.props_obj.x_tick_list)
-            plt.xlim(self.props_obj.x_tick_list[0], self.props_obj.x_tick_list[-1])
+            plt.xticks(self.props.x_tick_list)
+            plt.xlim(self.props.x_tick_list[0], self.props.x_tick_list[-1])
 
         if grid:
             plt.grid()
@@ -58,12 +58,12 @@ class PlotStats:
         """
         color_count = 0
         style_count = 0
-        for _, sims_dict in self.props_obj.plot_dict.items():
+        for _, sims_dict in self.props.plot_dict.items():
             for _, info_dict in sims_dict.items():
-                style = self.props_obj.style_list[style_count]
+                style = self.props.style_list[style_count]
 
                 for y_val in y_vals_list:
-                    color = self.props_obj.color_list[color_count]
+                    color = self.props.color_list[color_count]
                     index = [index for index, value in enumerate(info_dict['erlang_list']) if value == erlang][0]
                     x_vals = list(range(len(info_dict[y_val][index])))
                     plt.plot(x_vals, info_dict[y_val][index], linestyle=style, markersize=2.3, color=color)
@@ -84,12 +84,12 @@ class PlotStats:
         legend_list = list()
         color_count = 0
         style_count = 0
-        for _, sims_dict in self.props_obj.plot_dict.items():
+        for _, sims_dict in self.props.plot_dict.items():
             for _, info_dict in sims_dict.items():
-                style = self.props_obj.style_list[style_count]
+                style = self.props.style_list[style_count]
 
                 for y_val, legend_val in zip(y_vals_list, legend_val_list):
-                    color = self.props_obj.color_list[color_count]
+                    color = self.props.color_list[color_count]
                     plt.plot(info_dict[x_vals], info_dict[y_val], linestyle=style, markersize=2.3, color=color)
 
                     if not force_legend:
