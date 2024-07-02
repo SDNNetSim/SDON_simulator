@@ -1,0 +1,75 @@
+name: Cross-platform Compatibility Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-windows:
+    name: Test on Windows 11
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then sed -e '/rl_zoo3/d' -e '/stable-baselines3/d' requirements.txt > filtered_requirements.txt; pip install -r filtered_requirements.txt; fi
+
+
+      - name: Run Python script on Windows
+        run: |
+          python ./run_sim.py
+
+  test-ubuntu:
+    name: Test on Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then sed -e '/rl_zoo3/d' -e '/stable-baselines3/d' requirements.txt > filtered_requirements.txt; pip install -r filtered_requirements.txt; fi
+
+
+      - name: Run Python script on Ubuntu
+        run: |
+          python ./run_sim.py
+
+  test-macos:
+    name: Test on MacOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then sed -e '/rl_zoo3/d' -e '/stable-baselines3/d' requirements.txt > filtered_requirements.txt; pip install -r filtered_requirements.txt; fi
+
+      - name: Run Python script on MacOS
+        run: |
+          python ./run_sim.py
