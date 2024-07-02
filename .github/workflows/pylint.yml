@@ -42,8 +42,11 @@ jobs:
           pylint ./sim_scripts
           pylint ./data_scripts
           pylint ./tests
+          pylint ./gui_scripts
           pylint ./plot_scripts
           pylint ./helper_scripts
           pylint ./ai_scripts
           pylint ./config_scripts
           pylint run_sim.py
+          pylint run_rl_sim.py
+          pylint run_ml_sim.py
