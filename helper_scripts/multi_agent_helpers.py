@@ -1,10 +1,9 @@
 import os
-import json
 
 import numpy as np
 from gymnasium import spaces
 
-from .sim_helpers import find_path_cong, find_core_cong
+from .sim_helpers import find_path_cong
 from .ql_helpers import QLearningHelpers
 from .bandit_helpers import EpsilonGreedyBandit, ContextualEpsilonGreedyBandit, ContextGenerator
 from .bandit_helpers import ThompsonSamplingBandit, UCBBandit
@@ -15,7 +14,7 @@ class PathAgent:
     A class that handles everything related to path assignment in reinforcement learning simulations.
     """
 
-    def __init__(self, path_algorithm: str, rl_props: dict, rl_help_obj: object):
+    def __init__(self, path_algorithm: str, rl_props: object, rl_help_obj: object):
         self.path_algorithm = path_algorithm
         self.engine_props = None
         self.rl_props = rl_props
@@ -88,44 +87,44 @@ class PathAgent:
             self.agent_obj.update_routes_matrix(reward=reward, level_index=self.level_index,
                                                 net_spec_dict=net_spec_dict)
         elif self.path_algorithm == 'epsilon_greedy_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'], iteration=iteration)
+            self.agent_obj.update(reward=reward, arm=self.rl_props.chosen_path_index, iteration=iteration)
         elif self.path_algorithm == 'ucb_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'], iteration=iteration)
+            self.agent_obj.update(reward=reward, arm=self.rl_props.chosen_path_index, iteration=iteration)
         elif self.path_algorithm == 'thompson_sampling_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'], iteration=iteration)
+            self.agent_obj.update(reward=reward, arm=self.rl_props.chosen_path_index, iteration=iteration)
         # TODO: Update context
         elif self.path_algorithm == 'context_epsilon_greedy_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props['chosen_path_index'],
+            self.agent_obj.update(reward=reward, arm=self.rl_props.chosen_path_index,
                                   context=self.context_obj.curr_context, iteration=iteration)
         else:
             raise NotImplementedError
 
     def __ql_route(self, random_float: float):
         if random_float < self.agent_obj.props['epsilon']:
-            self.rl_props['chosen_path_index'] = np.random.choice(self.rl_props['k_paths'])
+            self.rl_props.chosen_path_index = np.random.choice(self.rl_props.k_paths)
             # The level will always be the last index
-            self.level_index = self.cong_list[self.rl_props['chosen_path_index']][-1]
+            self.level_index = self.cong_list[self.rl_props.chosen_path_index][-1]
 
-            if self.rl_props['chosen_path_index'] == 1 and self.rl_props['k_paths'] == 1:
-                self.rl_props['chosen_path_index'] = 0
-            self.rl_props['chosen_path'] = self.rl_props['paths_list'][self.rl_props['chosen_path_index']]
+            if self.rl_props.chosen_path_index == 1 and self.rl_props.k_paths == 1:
+                self.rl_props.chosen_path_index = 0
+            self.rl_propschosen_path_list = self.rl_props.paths_list[self.rl_props.chosen_path_index]
         else:
-            self.rl_props['chosen_path_index'], self.rl_props['chosen_path'] = self.agent_obj.get_max_curr_q(
+            self.rl_props.chosen_path_index, self.rl_props.chosen_path_list = self.agent_obj.get_max_curr_q(
                 cong_list=self.cong_list, matrix_flag='routes_matrix')
-            self.level_index = self.cong_list[self.rl_props['chosen_path_index']][-1]
+            self.level_index = self.cong_list[self.rl_props.chosen_path_index][-1]
 
     def _ql_route(self):
         random_float = float(np.round(np.random.uniform(0, 1), decimals=1))
         routes_matrix = self.agent_obj.props['routes_matrix']
-        self.rl_props['paths_list'] = routes_matrix[self.rl_props['source']][self.rl_props['destination']]['path']
+        self.rl_props.paths_list = routes_matrix[self.rl_props.source][self.rl_props.destination]['path']
 
-        self.cong_list = self.rl_help_obj.classify_paths(paths_list=self.rl_props['paths_list'])
-        if self.rl_props['paths_list'].ndim != 1:
-            self.rl_props['paths_list'] = self.rl_props['paths_list'][:, 0]
+        self.cong_list = self.rl_help_obj.classify_paths(paths_list=self.rl_props.paths_list)
+        if self.rl_props.paths_list.ndim != 1:
+            self.rl_props.paths_list = self.rl_props.paths_list[:, 0]
 
         self.__ql_route(random_float=random_float)
 
-        if len(self.rl_props['chosen_path']) == 0:
+        if len(self.rl_props.chosen_path_list) == 0:
             raise ValueError('The chosen path can not be None')
 
     # TODO: Ideally q-learning should be like this (agent_obj.something)
@@ -134,8 +133,8 @@ class PathAgent:
         paths_list = route_obj.route_props['paths_list']
         source = paths_list[0][0]
         dest = paths_list[0][-1]
-        self.rl_props['chosen_path_index'] = self.agent_obj.select_path_arm(source=int(source), dest=int(dest))
-        self.rl_props['chosen_path'] = route_obj.route_props['paths_list'][self.rl_props['chosen_path_index']]
+        self.rl_props.chosen_path_index = self.agent_obj.select_path_arm(source=int(source), dest=int(dest))
+        self.rl_props.chosen_path_list = route_obj.route_props['paths_list'][self.rl_props.chosen_path_index]
 
     def _context_bandit_route(self, route_obj: object):
         cong_list = list()
@@ -153,9 +152,9 @@ class PathAgent:
 
         # TODO: Make sure converting to int doesn't cause any discrepancies
         self.context_obj.generate_context(source=source, dest=dest, congestion_levels=cong_list)
-        self.rl_props['chosen_path_index'] = self.agent_obj.select_arm(context=self.context_obj.curr_context,
-                                                                       source=source, dest=dest)
-        self.rl_props['chosen_path'] = route_obj.route_props['paths_list'][self.rl_props['chosen_path_index']]
+        self.rl_props.chosen_path_index = self.agent_obj.select_arm(context=self.context_obj.curr_context,
+                                                                    source=source, dest=dest)
+        self.rl_props.chosen_path_list = route_obj.route_props['paths_list'][self.rl_props.chosen_path_index]
 
     def get_route(self, **kwargs):
         """
@@ -191,7 +190,7 @@ class CoreAgent:
     A class that handles everything related to core assignment in reinforcement learning simulations.
     """
 
-    def __init__(self, core_algorithm: str, rl_props: dict, rl_help_obj: object):
+    def __init__(self, core_algorithm: str, rl_props: object, rl_help_obj: object):
         self.core_algorithm = core_algorithm
         self.rl_props = rl_props
         self.engine_props = None
@@ -251,7 +250,7 @@ class CoreAgent:
         :rtype: float
         """
         req_id = float(self.rl_help_obj.route_obj.sdn_props['req_id'])
-        core_index = self.rl_props['core_index']
+        core_index = self.rl_props.core_index
 
         reqs_completed = req_id / float(self.engine_props['num_requests'])
         if was_allocated:
@@ -288,37 +287,37 @@ class CoreAgent:
             pass
         elif self.core_algorithm == 'q_learning':
             self.agent_obj.update_cores_matrix(reward=reward, level_index=self.level_index,
-                                               net_spec_dict=net_spec_dict, core_index=self.rl_props['core_index'])
+                                               net_spec_dict=net_spec_dict, core_index=self.rl_props.core_index)
         elif self.core_algorithm == 'epsilon_greedy_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props['core_index'], iteration=iteration)
+            self.agent_obj.update(reward=reward, arm=self.rl_props.core_index, iteration=iteration)
         elif self.core_algorithm == 'ucb_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props['core_index'], iteration=iteration)
+            self.agent_obj.update(reward=reward, arm=self.rl_props.core_index, iteration=iteration)
         elif self.core_algorithm == 'thompson_sampling_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props['core_index'], iteration=iteration)
+            self.agent_obj.update(reward=reward, arm=self.rl_props.core_index, iteration=iteration)
         elif self.core_algorithm == 'context_epsilon_greedy_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props['core_index'], iteration=iteration)
+            self.agent_obj.update(reward=reward, arm=self.rl_props.core_index, iteration=iteration)
         else:
             raise NotImplementedError
 
     def _ql_core(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
         cores_matrix = self.agent_obj.props['cores_matrix']
-        cores_matrix = cores_matrix[self.rl_props['source']][self.rl_props['destination']]
-        self.rl_props['cores_list'] = cores_matrix[self.rl_props['chosen_path_index']]
-        self.cong_list = self.rl_help_obj.classify_cores(cores_list=self.rl_props['cores_list'])
+        cores_matrix = cores_matrix[self.rl_props.source][self.rl_props.destination]
+        self.rl_props.cores_list = cores_matrix[self.rl_props['chosen_path_index']]
+        self.cong_list = self.rl_help_obj.classify_cores(cores_list=self.rl_props.cores_list)
 
         if random_float < self.agent_obj.props['epsilon']:
-            self.rl_props['core_index'] = np.random.randint(0, self.engine_props['cores_per_link'])
-            self.level_index = self.cong_list[self.rl_props['core_index']][-1]
+            self.rl_props.core_index = np.random.randint(0, self.engine_props['cores_per_link'])
+            self.level_index = self.cong_list[self.rl_props.core_index][-1]
         else:
-            self.rl_props['core_index'], self.rl_props['chosen_core'] = self.agent_obj.get_max_curr_q(
+            self.rl_props.core_index, self.rl_props.chosen_core = self.agent_obj.get_max_curr_q(
                 cong_list=self.cong_list,
                 matrix_flag='cores_matrix')
-            self.level_index = self.cong_list[self.rl_props['core_index']][-1]
+            self.level_index = self.cong_list[self.rl_props.core_index][-1]
 
     def _bandit_core(self, path_index: int, source: str, dest: str):
-        self.rl_props['core_index'] = self.agent_obj.select_core_arm(source=int(source), dest=int(dest),
-                                                                     path_index=path_index)
+        self.rl_props.core_index = self.agent_obj.select_core_arm(source=int(source), dest=int(dest),
+                                                                  path_index=path_index)
 
     def get_core(self, req_id: int):
         """
@@ -328,21 +327,21 @@ class CoreAgent:
         self.ramp_up = False
         if reqs_completed < 0.5:
             self.ramp_up = True
-            self.rl_props['core_index'] = None
+            self.rl_props.core_index = None
         elif self.core_algorithm == 'q_learning':
             self._ql_core()
         elif self.core_algorithm == 'epsilon_greedy_bandit':
-            self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],
-                              dest=self.rl_props['chosen_path'][0][-1])
+            self._bandit_core(path_index=self.rl_props.chosen_path_index, source=self.rl_props.chosen_path_list[0][0],
+                              dest=self.rl_props.chosen_path_list[0][-1])
         elif self.core_algorithm == 'ucb_bandit':
-            self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],
-                              dest=self.rl_props['chosen_path'][0][-1])
+            self._bandit_core(path_index=self.rl_props.chosen_path_index, source=self.rl_props.chosen_path_list[0][0],
+                              dest=self.rl_props.chosen_path_list[0][-1])
         elif self.core_algorithm == 'thompson_sampling_bandit':
-            self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],
-                              dest=self.rl_props['chosen_path'][0][-1])
+            self._bandit_core(path_index=self.rl_props.chosen_path_index, source=self.rl_props.chosen_path_list[0][0],
+                              dest=self.rl_props.chosen_path_list[0][-1])
         elif self.core_algorithm == 'context_epsilon_greedy_bandit':
-            self._bandit_core(path_index=self.rl_props['chosen_path_index'], source=self.rl_props['chosen_path'][0][0],
-                              dest=self.rl_props['chosen_path'][0][-1])
+            self._bandit_core(path_index=self.rl_props.chosen_path_index, source=self.rl_props.chosen_path_list[0][0],
+                              dest=self.rl_props.chosen_path_list[0][-1])
         else:
             raise NotImplementedError
 
@@ -365,7 +364,7 @@ class SpectrumAgent:
     A class that handles everything related to spectrum assignment in reinforcement learning simulations.
     """
 
-    def __init__(self, spectrum_algorithm: str, rl_props: dict):
+    def __init__(self, spectrum_algorithm: str, rl_props: object):
         self.spectrum_algorithm = spectrum_algorithm
         self.rl_props = rl_props
 
@@ -382,8 +381,8 @@ class SpectrumAgent:
         # TODO: Change, hard coded
         resp_obs = spaces.Dict({
             'slots_needed': spaces.Discrete(15 + 1),
-            'source': spaces.MultiBinary(self.rl_props['num_nodes']),
-            'destination': spaces.MultiBinary(self.rl_props['num_nodes']),
+            'source': spaces.MultiBinary(self.rl_props.num_nodes),
+            'destination': spaces.MultiBinary(self.rl_props.num_nodes),
             'super_channels': spaces.Box(-0.01, 100.0, shape=(3,), dtype=np.float32)
         })
 
@@ -401,7 +400,7 @@ class SpectrumAgent:
         return None
 
     def _ppo_action_space(self):
-        action_space = spaces.Discrete(self.rl_props['super_channel_space'])
+        action_space = spaces.Discrete(self.rl_props.super_channel_space)
         return action_space
 
     def get_action_space(self):
