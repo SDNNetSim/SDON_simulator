@@ -6,7 +6,7 @@ import json
 import networkx as nx
 import numpy as np
 
-from arg_scripts.rl_args import empty_q_props
+from arg_scripts.rl_args import QProps
 from helper_scripts.sim_helpers import find_path_cong, classify_cong, calc_matrix_stats, find_core_cong
 from helper_scripts.os_helpers import create_dir
 
@@ -16,8 +16,8 @@ class QLearningHelpers:
     Class dedicated to handling everything related to the q-learning algorithm.
     """
 
-    def __init__(self, rl_props: dict, engine_props: dict):
-        self.props = empty_q_props
+    def __init__(self, rl_props: object, engine_props: dict):
+        self.props = QProps
         self.engine_props = engine_props
         self.rl_props = rl_props
 
@@ -26,8 +26,8 @@ class QLearningHelpers:
         self.iteration = 0
 
     def _init_q_tables(self):
-        for source in range(0, self.rl_props['num_nodes']):
-            for destination in range(0, self.rl_props['num_nodes']):
+        for source in range(0, self.rl_props.num_nodes):
+            for destination in range(0, self.rl_props.num_nodes):
                 # A node cannot be attached to itself
                 if source == destination:
                     continue
@@ -35,30 +35,29 @@ class QLearningHelpers:
                 shortest_paths = nx.shortest_simple_paths(G=self.engine_props['topology'],
                                                           source=str(source), target=str(destination), weight='length')
                 for k, curr_path in enumerate(shortest_paths):
-                    if k >= self.rl_props['k_paths']:
+                    if k >= self.rl_props.k_paths:
                         break
 
                     for level_index in range(self.path_levels):
-                        self.props['routes_matrix'][source, destination, k, level_index] = (curr_path, 0.0)
+                        self.props.routes_matrix[source, destination, k, level_index] = (curr_path, 0.0)
 
                         for core_action in range(self.engine_props['cores_per_link']):
                             core_tuple = (curr_path, core_action, 0.0)
-                            self.props['cores_matrix'][
-                                source, destination, k, core_action, level_index] = core_tuple
+                            self.props.cores_matrix[source, destination, k, core_action, level_index] = core_tuple
 
     def setup_env(self):
         """
         Sets up the q-learning environments.
         """
-        self.props['epsilon'] = self.engine_props['epsilon_start']
+        self.props.epsilon = self.engine_props['epsilon_start']
         route_types = [('path', 'O'), ('q_value', 'f8')]
         core_types = [('path', 'O'), ('core_action', 'i8'), ('q_value', 'f8')]
 
-        self.props['routes_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
-                                                self.rl_props['k_paths'], self.path_levels), dtype=route_types)
+        self.props.routes_matrix = np.empty((self.rl_props.num_nodes, self.rl_props.num_nodes,
+                                                self.rl_props.k_paths, self.path_levels), dtype=route_types)
 
-        self.props['cores_matrix'] = np.empty((self.rl_props['num_nodes'], self.rl_props['num_nodes'],
-                                               self.rl_props['k_paths'], self.engine_props['cores_per_link'],
+        self.props.cores_matrix = np.empty((self.rl_props.num_nodes, self.rl_props.num_nodes,
+                                               self.rl_props.k_paths, self.engine_props['cores_per_link'],
                                                self.path_levels), dtype=core_types)
 
         self._init_q_tables()
@@ -78,7 +77,7 @@ class QLearningHelpers:
         if flag == 'path':
             new_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
             new_cong_index = classify_cong(curr_cong=new_cong)
-            max_future_q = matrix[self.rl_props['chosen_path_index']][new_cong_index]['q_value']
+            max_future_q = matrix[self.rl_props.chosen_path_index][new_cong_index]['q_value']
         elif flag == 'core':
             new_cong = find_core_cong(core_index=core_index, net_spec_dict=net_spec_dict, path_list=path_list)
             new_cong_index = classify_cong(curr_cong=new_cong)
@@ -96,11 +95,11 @@ class QLearningHelpers:
         :param level_index: Index to determine the current state.
         :param net_spec_dict: The network spectrum database.
         """
-        routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        path_list = routes_matrix[self.rl_props['chosen_path_index']][level_index]
+        routes_matrix = self.props.routes_matrix[self.rl_props.source][self.rl_props.destination]
+        path_list = routes_matrix[self.rl_props.chosen_path_index][level_index]
         current_q = path_list['q_value']
 
-        max_future_q = self.get_max_future_q(path_list=routes_matrix[self.rl_props['chosen_path_index']][0][0],
+        max_future_q = self.get_max_future_q(path_list=routes_matrix[self.rl_props.chosen_path_index][0][0],
                                              net_spec_dict=net_spec_dict, matrix=routes_matrix, flag='path')
 
         delta = reward + self.engine_props['discount_factor'] * max_future_q
@@ -108,8 +107,8 @@ class QLearningHelpers:
         self.update_q_stats(reward=reward, stats_flag='routes_dict', td_error=td_error)
         new_q = ((1.0 - self.engine_props['learn_rate']) * current_q) + (self.engine_props['learn_rate'] * delta)
 
-        routes_matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        routes_matrix[self.rl_props['chosen_path_index']][level_index]['q_value'] = new_q
+        routes_matrix = self.props.routes_matrix[self.rl_props.source][self.rl_props.destination]
+        routes_matrix[self.rl_props.chosen_path_index][level_index]['q_value'] = new_q
 
     def update_cores_matrix(self, reward: float, core_index: int, level_index: int, net_spec_dict: dict):
         """
@@ -120,9 +119,9 @@ class QLearningHelpers:
         :param level_index: Index to determine the current state.
         :param net_spec_dict: The network spectrum database.
         """
-        cores_matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
-        cores_matrix = cores_matrix[self.rl_props['chosen_path_index']]
-        cores_list = cores_matrix[self.rl_props['core_index']][level_index]
+        cores_matrix = self.props.cores_matrix[self.rl_props.source][self.rl_props.destination]
+        cores_matrix = cores_matrix[self.rl_props.chosen_path_index]
+        cores_list = cores_matrix[self.rl_props.core_index][level_index]
         current_q = cores_list['q_value']
 
         max_future_q = self.get_max_future_q(path_list=cores_list['path'], net_spec_dict=net_spec_dict,
@@ -147,11 +146,11 @@ class QLearningHelpers:
         q_values = list()
         for obj_index, _, level_index in cong_list:
             if matrix_flag == 'routes_matrix':
-                matrix = self.props['routes_matrix'][self.rl_props['source']][self.rl_props['destination']]
+                matrix = self.props.routes_matrix[self.rl_props.source][self.rl_props.destination]
                 sub_flag = 'paths_list'
             elif matrix_flag == 'cores_matrix':
-                matrix = self.props['cores_matrix'][self.rl_props['source']][self.rl_props['destination']]
-                matrix = matrix[self.rl_props['chosen_path_index']]
+                matrix = self.props.cores_matrix[self.rl_props.source][self.rl_props.destination]
+                matrix = matrix[self.rl_props.chosen_path_index]
                 sub_flag = 'cores_list'
             else:
                 raise ValueError
@@ -160,26 +159,30 @@ class QLearningHelpers:
             q_values.append(curr_q)
 
         max_index = np.argmax(q_values)
-        max_obj = self.rl_props[sub_flag][max_index]
+        # TODO: No longer a dictionary, changed to an object (double check)
+        if sub_flag == 'cores_matrix':
+            max_obj = self.rl_props.cores_matrix[max_index]
+        else:
+            max_obj = self.rl_props.paths_list[max_index]
         return max_index, max_obj
 
     def _calc_q_averages(self, stats_flag: str, episode: str):
-        len_rewards = len(self.props['rewards_dict'][stats_flag]['rewards'][episode])
+        len_rewards = len(self.props.rewards_dict[stats_flag]['rewards'][episode])
 
         max_iters = self.engine_props['max_iters']
         num_requests = self.engine_props['num_requests']
 
         if (self.iteration in (max_iters - 1, (max_iters - 1) % 10)) and len_rewards == num_requests:
-            rewards_dict = self.props['rewards_dict'][stats_flag]['rewards']
-            errors_dict = self.props['errors_dict'][stats_flag]['errors']
+            rewards_dict = self.props.rewards_dict[stats_flag]['rewards']
+            errors_dict = self.props.errors_dict[stats_flag]['errors']
 
             if self.iteration == (max_iters - 1):
                 self.completed_sim = True
-                self.props['rewards_dict'][stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
-                self.props['errors_dict'][stats_flag] = calc_matrix_stats(input_dict=errors_dict)
+                self.props.rewards_dict[stats_flag] = calc_matrix_stats(input_dict=rewards_dict)
+                self.props.errors_dict[stats_flag] = calc_matrix_stats(input_dict=errors_dict)
             else:
-                self.props['rewards_dict'][stats_flag]['training'] = calc_matrix_stats(input_dict=rewards_dict)
-                self.props['errors_dict'][stats_flag]['training'] = calc_matrix_stats(input_dict=errors_dict)
+                self.props.rewards_dict[stats_flag]['training'] = calc_matrix_stats(input_dict=rewards_dict)
+                self.props.errors_dict[stats_flag]['training'] = calc_matrix_stats(input_dict=errors_dict)
 
             if not self.engine_props['is_training']:
                 self.save_model(path_algorithm=self.engine_props['path_algorithm'], core_algorithm='first_fit')
@@ -201,26 +204,27 @@ class QLearningHelpers:
             return
 
         episode = str(self.iteration)
-        if episode not in self.props['rewards_dict'][stats_flag]['rewards'].keys():
-            self.props['rewards_dict'][stats_flag]['rewards'][episode] = [reward]
-            self.props['errors_dict'][stats_flag]['errors'][episode] = [td_error]
-            self.props['sum_rewards_dict'][episode] = reward
-            self.props['sum_errors_dict'][episode] = td_error
+        if episode not in self.props.rewards_dict[stats_flag]['rewards'].keys():
+            self.props.rewards_dict[stats_flag]['rewards'][episode] = [reward]
+            self.props.errors_dict[stats_flag]['errors'][episode] = [td_error]
+            self.props.sum_rewards_dict[episode] = reward
+            self.props.sum_errors_dict[episode] = td_error
         else:
-            self.props['rewards_dict'][stats_flag]['rewards'][episode].append(reward)
-            self.props['errors_dict'][stats_flag]['errors'][episode].append(td_error)
-            self.props['sum_rewards_dict'][episode] += reward
-            self.props['sum_errors_dict'][episode] += td_error
+            self.props.rewards_dict[stats_flag]['rewards'][episode].append(reward)
+            self.props.errors_dict[stats_flag]['errors'][episode].append(td_error)
+            self.props.sum_rewards_dict[episode] += reward
+            self.props.sum_errors_dict[episode] += td_error
 
         self._calc_q_averages(stats_flag=stats_flag, episode=episode)
 
     def _save_params(self, save_dir: str):
         params_dict = dict()
-        for param_type, params_list in self.props['save_params_dict'].items():
+        for param_type, params_list in self.props.save_params_dict.items():
             for curr_param in params_list:
                 if param_type == 'engine_params_list':
                     params_dict[curr_param] = self.engine_props[curr_param]
                 else:
+                    # TODO: Must be fixed
                     params_dict[curr_param] = self.props[curr_param]
 
         erlang = self.engine_props['erlang']
