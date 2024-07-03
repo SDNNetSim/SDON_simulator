@@ -159,9 +159,8 @@ class QLearningHelpers:
             q_values.append(curr_q)
 
         max_index = np.argmax(q_values)
-        # TODO: No longer a dictionary, changed to an object (double check)
-        if sub_flag == 'cores_matrix':
-            max_obj = self.rl_props.cores_matrix[max_index]
+        if sub_flag == 'cores_list':
+            max_obj = self.rl_props.cores_list[max_index]
         else:
             max_obj = self.rl_props.paths_list[max_index]
         return max_index, max_obj
