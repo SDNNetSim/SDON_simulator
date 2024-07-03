@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 
 from helper_scripts.os_helpers import create_dir
-from arg_scripts.rl_args import empty_bandit_props
+from arg_scripts.rl_args import BanditProps
 
 
 def load_model(train_fp: str):
@@ -54,8 +54,8 @@ def save_model(iteration: int, max_iters: int, len_rewards: int, num_requests: i
 
 
 class EpsilonGreedyBandit:
-    def __init__(self, rl_props: dict, engine_props: dict, is_path: bool, is_core: bool):
-        self.props = empty_bandit_props
+    def __init__(self, rl_props: object, engine_props: dict, is_path: bool, is_core: bool):
+        self.props = BanditProps
         self.engine_props = engine_props
         self.rl_props = rl_props
         self.completed_sim = False
@@ -72,7 +72,7 @@ class EpsilonGreedyBandit:
             self.n_arms = engine_props['cores_per_link']
 
         self.epsilon = engine_props['epsilon_start']
-        self.num_nodes = rl_props['num_nodes']
+        self.num_nodes = rl_props.num_nodes
         self.counts = {}
         self.values = {}
 
@@ -120,15 +120,15 @@ class EpsilonGreedyBandit:
         value = self.values[pair][arm]
         self.values[pair][arm] = value + (reward - value) / n
 
-        if self.iteration >= len(self.props['rewards_matrix']):
-            self.props['rewards_matrix'].append([])
-        self.props['rewards_matrix'][self.iteration].append(reward)
+        if self.iteration >= len(self.props.rewards_matrix):
+            self.props.rewards_matrix.append([])
+        self.props.rewards_matrix[self.iteration].append(reward)
 
         # Check if we need to save the model
         save_model(iteration=iteration, max_iters=self.engine_props['max_iters'],
-                   len_rewards=len(self.props['rewards_matrix'][iteration]),
+                   len_rewards=len(self.props.rewards_matrix[iteration]),
                    num_requests=self.engine_props['num_requests'],
-                   rewards_matrix=self.props['rewards_matrix'], engine_props=self.engine_props,
+                   rewards_matrix=self.props.rewards_matrix, engine_props=self.engine_props,
                    algorithm='greedy_bandit', is_path=self.is_path, state_values_dict=self.values)
 
     def setup_env(self):
@@ -142,7 +142,8 @@ class EpsilonGreedyBandit:
 
 
 class UCBBandit:
-    def __init__(self, rl_props: dict, engine_props: dict, is_core: bool, is_path: bool):
+    def __init__(self, rl_props: object, engine_props: dict, is_core: bool, is_path: bool):
+        # TODO: Discrepancy here, why don't we use a class props?
         self.props = {'rewards_matrix': []}
         self.engine_props = engine_props
         self.rl_props = rl_props
@@ -154,7 +155,7 @@ class UCBBandit:
         self.source = None
         self.dest = None
 
-        self.num_nodes = rl_props['num_nodes']
+        self.num_nodes = rl_props.num_nodes
         self.counts = {}
         self.values = {}
 
@@ -235,6 +236,7 @@ class UCBBandit:
 
 class ThompsonSamplingBandit:
     def __init__(self, rl_props: dict, engine_props: dict, is_path: bool, is_core: bool):
+        # TODO: Why don't we use bandit props?
         self.props = {'rewards_matrix': []}
         self.engine_props = engine_props
         self.rl_props = rl_props
@@ -313,8 +315,9 @@ class ThompsonSamplingBandit:
         pass
 
 
+# TODO: Class no longer working
 class ContextualEpsilonGreedyBandit:
-    def __init__(self, rl_props: dict, engine_props: dict, is_path: bool, is_core: bool):
+    def __init__(self, rl_props: object, engine_props: dict, is_path: bool, is_core: bool):
         self.props = {'rewards_matrix': []}
         self.is_path = is_path
         self.engine_props = engine_props
@@ -419,7 +422,7 @@ class ContextualEpsilonGreedyBandit:
         raise NotImplementedError
 
 
-# TODO: Need to change context
+# TODO: Need to change context, no longer supported
 class ContextGenerator:
     def __init__(self, rl_props: dict, engine_props: dict):
         self.num_sources = engine_props['topology'].number_of_nodes()
