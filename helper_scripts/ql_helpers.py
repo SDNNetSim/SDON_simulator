@@ -224,8 +224,7 @@ class QLearningHelpers:
                 if param_type == 'engine_params_list':
                     params_dict[curr_param] = self.engine_props[curr_param]
                 else:
-                    # TODO: Must be fixed
-                    params_dict[curr_param] = self.props[curr_param]
+                    params_dict[curr_param] = self.props.get_param_value(curr_param=curr_param)
 
         erlang = self.engine_props['erlang']
         cores_per_link = self.engine_props['cores_per_link']
@@ -258,22 +257,22 @@ class QLearningHelpers:
 
         save_fp = os.path.join(os.getcwd(), save_dir, save_fp)
         if save_fp.split('_')[1] == 'routes':
-            np.save(save_fp, self.props['routes_matrix'])
+            np.save(save_fp, self.props.routes_matrix)
         else:
-            np.save(save_fp, self.props['cores_matrix'])
+            np.save(save_fp, self.props.cores_matrix)
         self._save_params(save_dir=save_dir)
 
     def decay_epsilon(self):
         """
         Decay the epsilon value (degree of randomness).
         """
-        if self.props['epsilon'] > self.engine_props['epsilon_end']:
+        if self.props.epsilon > self.engine_props['epsilon_end']:
             decay_rate = self.engine_props['epsilon_start'] - self.engine_props['epsilon_end']
             decay_rate /= self.engine_props['max_iters']
-            self.props['epsilon'] -= decay_rate
+            self.props.epsilon -= decay_rate
 
         if self.iteration == 0:
-            self.props['epsilon_list'].append(self.props['epsilon'])
+            self.props.epsilon_list.append(self.props.epsilon)
 
-        if self.props['epsilon'] < 0.0:
-            raise ValueError(f"Epsilon should be greater than 0 but it is {self.props['epsilon']}")
+        if self.props.epsilon < 0.0:
+            raise ValueError(f"Epsilon should be greater than 0 but it is {self.props.epsilon}")

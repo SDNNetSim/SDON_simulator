@@ -66,6 +66,27 @@ class QProps:
             'engine_params_list': ['epsilon_start', 'epsilon_end', 'max_iters', 'learn_rate', 'discount_factor']
         }
 
+    def get_param_value(self, curr_param: str):
+        """
+        Gets a value of a certain parameter
+        :param curr_param: Parameter to find its value.
+        :return: The value of that parameter.
+        """
+        if curr_param == 'rewards_dict':
+            resp = self.rewards_dict
+        elif curr_param == 'errors_dict':
+            resp = self.errors_dict
+        elif curr_param == 'epsilon_list':
+            resp = self.epsilon_list
+        elif curr_param == 'sum_rewards_dict':
+            resp = self.sum_rewards_dict
+        elif curr_param == 'sum_errors_dict':
+            resp = self.sum_errors_dict
+        else:
+            raise KeyError('Parameter does not exist.')
+
+        return resp
+
     def __repr__(self):
         return f"QProps({self.__dict__})"
 

@@ -13,6 +13,7 @@ from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_hfrag
 from helper_scripts.os_helpers import create_dir
 
 
+# TODO: Note that many of these dictionaries were converted to objects, this will affect saving/calculating
 class SimStats:
     """
     The SimStats class finds and stores all relevant statistics in simulations.
