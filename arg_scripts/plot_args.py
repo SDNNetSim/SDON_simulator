@@ -1,4 +1,5 @@
 # pylint: disable=too-few-public-methods
+import copy
 import os
 
 
@@ -53,3 +54,12 @@ class EmptyPlotArgs:
         self.sum_rewards_list = []  # For reinforcement learning (RL), sum of rewards per episode
         self.sum_errors_list = []  # For RL, sum of errors per episode
         self.epsilon_list = []  # For RL, decay of epsilon w.r.t. each episode
+
+    # TODO: Double check plot props modification (outside of this function)
+    @staticmethod
+    def update_info_dict(plot_props: dict, input_dict: dict, info_item_list: list, time: str, sim_num: str):
+        resp_plot_props = copy.deepcopy(plot_props)
+        for info_item in info_item_list:
+            resp_plot_props.plot_dict[time][sim_num][info_item] = input_dict[info_item]
+
+        return resp_plot_props
