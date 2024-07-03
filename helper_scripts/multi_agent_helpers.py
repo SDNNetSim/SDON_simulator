@@ -100,14 +100,14 @@ class PathAgent:
             raise NotImplementedError
 
     def __ql_route(self, random_float: float):
-        if random_float < self.agent_obj.props['epsilon']:
+        if random_float < self.agent_obj.props.epsilon:
             self.rl_props.chosen_path_index = np.random.choice(self.rl_props.k_paths)
             # The level will always be the last index
             self.level_index = self.cong_list[self.rl_props.chosen_path_index][-1]
 
             if self.rl_props.chosen_path_index == 1 and self.rl_props.k_paths == 1:
                 self.rl_props.chosen_path_index = 0
-            self.rl_propschosen_path_list = self.rl_props.paths_list[self.rl_props.chosen_path_index]
+            self.rl_props.chosen_path_list = self.rl_props.paths_list[self.rl_props.chosen_path_index]
         else:
             self.rl_props.chosen_path_index, self.rl_props.chosen_path_list = self.agent_obj.get_max_curr_q(
                 cong_list=self.cong_list, matrix_flag='routes_matrix')
@@ -115,7 +115,7 @@ class PathAgent:
 
     def _ql_route(self):
         random_float = float(np.round(np.random.uniform(0, 1), decimals=1))
-        routes_matrix = self.agent_obj.props['routes_matrix']
+        routes_matrix = self.agent_obj.props.routes_matrix
         self.rl_props.paths_list = routes_matrix[self.rl_props.source][self.rl_props.destination]['path']
 
         self.cong_list = self.rl_help_obj.classify_paths(paths_list=self.rl_props.paths_list)
@@ -180,7 +180,7 @@ class PathAgent:
         self.setup_env()
         if self.engine_props['path_algorithm'] == 'q_learning':
             model_path = os.path.join('logs', model_path, f'e{erlang}_routes_c{num_cores}.npy')
-            self.agent_obj.props['routes_matrix'] = np.load(model_path, allow_pickle=True)
+            self.agent_obj.props.routes_matrix = np.load(model_path, allow_pickle=True)
         else:
             pass
 
@@ -301,12 +301,12 @@ class CoreAgent:
 
     def _ql_core(self):
         random_float = np.round(np.random.uniform(0, 1), decimals=1)
-        cores_matrix = self.agent_obj.props['cores_matrix']
+        cores_matrix = self.agent_obj.props.cores_matrix
         cores_matrix = cores_matrix[self.rl_props.source][self.rl_props.destination]
         self.rl_props.cores_list = cores_matrix[self.rl_props['chosen_path_index']]
         self.cong_list = self.rl_help_obj.classify_cores(cores_list=self.rl_props.cores_list)
 
-        if random_float < self.agent_obj.props['epsilon']:
+        if random_float < self.agent_obj.props.epsilon:
             self.rl_props.core_index = np.random.randint(0, self.engine_props['cores_per_link'])
             self.level_index = self.cong_list[self.rl_props.core_index][-1]
         else:
@@ -356,7 +356,7 @@ class CoreAgent:
         self.setup_env()
         if self.core_algorithm == 'q_learning':
             model_path = os.path.join('logs', model_path, f'e{erlang}_cores_c{num_cores}.npy')
-            self.agent_obj.props['cores_matrix'] = np.load(model_path, allow_pickle=True)
+            self.agent_obj.props.cores_matrix = np.load(model_path, allow_pickle=True)
 
 
 class SpectrumAgent:

@@ -110,7 +110,7 @@ class PPOProps:
     """
     Not implemented at this time.
     """
-    raise NotImplementedError
+    pass
 
 
 # TODO: Detect if running on Unity cluster or locally

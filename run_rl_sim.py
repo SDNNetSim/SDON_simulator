@@ -89,15 +89,15 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_help_obj.core_num = self.rl_props.core_index
 
         if self.sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
-            self.rl_help_obj.rl_props['forced_index'] = action
+            self.rl_help_obj.rl_props.forced_index = action
         else:
-            self.rl_help_obj.rl_props['forced_index'] = None
+            self.rl_help_obj.rl_props.forced_index = None
 
         # TODO: Definitely make sure this is a pointer (comparing results)
         self.rl_help_obj.rl_props = self.rl_props
         self.rl_help_obj.engine_obj = self.engine_obj
         self.rl_help_obj.handle_releases()
-        self.rl_help_obj.update_route_props(chosen_path=self.rl_props.chosen_path, bandwidth=bandwidth)
+        self.rl_help_obj.update_route_props(chosen_path=self.rl_props.chosen_path_list, bandwidth=bandwidth)
 
     def _handle_test_train_step(self, was_allocated: bool, path_length: int):
         if self.sim_dict['is_training']:
@@ -127,7 +127,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         :return: The new observation, reward, if terminated, if truncated, and misc. info.
         :rtype: tuple
         """
-        req_info_dict = self.rl_props.arrival_list[self.rl_props['arrival_count']]
+        req_info_dict = self.rl_props.arrival_list[self.rl_props.arrival_count]
         req_id = req_info_dict['req_id']
         bandwidth = req_info_dict['bandwidth']
 
@@ -161,8 +161,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.path_agent.get_route(route_obj=self.route_obj)
         # TODO: Update to chosen path list, be very careful as this affects results easily for the agents if done wrong
-        self.rl_help_obj.rl_props['chosen_path'] = [self.rl_props.chosen_path_list]
-        self.route_obj.route_props['paths_list'] = self.rl_help_obj.rl_props['chosen_path']
+        self.rl_help_obj.rl_props.chosen_path_list = [self.rl_props.chosen_path_list]
+        self.route_obj.route_props['paths_list'] = self.rl_help_obj.rl_props.chosen_path_list
         self.rl_props.core_index = None
         self.rl_props.forced_index = None
 
@@ -288,7 +288,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         base_fp = os.path.join('data')
         self.sim_dict['thread_num'] = 's1'
         # Added only for structure consistency
-        time.sleep(20)
+        # time.sleep(20)
         get_start_time(sim_dict={'s1': self.sim_dict})
         file_name = "sim_input_s1.json"
 
@@ -296,7 +296,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
                                  sdn_props=self.rl_props.mock_sdn_dict)
 
-        time.sleep(30)
+        # time.sleep(30)
         self.sim_props = create_input(base_fp=base_fp, engine_props=self.sim_dict)
         self.modified_props = copy.deepcopy(self.sim_props)
         if 'topology' in self.sim_props:

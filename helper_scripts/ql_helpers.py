@@ -17,7 +17,7 @@ class QLearningHelpers:
     """
 
     def __init__(self, rl_props: object, engine_props: dict):
-        self.props = QProps
+        self.props = QProps()
         self.engine_props = engine_props
         self.rl_props = rl_props
 
