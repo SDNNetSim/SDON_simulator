@@ -28,7 +28,7 @@ class RLHelpers:
         """
         Updates snapshot saves for the simulation.
         """
-        arrival_count = self.rl_props['arrival_count']
+        arrival_count = self.rl_props.arrival_count
         snapshot_step = self.engine_obj.engine_props['snapshot_step']
 
         if self.engine_obj.engine_props['save_snapshots'] and (arrival_count + 1) % snapshot_step == 0:
@@ -44,9 +44,9 @@ class RLHelpers:
         :return: A matrix of super-channels with their fragmentation score.
         :rtype: list
         """
-        path_list = self.rl_props['chosen_path'][0]
+        path_list = self.rl_props.chosen_path_list[0]
         sc_index_mat, hfrag_arr = get_hfrag(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict,
-                                            spectral_slots=self.rl_props['spectral_slots'], core_num=self.core_num,
+                                            spectral_slots=self.rl_props.spectral_slots, core_num=self.core_num,
                                             slots_needed=slots_needed)
 
         self.super_channel_indexes = sc_index_mat[:num_channels]
@@ -59,9 +59,9 @@ class RLHelpers:
             resp_frag_mat.append(hfrag_arr[start_index])
 
         resp_frag_mat = np.where(np.isinf(resp_frag_mat), 100.0, resp_frag_mat)
-        difference = self.rl_props['super_channel_space'] - len(resp_frag_mat)
+        difference = self.rl_props.super_channel_space - len(resp_frag_mat)
 
-        if len(resp_frag_mat) < self.rl_props['super_channel_space'] or np.any(np.isinf(resp_frag_mat)):
+        if len(resp_frag_mat) < self.rl_props.super_channel_space or np.any(np.isinf(resp_frag_mat)):
             for _ in range(difference):
                 resp_frag_mat = np.append(resp_frag_mat, 100.0)
 
@@ -118,27 +118,14 @@ class RLHelpers:
         self.route_obj.route_props['mod_formats_list'] = [[mod_format]]
         self.route_obj.route_props['weights_list'].append(path_len)
 
-    # def handle_releases(self):
-    #     """
-    #     Checks if a request or multiple requests need to be released.
-    #     """
-    #     try:
-    #         curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
-    #     except IndexError:
-    #         curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count'] - 1]['arrive']
-    #
-    #     for _, req_obj in enumerate(self.rl_props['depart_list']):
-    #         if req_obj['depart'] <= curr_time:
-    #             self.engine_obj.handle_release(curr_time=req_obj['depart'])
-
     def handle_releases(self):
         """
         Checks if a request or multiple requests need to be released.
         """
-        curr_time = self.rl_props['arrival_list'][min(self.rl_props['arrival_count'],
-                                                      len(self.rl_props['arrival_list']) - 1)]['arrive']
+        curr_time = self.rl_props.arrival_list[min(self.rl_props.arrival_count,
+                                                      len(self.rl_props.arrival_list) - 1)]['arrive']
 
-        depart_list = self.rl_props['depart_list']
+        depart_list = self.rl_props.depart_list
         while self._last_processed_index < len(depart_list):
             req_obj = depart_list[self._last_processed_index]
             if req_obj['depart'] > curr_time:
@@ -151,22 +138,22 @@ class RLHelpers:
         """
         Attempts to allocate a request.
         """
-        curr_time = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['arrive']
-        if self.rl_props['forced_index'] is not None:
+        curr_time = self.rl_props.arrival_list[self.rl_props.arrival_count]['arrive']
+        if self.rl_props.forced_index is not None:
             try:
-                forced_index = self.super_channel_indexes[self.rl_props['forced_index']][0]
+                forced_index = self.super_channel_indexes[self.rl_props.forced_index][0]
             # DRL agent picked a super-channel that is not available, block
             except IndexError:
                 self.engine_obj.stats_obj.blocked_reqs += 1
                 self.engine_obj.stats_obj.stats_props['block_reasons_dict']['congestion'] += 1
-                bandwidth = self.rl_props['arrival_list'][self.rl_props['arrival_count']]['bandwidth']
+                bandwidth = self.rl_props.arrival_list[self.rl_props.arrival_count]['bandwidth']
                 self.engine_obj.stats_obj.stats_props['block_bw_dict'][bandwidth] += 1
                 return
         else:
             forced_index = None
 
-        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props['chosen_path'],
-                                       force_core=self.rl_props['core_index'],
+        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props.chosen_path_list,
+                                       force_core=self.rl_props.core_index,
                                        forced_index=forced_index)
 
     @staticmethod
@@ -225,6 +212,6 @@ class RLHelpers:
 
         for req_time in self.engine_obj.reqs_dict:
             if self.engine_obj.reqs_dict[req_time]['request_type'] == 'arrival':
-                self.rl_props['arrival_list'].append(self.engine_obj.reqs_dict[req_time])
+                self.rl_props.arrival_list.append(self.engine_obj.reqs_dict[req_time])
             else:
-                self.rl_props['depart_list'].append(self.engine_obj.reqs_dict[req_time])
+                self.rl_props.depart_list.append(self.engine_obj.reqs_dict[req_time])
