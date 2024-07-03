@@ -2,7 +2,7 @@ import os
 
 import matplotlib.pyplot as plt
 
-from arg_scripts.plot_args import EmptyPlotProps
+from arg_scripts.plot_args import PlotProps
 from helper_scripts.os_helpers import create_dir
 from helper_scripts.plot_helpers import PlotHelpers, find_times
 
@@ -13,7 +13,7 @@ class PlotStats:
     """
 
     def __init__(self, sims_info_dict: dict):
-        self.props = EmptyPlotProps()
+        self.props = PlotProps()
         self.sims_info_dict = sims_info_dict
         self.plot_help_obj = PlotHelpers(plot_props=self.props, net_names_list=sims_info_dict['networks_matrix'])
 

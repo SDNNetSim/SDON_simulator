@@ -5,7 +5,7 @@ from statistics import mean
 import numpy as np
 
 from helper_scripts.sim_helpers import dict_to_list, list_to_title
-from arg_scripts.plot_args import EmptyPlotArgs
+from arg_scripts.plot_args import PlotArgs
 
 
 class PlotHelpers:  # pylint: disable=too-few-public-methods
@@ -108,7 +108,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         elif self.time not in self.plot_props.plot_dict:
             self.plot_props.plot_dict[self.time] = {}
 
-        self.plot_props.plot_dict[self.time][self.sim_num] = EmptyPlotArgs()
+        self.plot_props.plot_dict[self.time][self.sim_num] = PlotArgs()
 
     @staticmethod
     def _read_json_file(file_path: str):

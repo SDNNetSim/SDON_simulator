@@ -1,9 +1,11 @@
+# TODO: Plot scripts still need to be tested
 # pylint: disable=too-few-public-methods
 import copy
 import os
 
 
-class EmptyPlotProps:
+# TODO: Update standards and guidelines to say we should use classes and the must end with 'Props' or 'Args'
+class PlotProps:
     """
     Properties used in the main plot_stats.py script.
     """
@@ -25,8 +27,11 @@ class EmptyPlotProps:
         self.x_tick_list = [50, 100, 200, 300, 400, 500, 600, 700]  # X-tick labels
         self.title_names = None  # Important names used for titles in plots (one string)
 
+    def __repr__(self):
+        return f"PlotProps({self.__dict__})"
 
-class EmptyPlotArgs:
+
+class PlotArgs:
     """
     Arguments used in the plot_helpers.py script.
     """
@@ -73,3 +78,6 @@ class EmptyPlotArgs:
             resp_plot_props.plot_dict[time][sim_num][info_item] = input_dict[info_item]
 
         return resp_plot_props
+
+    def __repr__(self):
+        return f"PlotArgs({self.__dict__})"
