@@ -55,9 +55,19 @@ class EmptyPlotArgs:
         self.sum_errors_list = []  # For RL, sum of errors per episode
         self.epsilon_list = []  # For RL, decay of epsilon w.r.t. each episode
 
-    # TODO: Double check plot props modification (outside of this function)
     @staticmethod
     def update_info_dict(plot_props: dict, input_dict: dict, info_item_list: list, time: str, sim_num: str):
+        """
+        Updates various items in the plot dictionary.
+
+        :param plot_props: Main plot script properties object.
+        :param input_dict: Input dictionary containing information for each item (blocking, length, etc.)
+        :param info_item_list: Keys of the dictionary for their to be updated.
+        :param time: Simulation start time.
+        :param sim_num: Simulation number.
+        :return: The updated plot properties with the simulation information.
+        :rtype: object
+        """
         resp_plot_props = copy.deepcopy(plot_props)
         for info_item in info_item_list:
             resp_plot_props.plot_dict[time][sim_num][info_item] = input_dict[info_item]
