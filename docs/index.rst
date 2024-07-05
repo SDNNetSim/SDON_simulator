@@ -3,7 +3,7 @@ SDN Simulator Documentation
 A Software Defined Networking (SDN) simulator created for the purposes of aiding in the research of elastic-optical
 networking.
 
-:Authors: Arash Rezae, Ryan McCann, and Suvhasis Mukhopadhyay
+:Authors: Arash Rezae, Ryan McCann, Suvhasis Mukhopadhyay, Kojo Bempah, and Kimberly Tice.
 
 .. toctree::
    :maxdepth: 2
