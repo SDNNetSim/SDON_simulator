@@ -1,6 +1,9 @@
 Getting Started for Professionals
 ===============
 
+Running a Simulation
+--------------------
+
 Welcome to the Software Defined Elastic Optical Networking Simulator! In this tutorial, we'll guide you through the
 process of running your first simulations and visualizing the results.
 
@@ -13,6 +16,14 @@ forth. For instance, adding an 's2' section with 'k_paths=2' indicates a change 
 destination in 'simulation 2'. Any parameters not specified will default to the values in 's1'. These processes run
 concurrently, offering flexibility in experimentation, although running multiple processes simultaneously is optional.
 
+.. image:: _images/simulation_subsection_diagram.png
+   :alt: Example simulation subsections
+   :width: 700px
+   :height: 400px
+   :align: center
+
+.. raw:: html
+
 If you're not using artificial intelligence, execute the script ``run_sim.py``. We recommend starting with a small
 number of requests (e.g., 10) to ensure quick completion.
 
@@ -20,3 +31,13 @@ During simulation execution, important input data is saved in the ``input`` dire
 organized by date and time down to the microsecond for easy reference. Once the simulation concludes, navigate to the
 ``output`` directory. Here, you'll find corresponding output data organized by simulation runs ('s1', 's2', etc.), each
 containing results specific to the traffic volume simulated.
+
+Plotting Simulations
+--------------------
+
+In progress
+
+Running Simulations With AI
+---------------------------
+
+In progress
