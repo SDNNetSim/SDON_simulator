@@ -65,4 +65,5 @@ To maintain the quality and consistency of the codebase, we adhere to the follow
 
 ## Contributors
 
-This project is brought to you by the efforts of Arash Rezaee, Ryan McCann, and Suvhasis Mukhopadhyay. We welcome contributions from the community to help make this project even better!
+This project is brought to you by the efforts of Arash Rezaee, Ryan McCann, Suvhasis Mukhopadhyay, Kojo Bempah, and 
+Kimberly Tice. We welcome contributions from the community to help make this project even better!
