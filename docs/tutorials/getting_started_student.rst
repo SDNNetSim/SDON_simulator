@@ -1,6 +1,13 @@
 Getting Started for Students
 ===============
 
+What is a SDN Simulator?
+------------------------
+
+In progress
+
+Running Your First Simulation
+-----------------------------
 Welcome to the Software Defined Elastic Optical Networking Simulator! In this tutorial, we'll guide you through the
 process of running your first simulations and visualizing the results.
 
@@ -55,3 +62,13 @@ Once completed, this should look like:
 
 With your simulations completed, it's time to visualize and interpret the results. Let's move on to plotting and
 analyzing the simulator's output.
+
+Plotting Your First Simulation
+------------------------------
+
+In Progress
+
+Analyzing the Results
+---------------------
+
+In progress
