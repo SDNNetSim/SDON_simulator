@@ -19,7 +19,7 @@ concurrently, offering flexibility in experimentation, although running multiple
 .. image:: _images/simulation_subsection_diagram.png
    :alt: Example simulation subsections
    :width: 700px
-   :height: 400px
+   :height: 300px
    :align: center
 
 .. raw:: html
