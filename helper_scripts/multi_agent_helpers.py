@@ -286,6 +286,7 @@ class CoreAgent:
         if self.ramp_up:
             pass
         elif self.core_algorithm == 'q_learning':
+            print('Core Index:', self.rl_props.core_index)
             self.agent_obj.update_cores_matrix(reward=reward, level_index=self.level_index,
                                                net_spec_dict=net_spec_dict, core_index=self.rl_props.core_index)
         elif self.core_algorithm == 'epsilon_greedy_bandit':

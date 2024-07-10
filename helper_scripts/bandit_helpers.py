@@ -55,7 +55,7 @@ def save_model(iteration: int, max_iters: int, len_rewards: int, num_requests: i
 
 class EpsilonGreedyBandit:
     def __init__(self, rl_props: object, engine_props: dict, is_path: bool, is_core: bool):
-        self.props = BanditProps
+        self.props = BanditProps()
         self.engine_props = engine_props
         self.rl_props = rl_props
         self.completed_sim = False
