@@ -1,5 +1,6 @@
 import os
 import configparser
+import re
 
 from helper_scripts.os_helpers import create_dir
 from arg_scripts.config_args import YUE_REQUIRED_OPTIONS, ARASH_REQUIRED_OPTIONS, OTHER_OPTIONS
@@ -45,7 +46,7 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
     :rtype: dict
     """
     for new_thread in section_list:
-        if not new_thread.startswith('s') or new_thread == 'snr_settings':
+        if not re.match(r'^s\d', new_thread):
             continue
 
         config_dict = _copy_dict_vals(dest_key=new_thread, dictionary=config_dict)
