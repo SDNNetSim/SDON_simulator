@@ -1,3 +1,5 @@
+import random
+
 from helper_scripts.random_helpers import set_seed, get_uniform_rv, get_exponential_rv
 
 
@@ -20,6 +22,9 @@ def get_requests(seed: int, engine_props: dict):
     # Create request distribution
     bw_counts_dict = {bandwidth: int(engine_props['request_distribution'][bandwidth] * engine_props['num_requests'])
                       for bandwidth in engine_props['mod_per_bw']}
+    difference = engine_props['num_requests'] - sum(bw_counts_dict.values())
+    if difference != 0:
+        bw_counts_dict[random.choice(list(bw_counts_dict.keys()))] += difference
     bandwidth_list = list(engine_props['mod_per_bw'].keys())
 
     # Generate requests, multiply the number of requests by two since we have arrival and departure types
