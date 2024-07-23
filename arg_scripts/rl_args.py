@@ -110,7 +110,7 @@ class PPOProps:
     """
     Not implemented at this time.
     """
-    pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 # TODO: Detect if running on Unity cluster or locally
