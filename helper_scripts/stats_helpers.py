@@ -182,9 +182,12 @@ class SimStats:
 
         self.stats_props['sim_block_list'].append(blocking_prob)
 
-    def _handle_iter_lists(self, sdn_data: dict):
-        for stat_key in sdn_data['stat_key_list']:
-            for i, data in enumerate(sdn_data[stat_key]):
+    def _handle_iter_lists(self, sdn_data: object):
+        for stat_key in sdn_data.stat_key_list:
+            # TODO: Eventually change this name (sdn_data)
+            curr_sdn_data = sdn_data.get_data(stat_key=stat_key)
+
+            for i, data in enumerate(curr_sdn_data):
                 if stat_key == 'core_list':
                     self.stats_props['cores_dict'][data] += 1
                 elif stat_key == 'modulation_list':
@@ -193,7 +196,7 @@ class SimStats:
                 elif stat_key == 'xt_list':
                     self.stats_props['xt_list'].append(data)
 
-    def iter_update(self, req_data: dict, sdn_data: dict):
+    def iter_update(self, req_data: dict, sdn_data: object):
         """
         Continuously updates the statistical data for each request allocated/blocked in the current iteration.
 
@@ -202,24 +205,24 @@ class SimStats:
         :return: None
         """
         # Request was blocked
-        if not sdn_data['was_routed']:
+        if not sdn_data.was_routed:
             self.blocked_reqs += 1
-            self.stats_props['block_reasons_dict'][sdn_data['block_reason']] += 1
+            self.stats_props['block_reasons_dict'][sdn_data.block_reason] += 1
             self.stats_props['block_bw_dict'][req_data['bandwidth']] += 1
         else:
-            num_hops = len(sdn_data['path_list']) - 1
+            num_hops = len(sdn_data.path_list) - 1
             self.stats_props['hops_list'].append(num_hops)
 
-            path_len = find_path_len(path_list=sdn_data['path_list'], topology=self.topology)
+            path_len = find_path_len(path_list=sdn_data.path_list, topology=self.topology)
             self.stats_props['lengths_list'].append(path_len)
 
             self._handle_iter_lists(sdn_data=sdn_data)
-            self.stats_props['route_times_list'].append(sdn_data['route_time'])
-            self.total_trans += sdn_data['num_trans']
-            bandwidth = sdn_data['bandwidth']
-            mod_format = sdn_data['modulation_list'][0]
+            self.stats_props['route_times_list'].append(sdn_data.route_time)
+            self.total_trans += sdn_data.num_trans
+            bandwidth = sdn_data.bandwidth
+            mod_format = sdn_data.modulation_list[0]
 
-            self.stats_props['weights_dict'][bandwidth][mod_format].append(sdn_data['path_weight'])
+            self.stats_props['weights_dict'][bandwidth][mod_format].append(sdn_data.path_weight)
 
     def _get_iter_means(self):
         for _, curr_snapshot in self.stats_props['snapshots_dict'].items():

@@ -48,5 +48,21 @@ class SDNProps:
         self.xt_list = list()
         self.core_list = list()
 
+    def get_data(self, stat_key: str):
+        """
+        Retrieves desired data in properties.
+        :return: The desired data.
+        """
+        if stat_key == 'modulation_list':
+            resp = self.modulation_list
+        elif stat_key == 'xt_list':
+            resp = self.xt_list
+        elif stat_key == 'core_list':
+            resp = self.core_list
+        else:
+            raise NotImplementedError
+
+        return resp
+
     def __repr__(self):
         return f"EmptyProps({self.__dict__})"

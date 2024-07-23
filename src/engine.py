@@ -49,15 +49,15 @@ class Engine:
         """
         sdn_props = self.sdn_obj.sdn_props
         self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props)
-        if sdn_props['was_routed']:
-            self.stats_obj.curr_trans = sdn_props['num_trans']
+        if sdn_props.was_routed:
+            self.stats_obj.curr_trans = sdn_props.num_trans
 
             self.reqs_status_dict.update({self.reqs_dict[curr_time]['req_id']: {
-                "mod_format": sdn_props['spectrum_dict']['modulation'],
-                "path": sdn_props['path_list'],
-                "is_sliced": sdn_props['is_sliced'],
-                "was_routed": sdn_props['was_routed'],
-                "core_list": sdn_props['core_list'],
+                "mod_format": sdn_props.spectrum_dict['modulation'],
+                "path": sdn_props.path_list,
+                "is_sliced": sdn_props.is_sliced,
+                "was_routed": sdn_props.was_routed,
+                "core_list": sdn_props.core_list,
             }})
 
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,
@@ -70,13 +70,14 @@ class Engine:
         :param force_slicing: Forces slicing in the SDN controller.
         :param forced_index: Forces an index in the SDN controller.
         """
+        # TODO: Not sure about this, probably need a method for it
         for req_key, req_value in self.reqs_dict[curr_time].items():
             self.sdn_obj.sdn_props[req_key] = req_value
 
         self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
                                   force_slicing=force_slicing, forced_index=forced_index, force_core=force_core,
                                   ml_model=self.ml_model, req_dict=self.reqs_dict[curr_time])
-        self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
+        self.net_spec_dict = self.sdn_obj.sdn_props.net_spec_dict
         self.update_arrival_params(curr_time=curr_time)
 
     def handle_release(self, curr_time: float):
@@ -85,13 +86,14 @@ class Engine:
 
         :param curr_time: The arrival time of the request.
         """
+        # TODO: Also probably need some type of method here
         for req_key, req_value in self.reqs_dict[curr_time].items():
             self.sdn_obj.sdn_props[req_key] = req_value
 
         if self.reqs_dict[curr_time]['req_id'] in self.reqs_status_dict:
-            self.sdn_obj.sdn_props['path_list'] = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']
+            self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']
             self.sdn_obj.handle_event(req_dict=self.reqs_dict[curr_time], request_type='release')
-            self.net_spec_dict = self.sdn_obj.sdn_props['net_spec_dict']
+            self.net_spec_dict = self.sdn_obj.sdn_props.net_spec_dict
         # Request was blocked, nothing to release
         else:
             pass
@@ -115,8 +117,8 @@ class Engine:
 
         self.engine_props['topology'] = self.topology
         self.stats_obj.topology = self.topology
-        self.sdn_obj.sdn_props['net_spec_dict'] = self.net_spec_dict
-        self.sdn_obj.sdn_props['topology'] = self.topology
+        self.sdn_obj.sdn_props.net_spec_dict = self.net_spec_dict
+        self.sdn_obj.sdn_props.topology = self.topology
 
     def generate_requests(self, seed: int):
         """
@@ -146,7 +148,7 @@ class Engine:
                 self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
 
             if self.engine_props['output_train_data']:
-                was_routed = self.sdn_obj.sdn_props['was_routed']
+                was_routed = self.sdn_obj.sdn_props.was_routed
                 if was_routed:
                     req_info_dict = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]
                     self.stats_obj.update_train_data(old_req_info_dict=old_req_info_dict, req_info_dict=req_info_dict,
