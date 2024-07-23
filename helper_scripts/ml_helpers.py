@@ -54,7 +54,7 @@ def plot_data(sim_dict, df, erlang):
 
 
 # TODO: Double check this function as well
-def _get_ml_obs(tmp_dict: dict, engine_props: dict, sdn_props: dict):
+def _get_ml_obs(tmp_dict: dict, engine_props: dict, sdn_props: object):
     df_processed = pd.DataFrame(tmp_dict, index=[0])
     df_processed = pd.get_dummies(df_processed, columns=['old_bandwidth'])
 
@@ -64,7 +64,7 @@ def _get_ml_obs(tmp_dict: dict, engine_props: dict, sdn_props: dict):
 
     for bandwidth, percent in engine_props['request_distribution'].items():
         if percent > 0:
-            if bandwidth != sdn_props['bandwidth']:
+            if bandwidth != sdn_props.bandwidth:
                 df_processed[f'old_bandwidth_{bandwidth}'] = 0
 
     column_order_list = ['path_length', 'longest_reach', 'ave_cong', 'old_bandwidth_50',
@@ -74,13 +74,13 @@ def _get_ml_obs(tmp_dict: dict, engine_props: dict, sdn_props: dict):
     return df_processed
 
 
-def get_ml_obs(req_dict: dict, engine_props: dict, sdn_props: dict):
-    path_length = find_path_len(path_list=sdn_props['path_list'], topology=engine_props['topology'])
+def get_ml_obs(req_dict: dict, engine_props: dict, sdn_props: object):
+    path_length = find_path_len(path_list=sdn_props.path_list, topology=engine_props['topology'])
     cong_arr = np.array([])
     # TODO: Repeat code
     for core_num in range(engine_props['cores_per_link']):
-        curr_cong = find_core_cong(core_index=core_num, net_spec_dict=sdn_props['net_spec_dict'],
-                                   path_list=sdn_props['path_list'])
+        curr_cong = find_core_cong(core_index=core_num, net_spec_dict=sdn_props.net_spec_dict,
+                                   path_list=sdn_props.path_list)
         cong_arr = np.append(cong_arr, curr_cong)
 
     tmp_dict = {

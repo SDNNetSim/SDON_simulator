@@ -24,5 +24,29 @@ class SDNProps:
         self.single_core = False  # Whether to force single-core
         self.block_reason = None  # Reason for blocking a request
 
+    def update_params(self, stat_key: str, spectrum_key: str, spectrum_obj: object):
+        """
+        Update lists to track statistics of routed requests or general network metrics.
+        :param stat_key: Statistical key to update.
+        :param spectrum_key: Spectrum key to update.
+        :param spectrum_obj: Spectrum assignment main object.
+        """
+        if stat_key == 'modulation_list':
+            self.modulation_list.append(spectrum_obj.spectrum_props[spectrum_key])
+        elif stat_key == 'xt_list':
+            self.xt_list.append(spectrum_obj.spectrum_props[spectrum_key])
+        elif stat_key == 'core_list':
+            self.core_list.append(spectrum_obj.spectrum_props[spectrum_key])
+        else:
+            raise NotImplementedError
+
+    def reset_params(self):
+        """
+        Reset select lists used to track statistics.
+        """
+        self.modulation_list = list()
+        self.xt_list = list()
+        self.core_list = list()
+
     def __repr__(self):
         return f"EmptyProps({self.__dict__})"

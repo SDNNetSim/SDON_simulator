@@ -11,7 +11,7 @@ class Routing:
     This class contains methods related to routing network requests.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: dict):
+    def __init__(self, engine_props: dict, sdn_props: object):
         self.engine_props = engine_props
         self.sdn_props = sdn_props
         self.route_props = RoutingProps
@@ -24,7 +24,7 @@ class Routing:
         most_cong_slots = -1
 
         for i in range(len(path_list) - 1):
-            link_dict = self.sdn_props['net_spec_dict'][(path_list[i], path_list[i + 1])]
+            link_dict = self.sdn_props.net_spec_dict[(path_list[i], path_list[i + 1])]
             cores_matrix = link_dict['cores_matrix']
 
             for core_arr in cores_matrix:
@@ -51,8 +51,8 @@ class Routing:
         """
         Find the least congested path in the network.
         """
-        all_paths_obj = nx.shortest_simple_paths(self.engine_props['topology'], self.sdn_props['source'],
-                                                 self.sdn_props['destination'])
+        all_paths_obj = nx.shortest_simple_paths(self.engine_props['topology'], self.sdn_props.source,
+                                                 self.sdn_props.destination)
         min_hops = None
         for i, path_list in enumerate(all_paths_obj):
             num_hops = len(path_list)
@@ -73,29 +73,29 @@ class Routing:
 
         :param weight: Determines the weight to consider for finding the path.
         """
-        paths_obj = nx.shortest_simple_paths(G=self.sdn_props['topology'], source=self.sdn_props['source'],
-                                             target=self.sdn_props['destination'], weight=weight)
+        paths_obj = nx.shortest_simple_paths(G=self.sdn_props.topology, source=self.sdn_props.source,
+                                             target=self.sdn_props.destination, weight=weight)
 
         for path_list in paths_obj:
             # If cross-talk, our path weight is the summation across the path
             if weight == 'xt_cost':
-                resp_weight = sum(self.sdn_props['topology'][path_list[i]][path_list[i + 1]][weight]
+                resp_weight = sum(self.sdn_props.topology[path_list[i]][path_list[i + 1]][weight]
                                   for i in range(len(path_list) - 1))
 
-                mod_formats = sort_nested_dict_vals(original_dict=self.sdn_props['mod_formats'],
+                mod_formats = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats,
                                                     nested_key='max_length')
-                path_len = find_path_len(path_list=path_list, topology=self.sdn_props['topology'])
+                path_len = find_path_len(path_list=path_list, topology=self.sdn_props.topology)
                 mod_format_list = list()
                 for mod_format in mod_formats:
-                    if self.sdn_props['mod_formats'][mod_format]['max_length'] >= path_len:
+                    if self.sdn_props.mod_formats[mod_format]['max_length'] >= path_len:
                         mod_format_list.append(mod_format)
                     else:
                         mod_format_list.append(False)
 
                 self.route_props.mod_formats_matrix.append(mod_format_list)
             else:
-                resp_weight = find_path_len(path_list=path_list, topology=self.sdn_props['topology'])
-                mod_format = get_path_mod(self.sdn_props['mod_formats'], resp_weight)
+                resp_weight = find_path_len(path_list=path_list, topology=self.sdn_props.topology)
+                mod_format = get_path_mod(self.sdn_props.mod_formats, resp_weight)
                 self.route_props.mod_formats_matrix.append([mod_format])
 
             self.route_props.weights_list.append(resp_weight)
@@ -107,14 +107,14 @@ class Routing:
         Finds the k-shortest paths with respect to length from source to destination.
         """
         # This networkx function will always return the shortest paths in order
-        paths_obj = nx.shortest_simple_paths(G=self.engine_props['topology'], source=self.sdn_props['source'],
-                                             target=self.sdn_props['destination'], weight='length')
+        paths_obj = nx.shortest_simple_paths(G=self.engine_props['topology'], source=self.sdn_props.source,
+                                             target=self.sdn_props.destination, weight='length')
 
         for k, path_list in enumerate(paths_obj):
             if k > self.engine_props['k_paths'] - 1:
                 break
             path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
-            chosen_bw = self.sdn_props['bandwidth']
+            chosen_bw = self.sdn_props.bandwidth
             mod_format = get_path_mod(mods_dict=self.engine_props['mod_per_bw'][chosen_bw], path_len=path_len)
 
             self.route_props.paths_matrix.append(path_list)
@@ -126,16 +126,16 @@ class Routing:
         Finds and selects the path with the least amount of non-linear impairment.
         """
         # Bidirectional links are identical, therefore, we don't have to check each one
-        for link_tuple in list(self.sdn_props['net_spec_dict'].keys())[::2]:
+        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
             source, destination = link_tuple[0], link_tuple[1]
-            num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props.span_len
-            bandwidth = self.sdn_props['bandwidth']
+            num_spans = self.sdn_props.topology[source][destination]['length'] / self.route_props.span_len
+            bandwidth = self.sdn_props.bandwidth
             # TODO: Constant QPSK for slots needed (Ask Arash)
             slots_needed = self.engine_props['mod_per_bw'][bandwidth]['QPSK']['slots_needed']
-            self.sdn_props['slots_needed'] = slots_needed
+            self.sdn_props.slots_needed = slots_needed
 
             link_cost = self.route_help_obj.get_nli_cost(link_tuple=link_tuple, num_span=num_spans)
-            self.sdn_props['topology'][source][destination]['nli_cost'] = link_cost
+            self.sdn_props.topology[source][destination]['nli_cost'] = link_cost
 
         self.find_least_weight(weight='nli_cost')
 
@@ -147,18 +147,18 @@ class Routing:
         :rtype: list
         """
         # At the moment, we have identical bidirectional links (no need to loop over all links)
-        for link_list in list(self.sdn_props['net_spec_dict'].keys())[::2]:
+        for link_list in list(self.sdn_props.net_spec_dict.keys())[::2]:
             source, destination = link_list[0], link_list[1]
-            num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props.span_len
+            num_spans = self.sdn_props.topology[source][destination]['length'] / self.route_props.span_len
 
-            free_slots_dict = find_free_slots(net_spec_dict=self.sdn_props['net_spec_dict'], link_tuple=link_list)
+            free_slots_dict = find_free_slots(net_spec_dict=self.sdn_props.net_spec_dict, link_tuple=link_list)
             xt_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=free_slots_dict, link_list=link_list)
 
             if self.engine_props['xt_type'] == 'with_length':
                 if self.route_props.max_link_length is None:
                     self.route_help_obj.get_max_link_length()
 
-                link_cost = self.sdn_props['topology'][source][destination]['length'] / \
+                link_cost = self.sdn_props.topology[source][destination]['length'] / \
                             self.route_props.max_link_length
                 link_cost *= self.engine_props['beta']
                 link_cost += (1 - self.engine_props['beta']) * xt_cost
@@ -168,8 +168,8 @@ class Routing:
                 raise ValueError(f"XT type not recognized, expected with or without_length, "
                                  f"got: {self.engine_props['xt_type']}")
 
-            self.sdn_props['topology'][source][destination]['xt_cost'] = link_cost
-            self.sdn_props['topology'][destination][source]['xt_cost'] = link_cost
+            self.sdn_props.topology[source][destination]['xt_cost'] = link_cost
+            self.sdn_props.topology[destination][source]['xt_cost'] = link_cost
 
         self.find_least_weight(weight='xt_cost')
 

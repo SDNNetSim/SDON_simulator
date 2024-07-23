@@ -12,32 +12,31 @@ class RoutingHelpers:
     Class containing methods to assist with finding routes in the routing class.
     """
 
-    # TODO: Route props changed to an object
-    def __init__(self, route_props: object, engine_props: dict, sdn_props: dict):
+    def __init__(self, route_props: object, engine_props: dict, sdn_props: object):
         self.route_props = route_props
         self.engine_props = engine_props
         self.sdn_props = sdn_props
 
     def _get_indexes(self, center_index: int):
-        if self.sdn_props['slots_needed'] % 2 == 0:
-            start_index = center_index - self.sdn_props['slots_needed'] // 2
-            end_index = center_index + self.sdn_props['slots_needed'] // 2
+        if self.sdn_props.slots_needed % 2 == 0:
+            start_index = center_index - self.sdn_props.slots_needed // 2
+            end_index = center_index + self.sdn_props.slots_needed // 2
         else:
-            start_index = center_index - self.sdn_props['slots_needed'] // 2
-            end_index = center_index + self.sdn_props['slots_needed'] // 2 + 1
+            start_index = center_index - self.sdn_props.slots_needed // 2
+            end_index = center_index + self.sdn_props.slots_needed // 2 + 1
 
         return start_index, end_index
 
     def _get_simulated_link(self):
         sim_link_list = np.zeros(self.engine_props['spectral_slots'])
         # Add to the step to account for the guard band
-        total_slots = self.sdn_props['slots_needed'] + self.engine_props['guard_slots']
+        total_slots = self.sdn_props.slots_needed + self.engine_props['guard_slots']
         for i in range(0, len(sim_link_list), total_slots):
-            value_to_set = i // self.sdn_props['slots_needed'] + 1
-            sim_link_list[i:i + self.sdn_props['slots_needed'] + 2] = value_to_set
+            value_to_set = i // self.sdn_props.slots_needed + 1
+            sim_link_list[i:i + self.sdn_props.slots_needed + 2] = value_to_set
 
         # Add guard-bands
-        sim_link_list[self.sdn_props['slots_needed']::total_slots] *= -1
+        sim_link_list[self.sdn_props.slots_needed::total_slots] *= -1
         # Free the middle-most channel with respect to the number of slots needed
         center_index = len(sim_link_list) // 2
         start_index, end_index = self._get_indexes(center_index=center_index)
@@ -73,7 +72,7 @@ class RoutingHelpers:
                 num_channels += 1
                 # Calculate the center frequency for the open channel
                 center_freq = channel[0] * self.route_props.freq_spacing
-                center_freq += (self.sdn_props['slots_needed'] * self.route_props.freq_spacing) / 2
+                center_freq += (self.sdn_props.slots_needed * self.route_props.freq_spacing) / 2
 
                 nli_cost += self._find_channel_mci(channels_list=taken_channels_dict[core_num], center_freq=center_freq,
                                                    num_span=num_span)
@@ -93,20 +92,20 @@ class RoutingHelpers:
         :return: The worst NLI.
         :rtype: float
         """
-        links_list = list(self.sdn_props['net_spec_dict'].keys())
+        links_list = list(self.sdn_props.net_spec_dict.keys())
         sim_link_list = self._get_simulated_link()
 
-        orig_link_list = copy.copy(self.sdn_props['net_spec_dict'][links_list[0]]['cores_matrix'][0])
-        self.sdn_props['net_spec_dict'][links_list[0]]['cores_matrix'][0] = sim_link_list
+        orig_link_list = copy.copy(self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][0])
+        self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][0] = sim_link_list
 
-        free_channels_dict = find_free_channels(net_spec_dict=self.sdn_props['net_spec_dict'],
-                                                slots_needed=self.sdn_props['slots_needed'], link_tuple=links_list[0])
-        taken_channels_dict = find_taken_channels(net_spec_dict=self.sdn_props['net_spec_dict'],
+        free_channels_dict = find_free_channels(net_spec_dict=self.sdn_props.net_spec_dict,
+                                                slots_needed=self.sdn_props.slots_needed, link_tuple=links_list[0])
+        taken_channels_dict = find_taken_channels(net_spec_dict=self.sdn_props.net_spec_dict,
                                                   link_tuple=links_list[0])
         nli_worst = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
                                          num_span=num_span)
 
-        self.sdn_props['net_spec_dict'][links_list[0]]['cores_matrix'][0] = orig_link_list
+        self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][0] = orig_link_list
         return nli_worst
 
     @staticmethod
@@ -162,7 +161,7 @@ class RoutingHelpers:
         for core_num in free_slots_dict:
             free_slots += len(free_slots_dict[core_num])
             for channel in free_slots_dict[core_num]:
-                core_info_dict = self.sdn_props['net_spec_dict'][link_list]['cores_matrix']
+                core_info_dict = self.sdn_props.net_spec_dict[link_list]['cores_matrix']
                 num_overlapped = self._find_num_overlapped(channel=channel, core_num=core_num,
                                                            core_info_dict=core_info_dict)
                 xt_cost += num_overlapped
@@ -207,9 +206,9 @@ class RoutingHelpers:
         :return: The calculated NLI cost.
         :rtype: float
         """
-        free_channels_dict = find_free_channels(net_spec_dict=self.sdn_props['net_spec_dict'],
-                                                slots_needed=self.sdn_props['slots_needed'], link_tuple=link_tuple)
-        taken_channels_dict = find_taken_channels(net_spec_dict=self.sdn_props['net_spec_dict'], link_tuple=link_tuple)
+        free_channels_dict = find_free_channels(net_spec_dict=self.sdn_props.net_spec_dict,
+                                                slots_needed=self.sdn_props.slots_needed, link_tuple=link_tuple)
+        taken_channels_dict = find_taken_channels(net_spec_dict=self.sdn_props.net_spec_dict, link_tuple=link_tuple)
 
         link_cost = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
                                          num_span=num_span)
