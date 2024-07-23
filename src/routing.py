@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 
-from arg_scripts.routing_args import empty_props
+from arg_scripts.routing_args import RoutingProps
 from helper_scripts.routing_helpers import RoutingHelpers
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, find_free_slots, sort_nested_dict_vals
 
@@ -14,7 +14,7 @@ class Routing:
     def __init__(self, engine_props: dict, sdn_props: dict):
         self.engine_props = engine_props
         self.sdn_props = sdn_props
-        self.route_props = empty_props
+        self.route_props = RoutingProps
 
         self.route_help_obj = RoutingHelpers(engine_props=self.engine_props, sdn_props=self.sdn_props,
                                              route_props=self.route_props)
@@ -33,19 +33,19 @@ class Routing:
                     most_cong_slots = free_slots
                     most_cong_link = link_dict
 
-        self.route_props['paths_list'].append({'path_list': path_list,
-                                               'link_dict': {'link': most_cong_link,
-                                                             'free_slots': most_cong_slots}})
+        self.route_props.paths_matrix.append({'path_list': path_list,
+                                              'link_dict': {'link': most_cong_link,
+                                                            'free_slots': most_cong_slots}})
 
     def _find_least_cong(self):
         # Sort dictionary by number of free slots, descending
-        sorted_paths_list = sorted(self.route_props['paths_list'], key=lambda d: d['link_dict']['free_slots'],
+        sorted_paths_list = sorted(self.route_props.paths_matrix, key=lambda d: d['link_dict']['free_slots'],
                                    reverse=True)
 
-        self.route_props['paths_list'] = [sorted_paths_list[0]['path_list']]
-        self.route_props['weights_list'] = [int(sorted_paths_list[0]['link_dict']['free_slots'])]
+        self.route_props.paths_matrix = [sorted_paths_list[0]['path_list']]
+        self.route_props.weights_list = [int(sorted_paths_list[0]['link_dict']['free_slots'])]
         # TODO: Constant QPSK format (Ask Arash)
-        self.route_props['mod_formats_list'].append(['QPSK'])
+        self.route_props.mod_formats_matrix.append(['QPSK'])
 
     def find_least_cong(self):
         """
@@ -92,14 +92,14 @@ class Routing:
                     else:
                         mod_format_list.append(False)
 
-                self.route_props['mod_formats_list'].append(mod_format_list)
+                self.route_props.mod_formats_matrix.append(mod_format_list)
             else:
                 resp_weight = find_path_len(path_list=path_list, topology=self.sdn_props['topology'])
                 mod_format = get_path_mod(self.sdn_props['mod_formats'], resp_weight)
-                self.route_props['mod_formats_list'].append([mod_format])
+                self.route_props.mod_formats_matrix.append([mod_format])
 
-            self.route_props['weights_list'].append(resp_weight)
-            self.route_props['paths_list'].append(path_list)
+            self.route_props.weights_list.append(resp_weight)
+            self.route_props.paths_matrix.append(path_list)
             break
 
     def find_k_shortest(self):
@@ -117,9 +117,9 @@ class Routing:
             chosen_bw = self.sdn_props['bandwidth']
             mod_format = get_path_mod(mods_dict=self.engine_props['mod_per_bw'][chosen_bw], path_len=path_len)
 
-            self.route_props['paths_list'].append(path_list)
-            self.route_props['mod_formats_list'].append([mod_format])
-            self.route_props['weights_list'].append(path_len)
+            self.route_props.paths_matrix.append(path_list)
+            self.route_props.mod_formats_matrix.append([mod_format])
+            self.route_props.weights_list.append(path_len)
 
     def find_least_nli(self):
         """
@@ -128,7 +128,7 @@ class Routing:
         # Bidirectional links are identical, therefore, we don't have to check each one
         for link_tuple in list(self.sdn_props['net_spec_dict'].keys())[::2]:
             source, destination = link_tuple[0], link_tuple[1]
-            num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props['span_len']
+            num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props.span_len
             bandwidth = self.sdn_props['bandwidth']
             # TODO: Constant QPSK for slots needed (Ask Arash)
             slots_needed = self.engine_props['mod_per_bw'][bandwidth]['QPSK']['slots_needed']
@@ -149,21 +149,21 @@ class Routing:
         # At the moment, we have identical bidirectional links (no need to loop over all links)
         for link_list in list(self.sdn_props['net_spec_dict'].keys())[::2]:
             source, destination = link_list[0], link_list[1]
-            num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props['span_len']
+            num_spans = self.sdn_props['topology'][source][destination]['length'] / self.route_props.span_len
 
             free_slots_dict = find_free_slots(net_spec_dict=self.sdn_props['net_spec_dict'], link_tuple=link_list)
             xt_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=free_slots_dict, link_list=link_list)
 
             if self.engine_props['xt_type'] == 'with_length':
-                if self.route_props['max_link_length'] is None:
+                if self.route_props.max_link_length is None:
                     self.route_help_obj.get_max_link_length()
 
                 link_cost = self.sdn_props['topology'][source][destination]['length'] / \
-                            self.route_props['max_link_length']
+                            self.route_props.max_link_length
                 link_cost *= self.engine_props['beta']
                 link_cost += (1 - self.engine_props['beta']) * xt_cost
             elif self.engine_props['xt_type'] == 'without_length':
-                link_cost = (num_spans / self.route_props['max_span']) * xt_cost
+                link_cost = (num_spans / self.route_props.max_span) * xt_cost
             else:
                 raise ValueError(f"XT type not recognized, expected with or without_length, "
                                  f"got: {self.engine_props['xt_type']}")
@@ -174,9 +174,9 @@ class Routing:
         self.find_least_weight(weight='xt_cost')
 
     def _init_route_info(self):
-        self.route_props['paths_list'] = list()
-        self.route_props['mod_formats_list'] = list()
-        self.route_props['weights_list'] = list()
+        self.route_props.paths_matrix = list()
+        self.route_props.mod_formats_matrix = list()
+        self.route_props.weights_list = list()
 
     def get_route(self):
         """

@@ -12,7 +12,8 @@ class RoutingHelpers:
     Class containing methods to assist with finding routes in the routing class.
     """
 
-    def __init__(self, route_props: dict, engine_props: dict, sdn_props: dict):
+    # TODO: Route props changed to an object
+    def __init__(self, route_props: object, engine_props: dict, sdn_props: dict):
         self.route_props = route_props
         self.engine_props = engine_props
         self.sdn_props = sdn_props
@@ -48,11 +49,11 @@ class RoutingHelpers:
         total_mci = 0
         for channel in channels_list:
             # The current center frequency for the occupied channel
-            curr_freq = channel[0] * self.route_props['freq_spacing']
-            curr_freq += (len(channel) * self.route_props['freq_spacing']) / 2
-            bandwidth = len(channel) * self.route_props['freq_spacing']
+            curr_freq = channel[0] * self.route_props.freq_spacing
+            curr_freq += (len(channel) * self.route_props.freq_spacing) / 2
+            bandwidth = len(channel) * self.route_props.freq_spacing
             # Power spectral density
-            power_spec_dens = self.route_props['input_power'] / bandwidth
+            power_spec_dens = self.route_props.input_power / bandwidth
 
             curr_mci = abs(center_freq - curr_freq) + (bandwidth / 2.0)
             curr_mci = math.log(curr_mci / (abs(center_freq - curr_freq) - (bandwidth / 2.0)))
@@ -60,7 +61,7 @@ class RoutingHelpers:
 
             total_mci += curr_mci
 
-        total_mci = (total_mci / self.route_props['mci_worst']) * num_span
+        total_mci = (total_mci / self.route_props.mci_worst) * num_span
         return total_mci
 
     def _find_link_cost(self, free_channels_dict: dict, taken_channels_dict: dict, num_span: float):
@@ -71,8 +72,8 @@ class RoutingHelpers:
             for channel in free_channels_list:
                 num_channels += 1
                 # Calculate the center frequency for the open channel
-                center_freq = channel[0] * self.route_props['freq_spacing']
-                center_freq += (self.sdn_props['slots_needed'] * self.route_props['freq_spacing']) / 2
+                center_freq = channel[0] * self.route_props.freq_spacing
+                center_freq += (self.sdn_props['slots_needed'] * self.route_props.freq_spacing) / 2
 
                 nli_cost += self._find_channel_mci(channels_list=taken_channels_dict[core_num], center_freq=center_freq,
                                                    num_span=num_span)
@@ -184,7 +185,7 @@ class RoutingHelpers:
         nli_cost = 0
         for source, destination in zip(path_list, path_list[1:]):
             link_length = self.engine_props['topology'][source][destination]['length']
-            num_span = link_length / self.route_props['span_len']
+            num_span = link_length / self.route_props.span_len
             link_tuple = (source, destination)
             nli_cost += self.get_nli_cost(link_tuple=link_tuple, num_span=num_span)
 
@@ -195,7 +196,7 @@ class RoutingHelpers:
         Find the link with the maximum length in the entire network topology.
         """
         topology = self.engine_props['topology']
-        self.route_props['max_link_length'] = max(nx.get_edge_attributes(topology, 'length').values(), default=0.0)
+        self.route_props.max_link_length = max(nx.get_edge_attributes(topology, 'length').values(), default=0.0)
 
     def get_nli_cost(self, link_tuple: tuple, num_span: float):
         """
@@ -214,10 +215,10 @@ class RoutingHelpers:
                                          num_span=num_span)
 
         source, dest = link_tuple[0], link_tuple[1]
-        if self.route_props['max_link_length'] is None:
+        if self.route_props.max_link_length is None:
             self.get_max_link_length()
 
-        nli_cost = self.engine_props['topology'][source][dest]['length'] / self.route_props['max_link_length']
+        nli_cost = self.engine_props['topology'][source][dest]['length'] / self.route_props.max_link_length
         nli_cost *= self.engine_props['beta']
         nli_cost += ((1 - self.engine_props['beta']) * link_cost)
 

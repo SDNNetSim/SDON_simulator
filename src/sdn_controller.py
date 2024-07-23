@@ -165,7 +165,7 @@ class SDNController:
         start_time = time.time()
         if force_route_matrix is None:
             self.route_obj.get_route()
-            route_matrix = self.route_obj.route_props['paths_list']
+            route_matrix = self.route_obj.route_props.paths_matrix
         else:
             route_matrix = force_route_matrix
         route_time = time.time() - start_time
@@ -175,7 +175,7 @@ class SDNController:
             for path_index, path_list in enumerate(route_matrix):
                 if path_list is not False:
                     self.sdn_props['path_list'] = path_list
-                    mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
+                    mod_format_list = self.route_obj.route_props.mod_formats_matrix[path_index]
 
                     if ml_model is not None:
                         input_df = get_ml_obs(req_dict=req_dict, engine_props=self.engine_props,
@@ -205,7 +205,7 @@ class SDNController:
 
                     self.sdn_props['was_routed'] = True
                     self.sdn_props['route_time'] = route_time
-                    self.sdn_props['path_weight'] = self.route_obj.route_props['weights_list'][path_index]
+                    self.sdn_props['path_weight'] = self.route_obj.route_props.weights_list[path_index]
                     self.sdn_props['spectrum_dict'] = self.spectrum_obj.spectrum_props
 
                     if not segment_slicing and not force_slicing:
