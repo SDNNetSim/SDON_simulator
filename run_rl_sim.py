@@ -10,8 +10,8 @@ from stable_baselines3 import PPO
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
-from sim_scripts.engine import Engine
-from sim_scripts.routing import Routing
+from src.engine import Engine
+from src.routing import Routing
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams

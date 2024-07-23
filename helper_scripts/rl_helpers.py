@@ -1,6 +1,6 @@
 import numpy as np
 
-from sim_scripts.spectrum_assignment import SpectrumAssignment
+from src.spectrum_assignment import SpectrumAssignment
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
 from helper_scripts.sim_helpers import find_path_cong, classify_cong, find_core_cong
 

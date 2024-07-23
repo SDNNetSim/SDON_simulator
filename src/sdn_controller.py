@@ -5,8 +5,8 @@ import numpy as np
 from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len
 from helper_scripts.ml_helpers import get_ml_obs
 from arg_scripts.sdn_args import empty_props
-from sim_scripts.routing import Routing
-from sim_scripts.spectrum_assignment import SpectrumAssignment
+from src.routing import Routing
+from src.spectrum_assignment import SpectrumAssignment
 
 
 class SDNController:

@@ -9,7 +9,7 @@ import concurrent.futures
 
 # Local application imports
 from helper_scripts.setup_helpers import create_input, save_input
-from sim_scripts.engine import Engine
+from src.engine import Engine
 from config_scripts.setup_config import read_config
 from config_scripts.parse_args import parse_args
 

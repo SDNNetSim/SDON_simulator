@@ -9,8 +9,8 @@ import numpy as np
 from joblib import load
 
 # Local application imports
-from sim_scripts.request_generator import get_requests
-from sim_scripts.sdn_controller import SDNController
+from src.request_generator import get_requests
+from src.sdn_controller import SDNController
 from helper_scripts.stats_helpers import SimStats
 from helper_scripts.ml_helpers import load_model
 

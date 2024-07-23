@@ -5,7 +5,7 @@ import numpy as np
 
 from arg_scripts.spectrum_args import empty_props
 from helper_scripts.spectrum_helpers import SpectrumHelpers
-from sim_scripts.snr_measurements import SnrMeasurements
+from src.snr_measurements import SnrMeasurements
 
 
 class SpectrumAssignment:
