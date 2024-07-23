@@ -6,9 +6,7 @@ class RoutingProps:
     """
 
     def __init__(self):
-        # TODO: paths_list changed to paths_matrix
         self.paths_matrix = []  # Matrix of potential paths for a single request
-        # TODO: mod_formats_list to mod_formats_matrix
         self.mod_formats_matrix = []  # Modulation formats corresponding to each path in paths_matrix
         self.weights_list = []  # Keeping track of one weight of the path (Length, XT, Etc.)
 
