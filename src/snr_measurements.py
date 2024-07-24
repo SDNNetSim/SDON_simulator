@@ -12,7 +12,7 @@ class SnrMeasurements:
     Handles signal-to-noise ratio calculations for a given request.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: dict, spectrum_props: dict):
+    def __init__(self, engine_props: dict, sdn_props: object, spectrum_props: dict):
         self.snr_props = empty_props
         self.engine_props = engine_props
         self.sdn_props = sdn_props
@@ -72,7 +72,7 @@ class SnrMeasurements:
         for slot_index in range(self.engine_props['spectral_slots']):
             source = self.spectrum_props['path_list'][link_num]
             dest = self.spectrum_props['path_list'][link_num + 1]
-            curr_link = self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix']
+            curr_link = self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix']
             req_id = curr_link[self.spectrum_props['core_num']][slot_index]
 
             # Spectrum is occupied
@@ -196,7 +196,7 @@ class SnrMeasurements:
         for link_num in range(0, len(self.spectrum_props['path_list']) - 1):
             source = self.spectrum_props['path_list'][link_num]
             dest = self.spectrum_props['path_list'][link_num + 1]
-            self.link_id = self.sdn_props['net_spec_dict'][(source, dest)]['link_num']
+            self.link_id = self.sdn_props.net_spec_dict[(source, dest)]['link_num']
 
             self.snr_props['link_dict'] = self.engine_props['topology_info']['links'][self.link_id]['fiber']
             self._update_link_params(link_num=link_num)
@@ -240,7 +240,7 @@ class SnrMeasurements:
         for curr_slot in range(self.spectrum_props['start_slot'], self.spectrum_props['end_slot']):
             overlapped = 0
             for core_num in adj_cores_list:
-                core_contents = self.sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][core_num][curr_slot]
+                core_contents = self.sdn_props.net_spec_dict[link_tuple]['cores_matrix'][core_num][curr_slot]
                 if core_contents > 0.0:
                     overlapped += 1
 
@@ -264,7 +264,7 @@ class SnrMeasurements:
             edge_lengths = nx.get_edge_attributes(self.engine_props['topology'], 'length')
             max_link = max(edge_lengths, key=edge_lengths.get, default=None)
 
-            self.link_id = self.sdn_props['net_spec_dict'][max_link]['link_num']
+            self.link_id = self.sdn_props.net_spec_dict[max_link]['link_num']
             max_length = edge_lengths.get(max_link, 0.0)
             self.snr_props['link_dict'] = self.engine_props['topology_info']['links'][self.link_id]['fiber']
 
@@ -288,7 +288,7 @@ class SnrMeasurements:
         for link_num in range(0, len(self.spectrum_props['path_list']) - 1):
             link_tuple = (self.spectrum_props['path_list'][link_num], self.spectrum_props['path_list'][link_num + 1])
 
-            self.link_id = self.sdn_props['net_spec_dict'][link_tuple]['link_num']
+            self.link_id = self.sdn_props.net_spec_dict[link_tuple]['link_num']
             link_length = self.engine_props['topology_info']['links'][self.link_id]['length']
             self.snr_props['link_dict'] = self.engine_props['topology_info']['links'][self.link_id]['fiber']
             self._update_link_params(link_num=link_num)

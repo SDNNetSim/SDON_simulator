@@ -70,9 +70,9 @@ class Engine:
         :param force_slicing: Forces slicing in the SDN controller.
         :param forced_index: Forces an index in the SDN controller.
         """
-        # TODO: Not sure about this, probably need a method for it
         for req_key, req_value in self.reqs_dict[curr_time].items():
-            self.sdn_obj.sdn_props[req_key] = req_value
+            self.sdn_obj.sdn_props.update_params(stat_key=req_key, spectrum_key=None, spectrum_obj=None,
+                                                 stat_value=req_value)
 
         self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
                                   force_slicing=force_slicing, forced_index=forced_index, force_core=force_core,
@@ -86,9 +86,9 @@ class Engine:
 
         :param curr_time: The arrival time of the request.
         """
-        # TODO: Also probably need some type of method here
         for req_key, req_value in self.reqs_dict[curr_time].items():
-            self.sdn_obj.sdn_props[req_key] = req_value
+            self.sdn_obj.sdn_props.update_params(stat_key=req_key, spectrum_key=None, spectrum_obj=None,
+                                                 stat_value=req_value)
 
         if self.reqs_dict[curr_time]['req_id'] in self.reqs_status_dict:
             self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']

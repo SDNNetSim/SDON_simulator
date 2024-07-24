@@ -6,7 +6,7 @@ class SpectrumHelpers:
     Contains methods that assist with the spectrum assignment class.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: dict, spectrum_props: dict):
+    def __init__(self, engine_props: dict, sdn_props: object, spectrum_props: dict):
         self.engine_props = engine_props
         self.spectrum_props = spectrum_props
         self.sdn_props = sdn_props
@@ -16,9 +16,9 @@ class SpectrumHelpers:
         self.core_num = None
 
     def _check_free_spectrum(self, link_tuple: tuple, rev_link_tuple: tuple):
-        core_arr = self.sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][self.core_num]
+        core_arr = self.sdn_props.net_spec_dict[link_tuple]['cores_matrix'][self.core_num]
         spectrum_set = core_arr[self.start_index:self.end_index + self.engine_props['guard_slots']]
-        rev_core_arr = self.sdn_props['net_spec_dict'][rev_link_tuple]['cores_matrix'][self.core_num]
+        rev_core_arr = self.sdn_props.net_spec_dict[rev_link_tuple]['cores_matrix'][self.core_num]
         rev_spectrum_set = rev_core_arr[self.start_index:self.end_index + self.engine_props['guard_slots']]
 
         if set(spectrum_set) == {0.0} and set(rev_spectrum_set) == {0.0}:
@@ -119,8 +119,8 @@ class SpectrumHelpers:
                      'channel_inters_dict': {}}
 
         for source_dest in zip(self.spectrum_props['path_list'], self.spectrum_props['path_list'][1:]):
-            free_slots = find_free_slots(net_spec_dict=self.sdn_props['net_spec_dict'], link_tuple=source_dest)
-            free_channels = find_free_channels(net_spec_dict=self.sdn_props['net_spec_dict'],
+            free_slots = find_free_slots(net_spec_dict=self.sdn_props.net_spec_dict, link_tuple=source_dest)
+            free_channels = find_free_channels(net_spec_dict=self.sdn_props.net_spec_dict,
                                                slots_needed=self.spectrum_props['slots_needed'],
                                                link_tuple=source_dest)
 

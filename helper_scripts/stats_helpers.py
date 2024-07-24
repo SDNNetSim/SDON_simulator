@@ -191,7 +191,7 @@ class SimStats:
                 if stat_key == 'core_list':
                     self.stats_props['cores_dict'][data] += 1
                 elif stat_key == 'modulation_list':
-                    bandwidth = sdn_data['bandwidth_list'][i]
+                    bandwidth = sdn_data.bandwidth_list[i]
                     self.stats_props['mods_used_dict'][bandwidth][data] += 1
                 elif stat_key == 'xt_list':
                     self.stats_props['xt_list'].append(data)

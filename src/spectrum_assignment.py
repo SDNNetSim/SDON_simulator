@@ -13,7 +13,7 @@ class SpectrumAssignment:
     Attempt to find the available spectrum for a given request.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: dict):
+    def __init__(self, engine_props: dict, sdn_props: object):
         self.spectrum_props = empty_props
         self.engine_props = engine_props
         self.sdn_props = sdn_props
@@ -55,7 +55,7 @@ class SpectrumAssignment:
                 if self.spectrum_props['forced_core'] is not None and self.spectrum_props['forced_core'] != core_num:
                     continue
 
-                core_arr = self.sdn_props['net_spec_dict'][(src, dest)]['cores_matrix'][core_num]
+                core_arr = self.sdn_props.net_spec_dict[(src, dest)]['cores_matrix'][core_num]
                 open_slots_arr = np.where(core_arr == 0)[0]
 
                 tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
@@ -139,8 +139,8 @@ class SpectrumAssignment:
     def _init_spectrum_info(self):
         link_tuple = (self.spectrum_props['path_list'][0], self.spectrum_props['path_list'][1])
         rev_link_tuple = (self.spectrum_props['path_list'][1], self.spectrum_props['path_list'][0])
-        self.spectrum_props['cores_matrix'] = self.sdn_props['net_spec_dict'][link_tuple]['cores_matrix']
-        self.spectrum_props['rev_cores_matrix'] = self.sdn_props['net_spec_dict'][rev_link_tuple]['cores_matrix']
+        self.spectrum_props['cores_matrix'] = self.sdn_props.net_spec_dict[link_tuple]['cores_matrix']
+        self.spectrum_props['rev_cores_matrix'] = self.sdn_props.net_spec_dict[rev_link_tuple]['cores_matrix']
         self.spectrum_props['is_free'] = False
 
     def get_spectrum(self, mod_format_list: list, slice_bandwidth: str = None):
@@ -153,14 +153,14 @@ class SpectrumAssignment:
         self._init_spectrum_info()
         for modulation in mod_format_list:
             if modulation is False:
-                self.sdn_props['block_reason'] = 'distance'
+                self.sdn_props.block_reason = 'distance'
                 continue
 
             if slice_bandwidth:
                 bandwidth_dict = self.engine_props['mod_per_bw'][slice_bandwidth]
                 self.spectrum_props['slots_needed'] = bandwidth_dict[modulation]['slots_needed']
             else:
-                self.spectrum_props['slots_needed'] = self.sdn_props['mod_formats'][modulation]['slots_needed']
+                self.spectrum_props['slots_needed'] = self.sdn_props.mod_formats_dict[modulation]['slots_needed']
             self._get_spectrum()
 
             if self.spectrum_props['is_free']:
@@ -170,11 +170,11 @@ class SpectrumAssignment:
                     self.spectrum_props['xt_cost'] = xt_cost
                     if not snr_check:
                         self.spectrum_props['is_free'] = False
-                        self.sdn_props['block_reason'] = 'xt_threshold'
+                        self.sdn_props.block_reason = 'xt_threshold'
                         continue
 
                     self.spectrum_props['is_free'] = True
-                    self.sdn_props['block_reason'] = None
+                    self.sdn_props.block_reason = None
 
                 return
 
