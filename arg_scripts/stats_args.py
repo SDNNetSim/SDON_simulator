@@ -1,16 +1,26 @@
-empty_props = {
-    'snapshots_dict': dict(),
-    'cores_dict': dict(),
-    'weights_dict': dict(),
-    'mods_used_dict': dict(),
-    'block_bw_dict': dict(),
-    'block_reasons_dict': {'distance': None, 'congestion': None, 'xt_threshold': None},
-    'sim_block_list': list(),
-    'trans_list': list(),
-    'hops_list': list(),
-    'lengths_list': list(),
-    'route_times_list': list(),
-    'xt_list': list(),
-}
+# pylint: disable=too-few-public-methods
+
+class StatsProps:
+    """
+    Main properties used for the stats_helpers.py script.
+    """
+
+    def __init__(self):
+        self.snapshots_dict = dict()  # Keeps track of statistics at different request snapshots
+        self.cores_dict = dict()  # Cores used in simulation(s)
+        self.weights_dict = dict()  # Weights of paths
+        self.mods_used_dict = dict()  # Modulations used in simulation(s)
+        self.block_bw_dict = dict()  # Block per bandwidth
+        self.block_reasons_dict = {'distance': None, 'congestion': None, 'xt_threshold': None}  # Block reasons
+        self.sim_block_list = list()  # List of blocking probabilities per simulation
+        self.trans_list = list()  # List of transponders used per simulation
+        self.hops_list = list()  # Average hops per simulation
+        self.lengths_list = list()  # Average lengths per simulation
+        self.route_times_list = list()  # Average route times per simulation
+        self.xt_list = list()  # Average cross-talk per simulation
+
+    def __repr__(self):
+        return f"StatsProps({self.__dict__})"
+
 
 SNAP_KEYS_LIST = ['occupied_slots', 'guard_slots', 'active_requests', 'blocking_prob', 'num_segments']
