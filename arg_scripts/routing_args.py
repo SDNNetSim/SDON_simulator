@@ -18,4 +18,4 @@ class RoutingProps:
         self.max_span = None  # Maximum number of spans in the network
 
     def __repr__(self):
-        return f"EmptyProps({self.__dict__})"
+        return f"RoutingProps({self.__dict__})"

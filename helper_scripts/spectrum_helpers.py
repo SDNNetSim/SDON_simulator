@@ -6,7 +6,7 @@ class SpectrumHelpers:
     Contains methods that assist with the spectrum assignment class.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object, spectrum_props: dict):
+    def __init__(self, engine_props: dict, sdn_props: object, spectrum_props: object):
         self.engine_props = engine_props
         self.spectrum_props = spectrum_props
         self.sdn_props = sdn_props
@@ -30,27 +30,27 @@ class SpectrumHelpers:
         """
         Checks other links in the path since the first link was free.
         """
-        self.spectrum_props['is_free'] = True
-        for node in range(len(self.spectrum_props['path_list']) - 1):
-            link_tuple = (self.spectrum_props['path_list'][node], self.spectrum_props['path_list'][node + 1])
-            rev_link_tuple = (self.spectrum_props['path_list'][node + 1], self.spectrum_props['path_list'][node])
+        self.spectrum_props.is_free = True
+        for node in range(len(self.spectrum_props.path_list) - 1):
+            link_tuple = (self.spectrum_props.path_list[node], self.spectrum_props.path_list[node + 1])
+            rev_link_tuple = (self.spectrum_props.path_list[node + 1], self.spectrum_props.path_list[node])
 
             if not self._check_free_spectrum(link_tuple=link_tuple, rev_link_tuple=rev_link_tuple):
-                self.spectrum_props['is_free'] = False
+                self.spectrum_props.is_free = False
                 return
 
     def _update_spec_props(self):
-        if self.spectrum_props['forced_core'] is not None:
-            self.core_num = self.spectrum_props['forced_core']
+        if self.spectrum_props.forced_core is not None:
+            self.core_num = self.spectrum_props.forced_core
 
         if self.engine_props['allocation_method'] == 'last_fit':
-            self.spectrum_props['start_slot'] = self.end_index
-            self.spectrum_props['end_slot'] = self.start_index + self.engine_props['guard_slots']
+            self.spectrum_props.start_slot = self.end_index
+            self.spectrum_props.end_slot = self.start_index + self.engine_props['guard_slots']
         else:
-            self.spectrum_props['start_slot'] = self.start_index
-            self.spectrum_props['end_slot'] = self.end_index + self.engine_props['guard_slots']
+            self.spectrum_props.start_slot = self.start_index
+            self.spectrum_props.end_slot = self.end_index + self.engine_props['guard_slots']
 
-        self.spectrum_props['core_num'] = self.core_num
+        self.spectrum_props.core_num = self.core_num
         return self.spectrum_props
 
     def check_super_channels(self, open_slots_matrix: list, flag: str):
@@ -62,25 +62,25 @@ class SpectrumHelpers:
         :rtype: bool
         """
         for super_channel in open_slots_matrix:
-            if len(super_channel) >= (self.spectrum_props['slots_needed'] + self.engine_props['guard_slots']):
+            if len(super_channel) >= (self.spectrum_props.slots_needed + self.engine_props['guard_slots']):
                 for start_index in super_channel:
-                    if flag == 'forced_index' and start_index != self.spectrum_props['forced_index']:
+                    if flag == 'forced_index' and start_index != self.spectrum_props.forced_index:
                         continue
                     self.start_index = start_index
                     if self.engine_props['allocation_method'] == 'last_fit':
-                        self.end_index = (self.start_index - self.spectrum_props['slots_needed'] - self.engine_props[
+                        self.end_index = (self.start_index - self.spectrum_props.slots_needed - self.engine_props[
                             'guard_slots']) + 1
                     else:
-                        self.end_index = (self.start_index + self.spectrum_props['slots_needed'] + self.engine_props[
+                        self.end_index = (self.start_index + self.spectrum_props.slots_needed + self.engine_props[
                             'guard_slots']) - 1
                     if self.end_index not in super_channel:
                         break
-                    self.spectrum_props['is_free'] = True
+                    self.spectrum_props.is_free = True
 
-                    if len(self.spectrum_props['path_list']) > 2:
+                    if len(self.spectrum_props.path_list) > 2:
                         self.check_other_links()
 
-                    if self.spectrum_props['is_free'] is not False or len(self.spectrum_props['path_list']) <= 2:
+                    if self.spectrum_props.is_free is not False or len(self.spectrum_props.path_list) <= 2:
                         self._update_spec_props()
                         return True
 
@@ -118,10 +118,10 @@ class SpectrumHelpers:
         info_dict = {'free_slots_dict': {}, 'free_channels_dict': {}, 'slots_inters_dict': {},
                      'channel_inters_dict': {}}
 
-        for source_dest in zip(self.spectrum_props['path_list'], self.spectrum_props['path_list'][1:]):
+        for source_dest in zip(self.spectrum_props.path_list, self.spectrum_props.path_list[1:]):
             free_slots = find_free_slots(net_spec_dict=self.sdn_props.net_spec_dict, link_tuple=source_dest)
             free_channels = find_free_channels(net_spec_dict=self.sdn_props.net_spec_dict,
-                                               slots_needed=self.spectrum_props['slots_needed'],
+                                               slots_needed=self.spectrum_props.slots_needed,
                                                link_tuple=source_dest)
 
             info_dict['free_slots_dict'].update({source_dest: free_slots})

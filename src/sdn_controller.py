@@ -50,9 +50,9 @@ class SDNController:
         """
         Allocates a network request.
         """
-        start_slot = self.spectrum_obj.spectrum_props['start_slot']
-        end_slot = self.spectrum_obj.spectrum_props['end_slot']
-        core_num = self.spectrum_obj.spectrum_props['core_num']
+        start_slot = self.spectrum_obj.spectrum_props.start_slot
+        end_slot = self.spectrum_obj.spectrum_props.end_slot
+        core_num = self.spectrum_obj.spectrum_props.core_num
 
         if self.engine_props['guard_slots']:
             end_slot = end_slot - 1
@@ -92,11 +92,11 @@ class SDNController:
 
     def _allocate_slicing(self, num_segments: int, mod_format: str, path_list: list, bandwidth: str):
         self.sdn_props.num_trans = num_segments
-        self.spectrum_obj.spectrum_props['path_list'] = path_list
+        self.spectrum_obj.spectrum_props.path_list = path_list
         mod_format_list = [mod_format]
         for _ in range(num_segments):
             self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth)
-            if self.spectrum_obj.spectrum_props['is_free']:
+            if self.spectrum_obj.spectrum_props.is_free:
                 self.allocate()
                 self._update_req_stats(bandwidth=bandwidth)
             else:
@@ -198,12 +198,12 @@ class SDNController:
                             self.sdn_props.num_trans = 1
                             continue
                     else:
-                        self.spectrum_obj.spectrum_props['forced_index'] = forced_index
-                        self.spectrum_obj.spectrum_props['forced_core'] = force_core
-                        self.spectrum_obj.spectrum_props['path_list'] = path_list
+                        self.spectrum_obj.spectrum_props.forced_index = forced_index
+                        self.spectrum_obj.spectrum_props.forced_core = force_core
+                        self.spectrum_obj.spectrum_props.path_list = path_list
                         self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
                         # Request was blocked for this path
-                        if self.spectrum_obj.spectrum_props['is_free'] is not True:
+                        if self.spectrum_obj.spectrum_props.is_free is not True:
                             self.sdn_props.block_reason = 'congestion'
                             continue
                         self._update_req_stats(bandwidth=self.sdn_props.bandwidth)
@@ -211,7 +211,9 @@ class SDNController:
                     self.sdn_props.was_routed = True
                     self.sdn_props.route_time = route_time
                     self.sdn_props.path_weight = self.route_obj.route_props.weights_list[path_index]
-                    self.sdn_props.spectrum_dict = self.spectrum_obj.spectrum_props
+
+                    # TODO: Changed spectrum dict to spectrum object
+                    self.sdn_props.spectrum_object = self.spectrum_obj.spectrum_props
 
                     if not segment_slicing and not force_slicing:
                         self.sdn_props.is_sliced = False

@@ -12,7 +12,7 @@ class SnrMeasurements:
     Handles signal-to-noise ratio calculations for a given request.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object, spectrum_props: dict):
+    def __init__(self, engine_props: dict, sdn_props: object, spectrum_props: object):
         self.snr_props = SNRProps()
         self.engine_props = engine_props
         self.sdn_props = sdn_props
@@ -43,7 +43,7 @@ class SnrMeasurements:
         :return: The updated cross-phase modulation noise.
         :rtype: float
         """
-        channel_bw = len(np.where(req_id == curr_link[self.spectrum_props['core_num']])[0])
+        channel_bw = len(np.where(req_id == curr_link[self.spectrum_props.core_num])[0])
         channel_bw *= self.engine_props['bw_per_slot']
         channel_freq = ((slot_index * self.engine_props['bw_per_slot']) + (channel_bw / 2)) * 10 ** 9
         channel_bw *= 10 ** 9
@@ -70,10 +70,10 @@ class SnrMeasurements:
         # Cross-phase modulation noise
         xci_noise = 0
         for slot_index in range(self.engine_props['spectral_slots']):
-            source = self.spectrum_props['path_list'][link_num]
-            dest = self.spectrum_props['path_list'][link_num + 1]
+            source = self.spectrum_props.path_list[link_num]
+            dest = self.spectrum_props.path_list[link_num + 1]
             curr_link = self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix']
-            req_id = curr_link[self.spectrum_props['core_num']][slot_index]
+            req_id = curr_link[self.spectrum_props.core_num][slot_index]
 
             # Spectrum is occupied
             if req_id > 0 and req_id not in self.channels_list:
@@ -137,7 +137,7 @@ class SnrMeasurements:
                       (self.snr_props.length * 10 ** 3))
 
         # The PSD correction term
-        psd_correction = (80 / 81) * self.engine_props['phi'][self.spectrum_props['modulation']] * temp_coef * hn_series
+        psd_correction = (80 / 81) * self.engine_props['phi'][self.spectrum_props.modulation] * temp_coef * hn_series
 
         return psd_correction
 
@@ -177,7 +177,7 @@ class SnrMeasurements:
         """
         Updates variables for the center frequency, bandwidth, and PSD for the current request.
         """
-        self.snr_props.center_freq = self.spectrum_props['start_slot'] * self.engine_props['bw_per_slot']
+        self.snr_props.center_freq = self.spectrum_props.start_slot * self.engine_props['bw_per_slot']
         self.snr_props.center_freq += ((self.num_slots * self.engine_props['bw_per_slot']) / 2)
         self.snr_props.center_freq *= 10 ** 9
 
@@ -193,9 +193,9 @@ class SnrMeasurements:
         """
         total_snr = 0
         self._init_center_vars()
-        for link_num in range(0, len(self.spectrum_props['path_list']) - 1):
-            source = self.spectrum_props['path_list'][link_num]
-            dest = self.spectrum_props['path_list'][link_num + 1]
+        for link_num in range(0, len(self.spectrum_props.path_list) - 1):
+            source = self.spectrum_props.path_list[link_num]
+            dest = self.spectrum_props.path_list[link_num + 1]
             self.link_id = self.sdn_props.net_spec_dict[(source, dest)]['link_num']
 
             self.snr_props.link_dict = self.engine_props['topology_info']['links'][self.link_id]['fiber']
@@ -228,16 +228,16 @@ class SnrMeasurements:
         :return: The number of adjacent cores that have overlapping channels.
         """
         resp = 0
-        if self.spectrum_props['core_num'] != 6:
+        if self.spectrum_props.core_num != 6:
             # The neighboring core directly before the currently selected core
-            before = 5 if self.spectrum_props['core_num'] == 0 else self.spectrum_props['core_num'] - 1
+            before = 5 if self.spectrum_props.core_num == 0 else self.spectrum_props.core_num - 1
             # The neighboring core directly after the currently selected core
-            after = 0 if self.spectrum_props['core_num'] == 5 else self.spectrum_props['core_num'] + 1
+            after = 0 if self.spectrum_props.core_num == 5 else self.spectrum_props.core_num + 1
             adj_cores_list = [before, after, 6]
         else:
             adj_cores_list = list(range(6))
 
-        for curr_slot in range(self.spectrum_props['start_slot'], self.spectrum_props['end_slot']):
+        for curr_slot in range(self.spectrum_props.start_slot, self.spectrum_props.end_slot):
             overlapped = 0
             for core_num in adj_cores_list:
                 core_contents = self.sdn_props.net_spec_dict[link_tuple]['cores_matrix'][core_num][curr_slot]
@@ -285,8 +285,8 @@ class SnrMeasurements:
         cross_talk = 0
 
         self._init_center_vars()
-        for link_num in range(0, len(self.spectrum_props['path_list']) - 1):
-            link_tuple = (self.spectrum_props['path_list'][link_num], self.spectrum_props['path_list'][link_num + 1])
+        for link_num in range(0, len(self.spectrum_props.path_list) - 1):
+            link_tuple = (self.spectrum_props.path_list[link_num], self.spectrum_props.path_list[link_num + 1])
 
             self.link_id = self.sdn_props.net_spec_dict[link_tuple]['link_num']
             link_length = self.engine_props['topology_info']['links'][self.link_id]['length']
@@ -300,7 +300,7 @@ class SnrMeasurements:
             resp = True
         else:
             cross_talk = 10 * math.log10(cross_talk)
-            resp = cross_talk < self.engine_props['requested_xt'][self.spectrum_props['modulation']]
+            resp = cross_talk < self.engine_props['requested_xt'][self.spectrum_props.modulation]
 
         return resp, cross_talk
 
@@ -311,7 +311,7 @@ class SnrMeasurements:
         :return: Whether snr is acceptable for allocation or not for a given request and its cost
         :rtype: tuple
         """
-        self.num_slots = self.spectrum_props['end_slot'] - self.spectrum_props['start_slot'] + 1
+        self.num_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
         if self.engine_props['snr_type'] == "snr_calc_nli":
             snr_check, xt_cost = self.check_snr()
         elif self.engine_props['snr_type'] == "xt_calculation":

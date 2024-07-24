@@ -1,4 +1,10 @@
+# pylint: disable=too-few-public-methods
+
 class SNRProps:
+    """
+    Main properties used for the snr_measurements.py script.
+    """
+
     def __init__(self):
         self.light_frequency = 1.9341 * 10 ** 14  # Center light frequency
         self.plank = 6.62607004e-34  # Plank's constant
@@ -16,3 +22,6 @@ class SNRProps:
         self.num_span = None  # Number of span
 
         self.link_dict = None  # Dictionary of links for calculating various metrics
+
+    def __repr__(self):
+        return f"SNRProps({self.__dict__})"

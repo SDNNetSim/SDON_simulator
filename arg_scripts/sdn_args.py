@@ -40,13 +40,15 @@ class SDNProps:
         :param value: Value related to the key, it may vary widely.
         """
         if hasattr(self, key):
-            current_value = getattr(self, key)
-            if isinstance(current_value, list):
-                current_value.append(spectrum_obj.spectrum_props[spectrum_key])
+            if spectrum_key:
+                spectrum_value = getattr(spectrum_obj.spectrum_props, spectrum_key)
+                current_value = getattr(self, key)
+                if isinstance(current_value, list):
+                    current_value.append(spectrum_value)
+                else:
+                    setattr(self, key, spectrum_value)
             else:
                 setattr(self, key, value)
-        else:
-            raise AttributeError(f"'SDNProps' object has no attribute '{key}'")
 
     def reset_params(self):
         """
@@ -70,4 +72,4 @@ class SDNProps:
         raise AttributeError(f"'SDNProps' object has no attribute '{key}'")
 
     def __repr__(self):
-        return f"EmptyProps({self.__dict__})"
+        return f"SDNProps({self.__dict__})"

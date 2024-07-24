@@ -53,7 +53,7 @@ class Engine:
             self.stats_obj.curr_trans = sdn_props.num_trans
 
             self.reqs_status_dict.update({self.reqs_dict[curr_time]['req_id']: {
-                "mod_format": sdn_props.spectrum_dict['modulation'],
+                "mod_format": sdn_props.spectrum_object.modulation,
                 "path": sdn_props.path_list,
                 "is_sliced": sdn_props.is_sliced,
                 "was_routed": sdn_props.was_routed,
