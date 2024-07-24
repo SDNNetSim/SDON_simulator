@@ -143,7 +143,7 @@ class SDNController:
 
     def handle_event(self, req_dict: dict, request_type: str, force_slicing: bool = False,
                      force_route_matrix: list = None, forced_index: int = None,
-                     force_core: int = None, ml_model=None):
+                     force_core: int = None, ml_model=None, force_mod_format: str = None):
         """
         Handles any event that occurs in the simulation, controls this class.
 
@@ -152,6 +152,7 @@ class SDNController:
         :param force_slicing: Whether to force light segment slicing or not.
         :param force_route_matrix: Whether to force a path or not.
         :param forced_index: Whether to force a start index for a request.
+        :param force_mod_format: Forces a modulation format.
         :param ml_model: An optional machine learning model.
         """
         self._init_req_stats()
@@ -168,6 +169,10 @@ class SDNController:
             route_matrix = self.route_obj.route_props.paths_matrix
         else:
             route_matrix = force_route_matrix
+            # TODO: This is an inconsistency
+            self.route_obj.route_props.mod_formats_matrix = [force_mod_format]
+            # TODO: This must be fixed
+            self.route_obj.route_props.weights_list = [0]
         route_time = time.time() - start_time
 
         segment_slicing = False

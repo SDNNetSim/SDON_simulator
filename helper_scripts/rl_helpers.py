@@ -3,6 +3,7 @@ import numpy as np
 from src.spectrum_assignment import SpectrumAssignment
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
 from helper_scripts.sim_helpers import find_path_cong, classify_cong, find_core_cong
+from arg_scripts.sdn_args import SDNProps
 
 
 class RLHelpers:
@@ -112,11 +113,12 @@ class RLHelpers:
         :param bandwidth: Bandwidth of the current request.
         :param chosen_path: Path of the current request.
         """
-        self.route_obj.route_props['paths_list'] = chosen_path
+        self.route_obj.route_props.paths_matrix = chosen_path
         path_len = find_path_len(path_list=chosen_path[0], topology=self.engine_obj.engine_props['topology'])
         mod_format = get_path_mod(mods_dict=self.engine_obj.engine_props['mod_per_bw'][bandwidth], path_len=path_len)
-        self.route_obj.route_props['mod_formats_list'] = [[mod_format]]
-        self.route_obj.route_props['weights_list'].append(path_len)
+        self.route_obj.route_props.mod_formats_matrix = [[mod_format]]
+        self.route_obj.route_props.weights_list.append(path_len)
+
 
     def handle_releases(self):
         """
@@ -152,9 +154,12 @@ class RLHelpers:
         else:
             forced_index = None
 
+        # TODO: This is an inconsistency
+        # TODO: If route object isn't the same in sdn controller...
+        force_mod_format = self.route_obj.route_props.mod_formats_matrix[0]
         self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props.chosen_path_list,
                                        force_core=self.rl_props.core_index,
-                                       forced_index=forced_index)
+                                       forced_index=forced_index, force_mod_format=force_mod_format)
 
     @staticmethod
     def mock_handle_arrival(engine_props: dict, sdn_props: dict, path_list: list, mod_format_list: list):
@@ -178,26 +183,27 @@ class RLHelpers:
         :return: The mock return of the SDN controller.
         :rtype: dict
         """
-        mock_sdn = {
+        mock_sdn = SDNProps()
+        params = {
             'req_id': curr_req['req_id'],
             'source': curr_req['source'],
             'destination': curr_req['destination'],
             'bandwidth': curr_req['bandwidth'],
             'net_spec_dict': self.engine_obj.net_spec_dict,
             'topology': self.topology,
-            'mod_formats': curr_req['mod_formats'],
+            'mod_formats_dict': curr_req['mod_formats'],
             'num_trans': 1.0,
-            'route_time': 0.0,
             'block_reason': None,
-            'stat_key_list': ['modulation_list', 'xt_list', 'core_list'],
             'modulation_list': list(),
             'xt_list': list(),
             'is_sliced': False,
             'core_list': list(),
             'bandwidth_list': list(),
             'path_weight': list(),
-            'spectrum_dict': {'modulation': None}
         }
+
+        for key, value in params.items():
+            setattr(mock_sdn, key, value)
 
         return mock_sdn
 

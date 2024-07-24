@@ -136,7 +136,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         reqs_status_dict = self.engine_obj.reqs_status_dict
 
         was_allocated = req_id in reqs_status_dict
-        path_length = self.route_obj.route_props['weights_list'][0]
+        path_length = self.route_obj.route_props.weights_list[0]
         self._handle_test_train_step(was_allocated=was_allocated, path_length=path_length)
         self.rl_help_obj.update_snapshots()
         drl_reward = self.spectrum_agent.get_reward(was_allocated=was_allocated)
@@ -162,7 +162,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.path_agent.get_route(route_obj=self.route_obj)
         # TODO: Update to chosen path list, be very careful as this affects results easily for the agents if done wrong
         self.rl_help_obj.rl_props.chosen_path_list = [self.rl_props.chosen_path_list]
-        self.route_obj.route_props['paths_list'] = self.rl_help_obj.rl_props.chosen_path_list
+        self.route_obj.route_props.paths_matrix = self.rl_help_obj.rl_props.chosen_path_list
         self.rl_props.core_index = None
         self.rl_props.forced_index = None
 
@@ -172,10 +172,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj.get_route()
 
         # Default to first fit if all paths fail
-        self.rl_props.chosen_path = [self.route_obj.route_props['paths_list'][0]]
+        self.rl_props.chosen_path = [self.route_obj.route_props.paths_matrix[0]]
         self.rl_props.chosen_path_index = 0
-        for path_index, path_list in enumerate(self.route_obj.route_props['paths_list']):
-            mod_format_list = self.route_obj.route_props['mod_formats_list'][path_index]
+        for path_index, path_list in enumerate(self.route_obj.route_props.paths_matrix):
+            mod_format_list = self.route_obj.route_props.mod_formats_matrix[path_index]
 
             was_allocated = self.rl_help_obj.mock_handle_arrival(engine_props=self.engine_obj.engine_props,
                                                                  sdn_props=self.rl_props.mock_sdn_dict,
@@ -203,8 +203,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj.sdn_props = self.rl_props.mock_sdn_dict
         self.route_obj.engine_props['route_method'] = 'shortest_path'
         self.route_obj.get_route()
-        self.rl_props.paths_list = self.route_obj.route_props['paths_list']
-        self.rl_props.chosen_path = self.route_obj.route_props['paths_list']
+        # TODO: Change name in rl props eventually
+        self.rl_props.paths_list = self.route_obj.route_props.paths_matrix
+        self.rl_props.chosen_path = self.route_obj.route_props.paths_matrix
         self.rl_props.path_index = 0
         self.rl_props.core_index = None
 

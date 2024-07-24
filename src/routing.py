@@ -14,7 +14,7 @@ class Routing:
     def __init__(self, engine_props: dict, sdn_props: object):
         self.engine_props = engine_props
         self.sdn_props = sdn_props
-        self.route_props = RoutingProps
+        self.route_props = RoutingProps()
 
         self.route_help_obj = RoutingHelpers(engine_props=self.engine_props, sdn_props=self.sdn_props,
                                              route_props=self.route_props)

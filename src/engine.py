@@ -61,7 +61,7 @@ class Engine:
             }})
 
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,
-                       force_slicing: bool = False, forced_index: int = None):
+                       force_slicing: bool = False, forced_index: int = None, force_mod_format: str = None):
         """
         Updates the SDN controller to handle an arrival request and retrieves relevant request statistics.
 
@@ -69,6 +69,7 @@ class Engine:
         :param force_route_matrix: Passes forced routes to the SDN controller.
         :param force_slicing: Forces slicing in the SDN controller.
         :param forced_index: Forces an index in the SDN controller.
+        :param force_mod_format: Forces a modulation format.
         """
         for req_key, req_value in self.reqs_dict[curr_time].items():
             # TODO: This should be changed in reqs_dict eventually
@@ -78,7 +79,8 @@ class Engine:
 
         self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
                                   force_slicing=force_slicing, forced_index=forced_index, force_core=force_core,
-                                  ml_model=self.ml_model, req_dict=self.reqs_dict[curr_time])
+                                  ml_model=self.ml_model, req_dict=self.reqs_dict[curr_time],
+                                  force_mod_format=force_mod_format)
         self.net_spec_dict = self.sdn_obj.sdn_props.net_spec_dict
         self.update_arrival_params(curr_time=curr_time)
 
