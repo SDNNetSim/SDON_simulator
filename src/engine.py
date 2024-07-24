@@ -71,8 +71,10 @@ class Engine:
         :param forced_index: Forces an index in the SDN controller.
         """
         for req_key, req_value in self.reqs_dict[curr_time].items():
-            self.sdn_obj.sdn_props.update_params(stat_key=req_key, spectrum_key=None, spectrum_obj=None,
-                                                 stat_value=req_value)
+            # TODO: This should be changed in reqs_dict eventually
+            if req_key == 'mod_formats':
+                req_key = 'mod_formats_dict'
+            self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
 
         self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
                                   force_slicing=force_slicing, forced_index=forced_index, force_core=force_core,
@@ -87,8 +89,10 @@ class Engine:
         :param curr_time: The arrival time of the request.
         """
         for req_key, req_value in self.reqs_dict[curr_time].items():
-            self.sdn_obj.sdn_props.update_params(stat_key=req_key, spectrum_key=None, spectrum_obj=None,
-                                                 stat_value=req_value)
+            # TODO: This should be changed in reqs_dict eventually
+            if req_key == 'mod_formats':
+                req_key = 'mod_formats_dict'
+            self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
 
         if self.reqs_dict[curr_time]['req_id'] in self.reqs_status_dict:
             self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']

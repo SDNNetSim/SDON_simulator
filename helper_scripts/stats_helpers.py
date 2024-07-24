@@ -185,7 +185,7 @@ class SimStats:
     def _handle_iter_lists(self, sdn_data: object):
         for stat_key in sdn_data.stat_key_list:
             # TODO: Eventually change this name (sdn_data)
-            curr_sdn_data = sdn_data.get_data(stat_key=stat_key)
+            curr_sdn_data = sdn_data.get_data(key=stat_key)
 
             for i, data in enumerate(curr_sdn_data):
                 if stat_key == 'core_list':

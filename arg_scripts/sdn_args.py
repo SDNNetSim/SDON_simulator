@@ -30,39 +30,23 @@ class SDNProps:
 
         self.stat_key_list = ['modulation_list', 'xt_list', 'core_list']  # Statistical keys used to save results
 
-    def update_params(self, stat_key: str, spectrum_key: str, spectrum_obj: object, stat_value: int = None):
+    def update_params(self, key: str, spectrum_key: str, spectrum_obj: object, value: int = None):
         """
         Update lists to track statistics of routed requests or general network metrics.
 
-        :param stat_key: Statistical key to update.
-        :param spectrum_key: Spectrum key to update.
+        :param key: Key to update.
+        :param spectrum_key: Spectrum key to get a spectrum object value.
         :param spectrum_obj: Spectrum assignment main object.
-        :param stat_value: A statistical value related to the stat key, it may vary.
+        :param value: Value related to the key, it may vary widely.
         """
-        if stat_key == 'modulation_list':
-            self.modulation_list.append(spectrum_obj.spectrum_props[spectrum_key])
-        elif stat_key == 'xt_list':
-            self.xt_list.append(spectrum_obj.spectrum_props[spectrum_key])
-        elif stat_key == 'core_list':
-            self.core_list.append(spectrum_obj.spectrum_props[spectrum_key])
-        elif stat_key == 'req_id':
-            self.req_id = stat_value
-        elif stat_key == 'source':
-            self.source = stat_value
-        elif stat_key == 'destination':
-            self.destination = stat_value
-        elif stat_key == 'arrive':
-            self.arrive = stat_value
-        elif stat_key == 'depart':
-            self.depart = stat_value
-        elif stat_key == 'request_type':
-            self.request_type = stat_value
-        elif stat_key == 'bandwidth':
-            self.bandwidth = stat_value
-        elif stat_key == 'mod_formats':
-            self.mod_formats_dict = stat_value
+        if hasattr(self, key):
+            current_value = getattr(self, key)
+            if isinstance(current_value, list):
+                current_value.append(spectrum_obj.spectrum_props[spectrum_key])
+            else:
+                setattr(self, key, value)
         else:
-            raise NotImplementedError(f'Got an unaccounted stat key: {stat_key}')
+            raise AttributeError(f"'SDNProps' object has no attribute '{key}'")
 
     def reset_params(self):
         """
@@ -72,22 +56,17 @@ class SDNProps:
         self.xt_list = list()
         self.core_list = list()
 
-    def get_data(self, stat_key: str):
+    def get_data(self, key: str):
         """
-        Retrieves desired data in properties.
+        Retrieve a property of the object.
 
-        :return: The desired data.
+        :param key: The property name.
+        :return: The value of the property.
         """
-        if stat_key == 'modulation_list':
-            resp = self.modulation_list
-        elif stat_key == 'xt_list':
-            resp = self.xt_list
-        elif stat_key == 'core_list':
-            resp = self.core_list
-        else:
-            raise NotImplementedError
+        if hasattr(self, key):
+            return getattr(self, key)
 
-        return resp
+        raise AttributeError(f"'SDNProps' object has no attribute '{key}'")
 
     def __repr__(self):
         return f"EmptyProps({self.__dict__})"

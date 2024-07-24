@@ -88,7 +88,7 @@ class SDNController:
             elif spectrum_key == 'core':
                 spectrum_key = 'core_num'
 
-            self.sdn_props.update_params(stat_key=stat_key, spectrum_key=spectrum_key, spectrum_obj=self.spectrum_obj)
+            self.sdn_props.update_params(key=stat_key, spectrum_key=spectrum_key, spectrum_obj=self.spectrum_obj)
 
     def _allocate_slicing(self, num_segments: int, mod_format: str, path_list: list, bandwidth: str):
         self.sdn_props.num_trans = num_segments
