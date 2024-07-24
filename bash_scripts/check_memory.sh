@@ -3,8 +3,8 @@
 # This script calculates the total memory usage of processes matching a given name and counts the number of instances
 # of a script running. It is intended to be used on Unix-like systems.
 
-# Usage: ./script.sh <script_path> <process_name>
-# Example: ./script.sh /path/to/script.sh process_name
+# Usage: ./check_memory.sh <script_path> <process_name>
+# Example: ./check_memory.sh /path/to/script.py script_name
 
 # Check if the correct number of arguments are provided
 if [ "$#" -ne 2 ]; then
@@ -23,16 +23,19 @@ if [ ! -f "$script_path" ]; then
   exit 1
 fi
 
-# Find the PIDs of processes matching the process name
-pids=$(pgrep -x "$process_name")
+# Find the PIDs of processes matching the process name using -f for full command match
+pids=$(pgrep -f "$process_name")
 if [ -z "$pids" ]; then
   echo "No processes found for $process_name."
   exit 1
 fi
 
+# Convert PIDs to a comma-separated list
+pid_list=$(echo "$pids" | tr '\n' ',' | sed 's/,$//')
+
 # Calculate the total memory usage of the processes
-ps u -p "$pids" | awk '{sum += $6} END {print "Total memory used is: " sum / 1024 " MB" " or " sum / 1024 / 1024 " GB"}'
+ps u -p "$pid_list" | awk 'NR>1 {sum += $6} END {print "Total memory used is: " sum / 1024 " MB" " or " sum / 1024 / 1024 " GB"}'
 
 # Count the number of instances of the script running
-num_proc=$(pgrep -xc "$script_name")
+num_proc=$(pgrep -fc "$script_name")
 echo "Total number of processes used by $script_name is: $num_proc"
