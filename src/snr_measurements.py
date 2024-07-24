@@ -3,7 +3,7 @@ import math
 import numpy as np
 import networkx as nx
 
-from arg_scripts.snr_args import empty_props
+from arg_scripts.snr_args import SNRProps
 
 
 # fixme: Only works for seven cores
@@ -13,7 +13,7 @@ class SnrMeasurements:
     """
 
     def __init__(self, engine_props: dict, sdn_props: object, spectrum_props: dict):
-        self.snr_props = empty_props
+        self.snr_props = SNRProps()
         self.engine_props = engine_props
         self.sdn_props = sdn_props
         self.spectrum_props = spectrum_props
@@ -29,11 +29,11 @@ class SnrMeasurements:
         :return: The self-phase power spectral density.
         :rtype: float
         """
-        rho_param = (math.pi ** 2) * np.abs(self.snr_props['link_dict']['dispersion'])
-        rho_param /= (2 * self.snr_props['link_dict']['attenuation'])
+        rho_param = (math.pi ** 2) * np.abs(self.snr_props.link_dict['dispersion'])
+        rho_param /= (2 * self.snr_props.link_dict['attenuation'])
 
-        sci_psd = self.snr_props['center_psd'] ** 2
-        sci_psd *= math.asinh(rho_param * (self.snr_props['bandwidth'] ** 2))
+        sci_psd = self.snr_props.center_psd ** 2
+        sci_psd *= math.asinh(rho_param * (self.snr_props.bandwidth ** 2))
         return sci_psd
 
     def _update_link_xci(self, req_id: float, curr_link: np.ndarray, slot_index: int, curr_xci: float):
@@ -49,9 +49,9 @@ class SnrMeasurements:
         channel_bw *= 10 ** 9
         channel_psd = self.engine_props['input_power'] / channel_bw
 
-        if self.snr_props['center_freq'] != channel_freq:
-            log_term = abs(self.snr_props['center_freq'] - channel_freq) + (channel_bw / 2)
-            log_term /= (abs(self.snr_props['center_freq'] - channel_freq) - (channel_bw / 2))
+        if self.snr_props.center_freq != channel_freq:
+            log_term = abs(self.snr_props.center_freq - channel_freq) + (channel_bw / 2)
+            log_term /= (abs(self.snr_props.center_freq - channel_freq) - (channel_bw / 2))
             calculated_xci = (channel_psd ** 2) * math.log(abs(log_term))
             new_xci = curr_xci + calculated_xci
         else:
@@ -91,11 +91,11 @@ class SnrMeasurements:
         :rtype: float
         """
         # A statistical mean of the cross-talk
-        mean_xt = 2 * self.snr_props['link_dict']['bending_radius']
-        mean_xt *= self.snr_props['link_dict']['mode_coupling_co'] ** 2
-        mean_xt /= (self.snr_props['link_dict']['propagation_const'] * self.snr_props['link_dict']['core_pitch'])
+        mean_xt = 2 * self.snr_props.link_dict['bending_radius']
+        mean_xt *= self.snr_props.link_dict['mode_coupling_co'] ** 2
+        mean_xt /= (self.snr_props.link_dict['propagation_const'] * self.snr_props.link_dict['core_pitch'])
         # The cross-talk noise power
-        power_xt = num_adjacent * mean_xt * self.snr_props['length'] * 1e3 * self.engine_props['input_power']
+        power_xt = num_adjacent * mean_xt * self.snr_props.length * 1e3 * self.engine_props['input_power']
 
         return power_xt
 
@@ -125,16 +125,16 @@ class SnrMeasurements:
             hn_series = hn_series + 1 / i
 
         # The effective span length
-        power = -2 * self.snr_props['link_dict']['attenuation'] * self.snr_props['length'] * 10 ** 3
+        power = -2 * self.snr_props.link_dict['attenuation'] * self.snr_props.length * 10 ** 3
         eff_span_len = 1 - math.e ** power
-        eff_span_len /= (2 * self.snr_props['link_dict']['attenuation'])
-        baud_rate = int(self.snr_props['req_bit_rate']) * 10 ** 9 / 2
+        eff_span_len /= (2 * self.snr_props.link_dict['attenuation'])
+        baud_rate = int(self.snr_props.req_bit_rate) * 10 ** 9 / 2
 
         temp_coef = self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2
         temp_coef *= eff_span_len ** 2
-        temp_coef *= (self.snr_props['center_psd'] ** 3 * self.snr_props['bandwidth'] ** 2)
-        temp_coef /= ((baud_rate ** 2) * math.pi * self.snr_props['link_dict']['dispersion'] *
-                      (self.snr_props['length'] * 10 ** 3))
+        temp_coef *= (self.snr_props.center_psd ** 3 * self.snr_props.bandwidth ** 2)
+        temp_coef /= ((baud_rate ** 2) * math.pi * self.snr_props.link_dict['dispersion'] *
+                      (self.snr_props.length * 10 ** 3))
 
         # The PSD correction term
         psd_correction = (80 / 81) * self.engine_props['phi'][self.spectrum_props['modulation']] * temp_coef * hn_series
@@ -148,8 +148,8 @@ class SnrMeasurements:
         :return: The total power spectral density non-linear interference
         :rtype float
         """
-        psd_nli = self.snr_props['sci_psd'] + self.snr_props['xci_psd']
-        psd_nli *= (self.snr_props['mu_param'] * self.snr_props['center_psd'])
+        psd_nli = self.snr_props.sci_psd + self.snr_props.xci_psd
+        psd_nli *= (self.snr_props.mu_param * self.snr_props.center_psd)
         if self.engine_props['egn_model']:
             psd_correction = self._handle_egn_model()
             psd_nli -= psd_correction
@@ -161,28 +161,28 @@ class SnrMeasurements:
         Updates needed parameters for each link used for calculating SNR or XT.
         """
         non_linearity = self.engine_props['topology_info']['links'][self.link_id]['fiber']['non_linearity'] ** 2
-        self.snr_props['mu_param'] = 3 * non_linearity
-        mu_denominator = 2 * math.pi * self.snr_props['link_dict']['attenuation']
-        mu_denominator *= np.abs(self.snr_props['link_dict']['dispersion'])
-        self.snr_props['mu_param'] /= mu_denominator
+        self.snr_props.mu_param = 3 * non_linearity
+        mu_denominator = 2 * math.pi * self.snr_props.link_dict['attenuation']
+        mu_denominator *= np.abs(self.snr_props.link_dict['dispersion'])
+        self.snr_props.mu_param /= mu_denominator
 
-        self.snr_props['sci_psd'] = self._calculate_sci_psd()
-        self.snr_props['xci_psd'] = self._calculate_xci(link_num=link_num)
+        self.snr_props.sci_psd = self._calculate_sci_psd()
+        self.snr_props.xci_psd = self._calculate_xci(link_num=link_num)
 
-        self.snr_props['length'] = self.engine_props['topology_info']['links'][self.link_id]['span_length']
+        self.snr_props.length = self.engine_props['topology_info']['links'][self.link_id]['span_length']
         link_length = self.engine_props['topology_info']['links'][self.link_id]['length']
-        self.snr_props['num_span'] = link_length / self.snr_props['length']
+        self.snr_props.num_span = link_length / self.snr_props.length
 
     def _init_center_vars(self):
         """
         Updates variables for the center frequency, bandwidth, and PSD for the current request.
         """
-        self.snr_props['center_freq'] = self.spectrum_props['start_slot'] * self.engine_props['bw_per_slot']
-        self.snr_props['center_freq'] += ((self.num_slots * self.engine_props['bw_per_slot']) / 2)
-        self.snr_props['center_freq'] *= 10 ** 9
+        self.snr_props.center_freq = self.spectrum_props['start_slot'] * self.engine_props['bw_per_slot']
+        self.snr_props.center_freq += ((self.num_slots * self.engine_props['bw_per_slot']) / 2)
+        self.snr_props.center_freq *= 10 ** 9
 
-        self.snr_props['bandwidth'] = self.num_slots * self.engine_props['bw_per_slot'] * 10 ** 9
-        self.snr_props['center_psd'] = self.engine_props['input_power'] / self.snr_props['bandwidth']
+        self.snr_props.bandwidth = self.num_slots * self.engine_props['bw_per_slot'] * 10 ** 9
+        self.snr_props.center_psd = self.engine_props['input_power'] / self.snr_props.bandwidth
 
     def check_snr(self):
         """
@@ -198,12 +198,12 @@ class SnrMeasurements:
             dest = self.spectrum_props['path_list'][link_num + 1]
             self.link_id = self.sdn_props.net_spec_dict[(source, dest)]['link_num']
 
-            self.snr_props['link_dict'] = self.engine_props['topology_info']['links'][self.link_id]['fiber']
+            self.snr_props.link_dict = self.engine_props['topology_info']['links'][self.link_id]['fiber']
             self._update_link_params(link_num=link_num)
 
             psd_nli = self._calculate_psd_nli()
-            psd_ase = self.snr_props['plank'] * self.snr_props['light_frequency'] * self.snr_props['nsp']
-            psd_ase *= (math.exp(self.snr_props['link_dict']['attenuation'] * self.snr_props['length'] * 10 ** 3) - 1)
+            psd_ase = self.snr_props.plank * self.snr_props.light_frequency * self.snr_props.nsp
+            psd_ase *= (math.exp(self.snr_props.link_dict['attenuation'] * self.snr_props.length * 10 ** 3) - 1)
 
             if self.engine_props['xt_noise']:
                 # fixme
@@ -211,14 +211,14 @@ class SnrMeasurements:
             else:
                 p_xt = 0
 
-            curr_snr = self.snr_props['center_psd'] * self.snr_props['bandwidth']
-            curr_snr /= (((psd_ase + psd_nli) * self.snr_props['bandwidth'] + p_xt) * self.snr_props['num_span'])
+            curr_snr = self.snr_props.center_psd * self.snr_props.bandwidth
+            curr_snr /= (((psd_ase + psd_nli) * self.snr_props.bandwidth + p_xt) * self.snr_props.num_span)
 
             total_snr += (1 / curr_snr)
 
         total_snr = 10 * math.log10(1 / total_snr)
 
-        resp = total_snr > self.snr_props['req_snr']
+        resp = total_snr > self.snr_props.req_snr
         return resp
 
     def check_adjacent_cores(self, link_tuple: tuple):
@@ -266,7 +266,7 @@ class SnrMeasurements:
 
             self.link_id = self.sdn_props.net_spec_dict[max_link]['link_num']
             max_length = edge_lengths.get(max_link, 0.0)
-            self.snr_props['link_dict'] = self.engine_props['topology_info']['links'][self.link_id]['fiber']
+            self.snr_props.link_dict = self.engine_props['topology_info']['links'][self.link_id]['fiber']
 
             resp = self.calculate_xt(num_adjacent=6, link_length=max_length)
             resp = 10 * math.log10(resp)
@@ -290,7 +290,7 @@ class SnrMeasurements:
 
             self.link_id = self.sdn_props.net_spec_dict[link_tuple]['link_num']
             link_length = self.engine_props['topology_info']['links'][self.link_id]['length']
-            self.snr_props['link_dict'] = self.engine_props['topology_info']['links'][self.link_id]['fiber']
+            self.snr_props.link_dict = self.engine_props['topology_info']['links'][self.link_id]['fiber']
             self._update_link_params(link_num=link_num)
 
             num_adjacent = self.check_adjacent_cores(link_tuple=link_tuple)
