@@ -9,7 +9,7 @@
 
 # This script is designed to run a reinforcement learning simulation on the Unity cluster at UMass Amherst.
 # It sets up the necessary environment, installs dependencies, registers custom environments, and runs
-# the simulation with different parameter combinations.
+# the simulation with different parameter combinations. Note that it uses the SLURM job scheduler.
 
 # Ensure the script stops if any command fails
 set -e
