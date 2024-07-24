@@ -69,10 +69,11 @@ class SnrMeasurements:
         self.channels_list = []
         # Cross-phase modulation noise
         xci_noise = 0
-        for slot_index in range(self.engine_props['spectral_slots']):
+        # TODO: only cband is considered extend it for multiband
+        for slot_index in range(self.engine_props['c_band']):
             source = self.spectrum_props['path_list'][link_num]
             dest = self.spectrum_props['path_list'][link_num + 1]
-            curr_link = self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix']
+            curr_link = self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix']['c']
             req_id = curr_link[self.spectrum_props['core_num']][slot_index]
 
             # Spectrum is occupied
@@ -240,7 +241,7 @@ class SnrMeasurements:
         for curr_slot in range(self.spectrum_props['start_slot'], self.spectrum_props['end_slot']):
             overlapped = 0
             for core_num in adj_cores_list:
-                core_contents = self.sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][core_num][curr_slot]
+                core_contents = self.sdn_props['net_spec_dict'][link_tuple]['cores_matrix'][self.spectrum_props['band']][core_num][curr_slot]
                 if core_contents > 0.0:
                     overlapped += 1
 
@@ -313,7 +314,8 @@ class SnrMeasurements:
         """
         self.num_slots = self.spectrum_props['end_slot'] - self.spectrum_props['start_slot'] + 1
         if self.engine_props['snr_type'] == "snr_calc_nli":
-            snr_check, xt_cost = self.check_snr()
+            snr_check = self.check_snr()
+            xt_cost = None
         elif self.engine_props['snr_type'] == "xt_calculation":
             snr_check, xt_cost = self.check_xt()
         else:

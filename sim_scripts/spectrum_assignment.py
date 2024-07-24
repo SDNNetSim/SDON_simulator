@@ -34,6 +34,7 @@ class SpectrumAssignment:
                     self.spec_help_obj.start_index = start_index
                     self.spec_help_obj.end_index = end_index
                     self.spec_help_obj.core_num = channel_dict['core']
+                    self.spec_help_obj.band = channel_dict['band']
                     self.spec_help_obj.check_other_links()
 
                 if self.spectrum_props['is_free'] or len(self.spectrum_props['path_list']) <= 2:
@@ -41,6 +42,7 @@ class SpectrumAssignment:
                     self.spectrum_props['start_slot'] = start_index
                     self.spectrum_props['end_slot'] = end_index + self.engine_props['guard_slots']
                     self.spectrum_props['core_num'] = channel_dict['core']
+                    self.spectrum_props['band'] = channel_dict['band']
                     return
 
     def find_best_fit(self):
@@ -54,34 +56,47 @@ class SpectrumAssignment:
             for core_num in range(self.engine_props['cores_per_link']):
                 if self.spectrum_props['forced_core'] is not None and self.spectrum_props['forced_core'] != core_num:
                     continue
+                for band in self.engine_props['band_list']:
+                    if self.spectrum_props['forced_band'] is not None and self.spectrum_props['forced_band'] != band:
+                        continue
+                    core_arr = self.sdn_props['net_spec_dict'][(src, dest)]['cores_matrix'][band][core_num]
+                    open_slots_arr = np.where(core_arr == 0)[0]
 
-                core_arr = self.sdn_props['net_spec_dict'][(src, dest)]['cores_matrix'][core_num]
-                open_slots_arr = np.where(core_arr == 0)[0]
-
-                tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
-                              itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-                for channel_list in tmp_matrix:
-                    if len(channel_list) >= self.spectrum_props['slots_needed']:
-                        channels_list.append({'link': (src, dest), 'core': core_num, 'channel': channel_list})
+                    tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
+                                itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                    for channel_list in tmp_matrix:
+                        if len(channel_list) >= self.spectrum_props['slots_needed']:
+                            channels_list.append({'link': (src, dest), 'core': core_num, 'band': band, 'channel': channel_list})
 
         # Sort the list of candidate super channels
         channels_list = sorted(channels_list, key=lambda d: len(d['channel']))
         self._allocate_best_fit(channels_list=channels_list)
 
     def _setup_first_last(self):
+        core_matrix_list = list()
         if self.spectrum_props['forced_core'] is not None:
-            core_matrix = [self.spectrum_props['cores_matrix'][self.spectrum_props['forced_core']]]
-            core_list = [self.spectrum_props['forced_core']]
-        elif self.engine_props['allocation_method'] in ('priority_first', 'priority_last'):
-            core_list = [0, 2, 4, 1, 3, 5, 6]
-            core_matrix = list()
-            for curr_core in core_list:
-                core_matrix.append(self.spectrum_props['cores_matrix'][curr_core])
-        else:
-            core_matrix = self.spectrum_props['cores_matrix']
-            core_list = list(range(0, self.engine_props['cores_per_link']))
+            if self.spectrum_props['forced_band'] is not None:
+                core_matrix_list.append({'core': self.spectrum_props['forced_core'], 'band': self.spectrum_props['forced_band'], 
+                                         'core_matrix': self.spectrum_props['cores_matrix'][self.spectrum_props['forced_band']][self.spectrum_props['forced_core']]})
+            else:
+                for band in self.engine_props['band_list']:
+                    core_matrix_list.append({'core': self.spectrum_props['forced_core'], 'band': band, 
+                                         'core_matrix': self.spectrum_props['cores_matrix'][band][self.spectrum_props['forced_core']]})
 
-        return core_matrix, core_list
+        elif self.engine_props['allocation_method'] in ('priority_first', 'priority_last'):
+            for curr_core in  [0, 2, 4, 1, 3, 5, 6]:
+                for band in self.engine_props['band_list']:
+                    core_matrix_list.append({'core': curr_core, 'band': band, 
+                                         'core_matrix': self.spectrum_props['cores_matrix'][band][curr_core]})
+        else:
+            core_matrix_list = [
+                                {'core': curr_core, 'band': band, 'core_matrix': self.spectrum_props['cores_matrix'][band][curr_core]}
+                                for curr_core in range(self.engine_props['cores_per_link'])
+                                for band in self.engine_props['band_list']
+                                ]
+
+
+        return core_matrix_list
 
     def handle_first_last(self, flag: str):
         """
@@ -89,9 +104,9 @@ class SpectrumAssignment:
 
         :param flag: A flag to determine which allocation method to be used.
         """
-        core_matrix, core_list = self._setup_first_last()
-        for core_arr, core_num in zip(core_matrix, core_list):
-            open_slots_arr = np.where(core_arr == 0)[0]
+        core_matrix_list = self._setup_first_last()
+        for item in core_matrix_list:
+            open_slots_arr = np.where(item['core_matrix'] == 0)[0]
 
             # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
             if flag in ('last_fit', 'priority_last'):
@@ -103,7 +118,8 @@ class SpectrumAssignment:
             else:
                 raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
 
-            self.spec_help_obj.core_num = core_num
+            self.spec_help_obj.core_num = item['core']
+            self.spec_help_obj.band = item['band']
             was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
             if was_allocated:
                 return

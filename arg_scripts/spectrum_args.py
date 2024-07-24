@@ -2,6 +2,7 @@ empty_props = {
     'path_list': None,
     'slots_needed': None,
     'forced_core': None,
+    'forced_band': None,
     'is_free': False,
     'modulation': None,
     'xt_cost': None,
@@ -11,4 +12,5 @@ empty_props = {
     'forced_index': None,
     'start_slot': None,
     'end_slot': None,
+    'band': None,
 }

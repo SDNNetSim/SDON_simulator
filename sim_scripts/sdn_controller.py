@@ -28,16 +28,18 @@ class SDNController:
         """
         for source, dest in zip(self.sdn_props['path_list'], self.sdn_props['path_list'][1:]):
             for core_num in range(self.engine_props['cores_per_link']):
-                core_arr = self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix'][core_num]
-                req_id_arr = np.where(core_arr == self.sdn_props['req_id'])
-                gb_arr = np.where(core_arr == (self.sdn_props['req_id'] * -1))
+                for band in self.engine_props['band_list']:
 
-                for req_index in req_id_arr:
-                    self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix'][core_num][req_index] = 0
-                    self.sdn_props['net_spec_dict'][(dest, source)]['cores_matrix'][core_num][req_index] = 0
-                for gb_index in gb_arr:
-                    self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix'][core_num][gb_index] = 0
-                    self.sdn_props['net_spec_dict'][(dest, source)]['cores_matrix'][core_num][gb_index] = 0
+                    core_arr = self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix'][band][core_num]
+                    req_id_arr = np.where(core_arr == self.sdn_props['req_id'])
+                    gb_arr = np.where(core_arr == (self.sdn_props['req_id'] * -1))
+
+                    for req_index in req_id_arr:
+                        self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix'][band][core_num][req_index] = 0
+                        self.sdn_props['net_spec_dict'][(dest, source)]['cores_matrix'][band][core_num][req_index] = 0
+                    for gb_index in gb_arr:
+                        self.sdn_props['net_spec_dict'][(source, dest)]['cores_matrix'][band][core_num][gb_index] = 0
+                        self.sdn_props['net_spec_dict'][(dest, source)]['cores_matrix'][band][core_num][gb_index] = 0
 
     def _allocate_gb(self, core_matrix: list, rev_core_matrix: list, core_num: int, end_slot: int):
         if core_matrix[core_num][end_slot] != 0.0 or rev_core_matrix[core_num][end_slot] != 0.0:
@@ -53,6 +55,7 @@ class SDNController:
         start_slot = self.spectrum_obj.spectrum_props['start_slot']
         end_slot = self.spectrum_obj.spectrum_props['end_slot']
         core_num = self.spectrum_obj.spectrum_props['core_num']
+        band = self.spectrum_obj.spectrum_props['band']
 
         if self.engine_props['guard_slots']:
             end_slot = end_slot - 1
@@ -64,14 +67,14 @@ class SDNController:
             link_dict = self.sdn_props['net_spec_dict'][(link_tuple[0], link_tuple[1])]
             rev_link_dict = self.sdn_props['net_spec_dict'][(link_tuple[1], link_tuple[0])]
 
-            tmp_set = set(link_dict['cores_matrix'][core_num][start_slot:end_slot])
-            rev_tmp_set = set(rev_link_dict['cores_matrix'][core_num][start_slot:end_slot])
+            tmp_set = set(link_dict['cores_matrix'][band][core_num][start_slot:end_slot])
+            rev_tmp_set = set(rev_link_dict['cores_matrix'][band][core_num][start_slot:end_slot])
 
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
 
-            core_matrix = link_dict['cores_matrix']
-            rev_core_matrix = rev_link_dict['cores_matrix']
+            core_matrix = link_dict['cores_matrix'][band]
+            rev_core_matrix = rev_link_dict['cores_matrix'][band]
             core_matrix[core_num][start_slot:end_slot] = self.sdn_props['req_id']
             rev_core_matrix[core_num][start_slot:end_slot] = self.sdn_props['req_id']
 
@@ -143,7 +146,7 @@ class SDNController:
 
     def handle_event(self, req_dict: dict, request_type: str, force_slicing: bool = False,
                      force_route_matrix: list = None, forced_index: int = None,
-                     force_core: int = None, ml_model=None):
+                     force_core: int = None, force_band: str = None, ml_model=None):
         """
         Handles any event that occurs in the simulation, controls this class.
 
@@ -195,6 +198,7 @@ class SDNController:
                     else:
                         self.spectrum_obj.spectrum_props['forced_index'] = forced_index
                         self.spectrum_obj.spectrum_props['forced_core'] = force_core
+                        self.spectrum_obj.spectrum_props['forced_band'] = force_band
                         self.spectrum_obj.spectrum_props['path_list'] = path_list
                         self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
                         # Request was blocked for this path

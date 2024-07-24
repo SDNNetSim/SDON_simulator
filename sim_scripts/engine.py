@@ -58,6 +58,7 @@ class Engine:
                 "is_sliced": sdn_props['is_sliced'],
                 "was_routed": sdn_props['was_routed'],
                 "core_list": sdn_props['core_list'],
+                "band": sdn_props['spectrum_dict']['band'],
             }})
 
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,
@@ -103,11 +104,17 @@ class Engine:
         self.net_spec_dict = {}
         # Create nodes
         self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
+        # Create band list
+        for band in ['c', 'l', 's', 'o', 'e']: 
+                if self.engine_props[band+'_band']:
+                    self.engine_props['band_list'].append(band)
         # Create links
         for link_num, link_data in self.engine_props['topology_info']['links'].items():
             source = link_data['source']
             dest = link_data['destination']
-            cores_matrix = np.zeros((link_data['fiber']['num_cores'], self.engine_props['spectral_slots']))
+            cores_matrix = {}
+            for band in self.engine_props['band_list']:
+                cores_matrix.update({band: np.zeros((link_data['fiber']['num_cores'], self.engine_props[band+'_band']))})
 
             self.net_spec_dict[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
             self.net_spec_dict[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
