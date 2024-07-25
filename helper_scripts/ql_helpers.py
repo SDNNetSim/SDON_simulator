@@ -54,11 +54,11 @@ class QLearningHelpers:
         core_types = [('path', 'O'), ('core_action', 'i8'), ('q_value', 'f8')]
 
         self.props.routes_matrix = np.empty((self.rl_props.num_nodes, self.rl_props.num_nodes,
-                                                self.rl_props.k_paths, self.path_levels), dtype=route_types)
+                                             self.rl_props.k_paths, self.path_levels), dtype=route_types)
 
         self.props.cores_matrix = np.empty((self.rl_props.num_nodes, self.rl_props.num_nodes,
-                                               self.rl_props.k_paths, self.engine_props['cores_per_link'],
-                                               self.path_levels), dtype=core_types)
+                                            self.rl_props.k_paths, self.engine_props['cores_per_link'],
+                                            self.path_levels), dtype=core_types)
 
         self._init_q_tables()
 
@@ -219,11 +219,11 @@ class QLearningHelpers:
     def _save_params(self, save_dir: str):
         params_dict = dict()
         for param_type, params_list in self.props.save_params_dict.items():
-            for curr_param in params_list:
+            for key in params_list:
                 if param_type == 'engine_params_list':
-                    params_dict[curr_param] = self.engine_props[curr_param]
+                    params_dict[key] = self.engine_props[key]
                 else:
-                    params_dict[curr_param] = self.props.get_param_value(curr_param=curr_param)
+                    params_dict[key] = self.props.get_data(key=key)
 
         erlang = self.engine_props['erlang']
         cores_per_link = self.engine_props['cores_per_link']
