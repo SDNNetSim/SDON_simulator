@@ -58,7 +58,7 @@ def save_model(iteration: int, algorithm: str, self: object):
     rewards_matrix = self.props.rewards_matrix
     # TODO: Add save every 'x' iters to the configuration file (It's now 50)
     if (iteration in (max_iters - 1, (max_iters - 1) % 50)) and \
-            (len(self.props.rewards_matrix[iteration] == self.engine_props['num_requests'])):
+            (len(self.props.rewards_matrix[iteration]) == self.engine_props['num_requests']):
         rewards_matrix = np.array(rewards_matrix)
         rewards_arr = rewards_matrix.mean(axis=0)
 
@@ -75,7 +75,7 @@ def save_model(iteration: int, algorithm: str, self: object):
         save_fp = os.path.join(os.getcwd(), save_dir, rewards_fp)
         np.save(save_fp, rewards_arr)
 
-        _save_model(state_values_dict=self.state_values_dict, erlang=erlang, cores_per_link=cores_per_link,
+        _save_model(state_values_dict=self.values, erlang=erlang, cores_per_link=cores_per_link,
                     save_dir=save_dir, is_path=self.is_path)
 
 
@@ -105,7 +105,7 @@ def get_q_table(self: object):
     return self.counts, self.values
 
 
-def _update_bandit(self: object, iteration: int, reward: float, arm: int):
+def _update_bandit(self: object, iteration: int, reward: float, arm: int, algorithm: str):
     if self.is_path:
         pair = (self.source, self.dest)
     else:
@@ -121,7 +121,7 @@ def _update_bandit(self: object, iteration: int, reward: float, arm: int):
     self.props.rewards_matrix[self.iteration].append(reward)
 
     # Check if we need to save the model
-    save_model(iteration=iteration, algorithm='ucb_bandit', self=self)
+    save_model(iteration=iteration, algorithm=algorithm, self=self)
 
 
 class EpsilonGreedyBandit:
@@ -194,7 +194,7 @@ class EpsilonGreedyBandit:
         :param reward: Reward received from R(s, a).
         :param iteration: Current episode or iteration.
         """
-        _update_bandit(self=self, iteration=iteration, reward=reward, arm=arm)
+        _update_bandit(self=self, iteration=iteration, reward=reward, arm=arm, algorithm='epsilon_greedy')
 
 
 class UCBBandit:
@@ -271,4 +271,4 @@ class UCBBandit:
         :param reward: Reward received from R(s, a).
         :param iteration: Current episode or iteration.
         """
-        _update_bandit(iteration=iteration, arm=arm, reward=reward, self=self)
+        _update_bandit(iteration=iteration, arm=arm, reward=reward, self=self, algorithm='ucb_bandit')

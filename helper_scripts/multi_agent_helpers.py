@@ -5,8 +5,8 @@ from gymnasium import spaces
 
 from .sim_helpers import find_path_cong
 from .ql_helpers import QLearningHelpers
-from .bandit_helpers import EpsilonGreedyBandit, ContextualEpsilonGreedyBandit, ContextGenerator
-from .bandit_helpers import ThompsonSamplingBandit, UCBBandit
+from .bandit_helpers import EpsilonGreedyBandit
+from .bandit_helpers import UCBBandit
 
 
 class PathAgent:
@@ -38,23 +38,13 @@ class PathAgent:
         """
         if self.path_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
+            self.agent_obj.setup_env()
         elif self.path_algorithm == 'epsilon_greedy_bandit':
-            self.agent_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=True,
-                                                 is_core=False)
-        elif self.path_algorithm == 'context_epsilon_greedy_bandit':
-            self.agent_obj = ContextualEpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props)
-            self.context_obj = ContextGenerator(rl_props=self.rl_props, engine_props=self.engine_props, is_path=True,
-                                                is_core=False)
+            self.agent_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=True)
         elif self.path_algorithm == 'ucb_bandit':
-            self.agent_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=True,
-                                       is_core=False)
-        elif self.path_algorithm == 'thompson_sampling_bandit':
-            self.agent_obj = ThompsonSamplingBandit(rl_props=self.rl_props, engine_props=self.engine_props,
-                                                    is_path=True, is_core=False)
+            self.agent_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=True)
         else:
             raise NotImplementedError
-
-        self.agent_obj.setup_env()
 
     def get_reward(self, was_allocated: bool, path_length: int):
         """
@@ -130,18 +120,18 @@ class PathAgent:
     # TODO: Ideally q-learning should be like this (agent_obj.something)
     #   - Need access to the actual path
     def _bandit_route(self, route_obj: object):
-        paths_list = route_obj.route_props['paths_list']
+        paths_list = route_obj.route_props.paths_matrix
         source = paths_list[0][0]
         dest = paths_list[0][-1]
         self.rl_props.chosen_path_index = self.agent_obj.select_path_arm(source=int(source), dest=int(dest))
-        self.rl_props.chosen_path_list = route_obj.route_props['paths_list'][self.rl_props.chosen_path_index]
+        self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[self.rl_props.chosen_path_index]
 
     def _context_bandit_route(self, route_obj: object):
         cong_list = list()
         source = None
         dest = None
         # TODO: Make sure net_spec_db is correct and updated
-        for path_list in route_obj.route_props['paths_list']:
+        for path_list in route_obj.route_props.paths_matrix:
             net_spec_dict = self.rl_help_obj.engine_obj.net_spec_dict
             curr_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
             cong_list.append(curr_cong)
@@ -154,7 +144,7 @@ class PathAgent:
         self.context_obj.generate_context(source=source, dest=dest, congestion_levels=cong_list)
         self.rl_props.chosen_path_index = self.agent_obj.select_arm(context=self.context_obj.curr_context,
                                                                     source=source, dest=dest)
-        self.rl_props.chosen_path_list = route_obj.route_props['paths_list'][self.rl_props.chosen_path_index]
+        self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[self.rl_props.chosen_path_index]
 
     def get_route(self, **kwargs):
         """
@@ -216,17 +206,9 @@ class CoreAgent:
         if self.core_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
         elif self.core_algorithm == 'epsilon_greedy_bandit':
-            self.agent_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=False,
-                                                 is_core=True)
+            self.agent_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=False)
         elif self.core_algorithm == 'ucb_bandit':
-            self.agent_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=False,
-                                       is_core=True)
-        elif self.core_algorithm == 'thompson_sampling_bandit':
-            self.agent_obj = ThompsonSamplingBandit(rl_props=self.rl_props, engine_props=self.engine_props,
-                                                    is_path=False, is_core=True)
-        elif self.core_algorithm == 'context_epsilon_greedy_bandit':
-            self.agent_obj = ContextualEpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props,
-                                                           is_path=False, is_core=True)
+            self.agent_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=False)
         else:
             raise NotImplementedError
 
