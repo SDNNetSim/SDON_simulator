@@ -9,7 +9,7 @@ import pandas as pd
 
 from arg_scripts.stats_args import StatsProps
 from arg_scripts.stats_args import SNAP_KEYS_LIST
-from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_hfrag
+from helper_scripts.sim_helpers import find_path_len, find_core_cong
 from helper_scripts.os_helpers import create_dir
 
 
@@ -202,7 +202,7 @@ class SimStats:
         Continuously updates the statistical data for each request allocated/blocked in the current iteration.
 
         :param req_data: Holds data relevant to the current request.
-        :param sdn_data: Holds the response data from the sdn controller.
+        :param sdn_data: Hold the response data from the sdn controller.
         :return: None
         """
         # Request was blocked
