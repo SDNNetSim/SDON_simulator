@@ -119,13 +119,12 @@ class RLHelpers:
         self.route_obj.route_props.mod_formats_matrix = [[mod_format]]
         self.route_obj.route_props.weights_list.append(path_len)
 
-
     def handle_releases(self):
         """
         Checks if a request or multiple requests need to be released.
         """
         curr_time = self.rl_props.arrival_list[min(self.rl_props.arrival_count,
-                                                      len(self.rl_props.arrival_list) - 1)]['arrive']
+                                                   len(self.rl_props.arrival_list) - 1)]['arrive']
 
         depart_list = self.rl_props.depart_list
         while self._last_processed_index < len(depart_list):
@@ -163,14 +162,24 @@ class RLHelpers:
 
     @staticmethod
     def mock_handle_arrival(engine_props: dict, sdn_props: dict, path_list: list, mod_format_list: list):
+        """
+        Function to mock an arrival process or allocation in the network.
+
+        :param engine_props: Properties of engine.
+        :param sdn_props: Properties of the SDN controller.
+        :param path_list: List of nodes, the current path.
+        :param mod_format_list: Valid modulation formats.
+        :return: If there are available spectral slots.
+        :rtype: bool
+        """
         spectrum_obj = SpectrumAssignment(engine_props=engine_props, sdn_props=sdn_props)
 
-        spectrum_obj.spectrum_props['forced_index'] = None
-        spectrum_obj.spectrum_props['forced_core'] = None
-        spectrum_obj.spectrum_props['path_list'] = path_list
+        spectrum_obj.spectrum_props.forced_index = None
+        spectrum_obj.spectrum_props.forced_core = None
+        spectrum_obj.spectrum_props.path_list = path_list
         spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
         # Request was blocked for this path
-        if spectrum_obj.spectrum_props['is_free'] is not True:
+        if spectrum_obj.spectrum_props.is_free is not True:
             return False
 
         return True
