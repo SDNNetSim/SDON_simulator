@@ -1,4 +1,3 @@
-# TODO: This might break into its own module
 import os
 import json
 
@@ -7,7 +6,7 @@ import pandas as pd
 
 from helper_scripts.os_helpers import create_dir
 from helper_scripts.plot_helpers import find_times, PlotHelpers
-from arg_scripts.plot_args import empty_props
+from arg_scripts.plot_args import PlotProps
 
 filter_dict = {
     'and_filter_list': [
@@ -21,12 +20,12 @@ filter_dict = {
 }
 
 sims_info_dict = find_times(dates_dict={'0613': 'NSFNet'}, filter_dict=filter_dict)
-helpers_obj = PlotHelpers(plot_props=empty_props, net_names_list=sims_info_dict['networks_matrix'])
+helpers_obj = PlotHelpers(plot_props=PlotProps(), net_names_list=sims_info_dict['networks_matrix'])
 helpers_obj.get_file_info(sims_info_dict=sims_info_dict)
 
-counter = 0
+counter = 0  # pylint: disable=invalid-name
 dict_list = []
-batch_size = 200
+BATCH_SIZE = 200
 
 save_fp = os.path.join('..', 'data', 'excel')
 create_dir(file_path=save_fp)
@@ -34,38 +33,42 @@ csv_file = os.path.join(save_fp, 'analysis.csv')
 
 
 def read_files():
+    """
+    Reads a file from a single reinforcement learning simulation run.
+
+    :return: The input and output JSON files.
+    :rtype: tuple
+    """
     output_fp = os.path.join('..', 'data', 'output', network, date, run_time, 's1',
                              f'{erlang}_erlang.json')
-    input_fp = os.path.join('..', 'data', 'input', network, date, run_time, f'sim_input_s1.json')
+    input_fp = os.path.join('..', 'data', 'input', network, date, run_time, 'sim_input_s1.json')
     try:
-        with open(output_fp, 'r') as file_path:
+        with open(output_fp, 'r', encoding='utf-8') as file_path:
             output_dict = json.load(file_path)
     except FileNotFoundError:
         print(f'Input file found but not an output file! Skipping: {output_fp}')
         return False, False
-    with open(input_fp, 'r') as file_path:
+    with open(input_fp, 'r', encoding='utf-8') as file_path:
         input_dict = json.load(file_path)
 
     return input_dict, output_dict
 
 
-# TODO: Add standard deviation and the range for the last X episodes
 def get_dict(input_dict: dict, output_dict: dict):
+    """
+    Gets desired information from input and output for a single RL simulation.
+
+    :param input_dict: Input dictionary.
+    :param output_dict: Output dictionary.
+    :return: Relevant data from input/output.
+    :rtype: dict
+    """
     tmp_dict = dict()
     last_key = list(output_dict['iter_stats'].keys())[-1]
     tmp_dict['Blocking'] = np.mean(output_dict['iter_stats'][last_key]['sim_block_list'][-10:])
     tmp_dict['Completed Iters'] = len(output_dict['iter_stats'][last_key]['sim_block_list'])
     tmp_dict['Sim Start'] = input_dict['sim_start'].split('_')[-1]
 
-    # tmp_dict['Mean Hops'] = output_dict['hops_mean']
-    # tmp_dict['Min Hops'] = output_dict['hops_min']
-    # tmp_dict['Max Hops'] = output_dict['hops_max']
-    #
-    # tmp_dict['Mean Length'] = output_dict['lengths_mean']
-    # tmp_dict['Min Length'] = output_dict['lengths_min']
-    # tmp_dict['Max Length'] = output_dict['lengths_max']
-
-    # Parameters
     tmp_dict['Learning Rate'] = input_dict['learn_rate']
     tmp_dict['Discount Factor'] = input_dict['discount_factor']
     tmp_dict['Reward'] = input_dict['reward']
@@ -78,7 +81,7 @@ def get_dict(input_dict: dict, output_dict: dict):
     return tmp_dict
 
 
-# TODO: We will only have 's1' for now
+# TODO: Only supports 's1'
 for run_time, run_obj in helpers_obj.file_info.items():
     net_key, date_key, sim_key = list(run_obj.keys())
     network = run_obj[net_key]
@@ -102,10 +105,10 @@ for run_time, run_obj in helpers_obj.file_info.items():
     counter += 1
 
     print(f'{counter} dictionaries created in this batch.')
-    if counter == batch_size:
-        print(f'Completed one batch of {batch_size}, appending to a CSV!')
+    if counter == BATCH_SIZE:
+        print(f'Completed one batch of {BATCH_SIZE}, appending to a CSV!')
         pd.concat([pd.DataFrame(d, index=[0]) for d in dict_list]).to_csv(csv_file, mode='a', index=False)
-        counter = 0
+        counter = 0  # pylint: disable=invalid-name
         dict_list = []
 
 if dict_list:
