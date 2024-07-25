@@ -3,7 +3,6 @@ import os
 import numpy as np
 from gymnasium import spaces
 
-from .sim_helpers import find_path_cong
 from .ql_helpers import QLearningHelpers
 from .bandit_helpers import EpsilonGreedyBandit
 from .bandit_helpers import UCBBandit
@@ -55,19 +54,18 @@ class PathAgent:
         :return: The reward.
         :rtype: float
         """
-        # TODO: Incorporate or delete
-        beta = 0.0
         if was_allocated:
             return self.engine_props['reward']
 
-        return (self.engine_props['penalty'] * (1 - beta)) - (path_length * beta)
+        return self.engine_props['penalty'] - path_length
 
-    def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int, path_length):
+    def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int, path_length: int):
         """
         Makes updates to the agent for each time step.
 
         :param was_allocated: If the request was allocated.
         :param net_spec_dict: The current network spectrum database.
+        :param path_length: Length of the path.
         :param iteration: The current iteration.
         """
         reward = self.get_reward(was_allocated=was_allocated, path_length=path_length)
@@ -80,12 +78,6 @@ class PathAgent:
             self.agent_obj.update(reward=reward, arm=self.rl_props.chosen_path_index, iteration=iteration)
         elif self.path_algorithm == 'ucb_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props.chosen_path_index, iteration=iteration)
-        elif self.path_algorithm == 'thompson_sampling_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props.chosen_path_index, iteration=iteration)
-        # TODO: Update context
-        elif self.path_algorithm == 'context_epsilon_greedy_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props.chosen_path_index,
-                                  context=self.context_obj.curr_context, iteration=iteration)
         else:
             raise NotImplementedError
 
@@ -118,32 +110,11 @@ class PathAgent:
             raise ValueError('The chosen path can not be None')
 
     # TODO: Ideally q-learning should be like this (agent_obj.something)
-    #   - Need access to the actual path
     def _bandit_route(self, route_obj: object):
         paths_list = route_obj.route_props.paths_matrix
         source = paths_list[0][0]
         dest = paths_list[0][-1]
         self.rl_props.chosen_path_index = self.agent_obj.select_path_arm(source=int(source), dest=int(dest))
-        self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[self.rl_props.chosen_path_index]
-
-    def _context_bandit_route(self, route_obj: object):
-        cong_list = list()
-        source = None
-        dest = None
-        # TODO: Make sure net_spec_db is correct and updated
-        for path_list in route_obj.route_props.paths_matrix:
-            net_spec_dict = self.rl_help_obj.engine_obj.net_spec_dict
-            curr_cong = find_path_cong(path_list=path_list, net_spec_dict=net_spec_dict)
-            cong_list.append(curr_cong)
-
-            if source is None:
-                source = int(path_list[0])
-                dest = int(path_list[-1])
-
-        # TODO: Make sure converting to int doesn't cause any discrepancies
-        self.context_obj.generate_context(source=source, dest=dest, congestion_levels=cong_list)
-        self.rl_props.chosen_path_index = self.agent_obj.select_arm(context=self.context_obj.curr_context,
-                                                                    source=source, dest=dest)
         self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[self.rl_props.chosen_path_index]
 
     def get_route(self, **kwargs):
@@ -154,8 +125,6 @@ class PathAgent:
             self._ql_route()
         elif self.path_algorithm in ('epsilon_greedy_bandit', 'thompson_sampling_bandit', 'ucb_bandit'):
             self._bandit_route(route_obj=kwargs['route_obj'])
-        elif self.path_algorithm == 'context_epsilon_greedy_bandit':
-            self._context_bandit_route(route_obj=kwargs['route_obj'])
         else:
             raise NotImplementedError
 
@@ -171,8 +140,6 @@ class PathAgent:
         if self.engine_props['path_algorithm'] == 'q_learning':
             model_path = os.path.join('logs', model_path, f'e{erlang}_routes_c{num_cores}.npy')
             self.agent_obj.props.routes_matrix = np.load(model_path, allow_pickle=True)
-        else:
-            pass
 
 
 class CoreAgent:
@@ -214,13 +181,30 @@ class CoreAgent:
 
         self.agent_obj.setup_env()
 
-    def calculate_dynamic_penalty(self, core_index, req_id):
+    def calculate_dynamic_penalty(self, core_index: float, req_id: float):
+        """
+        Calculate a dynamic penalty after every action.
+
+        :param core_index: Core chosen.
+        :param req_id: Current request ID.
+        :return: The penalty that's calculated.
+        :rtype: float
+        """
         return self.engine_props['penalty'] * (1 + self.engine_props['gamma'] * core_index / req_id)
 
-    def calculate_dynamic_reward(self, core_index, req_id):
+    def calculate_dynamic_reward(self, core_index: float, req_id: float):
+        """
+        Calculates a dynamic reward after every action.
+
+        :param core_index: Core chosen.
+        :param req_id: Current request ID.
+        :return: The reward that's calculated.
+        :rtype: float
+        """
         core_decay = self.engine_props['reward'] / (1 + self.engine_props['decay_factor'] * core_index)
         request_weight = ((self.engine_props['num_requests'] - req_id) /
                           self.engine_props['num_requests']) ** self.engine_props['core_beta']
+
         return core_decay * request_weight
 
     def get_reward(self, was_allocated: bool):
@@ -239,20 +223,22 @@ class CoreAgent:
             if self.engine_props['dynamic_reward']:
                 reward = self.calculate_dynamic_reward(core_index, req_id)
             else:
+                # TODO: Used to ramp up the network, either delete or add to config file
                 if reqs_completed < 0.5:
                     reward = 0
                 else:
                     reward = self.engine_props['reward']
             return reward
+
+        if self.engine_props['dynamic_reward']:
+            penalty = self.calculate_dynamic_penalty(core_index, req_id)
         else:
-            if self.engine_props['dynamic_reward']:
-                penalty = self.calculate_dynamic_penalty(core_index, req_id)
+            # TODO: Used to ramp up the network, either delete or add to config file
+            if reqs_completed < 0.5:
+                penalty = 0
             else:
-                if reqs_completed < 0.5:
-                    penalty = 0
-                else:
-                    penalty = self.engine_props['penalty']
-            return penalty
+                penalty = self.engine_props['penalty']
+        return penalty
 
     def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int):
         """
@@ -265,6 +251,7 @@ class CoreAgent:
         reward = self.get_reward(was_allocated=was_allocated)
 
         self.agent_obj.iteration = iteration
+        # TODO: Used to ramp up the network, either delete or add to config file
         if self.ramp_up:
             pass
         elif self.core_algorithm == 'q_learning':
@@ -274,10 +261,6 @@ class CoreAgent:
         elif self.core_algorithm == 'epsilon_greedy_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props.core_index, iteration=iteration)
         elif self.core_algorithm == 'ucb_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props.core_index, iteration=iteration)
-        elif self.core_algorithm == 'thompson_sampling_bandit':
-            self.agent_obj.update(reward=reward, arm=self.rl_props.core_index, iteration=iteration)
-        elif self.core_algorithm == 'context_epsilon_greedy_bandit':
             self.agent_obj.update(reward=reward, arm=self.rl_props.core_index, iteration=iteration)
         else:
             raise NotImplementedError
@@ -308,6 +291,7 @@ class CoreAgent:
         """
         reqs_completed = req_id / float(self.engine_props['num_requests'])
         self.ramp_up = False
+        # TODO: Used to ramp up the network, either delete or add to config file
         if reqs_completed < 0.5:
             self.ramp_up = True
             self.rl_props.core_index = None
@@ -317,12 +301,6 @@ class CoreAgent:
             self._bandit_core(path_index=self.rl_props.chosen_path_index, source=self.rl_props.chosen_path_list[0][0],
                               dest=self.rl_props.chosen_path_list[0][-1])
         elif self.core_algorithm == 'ucb_bandit':
-            self._bandit_core(path_index=self.rl_props.chosen_path_index, source=self.rl_props.chosen_path_list[0][0],
-                              dest=self.rl_props.chosen_path_list[0][-1])
-        elif self.core_algorithm == 'thompson_sampling_bandit':
-            self._bandit_core(path_index=self.rl_props.chosen_path_index, source=self.rl_props.chosen_path_list[0][0],
-                              dest=self.rl_props.chosen_path_list[0][-1])
-        elif self.core_algorithm == 'context_epsilon_greedy_bandit':
             self._bandit_core(path_index=self.rl_props.chosen_path_index, source=self.rl_props.chosen_path_list[0][0],
                               dest=self.rl_props.chosen_path_list[0][-1])
         else:
@@ -342,6 +320,7 @@ class CoreAgent:
             self.agent_obj.props.cores_matrix = np.load(model_path, allow_pickle=True)
 
 
+# TODO: No longer supported/functional
 class SpectrumAgent:
     """
     A class that handles everything related to spectrum assignment in reinforcement learning simulations.
@@ -361,7 +340,6 @@ class SpectrumAgent:
         :return: The observation space.
         :rtype: spaces.Dict
         """
-        # TODO: Change, hard coded
         resp_obs = spaces.Dict({
             'slots_needed': spaces.Discrete(15 + 1),
             'source': spaces.MultiBinary(self.rl_props.num_nodes),
