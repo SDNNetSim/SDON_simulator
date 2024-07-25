@@ -1,9 +1,7 @@
 import os
 import json
-import ast
 
 import numpy as np
-from sklearn.linear_model import LinearRegression
 
 from helper_scripts.os_helpers import create_dir
 from arg_scripts.rl_args import BanditProps
@@ -18,7 +16,7 @@ def load_model(train_fp: str):
     :rtype: dict
     """
     train_fp = os.path.join('logs', train_fp)
-    with open(train_fp, 'r') as file_obj:
+    with open(train_fp, 'r', encoding='utf-8') as file_obj:
         state_vals_dict = json.load(file_obj)
 
     return state_vals_dict
@@ -44,7 +42,7 @@ def _save_model(state_values_dict: dict, erlang: float, cores_per_link: int, sav
     else:
         state_vals_fp = f"state_vals_e{erlang}_cores_c{cores_per_link}.json"
     save_fp = os.path.join(os.getcwd(), save_dir, state_vals_fp)
-    with open(save_fp, 'w') as file_obj:
+    with open(save_fp, 'w', encoding='utf-8') as file_obj:
         json.dump(state_values_dict, file_obj)
 
 
@@ -107,6 +105,25 @@ def get_q_table(self: object):
     return self.counts, self.values
 
 
+def _update_bandit(self: object, iteration: int, reward: float, arm: int):
+    if self.is_path:
+        pair = (self.source, self.dest)
+    else:
+        pair = (self.source, self.dest, self.path_index)
+
+    self.counts[pair][arm] += 1
+    n_times = self.counts[pair][arm]
+    value = self.values[pair][arm]
+    self.values[pair][arm] = value + (reward - value) / n_times
+
+    if self.iteration >= len(self.props.rewards_matrix):
+        self.props.rewards_matrix.append([])
+    self.props.rewards_matrix[self.iteration].append(reward)
+
+    # Check if we need to save the model
+    save_model(iteration=iteration, algorithm='ucb_bandit', self=self)
+
+
 class EpsilonGreedyBandit:
     """
     Epsilon greedy bandit algorithm, considering N(s, a) using counts to update state-action values Q(s, a).
@@ -136,8 +153,8 @@ class EpsilonGreedyBandit:
     def _get_action(self, state_action_pair: tuple):
         if np.random.rand() < self.epsilon:
             return np.random.randint(self.n_arms)
-        else:
-            return np.argmax(self.values[state_action_pair])
+
+        return np.argmax(self.values[state_action_pair])
 
     def select_path_arm(self, source: int, dest: int):
         """
@@ -177,31 +194,7 @@ class EpsilonGreedyBandit:
         :param reward: Reward received from R(s, a).
         :param iteration: Current episode or iteration.
         """
-        if self.is_path:
-            state_action_pair = (self.source, self.dest)
-        else:
-            state_action_pair = (self.source, self.dest, self.path_index)
-
-        self.counts[state_action_pair][arm] += 1
-        n = self.counts[state_action_pair][arm]
-        value = self.values[state_action_pair][arm]
-        self.values[state_action_pair][arm] = value + (reward - value) / n
-
-        if self.iteration >= len(self.props.rewards_matrix):
-            self.props.rewards_matrix.append([])
-        self.props.rewards_matrix[self.iteration].append(reward)
-
-        # Check if we need to save the model
-        save_model(iteration=iteration, algorithm='greedy_bandit', self=self)
-
-    def setup_env(self):
-        if not self.engine_props['is_training']:
-            if self.is_path:
-                self.values = load_model(train_fp=self.engine_props['path_model'])
-                self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
-            else:
-                self.values = load_model(train_fp=self.engine_props['core_model'])
-                self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
+        _update_bandit(self=self, iteration=iteration, reward=reward, arm=arm)
 
 
 class UCBBandit:
@@ -210,7 +203,7 @@ class UCBBandit:
     """
 
     def __init__(self, rl_props: object, engine_props: dict, is_path: bool):
-        self.props = {'rewards_matrix': []}
+        self.props = BanditProps()
         self.engine_props = engine_props
         self.rl_props = rl_props
         self.completed_sim = False
@@ -232,11 +225,11 @@ class UCBBandit:
     def _get_action(self, state_action_pair: tuple):
         if 0 in self.counts[state_action_pair]:
             return np.argmin(self.counts[state_action_pair])
-        else:
-            total_counts = sum(self.counts[state_action_pair])
-            ucb_values = self.values[state_action_pair] + \
-                         np.sqrt(2 * np.log(total_counts) / self.counts[state_action_pair])
-            return np.argmax(ucb_values)
+
+        total_counts = sum(self.counts[state_action_pair])
+        ucb_values = self.values[state_action_pair] + \
+                     np.sqrt(2 * np.log(total_counts) / self.counts[state_action_pair])
+        return np.argmax(ucb_values)
 
     def select_path_arm(self, source: int, dest: int):
         """
@@ -271,32 +264,11 @@ class UCBBandit:
         return self._get_action(state_action_pair=state_action_pair)
 
     def update(self, arm: int, reward: int, iteration: int):
-        if self.is_path:
-            pair = (self.source, self.dest)
-        else:
-            pair = (self.source, self.dest, self.path_index)
+        """
+        Make updates to the bandit after each time step or episode.
 
-        self.counts[pair][arm] += 1
-        n = self.counts[pair][arm]
-        value = self.values[pair][arm]
-        self.values[pair][arm] = value + (reward - value) / n
-
-        if self.iteration >= len(self.props['rewards_matrix']):
-            self.props['rewards_matrix'].append([])
-        self.props['rewards_matrix'][self.iteration].append(reward)
-
-        # Check if we need to save the model
-        save_model(iteration=iteration, max_iters=self.engine_props['max_iters'],
-                   len_rewards=len(self.props['rewards_matrix'][iteration]),
-                   num_requests=self.engine_props['num_requests'],
-                   rewards_matrix=self.props['rewards_matrix'], engine_props=self.engine_props,
-                   algorithm='ucb_bandit', is_path=self.is_path, state_values_dict=self.values)
-
-    def setup_env(self):
-        if not self.engine_props['is_training']:
-            if self.is_path:
-                self.values = load_model(train_fp=self.engine_props['path_model'])
-                self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
-            else:
-                self.values = load_model(train_fp=self.engine_props['core_model'])
-                self.values = {ast.literal_eval(key): np.array(value) for key, value in self.values.items()}
+        :param arm: The arm selected.
+        :param reward: Reward received from R(s, a).
+        :param iteration: Current episode or iteration.
+        """
+        _update_bandit(iteration=iteration, arm=arm, reward=reward, self=self)
