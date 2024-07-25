@@ -446,6 +446,7 @@ def get_start_time(sim_dict: dict):
 
     return sim_dict
 
+
 def min_max_scale(value: float, min_value: float, max_value: float):
     """
     Scales a value with respect to a min and a max value.
@@ -471,7 +472,7 @@ def get_super_channels(input_arr: np.array, slots_needed: int):
     potential_super_channels = []
     consecutive_zeros = 0
 
-    for i in range(len(input_arr)): # pylint: disable=consider-using-enumerate
+    for i in range(len(input_arr)):  # pylint: disable=consider-using-enumerate
         if input_arr[i] == 0:
             consecutive_zeros += 1
             # Plus one to account for the guard band
@@ -552,28 +553,6 @@ def classify_cong(curr_cong: float):
         cong_index = 0
     else:
         cong_index = 1
-    # elif 0.05 <= curr_cong < 0.10:
-    #     cong_index = 1
-    # elif 0.10 <= curr_cong < 0.15:
-    #     cong_index = 2
-    # elif 0.15 <= curr_cong < 0.20:
-    #     cong_index = 3
-    # elif 0.20 <= curr_cong < 0.25:
-    #     cong_index = 4
-    # elif 0.25 <= curr_cong < 0.30:
-    #     cong_index = 5
-    # elif 0.30 <= curr_cong < 0.35:
-    #     cong_index = 6
-    # elif 0.35 <= curr_cong < 0.40:
-    #     cong_index = 7
-    # elif 0.40 <= curr_cong < 0.45:
-    #     cong_index = 8
-    # elif 0.45 <= curr_cong < 0.50:
-    #     cong_index = 9
-    # elif curr_cong >= 0.50:
-    #     cong_index = 10
-    # else:
-    #     raise ValueError('Congestion value not recognized.')
 
     return cong_index
 
@@ -586,9 +565,9 @@ def parse_yaml_file(yaml_file: str):
     :return: The YAML data as an object.
     :rtype: object
     """
-    with open(yaml_file, "r", encoding='utf-8') as f:
+    with open(yaml_file, "r", encoding='utf-8') as file_obj:
         try:
-            yaml_data = yaml.safe_load(f)
+            yaml_data = yaml.safe_load(file_obj)
             return yaml_data
         except yaml.YAMLError as exc:
             return exc
