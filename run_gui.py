@@ -1,5 +1,8 @@
 # pylint: disable=no-name-in-module
 # pylint: disable=c-extension-no-member
+# TODO: Break into smaller functions
+# TODO: Break some smaller functions into other files
+
 import os
 import sys
 
@@ -13,10 +16,9 @@ from gui_scripts.gui_helpers.general_helpers import SettingsDialog, SimulationTh
 
 class MainWindow(QtWidgets.QMainWindow):
     """
-    The main window class, central point that controls all GUI functionality
-    and actions.
+    The main window class, central point that controls all GUI functionality and actions.
     """
-    mw_main_view_widget = None  # this is container_widget
+    mw_main_view_widget = None
     mw_main_view_layout = None
     mw_main_view_splitter = None
     mw_main_view_left_splitter = None
@@ -88,8 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_mw_view_area(self):
         """
-        Adds initial data displayed to the main screen, for example,
-        the topology.
+        Adds initial data displayed to the main screen, for example, the topology.
         """
         # Main container widget
         # this is needed because of mw central display
@@ -390,7 +391,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def display_topology(self):
         """
-        Displays a network topology
+        Displays a network topology.
         """
         network_selection_dialog = QtWidgets.QDialog()
         network_selection_dialog.setSizeGripEnabled(True)
@@ -401,15 +402,16 @@ class MainWindow(QtWidgets.QMainWindow):
         network_selection_dialog.move(dialog_pos)
 
         network_selection_input = QtWidgets.QInputDialog()
+        # TODO: Hard coded
+        # TODO: Does it update the configuration file? Or, does it just display it?
         items = ['USNet', 'NSFNet', 'Pan-European']
         item, is_ok = network_selection_input.getItem(
             network_selection_dialog, "Choose a network type:",
             "Select Network Type", items, 0, False
         )
 
+        # TODO: No else statement for error checking, we should log things
         if is_ok and item:
-            # contains mapping of src nodes and
-            # their destination nodes with distance
             topology_information_dict = create_network(item)
 
             edge_list = [(src, des, {'weight': link_len})
