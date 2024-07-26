@@ -124,7 +124,7 @@ class SDNController:
                 self.sdn_props.block_reason = 'max_segments'
                 break
 
-            if forced_segments != -1 and forced_segments != num_segments:
+            if forced_segments not in (-1, num_segments):
                 self.sdn_props.was_routed = False
                 continue
 
@@ -153,6 +153,7 @@ class SDNController:
         :param force_route_matrix: Whether to force a path or not.
         :param forced_index: Whether to force a start index for a request.
         :param force_mod_format: Forces a modulation format.
+        :param force_core: Force a specific core.
         :param ml_model: An optional machine learning model.
         """
         self._init_req_stats()
@@ -211,8 +212,6 @@ class SDNController:
                     self.sdn_props.was_routed = True
                     self.sdn_props.route_time = route_time
                     self.sdn_props.path_weight = self.route_obj.route_props.weights_list[path_index]
-
-                    # TODO: Changed spectrum dict to spectrum object
                     self.sdn_props.spectrum_object = self.spectrum_obj.spectrum_props
 
                     if not segment_slicing and not force_slicing:
