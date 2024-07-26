@@ -1,7 +1,6 @@
 # Standard library imports
 import time
 import copy
-import os
 from datetime import datetime
 
 # Third-party library imports
