@@ -1,23 +1,22 @@
 import os
 import copy
 import subprocess
-import time
 
 from torch import nn  # pylint: disable=unused-import
 import gymnasium as gym
 import numpy as np
 from stable_baselines3 import PPO
 
-from config_scripts.parse_args import parse_args
-from config_scripts.setup_config import read_config
 from src.engine import Engine
 from src.routing import Routing
+from helper_scripts.rl_setup_helpers import setup_rl_sim, print_info
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
 from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod, parse_yaml_file
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
-from arg_scripts.rl_args import RLProps, LOCAL_RL_COMMANDS_LIST
+from arg_scripts.rl_args import RLProps, LOCAL_RL_COMMANDS_LIST, VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
+from arg_scripts.rl_args import VALID_SPECTRUM_ALGORITHMS
 
 
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
@@ -431,24 +430,6 @@ def _get_model(algorithm: str, device: str, env: object):
     return model, yaml_dict[env_name]
 
 
-def _print_info(sim_dict: dict):
-    if sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit',
-                                      'ucb_bandit', 'thompson_sampling_bandit'):
-        print(f'Beginning training process for the PATH AGENT using the '
-              f'{sim_dict["path_algorithm"].title()} algorithm.')
-    elif sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit',
-                                        'ucb_bandit', 'thompson_sampling_bandit'):
-        print(f'Beginning training process for the CORE AGENT using the '
-              f'{sim_dict["core_algorithm"].title()} algorithm.')
-    elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
-        print(f'Beginning training process for the SPECTRUM AGENT using the '
-              f'{sim_dict["spectrum_algorithm"].title()} algorithm.')
-    else:
-        raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '
-                         f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
-                         f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
-
-
 def _get_trained_model(env: object, sim_dict: dict):
     if sim_dict['spectrum_algorithm'] == 'ppo':
         model = PPO.load(os.path.join('logs', sim_dict['spectrum_model'], 'ppo_model.zip'), env=env)
@@ -471,16 +452,12 @@ def _run_rl_zoo(sim_dict: dict):
 
 
 def _run(env: object, sim_dict: dict):
-    _print_info(sim_dict=sim_dict)
+    print_info(sim_dict=sim_dict)
 
     if sim_dict['is_training']:
-        # TODO: Maybe change these algorithms to lists (constants)
-        if sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit',
-                                          'ucb_bandit', 'thompson_sampling_bandit') \
-                or sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'thompson_sampling_bandit',
-                                                  'context_epsilon_greedy_bandit', 'ucb_bandit'):
+        if sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS or sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS:
             _run_iters(env=env, sim_dict=sim_dict, is_training=True)
-        elif sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
+        elif sim_dict['spectrum_algorithm'] in VALID_SPECTRUM_ALGORITHMS:
             if sim_dict['optimize_hyperparameters']:
                 _run_rl_zoo(sim_dict=sim_dict)
             else:
@@ -499,18 +476,10 @@ def _run(env: object, sim_dict: dict):
     else:
         model = _get_trained_model(env=env, sim_dict=sim_dict)
         _run_iters(env=env, sim_dict=sim_dict, is_training=False, model=model)
-        # save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
-        #                        env.modified_props['sim_start'], 'ppo_model.zip')
-        # model.save(save_fp)
-
-
-# TODO: Move to a helpers file
-def _setup_rl_sim():
-    args_obj = parse_args()
-    config_path = os.path.join('ini', 'run_ini', 'config.ini')
-    sim_dict = read_config(args_obj=args_obj, config_path=config_path)
-
-    return sim_dict
+        # TODO: Hard coded
+        save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
+                               env.modified_props['sim_start'], 'ppo_model.zip')
+        model.save(save_fp)
 
 
 def run_rl_sim():
@@ -518,7 +487,7 @@ def run_rl_sim():
     The main function that controls reinforcement learning simulations.
     """
     callback = GetModelParams()
-    env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=_setup_rl_sim())
+    env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
     env.sim_dict['callback'] = callback
     _run(env=env, sim_dict=env.sim_dict)
 

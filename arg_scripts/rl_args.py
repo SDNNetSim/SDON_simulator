@@ -104,6 +104,24 @@ class PPOProps:
     pass  # pylint: disable=unnecessary-pass
 
 
+VALID_PATH_ALGORITHMS = [
+    'q_learning',
+    'epsilon_greedy_bandit',
+    'ucb_bandit',
+]
+
+VALID_CORE_ALGORITHMS = [
+    'q_learning',
+    'epsilon_greedy_bandit',
+    'ucb_bandit',
+]
+
+VALID_SPECTRUM_ALGORITHMS = [
+    'dqn',
+    'ppo',
+    'a2c',
+]
+
 # TODO: Detect if running on Unity cluster or locally
 LOCAL_RL_COMMANDS_LIST = [
     # 'rm -rf venvs/unity_venv/venv',
