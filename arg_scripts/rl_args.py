@@ -75,8 +75,8 @@ class QProps:
         """
         if hasattr(self, key):
             return getattr(self, key)
-        else:
-            raise AttributeError(f"'SDNProps' object has no attribute '{key}'")
+
+        raise AttributeError(f"'SDNProps' object has no attribute '{key}'")
 
     def __repr__(self):
         return f"QProps({self.__dict__})"
