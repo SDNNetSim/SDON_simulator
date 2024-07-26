@@ -21,7 +21,7 @@ data/excel
 
 logs/*
 
-ini/run_ini/*
+ini/run_ini/config.ini
 bash_scripts/slurm/*
 
 .vscode/
