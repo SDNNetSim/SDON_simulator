@@ -17,6 +17,7 @@ def get_requests(seed: int, engine_props: dict):
     nodes_list = list(engine_props['topology_info']['nodes'].keys())
     set_seed(seed=seed)
 
+    # TODO: Raise error if the user has requests that don't distribute evenly
     # Create request distribution
     bw_counts_dict = {bandwidth: int(engine_props['request_distribution'][bandwidth] * engine_props['num_requests'])
                       for bandwidth in engine_props['mod_per_bw']}
