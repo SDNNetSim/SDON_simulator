@@ -1,4 +1,4 @@
-What is a SDN Simulator?
+What is a SDON Simulator?
 ========================
 
 In past years, data was transmitted over copper wires. They had several drawbacks, including that they could be tapped
