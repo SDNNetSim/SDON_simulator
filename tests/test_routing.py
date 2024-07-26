@@ -3,7 +3,7 @@ from unittest.mock import patch
 import numpy as np
 import networkx as nx
 
-from sim_scripts.routing import Routing
+from src.routing import Routing
 
 
 class TestRouting(unittest.TestCase):

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from sim_scripts.engine import Engine
+from src.engine import Engine
 
 
 class TestEngine(unittest.TestCase):

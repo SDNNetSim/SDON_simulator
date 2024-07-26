@@ -6,7 +6,7 @@ import math
 import networkx as nx
 import numpy as np
 
-from sim_scripts.snr_measurements import SnrMeasurements
+from src.snr_measurements import SnrMeasurements
 from .fixtures.test_snr_args import engine_props, sdn_props, snr_props
 
 

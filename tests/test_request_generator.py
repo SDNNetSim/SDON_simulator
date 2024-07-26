@@ -2,7 +2,7 @@ import unittest
 import os
 import json
 
-from sim_scripts.request_generator import get_requests
+from src.request_generator import get_requests
 
 
 class TestGetRequests(unittest.TestCase):

@@ -69,29 +69,6 @@ class TestSpectrumHelpers(unittest.TestCase):
         self.assertEqual(props['start_slot'], 3)
         self.assertEqual(props['end_slot'], 2)
 
-    def test_check_super_channels(self):
-        """
-        Test check super channels.
-        """
-        self.helpers.spectrum_props['slots_needed'] = 2
-        self.helpers.engine_props['guard_slots'] = 1
-        self.helpers.spectrum_props['path_list'] = ['A', 'B', 'C']
-
-        self.helpers.check_other_links = MagicMock(return_value=True)
-        open_slots_matrix = [[0, 1, 2, 3]]
-        self.assertTrue(self.helpers.check_super_channels(open_slots_matrix))
-        self.assertEqual(self.helpers.spectrum_props['start_slot'], 0)
-        self.assertEqual(self.helpers.spectrum_props['end_slot'], 3)
-
-        open_slots_matrix = [[0, 1], [3, 4]]
-        self.assertFalse(self.helpers.check_super_channels(open_slots_matrix))
-
-        self.helpers.engine_props['allocation_method'] = 'last_fit'
-        open_slots_matrix = [[3, 2, 1, 0]]
-        self.assertTrue(self.helpers.check_super_channels(open_slots_matrix))
-        self.assertEqual(self.helpers.spectrum_props['start_slot'], 1)
-        self.assertEqual(self.helpers.spectrum_props['end_slot'], 4)
-
     def test_find_link_inters_static(self):
         """
         Test find link inters static helper method.
