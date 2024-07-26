@@ -7,5 +7,6 @@ other path is for people who have worked with other similar simulators before.
 .. toctree::
     :maxdepth: 2
 
+    what_is_SDON_simulator.rst
     getting_started_student.rst
     getting_started_professional.rst
