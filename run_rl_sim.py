@@ -9,11 +9,11 @@ from stable_baselines3 import PPO
 
 from src.engine import Engine
 from src.routing import Routing
-from helper_scripts.rl_setup_helpers import setup_rl_sim, print_info
+from helper_scripts.rl_setup_helpers import setup_rl_sim, print_info, setup_ppo
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
-from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod, parse_yaml_file
+from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
 from arg_scripts.rl_args import RLProps, LOCAL_RL_COMMANDS_LIST, VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
 from arg_scripts.rl_args import VALID_SPECTRUM_ALGORITHMS
@@ -32,7 +32,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props = RLProps()
 
         if sim_dict is None:
-            self.sim_dict = _setup_rl_sim()['s1']
+            self.sim_dict = setup_rl_sim()['s1']
         else:
             self.sim_dict = sim_dict['s1']
         self.rl_props.super_channel_space = self.sim_dict['super_channel_space']
@@ -48,13 +48,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # TODO: Change all inputs to account for the new object
         self.rl_help_obj = RLHelpers(rl_props=self.rl_props, engine_obj=self.engine_obj, route_obj=self.route_obj)
-
-        self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'], rl_props=self.rl_props,
-                                    rl_help_obj=self.rl_help_obj)
-        self.core_agent = CoreAgent(core_algorithm=self.sim_dict['core_algorithm'], rl_props=self.rl_props,
-                                    rl_help_obj=self.rl_help_obj)
-        self.spectrum_agent = SpectrumAgent(spectrum_algorithm=self.sim_dict['spectrum_algorithm'],
-                                            rl_props=self.rl_props)
+        self._setup_agents()
 
         self.modified_props = None
         self.sim_props = None
@@ -63,18 +57,22 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.observation_space = self.spectrum_agent.get_obs_space()
         self.action_space = self.spectrum_agent.get_action_space()
 
+    def _setup_agents(self):
+        self.path_agent = PathAgent(path_algorithm=self.sim_dict['path_algorithm'], rl_props=self.rl_props,
+                                    rl_help_obj=self.rl_help_obj)
+        self.core_agent = CoreAgent(core_algorithm=self.sim_dict['core_algorithm'], rl_props=self.rl_props,
+                                    rl_help_obj=self.rl_help_obj)
+        self.spectrum_agent = SpectrumAgent(spectrum_algorithm=self.sim_dict['spectrum_algorithm'],
+                                            rl_props=self.rl_props)
+
     def _check_terminated(self):
         if self.rl_props.arrival_count == (self.engine_obj.engine_props['num_requests']):
             terminated = True
             base_fp = os.path.join('data')
             # The spectrum agent is handled by SB3 automatically
-            if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'ucb_bandit',
-                                                   'thompson_sampling_bandit', 'context_epsilon_greedy_bandit') \
-                    and self.sim_dict['is_training']:
+            if self.sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS and self.sim_dict['is_training']:
                 self.path_agent.end_iter()
-            elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'ucb_bandit',
-                                                     'thompson_sampling_bandit', 'context_epsilon_greedy_bandit') and \
-                    self.sim_dict['is_training']:
+            elif self.sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS and self.sim_dict['is_training']:
                 self.core_agent.end_iter()
             self.engine_obj.end_iter(iteration=self.iteration, print_flag=False, base_fp=base_fp)
             self.iteration += 1
@@ -100,14 +98,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _handle_test_train_step(self, was_allocated: bool, path_length: int):
         if self.sim_dict['is_training']:
-            if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit',
-                                                   'context_epsilon_greedy_bandit', 'ucb_bandit',
-                                                   'thompson_sampling_bandit'):
+            if self.sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS:
                 self.path_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                        iteration=self.iteration, path_length=path_length)
-            elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit',
-                                                     'context_epsilon_greedy_bandit', 'ucb_bandit',
-                                                     'thompson_sampling_bandit'):
+            elif self.sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS:
                 self.core_agent.update(was_allocated=was_allocated, net_spec_dict=self.engine_obj.net_spec_dict,
                                        iteration=self.iteration)
             else:
@@ -165,11 +159,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props.core_index = None
         self.rl_props.forced_index = None
 
-    def _handle_core_train(self):
-        self.route_obj.sdn_props = self.rl_props.mock_sdn_dict
-        self.route_obj.engine_props['route_method'] = 'k_shortest_path'
-        self.route_obj.get_route()
-
+    def _determine_core_penalty(self):
         # Default to first fit if all paths fail
         self.rl_props.chosen_path = [self.route_obj.route_props.paths_matrix[0]]
         self.rl_props.chosen_path_index = 0
@@ -185,8 +175,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 self.rl_props.chosen_path_index = path_index
                 self.core_agent.no_penalty = False
                 break
-            else:
-                self.core_agent.no_penalty = True
+
+            self.core_agent.no_penalty = True
+
+    def _handle_core_train(self):
+        self.route_obj.sdn_props = self.rl_props.mock_sdn_dict
+        self.route_obj.engine_props['route_method'] = 'k_shortest_path'
+        self.route_obj.get_route()
+        self._determine_core_penalty()
 
         self.rl_props.forced_index = None
         # TODO: Check to make sure this doesn't affect anything
@@ -210,13 +206,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _handle_test_train_obs(self, curr_req: dict):
         if self.sim_dict['is_training']:
-            if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit',
-                                                   'context_epsilon_greedy_bandit', 'ucb_bandit',
-                                                   'thompson_sampling_bandit'):
+            if self.sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS:
                 self._handle_path_train_test()
-            elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit',
-                                                     'context_epsilon_greedy_bandit', 'ucb_bandit',
-                                                     'thompson_sampling_bandit'):
+            elif self.sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS:
                 self._handle_core_train()
             elif self.sim_dict['spectrum_algorithm'] not in ('first_fit', 'best_fit', ' last_fit'):
                 self._handle_spectrum_train()
@@ -224,7 +216,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 raise NotImplementedError
         else:
             self._handle_path_train_test()
-            self.core_agent.get_core()
+            # fixme
+            self.core_agent.get_core(req_id=None)
 
         path_len = find_path_len(path_list=self.rl_props.chosen_path_list[0],
                                  topology=self.engine_obj.topology)
@@ -232,20 +225,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return path_mod
 
-    def _get_obs(self):
-        # Used when we reach a reset after a simulation has finished (reset automatically called by gymnasium, use
-        # placeholder variable)
-        if self.rl_props.arrival_count == self.engine_obj.engine_props['num_requests']:
-            curr_req = self.rl_props.arrival_list[self.rl_props.arrival_count - 1]
-        else:
-            curr_req = self.rl_props.arrival_list[self.rl_props.arrival_count]
-
-        self.rl_help_obj.handle_releases()
-        self.rl_props.source = int(curr_req['source'])
-        self.rl_props.destination = int(curr_req['destination'])
-        self.rl_props.mock_sdn_dict = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
-
-        path_mod = self._handle_test_train_obs(curr_req=curr_req)
+    # fixme
+    def _get_spectrum_obs(self, curr_req: dict):  # pylint: disable=unused-argument
+        # path_mod = self._handle_test_train_obs(curr_req=curr_req)
         # if path_mod is not False:
         #     slots_needed = curr_req['mod_formats'][path_mod]['slots_needed']
         # super_channels, no_penalty = self.rl_help_obj.get_super_channels(slots_needed=slots_needed,
@@ -263,6 +245,22 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         dest_obs = np.zeros(self.rl_props.num_nodes)
         dest_obs[self.rl_props.destination] = 1.0
 
+        return slots_needed, source_obs, dest_obs, super_channels
+
+    def _get_obs(self):
+        # Used when we reach a reset after a simulation has finished (reset automatically called by gymnasium, use
+        # placeholder variable)
+        if self.rl_props.arrival_count == self.engine_obj.engine_props['num_requests']:
+            curr_req = self.rl_props.arrival_list[self.rl_props.arrival_count - 1]
+        else:
+            curr_req = self.rl_props.arrival_list[self.rl_props.arrival_count]
+
+        self.rl_help_obj.handle_releases()
+        self.rl_props.source = int(curr_req['source'])
+        self.rl_props.destination = int(curr_req['destination'])
+        self.rl_props.mock_sdn_dict = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
+
+        slots_needed, source_obs, dest_obs, super_channels = self._get_spectrum_obs(curr_req=curr_req)
         obs_dict = {
             'slots_needed': slots_needed,
             'source': source_obs,
@@ -273,20 +271,17 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
     def _init_envs(self):
         # SB3 will init the environment for us, but not for non-DRL algorithms we've added
-        if self.sim_dict['path_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit',
-                                               'ucb_bandit', 'thompson_sampling_bandit') \
-                and self.sim_dict['is_training']:
+        if self.sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS and self.sim_dict['is_training']:
             self.path_agent.engine_props = self.engine_obj.engine_props
             self.path_agent.setup_env()
-        elif self.sim_dict['core_algorithm'] in ('q_learning', 'epsilon_greedy_bandit', 'context_epsilon_greedy_bandit',
-                                                 'ucb_bandit', 'thompson_sampling_bandit') \
-                and self.sim_dict['is_training']:
+        elif self.sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS and self.sim_dict['is_training']:
             self.core_agent.engine_props = self.engine_obj.engine_props
             self.core_agent.setup_env()
 
     def _create_input(self):
         base_fp = os.path.join('data')
         self.sim_dict['thread_num'] = 's1'
+        # fixme
         # Added only for structure consistency
         # time.sleep(20)
         get_start_time(sim_dict={'s1': self.sim_dict})
@@ -296,6 +291,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
                                  sdn_props=self.rl_props.mock_sdn_dict)
 
+        # fixme
         # time.sleep(30)
         self.sim_props = create_input(base_fp=base_fp, engine_props=self.sim_dict)
         self.modified_props = copy.deepcopy(self.sim_props)
@@ -376,6 +372,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if not self.sim_dict['is_training'] and self.iteration == 0:
             self._load_models()
         if seed is None:
+            # fixme
             # seed = self.iteration + 1
             seed = 0
 
@@ -392,8 +389,9 @@ def _run_iters(env: object, sim_dict: dict, is_training: bool, model=None):
         if is_training:
             obs, _, is_terminated, is_truncated, _ = env.step([0])
         else:
-            # action, _states = model.predict(obs)
-            action = [0]
+            # TODO: Implement
+            action, _states = model.predict(obs)
+            # action = [0]
             obs, _, is_terminated, is_truncated, _ = env.step(action)
 
         if completed_episodes >= sim_dict['max_iters']:
@@ -401,7 +399,6 @@ def _run_iters(env: object, sim_dict: dict, is_training: bool, model=None):
         if is_terminated or is_truncated:
             obs, _ = env.reset()
             completed_episodes += 1
-
             print(f'{completed_episodes} episodes completed out of {sim_dict["max_iters"]}.')
 
 
@@ -409,21 +406,11 @@ def _get_model(algorithm: str, device: str, env: object):
     model = None
     yaml_dict = None
     env_name = None
+
     if algorithm == 'dqn':
         model = None
     elif algorithm == 'ppo':
-        yaml_path = os.path.join('sb3_scripts', 'yml', 'ppo.yml')
-        yaml_dict = parse_yaml_file(yaml_path)
-        env_name = list(yaml_dict.keys())[0]
-        kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
-        model = PPO(env=env, device=device, policy=yaml_dict[env_name]['policy'],
-                    n_steps=yaml_dict[env_name]['n_steps'],
-                    batch_size=yaml_dict[env_name]['batch_size'], gae_lambda=yaml_dict[env_name]['gae_lambda'],
-                    gamma=yaml_dict[env_name]['gamma'], n_epochs=yaml_dict[env_name]['n_epochs'],
-                    vf_coef=yaml_dict[env_name]['vf_coef'], ent_coef=yaml_dict[env_name]['ent_coef'],
-                    max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
-                    learning_rate=yaml_dict[env_name]['learning_rate'], clip_range=yaml_dict[env_name]['clip_range'],
-                    policy_kwargs=kwargs_dict)
+        model = setup_ppo(env=env, device=device)
     elif algorithm == 'a2c':
         model = None
 
@@ -448,38 +435,43 @@ def _run_rl_zoo(sim_dict: dict):
         subprocess.run('python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file '
                        './sb3_scripts/yml/ppo.yml -optimize --n-trials 5 --n-timesteps 20000', shell=True, check=True)
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"Spectrum Algorithm has not been implemented: {sim_dict['spectrum_algorithm']}")
+
+
+def _run_testing(env: object, sim_dict: dict):
+    model = _get_trained_model(env=env, sim_dict=sim_dict)
+    _run_iters(env=env, sim_dict=sim_dict, is_training=False, model=model)
+    # TODO: Hard coded
+    save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
+                           env.modified_props['sim_start'], 'ppo_model.zip')
+    model.save(save_fp)
+
+
+def _run_spectrum(sim_dict: dict, env: object):
+    if sim_dict['optimize_hyperparameters']:
+        _run_rl_zoo(sim_dict=sim_dict)
+    else:
+        model, yaml_dict = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'],
+                                      env=env)
+        model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
+                    callback=sim_dict['callback'])
+
+        save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
+                               env.modified_props['sim_start'], 'ppo_model.zip')
+        model.save(save_fp)
 
 
 def _run(env: object, sim_dict: dict):
     print_info(sim_dict=sim_dict)
 
     if sim_dict['is_training']:
+        # Print info function should already error check valid input, no need to raise an error here
         if sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS or sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS:
             _run_iters(env=env, sim_dict=sim_dict, is_training=True)
         elif sim_dict['spectrum_algorithm'] in VALID_SPECTRUM_ALGORITHMS:
-            if sim_dict['optimize_hyperparameters']:
-                _run_rl_zoo(sim_dict=sim_dict)
-            else:
-                model, yaml_dict = _get_model(algorithm=sim_dict['spectrum_algorithm'], device=sim_dict['device'],
-                                              env=env)
-                model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
-                            callback=sim_dict['callback'])
-
-                save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
-                                       env.modified_props['sim_start'], 'ppo_model.zip')
-                model.save(save_fp)
-        else:
-            raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '
-                             f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
-                             f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
+            _run_spectrum(sim_dict=sim_dict, env=env)
     else:
-        model = _get_trained_model(env=env, sim_dict=sim_dict)
-        _run_iters(env=env, sim_dict=sim_dict, is_training=False, model=model)
-        # TODO: Hard coded
-        save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
-                               env.modified_props['sim_start'], 'ppo_model.zip')
-        model.save(save_fp)
+        _run_testing(sim_dict=sim_dict, env=env)
 
 
 def run_rl_sim():
