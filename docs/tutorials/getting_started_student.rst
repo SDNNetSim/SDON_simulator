@@ -1,11 +1,6 @@
 Getting Started for Students
 ===============
 
-What is a SDN Simulator?
-------------------------
-
-In progress
-
 Running Your First Simulation
 -----------------------------
 Welcome to the Software Defined Elastic Optical Networking Simulator! In this tutorial, we'll guide you through the
