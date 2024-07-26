@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from matplotlib import pyplot as plt
 
 from data_scripts.structure_data import create_network
-from helper_scripts.gui_helpers import SettingsDialog, SimulationThread
+from gui_scripts.gui_helpers.general_helpers import SettingsDialog, SimulationThread
 
 
 # TODO: Double check coding guidelines document:
