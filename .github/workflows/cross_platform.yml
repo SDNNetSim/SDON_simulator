@@ -25,7 +25,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if (Test-Path requirements.txt) {
-            Get-Content requirements.txt | Where-Object {$_ -notmatch 'rl_zoo3|stable-baselines3'} | Set-Content filtered_requirements.txt
+            Get-Content requirements.txt | Where-Object {$_ -notmatch 'rl_zoo3|stable-baselines3|pip'} | Set-Content filtered_requirements.txt
             pip install -r filtered_requirements.txt
           }
 
