@@ -221,7 +221,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # path to play_button media file
         resource_name = "light-green-play-button.png"
-        media_dir = "gui/media"
+        media_dir = os.path.join('gui_scripts', 'media')
         self.start_button.setIcon(
             QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
         )
