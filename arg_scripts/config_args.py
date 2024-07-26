@@ -208,6 +208,7 @@ COMMAND_LINE_PARAMS = [
     ['gamma', float, ''],
     ['decay_factor', float, ''],
     ['dynamic_reward', bool, ''],
+    ['config_path', str, ''],
 
     # StableBaselines3 arguments
     ['algo', str, ''],

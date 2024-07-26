@@ -147,5 +147,6 @@ def run(sims_dict: dict):
 
 if __name__ == '__main__':
     args_obj = parse_args()
-    all_sims_dict = read_config(args_obj=args_obj)
+    # TODO: Update config path in other AI scripts
+    all_sims_dict = read_config(args_obj=args_obj, config_path=args_obj['config_path'])
     run(sims_dict=all_sims_dict)
