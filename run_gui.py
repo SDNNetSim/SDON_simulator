@@ -1,4 +1,5 @@
 # pylint: disable=no-name-in-module
+# pylint: disable=c-extension-no-member
 import os
 import sys
 
@@ -10,10 +11,6 @@ from data_scripts.structure_data import create_network
 from gui_scripts.gui_helpers.general_helpers import SettingsDialog, SimulationThread
 
 
-# TODO: Double check coding guidelines document:
-#   - Assertive function names
-#   - Complete docstrings
-#   - Parameter types
 class MainWindow(QtWidgets.QMainWindow):
     """
     The main window class, central point that controls all GUI functionality
@@ -310,6 +307,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.simulation_thread.start()
 
     def output_hints(self, message):
+        """
+        Update.
+        """
         self.bottom_right_pane1.appendPlainText(message)
 
     def start_simulation(self):
@@ -402,12 +402,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         network_selection_input = QtWidgets.QInputDialog()
         items = ['USNet', 'NSFNet', 'Pan-European']
-        item, ok = network_selection_input.getItem(
+        item, is_ok = network_selection_input.getItem(
             network_selection_dialog, "Choose a network type:",
             "Select Network Type", items, 0, False
         )
 
-        if ok and item:
+        if is_ok and item:
             # contains mapping of src nodes and
             # their destination nodes with distance
             topology_information_dict = create_network(item)
@@ -419,10 +419,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # graphing is done here
             figure = plt.figure()
-            ax = figure.add_subplot(1, 1, 1)
+            axis = figure.add_subplot(1, 1, 1)
             # spring_layout returns a dictionary of coordinates
             pos = nx.spring_layout(network_topo, seed=5, scale=3.5)
-            nx.draw(network_topo, pos, with_labels=True, ax=ax, node_size=200,
+            nx.draw(network_topo, pos, with_labels=True, ax=axis, node_size=200,
                     font_size=8)
             # Close the matplotlib figure to prevent it from displaying
             plt.close(figure)
