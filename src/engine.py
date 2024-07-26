@@ -6,7 +6,6 @@ import signal
 # Third party library imports
 import networkx as nx
 import numpy as np
-from joblib import load
 
 # Local application imports
 from src.request_generator import get_requests
@@ -22,17 +21,12 @@ class Engine:
 
     def __init__(self, engine_props: dict):
         self.engine_props = engine_props
-
-        # The network spectrum database
         self.net_spec_dict = dict()
-        # Contains the requests generated in a simulation
         self.reqs_dict = None
-        # Holds relevant information of requests that have been ALLOCATED in a simulation, used for debugging
         self.reqs_status_dict = dict()
 
         self.iteration = 0
         self.topology = nx.Graph()
-        # For the purposes of saving simulation output data
         self.sim_info = os.path.join(self.engine_props['network'], self.engine_props['date'],
                                      self.engine_props['sim_start'])
 
@@ -70,6 +64,7 @@ class Engine:
         :param force_slicing: Forces slicing in the SDN controller.
         :param forced_index: Forces an index in the SDN controller.
         :param force_mod_format: Forces a modulation format.
+        :param force_core: Force a certain core for allocation.
         """
         for req_key, req_value in self.reqs_dict[curr_time].items():
             # TODO: This should be changed in reqs_dict eventually
@@ -109,9 +104,7 @@ class Engine:
         Create the physical topology of the simulation.
         """
         self.net_spec_dict = {}
-        # Create nodes
         self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
-        # Create links
         for link_num, link_data in self.engine_props['topology_info']['links'].items():
             source = link_data['source']
             dest = link_data['destination']
@@ -132,8 +125,8 @@ class Engine:
 
         :param seed: The seed to use for the random generation.
         """
-        # print('WARNING YOU CHANGED THE SEED TO 0 =================================================')
-        seed = 0
+        # TODO: Needs to be a flag for artificial intelligence (especially RL) simulations
+        # seed = 0
         self.reqs_dict = get_requests(seed=seed, engine_props=self.engine_props)
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
 
@@ -211,7 +204,6 @@ class Engine:
             if self.engine_props['deploy_model']:
                 self.ml_model = load_model(engine_props=self.engine_props)
 
-        # TODO: Remember to change seed for testing
         seed = self.engine_props["seeds"][iteration] if self.engine_props["seeds"] else iteration + 1
         self.generate_requests(seed)
 
