@@ -29,7 +29,7 @@ jobs:
 
       - name: Run Python script on Windows
         run: |
-          python ./run_sim.py --config_path=ini/run_ini/cross_platform.ini
+          python ./run_sim.py --config_path=ini/example_ini/cross_platform.ini
 
   test-ubuntu:
     name: Test on Ubuntu
@@ -51,7 +51,7 @@ jobs:
 
       - name: Run Python script on Ubuntu
         run: |
-          python ./run_sim.py --config_path=ini/run_ini/cross_platform.ini
+          python ./run_sim.py --config_path=ini/example_ini/cross_platform.ini
 
   test-macos:
     name: Test on MacOS
@@ -72,4 +72,4 @@ jobs:
 
       - name: Run Python script on MacOS
         run: |
-          python ./run_sim.py --config_path=ini/run_ini/cross_platform.ini
+          python ./run_sim.py --config_path=ini/example_ini/cross_platform.ini
