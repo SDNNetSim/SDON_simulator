@@ -9,8 +9,7 @@ from sklearn.linear_model import LogisticRegression
 
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
-from helper_scripts.ml_helpers import process_data, even_process_data, plot_feature_importance, plot_confusion
-from helper_scripts.ml_helpers import plot_data
+from helper_scripts.ml_helpers import process_data, plot_confusion
 from helper_scripts.ml_helpers import save_model
 
 
@@ -38,8 +37,6 @@ def _train_test_dt(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     dt_obj = DecisionTreeClassifier(random_state=0)
     dt_obj.fit(x_train, y_train)
     y_pred = dt_obj.predict(x_test)
-    # plot_feature_importance(sim_dict=sim_dict, model=dt_obj, feature_names=feature_df.columns, erlang=erlang,
-                            # x_test=x_test, y_test=y_test)
     plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang, algorithm='Decision Tree')
 
     save_model(sim_dict=sim_dict, model=dt_obj, algorithm='decision_tree', erlang=erlang)
@@ -54,9 +51,6 @@ def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     lr_obj = LogisticRegression(random_state=0, n_jobs=-1)
     lr_obj.fit(x_train, y_train)
     y_pred = lr_obj.predict(x_test)
-
-    # plot_feature_importance(sim_dict=sim_dict, model=lr_obj, feature_names=feature_df.columns, erlang=erlang,
-                            # x_test=x_test, y_test=y_test)
     plot_confusion(sim_dict=sim_dict, y_test=y_test, y_pred=y_pred, erlang=erlang,
                    algorithm='Logistic Regression')
 
@@ -64,6 +58,13 @@ def _train_test_lr(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
 
 
 def extract_value(path: str):
+    """
+    Extracts the erlang value from a path.
+
+    :param path: Input path with the embedded value.
+    :return: The embedded value.
+    :rtype: str
+    """
     parts = path.split('/')
     filename = parts[-1]
     filename_parts = filename.split('_')
@@ -73,7 +74,7 @@ def extract_value(path: str):
     return value
 
 
-def _handle_training(sim_dict: dict, file_path: str, train_dir: str):
+def _handle_training(sim_dict: dict, file_path: str):
     data_frame = pd.read_csv(file_path)
 
     erlang = extract_value(path=file_path)
@@ -94,7 +95,7 @@ def _run(sim_dict: dict):
 
     :return: None
     """
-    # TODO: Only support for running one process.
+    # TODO: Only support for running one process (s1)
     sim_dict = sim_dict['s1']
     base_fp = 'data/output/'
 
@@ -102,7 +103,7 @@ def _run(sim_dict: dict):
     train_files = glob.glob(os.path.join(train_dir, "*.csv"))
 
     for train_fp in train_files:
-        _handle_training(sim_dict=sim_dict, file_path=train_fp, train_dir=train_dir)
+        _handle_training(sim_dict=sim_dict, file_path=train_fp)
 
 
 def _setup_ml_sim():
