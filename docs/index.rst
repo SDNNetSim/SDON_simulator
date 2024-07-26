@@ -1,6 +1,6 @@
-SDN Simulator Documentation
+SDON Simulator Documentation
 ===========================
-A Software Defined Networking (SDN) simulator created for the purposes of aiding in the research of elastic-optical
+A Software Defined Optical Networking (SDON) simulator created for the purposes of aiding in the research of elastic-optical
 networking.
 
 :Authors: Arash Rezae, Ryan McCann, Suvhasis Mukhopadhyay, Kojo Bempah, and Kimberly Tice.
