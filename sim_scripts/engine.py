@@ -131,8 +131,7 @@ class Engine:
 
         :param seed: The seed to use for the random generation.
         """
-        # print('WARNING YOU CHANGED THE SEED TO 0 =================================================')
-        seed = 0
+
         self.reqs_dict = get_requests(seed=seed, engine_props=self.engine_props)
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
 
