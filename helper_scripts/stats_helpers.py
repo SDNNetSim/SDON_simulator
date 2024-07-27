@@ -276,6 +276,7 @@ class SimStats:
             return True
 
         if self.block_mean == 0.0 or len(self.stats_props['sim_block_list']) <= 1:
+            self.save_stats(base_fp='data')
             return False
 
         blocking_variance = variance(self.stats_props['sim_block_list'])
