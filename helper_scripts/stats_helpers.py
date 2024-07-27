@@ -269,6 +269,12 @@ class SimStats:
         :rtype: bool
         """
         self.block_mean = mean(self.stats_props['sim_block_list'])
+        if self.block_mean == 0.0 and self.engine_props['max_iters'] == len(self.stats_props['sim_block_list']):
+            print(f"The simulation has completed the maximum number of iterations. "
+                  f"{self.iteration + 1}, ending and saving results for Erlang: {self.engine_props['erlang']}")
+            self.save_stats(base_fp='data')
+            return True
+
         if self.block_mean == 0.0 or len(self.stats_props['sim_block_list']) <= 1:
             return False
 
