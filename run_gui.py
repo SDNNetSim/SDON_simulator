@@ -208,18 +208,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Adds initial data displayed to the main screen, for example, the topology.
         """
-        # Main container widget
-        # this is needed because of mw central display
         self.mw_main_view_widget = QtWidgets.QWidget(self)
-        # Set the color of the main container
         self.mw_main_view_widget.setStyleSheet(
             "background-color: #15b09e;"
         )
 
-        # Layout for the container widget,
-        # allowing for margins around the central data display
         self.mw_main_view_layout = QtWidgets.QHBoxLayout()
-        # these margins to control the offset
         self.mw_main_view_layout.setContentsMargins(5, 5, 5, 5)
         self.mw_main_view_widget.setLayout(self.mw_main_view_layout)
 
