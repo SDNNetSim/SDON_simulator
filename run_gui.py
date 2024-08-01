@@ -62,6 +62,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_menu_obj.addAction(open_action)
 
     # TODO: Add to standards and guidelines, must be called "create", if action must end in "action"
+    # TODO: These one line functions can be added to the constructor?
     def _create_edit_menu(self):
         self.edit_menu_obj = self.menu_bar_obj.addMenu('&Edit')
 
@@ -94,6 +95,7 @@ class MainWindow(QtWidgets.QMainWindow):
         about_action.triggered.connect(self.about)
         self.help_menu_obj.addAction(about_action)
 
+    # TODO: Calls an external class or something similar
     def init_mw_menu_bar(self):
         """
         Creates the menu bar.
@@ -109,6 +111,98 @@ class MainWindow(QtWidgets.QMainWindow):
         self._create_settings_action()
         self._create_help_menu()
         self._create_about_action()
+
+    # TODO: Move to a window pane helpers?
+    # TODO: Change names (pane1, pane2, left, right, etc.)
+    # TODO: Comment and say these are to the left
+    def _setup_first_info_pane(self):
+        self.first_info_pane = QtWidgets.QWidget(self)
+
+        left_info_pane1_layout = QtWidgets.QVBoxLayout()
+        self.first_info_pane.setLayout(left_info_pane1_layout)
+        left_info_pane1_init_data = QtWidgets.QLabel(
+            "Nothing to display"
+        )
+        left_info_pane1_init_data.setStyleSheet(
+            "border: 0px"
+        )
+        left_info_pane1_init_data.setAlignment(QtCore.Qt.AlignCenter)
+        left_info_pane1_layout.addWidget(left_info_pane1_init_data)
+        self.first_info_pane.setStyleSheet(
+            "background-color: white;"
+            "border-radius: 5px;"
+            "border: 2px solid black;"
+        )
+
+    def _setup_second_info_pane(self):
+        # left info pane 2 begin here
+        self.second_info_pane = QtWidgets.QWidget(self)
+        left_info_pane2_layout = QtWidgets.QVBoxLayout()
+        self.second_info_pane.setLayout(left_info_pane2_layout)
+        self.second_info_pane.setStyleSheet(
+            "background-color: white;"
+            "border-radius: 5px;"
+            "border: 2px solid black;"
+        )
+        # initial data inside left info pane 2
+        left_info_pane2_init_data = QtWidgets.QLabel(
+            "Nothing to display"
+        )
+        left_info_pane2_init_data.setStyleSheet(
+            "border: none"
+        )
+        left_info_pane2_init_data.setAlignment(QtCore.Qt.AlignCenter)
+        # set layout with initial data
+        left_info_pane2_layout.addWidget(left_info_pane2_init_data)
+
+    def _init_left_splitter(self):
+        self.mw_main_view_left_splitter = QtWidgets.QSplitter()
+        self.mw_main_view_left_splitter.setMinimumWidth(200)
+        self.mw_main_view_left_splitter.setOrientation(QtCore.Qt.Vertical)
+        self.mw_main_view_left_splitter.addWidget(self.first_info_pane)
+        self.mw_main_view_left_splitter.addWidget(self.second_info_pane)
+
+    def _init_third_pane(self):
+        self.bottom_right_pane1 = QtWidgets.QPlainTextEdit(self)
+        self.bottom_right_pane1.setReadOnly(True)
+        self.bottom_right_pane1.appendPlainText("No Data to display")
+        self.bottom_right_pane1.setMinimumHeight(150)
+        self.bottom_right_pane1.setMaximumHeight(200)
+        self.bottom_right_pane1.setStyleSheet(
+            "background-color: white;"
+            "border-radius: 5px;"
+            "border: 2px solid black;"
+        )
+
+    def _init_topology(self):
+        init_topology_data = QtWidgets.QLabel(
+            "Nothing to display"
+        )
+        init_topology_data.setStyleSheet(
+            "border: none"
+        )
+        init_topology_data.setAlignment(QtCore.Qt.AlignCenter)
+        self.mw_topology_view_area = QtWidgets.QScrollArea()
+        self.mw_topology_view_area.setAlignment(QtCore.Qt.AlignCenter)
+        self.mw_topology_view_area.setStyleSheet(
+            "background-color: white"
+        )
+        self.mw_topology_view_area.setWidget(init_topology_data)
+
+    def _init_main_splitter(self):
+        self.mw_main_view_splitter = QtWidgets.QSplitter()
+        self.mw_main_view_splitter.setOrientation(QtCore.Qt.Horizontal)
+        self.mw_main_view_splitter.addWidget(
+            self.mw_main_view_left_splitter
+        )
+        self.mw_main_view_splitter.addWidget(
+            self.mw_main_view_right_splitter
+        )
+
+        self.mw_main_view_layout.addWidget(self.mw_main_view_splitter)
+
+        # Set main window central widget
+        self.setCentralWidget(self.mw_main_view_widget)
 
     def init_mw_view_area(self):
         """
@@ -129,101 +223,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mw_main_view_layout.setContentsMargins(5, 5, 5, 5)
         self.mw_main_view_widget.setLayout(self.mw_main_view_layout)
 
-        left_info_pane1 = QtWidgets.QWidget(self)
-        # may need a layout if I need to place things in here
-        left_info_pane1_layout = QtWidgets.QVBoxLayout()
-        left_info_pane1.setLayout(left_info_pane1_layout)
-        left_info_pane1_init_data = QtWidgets.QLabel(
-            "Nothing to display"
-        )
-        left_info_pane1_init_data.setStyleSheet(
-            "border: 0px"
-        )
-        left_info_pane1_init_data.setAlignment(QtCore.Qt.AlignCenter)
-        left_info_pane1_layout.addWidget(left_info_pane1_init_data)
-        left_info_pane1.setStyleSheet(
-            "background-color: white;"
-            "border-radius: 5px;"
-            "border: 2px solid black;"
-        )
-
-        # left info pane 2 begin here
-        left_info_pane2 = QtWidgets.QWidget(self)
-        left_info_pane2_layout = QtWidgets.QVBoxLayout()
-        left_info_pane2.setLayout(left_info_pane2_layout)
-        left_info_pane2.setStyleSheet(
-            "background-color: white;"
-            "border-radius: 5px;"
-            "border: 2px solid black;"
-        )
-        # initial data inside left info pane 2
-        left_info_pane2_init_data = QtWidgets.QLabel(
-            "Nothing to display"
-        )
-        left_info_pane2_init_data.setStyleSheet(
-            "border: none"
-        )
-        left_info_pane2_init_data.setAlignment(QtCore.Qt.AlignCenter)
-        # set layout with initial data
-        left_info_pane2_layout.addWidget(left_info_pane2_init_data)
-
-        # initialize main view left splitter
-        # main window splitters
-        self.mw_main_view_left_splitter = QtWidgets.QSplitter()
-        self.mw_main_view_left_splitter.setMinimumWidth(200)
-        self.mw_main_view_left_splitter.setOrientation(QtCore.Qt.Vertical)
-        self.mw_main_view_left_splitter.addWidget(left_info_pane1)
-        self.mw_main_view_left_splitter.addWidget(left_info_pane2)
+        self._setup_first_info_pane()
+        self._setup_second_info_pane()
+        self._init_left_splitter()
 
         self.mw_main_view_right_splitter = QtWidgets.QSplitter()
         self.mw_main_view_right_splitter.setOrientation(QtCore.Qt.Vertical)
 
-        # create layout for bottom right pane
-        self.bottom_right_pane1 = QtWidgets.QPlainTextEdit(self)
-        self.bottom_right_pane1.setReadOnly(True)
-        self.bottom_right_pane1.appendPlainText("No Data to display")
-        self.bottom_right_pane1.setMinimumHeight(150)
-        self.bottom_right_pane1.setMaximumHeight(200)
-        self.bottom_right_pane1.setStyleSheet(
-            "background-color: white;"
-            "border-radius: 5px;"
-            "border: 2px solid black;"
-        )
-
-        # initially empty, can be programmed to display whatever
-        init_topology_data = QtWidgets.QLabel(
-            "Nothing to display"
-        )
-        init_topology_data.setStyleSheet(
-            "border: none"
-        )
-        init_topology_data.setAlignment(QtCore.Qt.AlignCenter)
-
-        # scroll area for network topology
-        self.mw_topology_view_area = QtWidgets.QScrollArea()
-        self.mw_topology_view_area.setAlignment(QtCore.Qt.AlignCenter)
-        self.mw_topology_view_area.setStyleSheet(
-            "background-color: white"
-        )
-        self.mw_topology_view_area.setWidget(init_topology_data)
+        self._init_third_pane()
+        self._init_topology()
 
         self.mw_main_view_right_splitter.addWidget(self.mw_topology_view_area)
         self.mw_main_view_right_splitter.addWidget(self.bottom_right_pane1)
 
-        # create main window splitter
-        self.mw_main_view_splitter = QtWidgets.QSplitter()
-        self.mw_main_view_splitter.setOrientation(QtCore.Qt.Horizontal)
-        self.mw_main_view_splitter.addWidget(
-            self.mw_main_view_left_splitter
-        )
-        self.mw_main_view_splitter.addWidget(
-            self.mw_main_view_right_splitter
-        )
-
-        self.mw_main_view_layout.addWidget(self.mw_main_view_splitter)
-
-        # Set main window central widget
-        self.setCentralWidget(self.mw_main_view_widget)
+        self._init_main_splitter()
 
     def init_mw_tool_bar(self):
         """
