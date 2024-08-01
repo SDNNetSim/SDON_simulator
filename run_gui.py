@@ -1,7 +1,5 @@
 # pylint: disable=no-name-in-module
 # pylint: disable=c-extension-no-member
-# TODO: Break into smaller functions
-# TODO: Break some smaller functions into other files
 
 import os
 import sys
@@ -14,10 +12,12 @@ from data_scripts.structure_data import create_network
 from gui_scripts.gui_helpers.general_helpers import SettingsDialog, SimulationThread
 
 
+# TODO: Instead of importing let's say, all action functions, have class inheritance instead with an action object.
 class MainWindow(QtWidgets.QMainWindow):
     """
     The main window class, central point that controls all GUI functionality and actions.
     """
+    # TODO: Why define these here and not in INIT? This tells us they are constants.
     mw_main_view_widget = None
     mw_main_view_layout = None
     mw_main_view_splitter = None
@@ -36,12 +36,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.network_option = ''
         self.init_mw_ui()
 
+        self.menu_bar_obj = None
+        self.file_menu_obj = None
+        self.edit_menu_obj = None
+        self.help_menu_obj = None
+
     def init_mw_ui(self):
         """
         Initialize the user interface.
         """
         self.setWindowTitle("SDNv1")
-        self.resize(1280, 720)  # Set initial size of the window
+        self.resize(1280, 720)
         self.setStyleSheet("background-color: gray")
         self.center_window()
         self.init_mw_view_area()
@@ -49,44 +54,61 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_mw_tool_bar()
         self.init_mw_status_bar()
 
+    # TODO: Move to another file (menu helpers)
+    def _create_file_menu(self):
+        self.file_menu_obj = self.menu_bar_obj.addMenu('&File')
+        open_action = QtWidgets.QAction('&Load Configuration from File', self)
+        open_action.triggered.connect(self.open_file)
+        self.file_menu_obj.addAction(open_action)
+
+    # TODO: Add to standards and guidelines, must be called "create", if action must end in "action"
+    def _create_edit_menu(self):
+        self.edit_menu_obj = self.menu_bar_obj.addMenu('&Edit')
+
+    def _create_help_menu(self):
+        self.help_menu_obj = self.menu_bar_obj.addMenu('&Help')
+
+    # TODO: Move to another file (action helpers)
+    def _create_topology_action(self):
+        display_topology_action = QtWidgets.QAction('&Display topology', self)
+        display_topology_action.triggered.connect(self.display_topology)
+        self.file_menu_obj.addAction(display_topology_action)
+
+    def _create_save_action(self):
+        save_action = QtWidgets.QAction('&Save', self)
+        save_action.triggered.connect(self.save_file)
+        self.file_menu_obj.addAction(save_action)
+
+    def _create_exit_action(self):
+        exit_action = QtWidgets.QAction('&Exit', self)
+        exit_action.triggered.connect(self.close)
+        self.file_menu_obj.addAction(exit_action)
+
+    def _create_settings_action(self):
+        settings_action = QtWidgets.QAction('&Settings', self)
+        settings_action.triggered.connect(self.open_settings)
+        self.edit_menu_obj.addAction(settings_action)
+
+    def _create_about_action(self):
+        about_action = QtWidgets.QAction('&About', self)
+        about_action.triggered.connect(self.about)
+        self.help_menu_obj.addAction(about_action)
+
     def init_mw_menu_bar(self):
         """
         Creates the menu bar.
         """
-        # Create the menu bar
-        menu_bar = self.menuBar()
-        menu_bar.setStyleSheet("background-color: grey;")
+        self.menu_bar_obj = self.menuBar()
+        self.menu_bar_obj.setStyleSheet("background-color: grey;")
 
-        # Create File menu and add actions
-        file_menu = menu_bar.addMenu('&File')
-        open_action = QtWidgets.QAction('&Load Configuration from File', self)
-        open_action.triggered.connect(self.open_file)
-        file_menu.addAction(open_action)
-
-        # Display topology information from File menu
-        display_topology_action = QtWidgets.QAction('&Display topology', self)
-        display_topology_action.triggered.connect(self.display_topology)
-        file_menu.addAction(display_topology_action)
-
-        save_action = QtWidgets.QAction('&Save', self)
-        save_action.triggered.connect(self.save_file)
-        file_menu.addAction(save_action)
-
-        exit_action = QtWidgets.QAction('&Exit', self)
-        exit_action.triggered.connect(self.close)
-        file_menu.addAction(exit_action)
-
-        # Create Edit menu and add actions
-        edit_menu = menu_bar.addMenu('&Edit')
-        settings_action = QtWidgets.QAction('&Settings', self)
-        settings_action.triggered.connect(self.open_settings)
-        edit_menu.addAction(settings_action)
-
-        # Create Help menu and add actions
-        help_menu = menu_bar.addMenu('&Help')
-        about_action = QtWidgets.QAction('&About', self)
-        about_action.triggered.connect(self.about)
-        help_menu.addAction(about_action)
+        self._create_file_menu()
+        self._create_topology_action()
+        self._create_save_action()
+        self._create_exit_action()
+        self._create_edit_menu()
+        self._create_settings_action()
+        self._create_help_menu()
+        self._create_about_action()
 
     def init_mw_view_area(self):
         """

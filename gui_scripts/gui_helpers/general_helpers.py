@@ -6,6 +6,8 @@ from PyQt5 import QtWidgets, QtCore
 
 
 class SettingsDialog(QtWidgets.QDialog):
+
+    # TODO: Organize this into objects (e.g., snr_settings object, different file)
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -186,6 +188,10 @@ class SettingsDialog(QtWidgets.QDialog):
         self.beta.setValue(0.5)
         snr_settings_layout.addRow("Beta:", self.beta)
 
+        self.theta = QtWidgets.QDoubleSpinBox()
+        self.theta.setValue(0.0)
+        snr_settings_layout.addRow("Theta:", self.theta)
+
         self.input_power = QtWidgets.QDoubleSpinBox()
         self.input_power.setValue(0.001)
         snr_settings_layout.addRow("Input Power:", self.input_power)
@@ -213,36 +219,7 @@ class SettingsDialog(QtWidgets.QDialog):
         snr_tab.setLayout(snr_settings_layout)
         tabs.addTab(snr_tab, "SNR Settings")
 
-        # AI Settings
-        ai_tab = QtWidgets.QWidget()
-        ai_settings_layout = QtWidgets.QFormLayout()
-
-        self.ai_algorithm = QtWidgets.QLineEdit("None")
-        ai_settings_layout.addRow("AI Algorithm:", self.ai_algorithm)
-
-        self.learn_rate = QtWidgets.QDoubleSpinBox()
-        self.learn_rate.setValue(0.1)
-        ai_settings_layout.addRow("Learn Rate:", self.learn_rate)
-
-        self.discount_factor = QtWidgets.QDoubleSpinBox()
-        self.discount_factor.setValue(0.9)
-        ai_settings_layout.addRow("Discount Factor:", self.discount_factor)
-
-        self.epsilon_start = QtWidgets.QDoubleSpinBox()
-        self.epsilon_start.setValue(0.1)
-        ai_settings_layout.addRow("Epsilon Start:", self.epsilon_start)
-
-        self.epsilon_end = QtWidgets.QDoubleSpinBox()
-        self.epsilon_end.setValue(0.01)
-        ai_settings_layout.addRow("Epsilon End:", self.epsilon_end)
-
-        self.is_training = QtWidgets.QCheckBox()
-        self.is_training.setChecked(True)
-        ai_settings_layout.addRow("Is Training:", self.is_training)
-
-        ai_tab.setLayout(ai_settings_layout)
-        tabs.addTab(ai_tab, "AI Settings")
-
+        # TODO: Add RL and ML settings
         # File Settings
         file_tab = QtWidgets.QWidget()
         file_settings_layout = QtWidgets.QFormLayout()
@@ -266,6 +243,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self.setLayout(layout)
 
     def get_settings(self):
+        # TODO: Hard coded
         return {
             "s1": {
                 "general_settings": {
@@ -301,6 +279,7 @@ class SettingsDialog(QtWidgets.QDialog):
                     "snr_type": self.snr_type.text(),
                     "xt_type": self.xt_type.text(),
                     "beta": self.beta.value(),
+                    "theta": self.theta.value(),
                     "input_power": self.input_power.value(),
                     "egn_model": self.egn_model.isChecked(),
                     "phi": self.phi.text(),
@@ -308,14 +287,7 @@ class SettingsDialog(QtWidgets.QDialog):
                     "xt_noise": self.xt_noise.isChecked(),
                     "requested_xt": self.requested_xt.text()
                 },
-                "ai_settings": {
-                    "ai_algorithm": self.ai_algorithm.text(),
-                    "learn_rate": self.learn_rate.value(),
-                    "discount_factor": self.discount_factor.value(),
-                    "epsilon_start": self.epsilon_start.value(),
-                    "epsilon_end": self.epsilon_end.value(),
-                    "is_training": self.is_training.isChecked()
-                },
+                # TODO: Add RL and ML settings
                 "file_settings": {
                     "file_type": self.file_type.text()
                 }
