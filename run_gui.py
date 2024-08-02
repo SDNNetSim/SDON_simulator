@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 
 from data_scripts.structure_data import create_network
 from gui_scripts.gui_helpers.general_helpers import SettingsDialog, SimulationThread
+from gui_scripts.gui_helpers.menu_helpers import MenuHelpers
 
 
 # TODO: Instead of importing let's say, all action functions, have class inheritance instead with an action object.
@@ -35,12 +36,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress_bar = QtWidgets.QProgressBar()
         self.simulation_thread = None
         self.network_option = ''
-        self.init_mw_ui()
 
+        self.menu_help_obj = MenuHelpers()
+        self.init_mw_ui()
         self.menu_bar_obj = None
-        self.file_menu_obj = None
-        self.edit_menu_obj = None
-        self.help_menu_obj = None
 
         self.first_info_pane = None
         self.second_info_pane = None
@@ -61,46 +60,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_mw_tool_bar()
         self.init_mw_status_bar()
 
-    # TODO: Move to another file (menu helpers)
-    def _create_file_menu(self):
-        self.file_menu_obj = self.menu_bar_obj.addMenu('&File')
-        open_action = QtWidgets.QAction('&Load Configuration from File', self)
-        open_action.triggered.connect(self.open_file)
-        self.file_menu_obj.addAction(open_action)
-
-    # TODO: Add to standards and guidelines, must be called "create", if action must end in "action"
-    # TODO: These one line functions can be added to the constructor?
-    def _create_edit_menu(self):
-        self.edit_menu_obj = self.menu_bar_obj.addMenu('&Edit')
-
-    def _create_help_menu(self):
-        self.help_menu_obj = self.menu_bar_obj.addMenu('&Help')
-
     # TODO: Move to another file (action helpers)
     def _create_topology_action(self):
         display_topology_action = QtWidgets.QAction('&Display topology', self)
         display_topology_action.triggered.connect(self.display_topology)
-        self.file_menu_obj.addAction(display_topology_action)
+        self.menu_help_obj.file_menu_obj.addAction(display_topology_action)
 
     def _create_save_action(self):
         save_action = QtWidgets.QAction('&Save', self)
         save_action.triggered.connect(self.save_file)
-        self.file_menu_obj.addAction(save_action)
+        self.menu_help_obj.file_menu_obj.addAction(save_action)
 
     def _create_exit_action(self):
         exit_action = QtWidgets.QAction('&Exit', self)
         exit_action.triggered.connect(self.close)
-        self.file_menu_obj.addAction(exit_action)
+        self.menu_help_obj.file_menu_obj.addAction(exit_action)
 
     def _create_settings_action(self):
         settings_action = QtWidgets.QAction('&Settings', self)
         settings_action.triggered.connect(self.open_settings)
-        self.edit_menu_obj.addAction(settings_action)
+        self.menu_help_obj.edit_menu_obj.addAction(settings_action)
 
     def _create_about_action(self):
         about_action = QtWidgets.QAction('&About', self)
         about_action.triggered.connect(self.about)
-        self.help_menu_obj.addAction(about_action)
+        self.menu_help_obj.help_menu_obj.addAction(about_action)
 
     # TODO: Calls an external class or something similar
     def init_mw_menu_bar(self):
@@ -110,13 +94,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menu_bar_obj = self.menuBar()
         self.menu_bar_obj.setStyleSheet("background-color: grey;")
 
-        self._create_file_menu()
+        self.menu_help_obj.menu_bar_obj = self.menu_bar_obj
+        self.menu_help_obj.create_file_menu()
+        self.menu_help_obj.create_edit_menu()
+        self.menu_help_obj.create_help_menu()
+
         self._create_topology_action()
         self._create_save_action()
         self._create_exit_action()
-        self._create_edit_menu()
         self._create_settings_action()
-        self._create_help_menu()
         self._create_about_action()
 
     # TODO: Move to a window pane helpers?
@@ -393,18 +379,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
         self.simulation_thread = None
-
-    # Placeholder methods for menu actions
-    def open_file(self):
-        """
-        Opens a file.
-        """
-        # Set the file dialog to filter for .yml and .json files
-        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, "Open Configuration File", "", "Config Files (*.yml *.json)"
-        )
-        if file_name:
-            print(f"Selected file: {file_name}")
 
     def _display_topology(self, item):
         topology_information_dict = create_network(item)
