@@ -294,9 +294,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Initializes the status bar.
         """
         main_status_bar = self.statusBar()
-        main_status_bar.setStyleSheet(
-            "background: gray;"
-        )
+        main_status_bar.setStyleSheet("background: gray;")
         main_status_bar.addWidget(self.progress_bar)
         self.progress_bar.setVisible(False)
 
@@ -304,10 +302,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Gets the center point of the window.
         """
-        # Calculate the center point of the screen
-        center_point = QtWidgets.QDesktopWidget().screenGeometry().center()
-        # Reposition window in center of screen
-        self.move(center_point - self.rect().center())
+        center_point = QtWidgets.QDesktopWidget().screenGeometry().center()  # Calculate the center point of the screen
+        self.move(center_point - self.rect().center())  # Reposition window in the center of the screen
 
     def setup_simulation_thread(self):
         """
@@ -318,24 +314,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress_bar.setVisible(True)
 
         self.simulation_thread = SimulationThread()
-        self.simulation_thread.output_hints_signal.connect(
-            self.output_hints
-        )
-        self.simulation_thread.progress_changed.connect(
-            self.update_progress
-        )
-        self.simulation_thread.finished_signal.connect(
-            self.simulation_finished
-        )
-        self.simulation_thread.finished.connect(
-            self.simulation_thread.deleteLater
-        )
+        self.simulation_thread.output_hints_signal.connect(self.output_hints)
+        self.simulation_thread.progress_changed.connect(self.update_progress)
+        self.simulation_thread.finished_signal.connect(self.simulation_finished)
+        self.simulation_thread.finished.connect(self.simulation_thread.deleteLater)
         self.simulation_thread.start()
 
     def output_hints(self, message):
-        """
-        Update.
-        """
         self.bottom_right_pane1.appendPlainText(message)
 
     def start_simulation(self):
@@ -368,10 +353,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         if self.simulation_thread and self.simulation_thread.isRunning():
             self.simulation_thread.pause()
-            # Change button text to "Resume"
-            self.start_button.setText(
-                "Resume"
-            )
+            self.start_button.setText("Resume")
         else:
             with QtCore.QMutexLocker(self.simulation_thread.mutex):
                 self.simulation_thread.paused = False
@@ -414,6 +396,40 @@ class MainWindow(QtWidgets.QMainWindow):
         if file_name:
             print(f"Selected file: {file_name}")
 
+    def _display_topology(self, item):
+        topology_information_dict = create_network(item)
+
+        edge_list = [(src, des, {'weight': link_len})
+                     for (src, des), link_len in
+                     topology_information_dict.items()]
+        network_topo = nx.Graph(edge_list)
+
+        # graphing is done here
+        figure = plt.figure()
+        axis = figure.add_subplot(1, 1, 1)
+        # spring_layout returns a dictionary of coordinates
+        pos = nx.spring_layout(network_topo, seed=5, scale=3.5)
+        nx.draw(network_topo, pos, with_labels=True, ax=axis, node_size=200,
+                font_size=8)
+        # Close the matplotlib figure to prevent it from displaying
+        plt.close(figure)
+
+        figure.canvas.draw()
+        width, height = figure.canvas.get_width_height()
+        buffer = figure.canvas.buffer_rgba()
+        image = QtGui.QImage(buffer, width, height,
+                             QtGui.QImage.Format_ARGB32)
+        pixmap = QtGui.QPixmap.fromImage(image)
+
+        # Display the QPixmap using a QLabel
+        label = QtWidgets.QLabel(self)
+        label.setFixedSize(pixmap.rect().size())
+        # Center align pixmap, not even necessary (same size)
+        label.setAlignment(QtCore.Qt.AlignCenter)
+        label.setPixmap(pixmap)
+
+        self.mw_topology_view_area.setWidget(label)
+
     def display_topology(self):
         """
         Displays a network topology.
@@ -421,54 +437,22 @@ class MainWindow(QtWidgets.QMainWindow):
         network_selection_dialog = QtWidgets.QDialog()
         network_selection_dialog.setSizeGripEnabled(True)
 
-        # this centers the dialog box with respect to the main window
-        dialog_pos = self.mapToGlobal(
-            self.rect().center()) - network_selection_dialog.rect().center()
+        dialog_pos = self.mapToGlobal(self.rect().center()) - network_selection_dialog.rect().center()  # Center window
         network_selection_dialog.move(dialog_pos)
 
         network_selection_input = QtWidgets.QInputDialog()
         # TODO: Hard coded
-        # TODO: Does it update the configuration file? Or, does it just display it?
         items = ['USNet', 'NSFNet', 'Pan-European']
         item, is_ok = network_selection_input.getItem(
             network_selection_dialog, "Choose a network type:",
             "Select Network Type", items, 0, False
         )
 
-        # TODO: No else statement for error checking, we should log things
         if is_ok and item:
-            topology_information_dict = create_network(item)
-
-            edge_list = [(src, des, {'weight': link_len})
-                         for (src, des), link_len in
-                         topology_information_dict.items()]
-            network_topo = nx.Graph(edge_list)
-
-            # graphing is done here
-            figure = plt.figure()
-            axis = figure.add_subplot(1, 1, 1)
-            # spring_layout returns a dictionary of coordinates
-            pos = nx.spring_layout(network_topo, seed=5, scale=3.5)
-            nx.draw(network_topo, pos, with_labels=True, ax=axis, node_size=200,
-                    font_size=8)
-            # Close the matplotlib figure to prevent it from displaying
-            plt.close(figure)
-
-            figure.canvas.draw()
-            width, height = figure.canvas.get_width_height()
-            buffer = figure.canvas.buffer_rgba()
-            image = QtGui.QImage(buffer, width, height,
-                                 QtGui.QImage.Format_ARGB32)
-            pixmap = QtGui.QPixmap.fromImage(image)
-
-            # Display the QPixmap using a QLabel
-            label = QtWidgets.QLabel(self)
-            label.setFixedSize(pixmap.rect().size())
-            # Center align pixmap, not even necessary (same size)
-            label.setAlignment(QtCore.Qt.AlignCenter)
-            label.setPixmap(pixmap)
-
-            self.mw_topology_view_area.setWidget(label)
+            self._display_topology(item=item)
+        # TODO: Improve this error statement
+        else:
+            raise NotImplementedError
 
     @staticmethod
     def save_file():
@@ -480,7 +464,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @staticmethod
     def about():
         """
-        Shows the About dialog.
+        Shows about dialog.
         """
         print("Show about dialog")
 
