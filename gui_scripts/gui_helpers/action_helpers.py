@@ -9,11 +9,22 @@ from data_scripts.structure_data import create_network
 
 
 class ActionHelpers:
+    """
+    Contains methods related to performing actions.
+    """
+
     def __init__(self):
-        # TODO: Update
         self.menu_bar_obj = None  # Updated from run_gui.py script
 
         self.menu_help_obj = None  # Created in menu_helpers.py
+        self.mw_topology_view_area = None  # Updated from the run_gui.py script
+
+    @staticmethod
+    def save_file():
+        """
+        Saves a file.
+        """
+        print("Save file action triggered.")
 
     @staticmethod
     def about():
@@ -36,7 +47,6 @@ class ActionHelpers:
         if settings_dialog.exec() == QtWidgets.QDialog.Accepted:
             print(settings_dialog.get_settings())
 
-    # TODO: Changed network name from "item"
     def _display_topology(self, net_name: str):
         topology_information_dict = create_network(net_name=net_name)
 
@@ -64,7 +74,6 @@ class ActionHelpers:
         label.setAlignment(QtCore.Qt.AlignCenter)
         label.setPixmap(pixmap)
 
-        # TODO: Not sure what to do with this
         self.mw_topology_view_area.setWidget(label)
 
     def display_topology(self):
@@ -92,26 +101,41 @@ class ActionHelpers:
             raise NotImplementedError(f"{net_name} is not a valid network name.")
 
     def create_topology_action(self):
+        """
+        Creates the action to display a topology properly.
+        """
         display_topology_action = QtWidgets.QAction('&Display topology', self.menu_bar_obj)
         display_topology_action.triggered.connect(self.display_topology)
         self.menu_help_obj.file_menu_obj.addAction(display_topology_action)
 
     def create_save_action(self):
+        """
+        Create a save action to save a file.
+        """
         save_action = QtWidgets.QAction('&Save', self.menu_bar_obj)
-        save_action.triggered.connect(self.menu_bar_obj.save_file)
+        save_action.triggered.connect(self.save_file)
         self.menu_help_obj.file_menu_obj.addAction(save_action)
 
     def create_exit_action(self):
+        """
+        Create an exit action to exit a simulation run.
+        """
         exit_action = QtWidgets.QAction('&Exit', self.menu_bar_obj)
         exit_action.triggered.connect(self.menu_bar_obj.close)
         self.menu_help_obj.file_menu_obj.addAction(exit_action)
 
     def create_settings_action(self):
+        """
+        Create a settings action to trigger a display of the settings panel.
+        """
         settings_action = QtWidgets.QAction('&Settings', self.menu_bar_obj)
         settings_action.triggered.connect(self.open_settings)
         self.menu_help_obj.edit_menu_obj.addAction(settings_action)
 
     def create_about_action(self):
+        """
+        Create about action to display relevant about information regarding the simulator.
+        """
         about_action = QtWidgets.QAction('&About', self.menu_bar_obj)
         about_action.triggered.connect(self.about)
         self.menu_help_obj.help_menu_obj.addAction(about_action)
