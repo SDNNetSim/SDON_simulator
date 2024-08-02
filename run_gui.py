@@ -232,66 +232,62 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._init_main_splitter()
 
+    # TODO: Have another script called toolbar helpers
+
+    def _create_start_button(self):
+        self.start_button = QtWidgets.QAction()
+        resource_name = "light-green-play-button.png"
+        self.media_dir = os.path.join('gui_scripts', 'media')
+        self.start_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+        self.start_button.setText("Start")
+        self.start_button.triggered.connect(self.start_simulation)
+
+    def _create_pause_button(self):
+        self.pause_button = QtWidgets.QAction()
+        resource_name = "pause.png"
+        self.pause_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+        self.pause_button.setText("Pause")
+        self.pause_button.triggered.connect(self.pause_simulation)
+
+    def _create_stop_button(self):
+        self.stop_button = QtWidgets.QAction()
+        resource_name = "light-red-stop-button.png"
+        self.stop_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+        self.stop_button.setText("Stop")
+        self.stop_button.triggered.connect(self.stop_simulation)
+
+    def _create_settings_button(self):
+        self.settings_button = QtWidgets.QToolButton()
+        resource_name = "gear.png"
+        self.settings_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+        self.settings_button.setText("Settings")
+        self.settings_button.setStyleSheet("background-color: transparent;")
+        self.settings_button.clicked.connect(self.open_settings)
+
+    def _create_toolbar(self):
+        self.mw_toolbar = QtWidgets.QToolBar()
+        self.addToolBar(QtCore.Qt.TopToolBarArea, self.mw_toolbar)
+        self.mw_toolbar.setStyleSheet("background-color: grey; color: white;")
+        self.mw_toolbar.setMovable(False)
+        self.mw_toolbar.setIconSize(QtCore.QSize(15, 15))
+        self.mw_toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
+
     def init_mw_tool_bar(self):
         """
         Adds controls to the toolbar.
         """
-        self.start_button = QtWidgets.QAction()
-        self.pause_button = QtWidgets.QAction()
-        self.stop_button = QtWidgets.QAction()
+        self._create_toolbar()
+        self._create_start_button()
+        self._create_pause_button()
+        self._create_stop_button()
+        self._create_settings_button()
 
-        # Create toolbar and add actions
-        mw_toolbar = QtWidgets.QToolBar()
-        self.addToolBar(QtCore.Qt.TopToolBarArea, mw_toolbar)
-        mw_toolbar.setStyleSheet(
-            "background-color: grey; color: white;")
-        mw_toolbar.setMovable(False)
-        mw_toolbar.setIconSize(QtCore.QSize(15, 15))
-        mw_toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
-
-        # path to play_button media file
-        resource_name = "light-green-play-button.png"
-        media_dir = os.path.join('gui_scripts', 'media')
-        self.start_button.setIcon(
-            QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
-        )
-        self.start_button.setText("Start")
-        self.start_button.triggered.connect(self.start_simulation)
-
-        # set up for pause button
-        resource_name = "pause.png"
-        self.pause_button.setIcon(
-            QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
-        )
-        self.pause_button.setText("Pause")
-        self.pause_button.triggered.connect(self.pause_simulation)
-
-        # set up for stop button
-        resource_name = "light-red-stop-button.png"
-        self.stop_button.setIcon(
-            QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
-        )
-        self.stop_button.setText("Stop")
-        self.stop_button.triggered.connect(self.stop_simulation)
-
-        # settings work now
-        settings_button = QtWidgets.QToolButton()
-        resource_name = "gear.png"
-        settings_button.setIcon(
-            QtGui.QIcon(os.path.join(os.getcwd(), media_dir, resource_name))
-        )
-        settings_button.setText("Settings")
-        settings_button.setStyleSheet(
-            "background-color: transparent;"
-        )
-        settings_button.clicked.connect(self.open_settings)
-
-        mw_toolbar.addSeparator()
-        mw_toolbar.addAction(self.start_button)
-        mw_toolbar.addAction(self.pause_button)
-        mw_toolbar.addAction(self.stop_button)
-        mw_toolbar.addSeparator()
-        mw_toolbar.addWidget(settings_button)
+        self.mw_toolbar.addSeparator()
+        self.mw_toolbar.addAction(self.start_button)
+        self.mw_toolbar.addAction(self.pause_button)
+        self.mw_toolbar.addAction(self.stop_button)
+        self.mw_toolbar.addSeparator()
+        self.mw_toolbar.addWidget(self.settings_button)
 
     def init_mw_status_bar(self):
         """
