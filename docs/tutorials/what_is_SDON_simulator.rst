@@ -55,7 +55,7 @@ superchannels to form.
 .. image:: _images/yue_multicore.png
    :alt: Single vs. Multicore
    :width: 700px
-   :height: 400px
+   :height: 300px
    :align: center
 
 .. raw:: html
