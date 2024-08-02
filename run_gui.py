@@ -42,6 +42,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.edit_menu_obj = None
         self.help_menu_obj = None
 
+        self.first_info_pane = None
+        self.second_info_pane = None
+        self.media_dir = None
+        self.settings_button = None
+        self.mw_toolbar = None
+
     def init_mw_ui(self):
         """
         Initialize the user interface.
@@ -322,6 +328,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.simulation_thread.start()
 
     def output_hints(self, message):
+        """
+        Outputs hints.
+        """
         self.bottom_right_pane1.appendPlainText(message)
 
     def start_simulation(self):
