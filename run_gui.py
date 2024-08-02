@@ -13,6 +13,7 @@ from gui_scripts.gui_helpers.general_helpers import SettingsDialog, SimulationTh
 
 
 # TODO: Instead of importing let's say, all action functions, have class inheritance instead with an action object.
+# TODO: Standards and guidelines regarding parameter types
 class MainWindow(QtWidgets.QMainWindow):
     """
     The main window class, central point that controls all GUI functionality and actions.
