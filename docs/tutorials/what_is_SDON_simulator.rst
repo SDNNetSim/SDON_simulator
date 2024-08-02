@@ -9,13 +9,11 @@ fiber-optic cables by pulses of light, the light can then be broken down into wa
 data while another wavelength transmits different data.
 
 Wavelength Division Multiplexing (WDM)
---------------------------------
+--------------------------------------
 
 In Wave Division Multiplexing (WDM), the wavelengths are broken into set groups. For example, they could be in spacings
 of 50GHz each. If the data being sent only requires 25GHz, then the remaining 25Ghz is being reserved for use but not
 being used.
-
-(insert picture?)
 
 Elastic Optical Networks (EONs)
 -------------------------------
@@ -30,18 +28,50 @@ capacity data transfers.
 Overall, the introduction of EONs allows for more efficient allocation of the resources we have, as there is a rapidly
 approaching limit to the amount of wavelengths that can be used for WDM networks.
 
+An example of such:
+
+.. image:: _images/pegah_WDM_vs_EON.png
+   :alt: WDM vs EON visual
+   :width: 700px
+   :height: 350px
+   :align: center
+
+.. raw:: html
+
+   <br>
+
+Credit: P. Afsharlar, "Resource Allocation Algorithms for Elastic Optical Networks," PhD. dissertation, Dept. Elect.
+and Comp. Eng., Univ. of Mass. Lowell, Lowell, MA, United States, 2021.
+
+The top line is what a traditional WDM approach would look like, and the bottom line is the same amount of information
+instead sent via an EON approach.
+
 Optical Networks - Single core and Multi-core
-------------------------------
+---------------------------------------------
 
 A single core network has just one core overall. A mutli-core network has several different cores, allowing for
-superchannels to form. (Add more)
+superchannels to form.
 
-(add image)
+.. image:: _images/yue_multicore.png
+   :alt: Single vs. Multicore
+   :width: 700px
+   :height: 400px
+   :align: center
+
+.. raw:: html
+
+   <br>
+
+Credit: Y. Wang, "Dynamic Traffic Scheduling Frameworks with Spectral and Spatial Flexibility in SDM-EONs," PhD.
+dissertation, Dept. Elect. and Comp. Eng., Univ. of Mass. Lowell, Lowell, MA, United States, 2022.
+
+In the diagram, section a is an example of a single-core network, whereas section b is an example of a multi-core
+network.
 
 General Resource Allocation
 ---------------------------
 
-There are two major contraints when it comes to both WDM and EONs. The first is the **Continuity constraint** in which
+There are two major constraints when it comes to both WDM and EONs. The first is the **Continuity constraint** in which
 the transmission must remain on the same wavelength the entire distance it travels, as the cost of spectrum converters
 is large. The second constraint is the **Contiguity constraint** in which an EONs superchannel requires a transponder
 (also expensive), so as to keep down costs, the wavelengths used to create the superchannel must be next to one another.
