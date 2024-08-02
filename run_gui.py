@@ -1,25 +1,21 @@
 # pylint: disable=no-name-in-module
 # pylint: disable=c-extension-no-member
 
-import os
 import sys
 
-import networkx as nx
-from PyQt5 import QtWidgets, QtCore, QtGui
-from matplotlib import pyplot as plt
+from PyQt5 import QtWidgets, QtCore
 
-from data_scripts.structure_data import create_network
-from gui_scripts.gui_helpers.general_helpers import SettingsDialog, SimulationThread
+from gui_scripts.gui_helpers.general_helpers import SettingsDialog
 from gui_scripts.gui_helpers.menu_helpers import MenuHelpers
+from gui_scripts.gui_helpers.action_helpers import ActionHelpers
 
 
-# TODO: Instead of importing let's say, all action functions, have class inheritance instead with an action object.
 # TODO: Standards and guidelines regarding parameter types
 class MainWindow(QtWidgets.QMainWindow):
     """
     The main window class, central point that controls all GUI functionality and actions.
     """
-    # TODO: Why define these here and not in INIT? This tells us they are constants.
+    # TODO: Why define these here?
     mw_main_view_widget = None
     mw_main_view_layout = None
     mw_main_view_splitter = None
@@ -38,6 +34,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.network_option = ''
 
         self.menu_help_obj = MenuHelpers()
+        self.ac_help_obj = ActionHelpers()
         self.init_mw_ui()
         self.menu_bar_obj = None
 
@@ -60,32 +57,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_mw_tool_bar()
         self.init_mw_status_bar()
 
-    # TODO: Move to another file (action helpers)
-    def _create_topology_action(self):
-        display_topology_action = QtWidgets.QAction('&Display topology', self)
-        display_topology_action.triggered.connect(self.display_topology)
-        self.menu_help_obj.file_menu_obj.addAction(display_topology_action)
-
-    def _create_save_action(self):
-        save_action = QtWidgets.QAction('&Save', self)
-        save_action.triggered.connect(self.save_file)
-        self.menu_help_obj.file_menu_obj.addAction(save_action)
-
-    def _create_exit_action(self):
-        exit_action = QtWidgets.QAction('&Exit', self)
-        exit_action.triggered.connect(self.close)
-        self.menu_help_obj.file_menu_obj.addAction(exit_action)
-
-    def _create_settings_action(self):
-        settings_action = QtWidgets.QAction('&Settings', self)
-        settings_action.triggered.connect(self.open_settings)
-        self.menu_help_obj.edit_menu_obj.addAction(settings_action)
-
-    def _create_about_action(self):
-        about_action = QtWidgets.QAction('&About', self)
-        about_action.triggered.connect(self.about)
-        self.menu_help_obj.help_menu_obj.addAction(about_action)
-
     # TODO: Calls an external class or something similar
     def init_mw_menu_bar(self):
         """
@@ -99,14 +70,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menu_help_obj.create_edit_menu()
         self.menu_help_obj.create_help_menu()
 
-        self._create_topology_action()
-        self._create_save_action()
-        self._create_exit_action()
-        self._create_settings_action()
-        self._create_about_action()
+        self.ac_help_obj.mw_topology_view_area = self.mw_topology_view_area
+        self.ac_help_obj.menu_help_obj = self.menu_help_obj
+        self.ac_help_obj.menu_bar_obj = self.menu_bar_obj
+        self.ac_help_obj.create_topology_action()
+        self.ac_help_obj.create_save_action()
+        self.ac_help_obj.create_exit_action()
+        self.ac_help_obj.create_settings_action()
+        self.ac_help_obj.create_about_action()
 
-    # TODO: Move to a window pane helpers?
-    # TODO: Change names (pane1, pane2, left, right, etc.)
     # TODO: Comment and say these are to the left
     def _setup_first_info_pane(self):
         self.first_info_pane = QtWidgets.QWidget(self)
@@ -225,37 +197,35 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._init_main_splitter()
 
-    # TODO: Have another script called toolbar helpers
-
-    def _create_start_button(self):
-        self.start_button = QtWidgets.QAction()
-        resource_name = "light-green-play-button.png"
-        self.media_dir = os.path.join('gui_scripts', 'media')
-        self.start_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
-        self.start_button.setText("Start")
-        self.start_button.triggered.connect(self.start_simulation)
-
-    def _create_pause_button(self):
-        self.pause_button = QtWidgets.QAction()
-        resource_name = "pause.png"
-        self.pause_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
-        self.pause_button.setText("Pause")
-        self.pause_button.triggered.connect(self.pause_simulation)
-
-    def _create_stop_button(self):
-        self.stop_button = QtWidgets.QAction()
-        resource_name = "light-red-stop-button.png"
-        self.stop_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
-        self.stop_button.setText("Stop")
-        self.stop_button.triggered.connect(self.stop_simulation)
-
-    def _create_settings_button(self):
-        self.settings_button = QtWidgets.QToolButton()
-        resource_name = "gear.png"
-        self.settings_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
-        self.settings_button.setText("Settings")
-        self.settings_button.setStyleSheet("background-color: transparent;")
-        self.settings_button.clicked.connect(self.open_settings)
+    # def _create_start_button(self):
+    #     self.start_button = QtWidgets.QAction()
+    #     resource_name = "light-green-play-button.png"
+    #     self.media_dir = os.path.join('gui_scripts', 'media')
+    #     self.start_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+    #     self.start_button.setText("Start")
+    #     self.start_button.triggered.connect(self.start_simulation)
+    #
+    # def _create_pause_button(self):
+    #     self.pause_button = QtWidgets.QAction()
+    #     resource_name = "pause.png"
+    #     self.pause_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+    #     self.pause_button.setText("Pause")
+    #     self.pause_button.triggered.connect(self.pause_simulation)
+    #
+    # def _create_stop_button(self):
+    #     self.stop_button = QtWidgets.QAction()
+    #     resource_name = "light-red-stop-button.png"
+    #     self.stop_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+    #     self.stop_button.setText("Stop")
+    #     self.stop_button.triggered.connect(self.stop_simulation)
+    #
+    # def _create_settings_button(self):
+    #     self.settings_button = QtWidgets.QToolButton()
+    #     resource_name = "gear.png"
+    #     self.settings_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+    #     self.settings_button.setText("Settings")
+    #     self.settings_button.setStyleSheet("background-color: transparent;")
+    #     self.settings_button.clicked.connect(self.open_settings)
 
     def _create_toolbar(self):
         self.mw_toolbar = QtWidgets.QToolBar()
@@ -270,10 +240,10 @@ class MainWindow(QtWidgets.QMainWindow):
         Adds controls to the toolbar.
         """
         self._create_toolbar()
-        self._create_start_button()
-        self._create_pause_button()
-        self._create_stop_button()
-        self._create_settings_button()
+        # self._create_start_button()
+        # self._create_pause_button()
+        # self._create_stop_button()
+        # self._create_settings_button()
 
         self.mw_toolbar.addSeparator()
         self.mw_toolbar.addAction(self.start_button)
@@ -298,20 +268,20 @@ class MainWindow(QtWidgets.QMainWindow):
         center_point = QtWidgets.QDesktopWidget().screenGeometry().center()  # Calculate the center point of the screen
         self.move(center_point - self.rect().center())  # Reposition window in the center of the screen
 
-    def setup_simulation_thread(self):
-        """
-        Sets up one thread of the simulation.
-        """
-        self.progress_bar.setMaximum(1000)
-        self.progress_bar.setValue(0)
-        self.progress_bar.setVisible(True)
-
-        self.simulation_thread = SimulationThread()
-        self.simulation_thread.output_hints_signal.connect(self.output_hints)
-        self.simulation_thread.progress_changed.connect(self.update_progress)
-        self.simulation_thread.finished_signal.connect(self.simulation_finished)
-        self.simulation_thread.finished.connect(self.simulation_thread.deleteLater)
-        self.simulation_thread.start()
+    # def setup_simulation_thread(self):
+    #     """
+    #     Sets up one thread of the simulation.
+    #     """
+    #     self.progress_bar.setMaximum(1000)
+    #     self.progress_bar.setValue(0)
+    #     self.progress_bar.setVisible(True)
+    #
+    #     self.simulation_thread = SimulationThread()
+    #     self.simulation_thread.output_hints_signal.connect(self.output_hints)
+    #     self.simulation_thread.progress_changed.connect(self.update_progress)
+    #     self.simulation_thread.finished_signal.connect(self.simulation_finished)
+    #     self.simulation_thread.finished.connect(self.simulation_thread.deleteLater)
+    #     self.simulation_thread.start()
 
     def output_hints(self, message):
         """
@@ -319,52 +289,52 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.bottom_right_pane1.appendPlainText(message)
 
-    def start_simulation(self):
-        """
-        Begins the simulation.
-        """
-        if self.start_button.text() == "Resume":
-            self.simulation_thread.resume()
-            self.start_button.setText("Start")
-        else:
-            self.bottom_right_pane1.clear()
-            if (not self.simulation_thread or
-                    not self.simulation_thread.isRunning()):
-                self.setup_simulation_thread()
-            else:
-                self.simulation_thread.resume()
-            self.start_button.setText("Start")
+    # def start_simulation(self):
+    #     """
+    #     Begins the simulation.
+    #     """
+    #     if self.start_button.text() == "Resume":
+    #         self.simulation_thread.resume()
+    #         self.start_button.setText("Start")
+    #     else:
+    #         self.bottom_right_pane1.clear()
+    #         if (not self.simulation_thread or
+    #                 not self.simulation_thread.isRunning()):
+    #             self.setup_simulation_thread()
+    #         else:
+    #             self.simulation_thread.resume()
+    #         self.start_button.setText("Start")
 
-    def pause_simulation(self):
-        """
-        Pauses the simulation.
-        """
-        if self.simulation_thread and self.simulation_thread.isRunning():
-            self.simulation_thread.pause()
-            self.start_button.setText("Resume")
-
-    def resume(self):
-        """
-        Resumes the simulation from a previous pause.
-        """
-        if self.simulation_thread and self.simulation_thread.isRunning():
-            self.simulation_thread.pause()
-            self.start_button.setText("Resume")
-        else:
-            with QtCore.QMutexLocker(self.simulation_thread.mutex):
-                self.simulation_thread.paused = False
-            self.simulation_thread.wait_cond.wakeOne()
-
-    def stop_simulation(self):
-        """
-        Stops the simulation.
-        """
-        if self.simulation_thread and self.simulation_thread.isRunning():
-            self.simulation_thread.stop()
-            self.progress_bar.setValue(0)
-            self.progress_bar.setVisible(False)
-            self.simulation_thread = None
-        self.start_button.setText("Start")
+    # def pause_simulation(self):
+    #     """
+    #     Pauses the simulation.
+    #     """
+    #     if self.simulation_thread and self.simulation_thread.isRunning():
+    #         self.simulation_thread.pause()
+    #         self.start_button.setText("Resume")
+    #
+    # def resume(self):
+    #     """
+    #     Resumes the simulation from a previous pause.
+    #     """
+    #     if self.simulation_thread and self.simulation_thread.isRunning():
+    #         self.simulation_thread.pause()
+    #         self.start_button.setText("Resume")
+    #     else:
+    #         with QtCore.QMutexLocker(self.simulation_thread.mutex):
+    #             self.simulation_thread.paused = False
+    #         self.simulation_thread.wait_cond.wakeOne()
+    #
+    # def stop_simulation(self):
+    #     """
+    #     Stops the simulation.
+    #     """
+    #     if self.simulation_thread and self.simulation_thread.isRunning():
+    #         self.simulation_thread.stop()
+    #         self.progress_bar.setValue(0)
+    #         self.progress_bar.setVisible(False)
+    #         self.simulation_thread = None
+    #     self.start_button.setText("Start")
 
     def update_progress(self, value):
         """
@@ -379,78 +349,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
         self.simulation_thread = None
-
-    def _display_topology(self, item):
-        topology_information_dict = create_network(item)
-
-        edge_list = [(src, des, {'weight': link_len})
-                     for (src, des), link_len in
-                     topology_information_dict.items()]
-        network_topo = nx.Graph(edge_list)
-
-        # graphing is done here
-        figure = plt.figure()
-        axis = figure.add_subplot(1, 1, 1)
-        # spring_layout returns a dictionary of coordinates
-        pos = nx.spring_layout(network_topo, seed=5, scale=3.5)
-        nx.draw(network_topo, pos, with_labels=True, ax=axis, node_size=200,
-                font_size=8)
-        # Close the matplotlib figure to prevent it from displaying
-        plt.close(figure)
-
-        figure.canvas.draw()
-        width, height = figure.canvas.get_width_height()
-        buffer = figure.canvas.buffer_rgba()
-        image = QtGui.QImage(buffer, width, height,
-                             QtGui.QImage.Format_ARGB32)
-        pixmap = QtGui.QPixmap.fromImage(image)
-
-        # Display the QPixmap using a QLabel
-        label = QtWidgets.QLabel(self)
-        label.setFixedSize(pixmap.rect().size())
-        # Center align pixmap, not even necessary (same size)
-        label.setAlignment(QtCore.Qt.AlignCenter)
-        label.setPixmap(pixmap)
-
-        self.mw_topology_view_area.setWidget(label)
-
-    def display_topology(self):
-        """
-        Displays a network topology.
-        """
-        network_selection_dialog = QtWidgets.QDialog()
-        network_selection_dialog.setSizeGripEnabled(True)
-
-        dialog_pos = self.mapToGlobal(self.rect().center()) - network_selection_dialog.rect().center()  # Center window
-        network_selection_dialog.move(dialog_pos)
-
-        network_selection_input = QtWidgets.QInputDialog()
-        # TODO: Hard coded
-        items = ['USNet', 'NSFNet', 'Pan-European']
-        item, is_ok = network_selection_input.getItem(
-            network_selection_dialog, "Choose a network type:",
-            "Select Network Type", items, 0, False
-        )
-
-        if is_ok and item:
-            self._display_topology(item=item)
-        # TODO: Improve this error statement
-        else:
-            raise NotImplementedError
-
-    @staticmethod
-    def save_file():
-        """
-        Saves a file.
-        """
-        print("Save file action triggered")
-
-    @staticmethod
-    def about():
-        """
-        Shows about dialog.
-        """
-        print("Show about dialog")
 
     @staticmethod
     def open_settings():
