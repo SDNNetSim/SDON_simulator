@@ -1,8 +1,14 @@
+# pylint: disable=no-name-in-module
+
 from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
 from PyQt5.QtCore import QRegExp
 
 
-class PythonHighlighter(QSyntaxHighlighter):
+class PythonHighlighter(QSyntaxHighlighter):  # pylint: disable=too-few-public-methods
+    """
+    Adds python syntax highlighting.
+    """
+
     def __init__(self, document):
         super().__init__(document)
 
@@ -29,11 +35,16 @@ class PythonHighlighter(QSyntaxHighlighter):
         comment_format.setForeground(QColor("red"))
         self.highlighting_rules.append((QRegExp("#[^\n]*"), comment_format))
 
-    def highlightBlock(self, text):
-        for pattern, format in self.highlighting_rules:
+    def highlightBlock(self, text):  # pylint: disable=invalid-name
+        """
+        Highlight a specific block of text.
+
+        :param text: Text to highlight.
+        """
+        for pattern, form in self.highlighting_rules:
             expression = QRegExp(pattern)
             index = expression.indexIn(text)
             while index >= 0:
                 length = expression.matchedLength()
-                self.setFormat(index, length, format)
+                self.setFormat(index, length, form)
                 index = expression.indexIn(text, index + length)

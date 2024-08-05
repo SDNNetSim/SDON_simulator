@@ -50,6 +50,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menu_bar = None
         self.tool_bar = None
         self.status_bar = None
+        self.highlighter = None
 
         # Set the project directory as the root for the file model
         self.project_directory = QtCore.QDir.currentPath()
