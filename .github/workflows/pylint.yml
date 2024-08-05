@@ -43,7 +43,10 @@ jobs:
           pylint ./data_scripts
           pylint ./excel_scripts
           pylint ./tests
-          pylint ./gui_scripts
+          pylint ./gui_scripts/gui_helpers
+          pylint ./gui_scripts/gui_args
+          pylint ./gui_scripts/
+          pylint ./gui_scripts/components
           pylint ./plot_scripts
           pylint ./helper_scripts
           pylint ./config_scripts
