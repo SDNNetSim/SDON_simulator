@@ -1,3 +1,7 @@
+# pylint: disable=c-extension-no-member
+# pylint: disable=no-name-in-module
+# pylint: disable=super-with-arguments
+
 from PyQt5.QtWidgets import (
     QLabel, QSizePolicy,
 )
@@ -12,35 +16,57 @@ from PyQt5.QtCore import (
 
 
 class HoverLabel(QLabel):
-    # Optional: Signal to emit when hover changes
-    hoverChanged = pyqtSignal(bool)
+    """
+    Handles all labels for hover actions.
+    """
+    hover_changed = pyqtSignal(bool)
 
     def __init__(self, parent=None):
         super(HoverLabel, self).__init__(parent)
-        self.setMouseTracking(True)  # Enable mouse tracking to receive hover events
-        # Set the tooltip text
+        self.setMouseTracking(True)
         self.setToolTip("This is the data displayed on hover.")
-        # Adjust the size policy to accommodate icon changes
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.setMaximumSize(60, 60)  # Adjust as needed
+        self.setMaximumSize(60, 60)
 
-    def setIcon(self, iconPath, size=QSize(64, 64)):
-        self.icon = QIcon(iconPath)
+        self.icon = None
+        self.pixmap = None
+
+    def set_icon(self, icon_path, size=QSize(64, 64)):
+        """
+        Sets a specific icon.
+        :param icon_path: The icon location.
+        :param size: Desired size of the icon.
+        """
+        self.icon = QIcon(icon_path)
         self.pixmap = self.icon.pixmap(size)
         self.setPixmap(self.pixmap)
-        # Adjust the label size to fit the new pixmap size, if desired
         self.resize(self.pixmap.size())
 
-    def enterEvent(self, event):
+    def enter_event(self, event):
+        """
+        Enters an event via text.
+
+        :param event: The event to be emitted.
+        """
         self.setText(self.hoverText)
-        self.hoverChanged.emit(True)
+        self.hover_changed.emit(True)
         super(HoverLabel, self).enterEvent(event)
 
-    def leaveEvent(self, event):
+    def leave_event(self, event):
+        """
+        Leaves an event.
+
+        :param event: The event to remove.
+        """
         self.setText(self.normalText)
-        self.hoverChanged.emit(False)
+        self.hover_changed.emit(False)
         super(HoverLabel, self).leaveEvent(event)
 
-    def updateTooltip(self, newData):
-        tooltipText = f"Dynamic Data: {newData}"
-        self.setToolTip(tooltipText)
+    def update_tool_tip(self, new_data):
+        """
+        Updates to a tool tip text.
+
+        :param new_data: Text to update with.
+        """
+        tool_tip_text = f"Dynamic Data: {new_data}"
+        self.setToolTip(tool_tip_text)
