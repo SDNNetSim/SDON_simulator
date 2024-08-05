@@ -100,6 +100,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_editor = QtWidgets.QTextEdit()
         self.tab_widget.addTab(self.file_editor, "File Editor")
 
+        # Apply Python syntax highlighter to the file editor
+        self.highlighter = PythonHighlighter(self.file_editor.document())
+
         # Topology view tab
         self.mw_topology_view_area = QtWidgets.QScrollArea()
         init_topology_data = QtWidgets.QLabel("Nothing to display")
