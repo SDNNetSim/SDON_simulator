@@ -5,9 +5,9 @@ import sys
 
 from PyQt5 import QtWidgets, QtCore
 
-from gui_scripts.gui_helpers.general_helpers import SettingsDialog
 from gui_scripts.gui_helpers.menu_helpers import MenuHelpers
 from gui_scripts.gui_helpers.action_helpers import ActionHelpers
+from gui_scripts.gui_helpers.button_helpers import ButtonHelpers
 
 
 # TODO: Standards and guidelines regarding parameter types
@@ -22,7 +22,7 @@ class MainWindow(QtWidgets.QMainWindow):
     mw_main_view_left_splitter = None
     mw_main_view_right_splitter = None
     mw_topology_view_area = None
-    bottom_right_pane1 = None
+    bottom_right_pane = None
     start_button = None
     pause_button = None
     stop_button = None
@@ -35,6 +35,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.menu_help_obj = MenuHelpers()
         self.ac_help_obj = ActionHelpers()
+        self.button_help_obj = ButtonHelpers()
         self.init_mw_ui()
         self.menu_bar_obj = None
 
@@ -128,12 +129,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mw_main_view_left_splitter.addWidget(self.second_info_pane)
 
     def _init_third_pane(self):
-        self.bottom_right_pane1 = QtWidgets.QPlainTextEdit(self)
-        self.bottom_right_pane1.setReadOnly(True)
-        self.bottom_right_pane1.appendPlainText("No Data to display")
-        self.bottom_right_pane1.setMinimumHeight(150)
-        self.bottom_right_pane1.setMaximumHeight(200)
-        self.bottom_right_pane1.setStyleSheet(
+        self.bottom_right_pane = QtWidgets.QPlainTextEdit(self)
+        self.bottom_right_pane.setReadOnly(True)
+        self.bottom_right_pane.appendPlainText("No Data to display")
+        self.bottom_right_pane.setMinimumHeight(150)
+        self.bottom_right_pane.setMaximumHeight(200)
+        self.bottom_right_pane.setStyleSheet(
             "background-color: white;"
             "border-radius: 5px;"
             "border: 2px solid black;"
@@ -193,39 +194,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._init_topology()
 
         self.mw_main_view_right_splitter.addWidget(self.mw_topology_view_area)
-        self.mw_main_view_right_splitter.addWidget(self.bottom_right_pane1)
+        self.mw_main_view_right_splitter.addWidget(self.bottom_right_pane)
 
         self._init_main_splitter()
-
-    # def _create_start_button(self):
-    #     self.start_button = QtWidgets.QAction()
-    #     resource_name = "light-green-play-button.png"
-    #     self.media_dir = os.path.join('gui_scripts', 'media')
-    #     self.start_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
-    #     self.start_button.setText("Start")
-    #     self.start_button.triggered.connect(self.start_simulation)
-    #
-    # def _create_pause_button(self):
-    #     self.pause_button = QtWidgets.QAction()
-    #     resource_name = "pause.png"
-    #     self.pause_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
-    #     self.pause_button.setText("Pause")
-    #     self.pause_button.triggered.connect(self.pause_simulation)
-    #
-    # def _create_stop_button(self):
-    #     self.stop_button = QtWidgets.QAction()
-    #     resource_name = "light-red-stop-button.png"
-    #     self.stop_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
-    #     self.stop_button.setText("Stop")
-    #     self.stop_button.triggered.connect(self.stop_simulation)
-    #
-    # def _create_settings_button(self):
-    #     self.settings_button = QtWidgets.QToolButton()
-    #     resource_name = "gear.png"
-    #     self.settings_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
-    #     self.settings_button.setText("Settings")
-    #     self.settings_button.setStyleSheet("background-color: transparent;")
-    #     self.settings_button.clicked.connect(self.open_settings)
 
     def _create_toolbar(self):
         self.mw_toolbar = QtWidgets.QToolBar()
@@ -240,17 +211,20 @@ class MainWindow(QtWidgets.QMainWindow):
         Adds controls to the toolbar.
         """
         self._create_toolbar()
-        # self._create_start_button()
-        # self._create_pause_button()
-        # self._create_stop_button()
-        # self._create_settings_button()
+
+        self.button_help_obj.bottom_right_pane = self.bottom_right_pane
+        self.button_help_obj.progress_bar = self.progress_bar
+        self.button_help_obj.create_settings_button()
+        self.button_help_obj.create_start_button()
+        self.button_help_obj.create_stop_button()
+        self.button_help_obj.create_pause_button()
 
         self.mw_toolbar.addSeparator()
-        self.mw_toolbar.addAction(self.start_button)
-        self.mw_toolbar.addAction(self.pause_button)
-        self.mw_toolbar.addAction(self.stop_button)
+        self.mw_toolbar.addAction(self.button_help_obj.start_button)
+        self.mw_toolbar.addAction(self.button_help_obj.pause_button)
+        self.mw_toolbar.addAction(self.button_help_obj.stop_button)
         self.mw_toolbar.addSeparator()
-        self.mw_toolbar.addWidget(self.settings_button)
+        self.mw_toolbar.addWidget(self.button_help_obj.settings_button)
 
     def init_mw_status_bar(self):
         """
@@ -268,102 +242,6 @@ class MainWindow(QtWidgets.QMainWindow):
         center_point = QtWidgets.QDesktopWidget().screenGeometry().center()  # Calculate the center point of the screen
         self.move(center_point - self.rect().center())  # Reposition window in the center of the screen
 
-    # def setup_simulation_thread(self):
-    #     """
-    #     Sets up one thread of the simulation.
-    #     """
-    #     self.progress_bar.setMaximum(1000)
-    #     self.progress_bar.setValue(0)
-    #     self.progress_bar.setVisible(True)
-    #
-    #     self.simulation_thread = SimulationThread()
-    #     self.simulation_thread.output_hints_signal.connect(self.output_hints)
-    #     self.simulation_thread.progress_changed.connect(self.update_progress)
-    #     self.simulation_thread.finished_signal.connect(self.simulation_finished)
-    #     self.simulation_thread.finished.connect(self.simulation_thread.deleteLater)
-    #     self.simulation_thread.start()
-
-    def output_hints(self, message):
-        """
-        Outputs hints.
-        """
-        self.bottom_right_pane1.appendPlainText(message)
-
-    # def start_simulation(self):
-    #     """
-    #     Begins the simulation.
-    #     """
-    #     if self.start_button.text() == "Resume":
-    #         self.simulation_thread.resume()
-    #         self.start_button.setText("Start")
-    #     else:
-    #         self.bottom_right_pane1.clear()
-    #         if (not self.simulation_thread or
-    #                 not self.simulation_thread.isRunning()):
-    #             self.setup_simulation_thread()
-    #         else:
-    #             self.simulation_thread.resume()
-    #         self.start_button.setText("Start")
-
-    # def pause_simulation(self):
-    #     """
-    #     Pauses the simulation.
-    #     """
-    #     if self.simulation_thread and self.simulation_thread.isRunning():
-    #         self.simulation_thread.pause()
-    #         self.start_button.setText("Resume")
-    #
-    # def resume(self):
-    #     """
-    #     Resumes the simulation from a previous pause.
-    #     """
-    #     if self.simulation_thread and self.simulation_thread.isRunning():
-    #         self.simulation_thread.pause()
-    #         self.start_button.setText("Resume")
-    #     else:
-    #         with QtCore.QMutexLocker(self.simulation_thread.mutex):
-    #             self.simulation_thread.paused = False
-    #         self.simulation_thread.wait_cond.wakeOne()
-    #
-    # def stop_simulation(self):
-    #     """
-    #     Stops the simulation.
-    #     """
-    #     if self.simulation_thread and self.simulation_thread.isRunning():
-    #         self.simulation_thread.stop()
-    #         self.progress_bar.setValue(0)
-    #         self.progress_bar.setVisible(False)
-    #         self.simulation_thread = None
-    #     self.start_button.setText("Start")
-
-    def update_progress(self, value):
-        """
-        Updates the progress bar.
-        """
-        self.progress_bar.setValue(value)
-
-    def simulation_finished(self):
-        """
-        Finish the simulation.
-        """
-        self.progress_bar.setVisible(False)
-        self.progress_bar.setValue(0)
-        self.simulation_thread = None
-
-    @staticmethod
-    def open_settings():
-        """
-        Opens the settings panel.
-        """
-        settings_dialog = SettingsDialog()
-        settings_dialog.setModal(True)
-        settings_dialog.setStyleSheet("""
-            background-color: white;
-            background-color: white;
-        """)
-        if settings_dialog.exec() == QtWidgets.QDialog.Accepted:
-            print(settings_dialog.get_settings())
-
     @staticmethod
     def on_hover_change(label, data, hovered):
         """
@@ -372,7 +250,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if hovered:
             detailed_data = "<br>".join(f"{k}: {v}" for k, v in data.items())
             tooltip_text = f"Details:<br>{detailed_data}"
-            # print(f"Setting tooltip: {tooltipText}")  # Debug print
             label.setToolTip(tooltip_text)
 
 
