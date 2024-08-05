@@ -1,18 +1,25 @@
 # pylint: disable=c-extension-no-member
+import sys
 import networkx as nx
-from matplotlib import pyplot as plt
-
-from PyQt5 import QtWidgets, QtCore, QtGui
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+from PyQt5 import QtWidgets, QtCore
 
 from gui_scripts.gui_helpers.general_helpers import SettingsDialog
 from data_scripts.structure_data import create_network
 
 
-class NodeInfoDialog(QtWidgets.QDialog):
+class NodeInfoDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-methods
+    """
+    Displays individual node dialog.
+    """
+
     def __init__(self, node, info, parent=None):
-        super(NodeInfoDialog, self).__init__(parent)
+        super(NodeInfoDialog, self).__init__(parent)  # pylint: disable=super-with-arguments
         self.setWindowTitle(f"Node Information - {node}")
         self.setGeometry(100, 100, 300, 200)
+        self.setWindowModality(QtCore.Qt.ApplicationModal)  # Make the dialog modal
+        self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)  # Ensure the dialog stays on top
 
         layout = QtWidgets.QVBoxLayout()
 
@@ -24,6 +31,56 @@ class NodeInfoDialog(QtWidgets.QDialog):
         layout.addWidget(close_button)
 
         self.setLayout(layout)
+
+
+class TopologyCanvas(FigureCanvas):
+    """
+    Draws the topology canvas
+    """
+
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        super(TopologyCanvas, self).__init__(fig)  # pylint: disable=super-with-arguments
+        self.setParent(parent)
+
+        self.G = None  # pylint: disable=invalid-name
+
+    def plot(self, G, pos):  # pylint: disable=invalid-name
+        """
+        Plots a single node.
+
+        :param G: The graph.
+        :param pos: Position of this node.
+        """
+        self.axes.clear()
+        nx.draw(G, pos, ax=self.axes, with_labels=True, node_size=200, font_size=8)
+        self.draw()
+
+    def set_picker(self, scatter):
+        """
+        Sets up picker events.
+
+        :param scatter: The scatter object of the topology.
+        """
+        scatter.set_picker(True)
+        self.mpl_connect('pick_event', self.on_pick)
+
+    def on_pick(self, event):
+        """
+        Handles event to display node information on a click.
+
+        :param event: The event object.
+        """
+        ind = event.ind[0]
+        node = list(self.G.nodes())[ind]
+        info = "Additional Info: ..."  # Replace with actual node information
+        dialog = NodeInfoDialog(node, info, self.parent())
+        dialog.setWindowModality(QtCore.Qt.ApplicationModal)
+        dialog.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
+        dialog.raise_()
+        dialog.activateWindow()
+        dialog.exec_()
 
 
 class ActionHelpers:
@@ -71,56 +128,19 @@ class ActionHelpers:
                      topology_information_dict.items()]
         network_topo = nx.Graph(edge_list)
 
-        figure, axis = plt.subplots(figsize=(8, 6), dpi=100)
         pos = nx.spring_layout(network_topo, seed=5, scale=3.5)
 
-        # Draw edges and labels using NetworkX
-        nx.draw_networkx_edges(network_topo, pos, ax=axis)
-        nx.draw_networkx_labels(network_topo, pos, ax=axis, font_size=8)
+        # Create a canvas and plot the topology
+        canvas = TopologyCanvas(self.mw_topology_view_area)
+        canvas.plot(network_topo, pos)
+        canvas.G = network_topo  # pylint: disable=invalid-name
 
         # Draw nodes using scatter to enable picking
-        x, y = zip(*pos.values())
-        scatter = axis.scatter(x, y, s=200, picker=True, zorder=2)
-        print("Nodes plotted with picking enabled")  # Debugging line
+        x, y = zip(*pos.values())  # pylint: disable=invalid-name
+        scatter = canvas.axes.scatter(x, y, s=200)
+        canvas.set_picker(scatter)
 
-        def on_pick(event):
-            print("Pick event triggered")  # Debugging line
-            ind = event.ind[0]
-            print(f"Node index picked: {ind}")  # Debugging line
-            node = list(network_topo.nodes())[ind]
-            info = "Additional Info: ..."  # Replace with actual node information
-            dialog = NodeInfoDialog(node, info, self.menu_bar_obj)
-            dialog.exec_()
-
-        def on_hover(event):
-            if event.inaxes == axis:
-                for i, node_pos in enumerate(zip(x, y)):
-                    if (event.xdata - node_pos[0]) ** 2 + (event.ydata - node_pos[1]) ** 2 < 0.05:
-                        node = list(network_topo.nodes())[i]
-                        QtWidgets.QToolTip.showText(QtGui.QCursor.pos(), f"Node: {node}")
-                        break  # Show tooltip for only one node at a time
-
-        # Connect event handlers to the figure canvas
-        figure.canvas.mpl_connect('pick_event', on_pick)
-        figure.canvas.mpl_connect('motion_notify_event', on_hover)
-        print("Event handlers connected")  # Debugging line
-
-        # Enable interactive mode
-        plt.ion()
-        print("Interactive mode enabled")  # Debugging line
-
-        figure.canvas.draw()
-        width, height = figure.canvas.get_width_height()
-        buffer = figure.canvas.buffer_rgba()
-        image = QtGui.QImage(buffer, width, height, QtGui.QImage.Format_ARGB32)
-        pixmap = QtGui.QPixmap.fromImage(image)
-
-        label = QtWidgets.QLabel(self.menu_bar_obj)
-        label.setFixedSize(pixmap.rect().size())
-        label.setAlignment(QtCore.Qt.AlignCenter)
-        label.setPixmap(pixmap)
-
-        self.mw_topology_view_area.setWidget(label)
+        self.mw_topology_view_area.setWidget(canvas)
         print("Topology displayed")  # Debugging line
 
     def display_topology(self):
@@ -186,3 +206,19 @@ class ActionHelpers:
         about_action = QtWidgets.QAction('&About', self.menu_bar_obj)
         about_action.triggered.connect(self.about)
         self.menu_help_obj.help_menu_obj.addAction(about_action)
+
+
+if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
+    window = QtWidgets.QMainWindow()
+    window.setWindowTitle('SDN Simulator')
+
+    action_helpers = ActionHelpers()
+    action_helpers.menu_bar_obj = window.menuBar()
+    action_helpers.mw_topology_view_area = QtWidgets.QScrollArea(window)
+    window.setCentralWidget(action_helpers.mw_topology_view_area)
+
+    action_helpers.display_topology()
+
+    window.show()
+    sys.exit(app.exec_())
