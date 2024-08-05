@@ -10,6 +10,7 @@ from gui_scripts.gui_helpers.menu_helpers import MenuHelpers
 from gui_scripts.gui_helpers.action_helpers import ActionHelpers
 from gui_scripts.gui_helpers.button_helpers import ButtonHelpers
 from gui_scripts.gui_helpers.highlight_helpers import PythonHighlighter
+from gui_scripts.gui_args.style_args import STYLE_SHEET
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -35,6 +36,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_button = None
         self.mw_toolbar = None
 
+        self.current_file_path = None
+        self.main_widget = None
+        self.main_layout = None
+        self.horizontal_splitter = None
+        self.first_info_layout = None
+        self.directory_tree = None
+        self.tab_widget = None
+        self.file_editor = None
+        self.mw_topology_view_area = None
+        self.vertical_splitter = None
+        self.bottom_pane = None
+        self.menu_bar = None
+        self.tool_bar = None
+        self.status_bar = None
+
         # Set the project directory as the root for the file model
         self.project_directory = QtCore.QDir.currentPath()
         self.file_model = QFileSystemModel()
@@ -45,8 +61,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_tool_bar()
         self.init_status_bar()
         self.apply_styles()
-
-        self.current_file_path = None
 
     def init_ui(self):
         """
@@ -193,113 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Apply styles to the display.
         """
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #f5f5f5;
-            }
-
-            QMenuBar {
-                background-color: #ffffff;
-                color: #000;
-                padding-bottom: 5px;  /* Increase padding to the bottom */
-                border-bottom: 1px solid #cccccc;
-            }
-
-            QMenuBar::item {
-                background-color: #ffffff;
-                color: #000;
-                padding: 6px 10px;  /* Increase padding to create more space */
-                margin: 0.5;
-            }
-
-            QMenuBar::item:selected {
-                background-color: #e0e0e0;
-            }
-
-            QMenu {
-                background-color: #ffffff;
-                color: #000;
-                margin: 0;
-            }
-
-            QMenu::item {
-                background-color: #ffffff;
-                color: #000;
-                padding: 4px 10px;
-            }
-
-            QMenu::item:selected {
-                background-color: #e0e0e0;
-            }
-
-            QToolBar {
-                background-color: #ffffff;
-                padding: 5px 0;  /* Add padding to the top and bottom */
-                margin: 0;
-                border-top: 1px solid #cccccc;  /* Add top border to create separation */
-                border-bottom: 1px solid #cccccc;  /* Add bottom border to create separation */
-            }
-
-            QToolButton {
-                background-color: #ffffff;
-                border: none;
-                color: #000;
-                padding: 5px;
-                margin: 0.5px;
-            }
-
-            QToolButton:hover {
-                background-color: #e0e0e0;
-            }
-
-            QSplitter::handle {
-                background-color: #dcdcdc;
-            }
-
-            QTabWidget::pane {
-                border: 1px solid #cccccc;
-                background: #f5f5f5;
-            }
-
-            QTabBar::tab {
-                background: #ffffff;
-                border: 1px solid #cccccc;
-                padding: 5px;
-                margin: 2px;
-            }
-
-            QTabBar::tab:selected {
-                background: #e0e0e0;
-                border-bottom-color: #f5f5f5;
-            }
-
-            QTreeView {
-                background-color: #ffffff;
-                color: #000;
-                border: 1px solid #cccccc;
-                padding: 5px;
-            }
-
-            QTextEdit, QPlainTextEdit {
-                background-color: #ffffff;
-                color: #000;
-                border: 1px solid #cccccc;
-                padding: 5px;
-            }
-
-            QPushButton {
-                background-color: #ffffff;
-                color: #000;
-                border: 1px solid #cccccc;
-                padding: 5px;
-                margin: 2px;
-            }
-
-            QPushButton:hover {
-                background-color: #e0e0e0;
-                border: 1px solid #bcbcbc;
-            }
-        """)
+        self.setStyleSheet(STYLE_SHEET)
 
 
 if __name__ == '__main__':
