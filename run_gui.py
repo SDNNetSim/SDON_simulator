@@ -2,255 +2,304 @@
 # pylint: disable=c-extension-no-member
 
 import sys
-
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtWidgets import QFileSystemModel, QTreeView, QTabWidget, QPlainTextEdit
 
+# Assuming these imports are available from your project
 from gui_scripts.gui_helpers.menu_helpers import MenuHelpers
 from gui_scripts.gui_helpers.action_helpers import ActionHelpers
 from gui_scripts.gui_helpers.button_helpers import ButtonHelpers
+from gui_scripts.gui_helpers.highlight_helpers import PythonHighlighter
 
 
-# TODO: Standards and guidelines regarding parameter types
 class MainWindow(QtWidgets.QMainWindow):
     """
     The main window class, central point that controls all GUI functionality and actions.
     """
-    # TODO: Why define these here?
-    mw_main_view_widget = None
-    mw_main_view_layout = None
-    mw_main_view_splitter = None
-    mw_main_view_left_splitter = None
-    mw_main_view_right_splitter = None
-    mw_topology_view_area = None
-    bottom_right_pane = None
-    start_button = None
-    pause_button = None
-    stop_button = None
 
     def __init__(self):
         super().__init__()
-        self.progress_bar = QtWidgets.QProgressBar()
-        self.simulation_thread = None
-        self.network_option = ''
+        self.setWindowTitle("SD-EON Simulator")
+        self.resize(1280, 720)
 
         self.menu_help_obj = MenuHelpers()
         self.ac_help_obj = ActionHelpers()
         self.button_help_obj = ButtonHelpers()
-        self.init_mw_ui()
-        self.menu_bar_obj = None
+
+        self.progress_bar = QtWidgets.QProgressBar()
+        self.simulation_thread = None
+        self.network_option = ''
 
         self.first_info_pane = None
-        self.second_info_pane = None
         self.media_dir = None
         self.settings_button = None
         self.mw_toolbar = None
 
-    def init_mw_ui(self):
-        """
-        Initialize the user interface.
-        """
-        self.setWindowTitle("SDNv1")
-        self.resize(1280, 720)
-        self.setStyleSheet("background-color: gray")
-        self.center_window()
-        self.init_mw_view_area()
-        self.init_mw_menu_bar()
-        self.init_mw_tool_bar()
-        self.init_mw_status_bar()
+        # Set the project directory as the root for the file model
+        self.project_directory = QtCore.QDir.currentPath()
+        self.file_model = QFileSystemModel()
+        self.file_model.setRootPath(self.project_directory)
 
-    # TODO: Calls an external class or something similar
-    def init_mw_menu_bar(self):
-        """
-        Creates the menu bar.
-        """
-        self.menu_bar_obj = self.menuBar()
-        self.menu_bar_obj.setStyleSheet("background-color: grey;")
+        self.init_ui()
+        self.init_menu_bar()
+        self.init_tool_bar()
+        self.init_status_bar()
+        self.apply_styles()
 
-        self.menu_help_obj.menu_bar_obj = self.menu_bar_obj
+        self.current_file_path = None
+
+    def init_ui(self):
+        """
+        Initialize the main user-interface.
+        """
+        self.main_widget = QtWidgets.QWidget()
+        self.setCentralWidget(self.main_widget)
+
+        self.main_layout = QtWidgets.QVBoxLayout(self.main_widget)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)  # Remove any margins
+        self.main_layout.setSpacing(0)  # Remove any spacing between widgets
+
+        # Splitter for directory tree and tab widget
+        self.horizontal_splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+
+        # Directory tree view
+        self.first_info_pane = QtWidgets.QWidget()
+        self.first_info_layout = QtWidgets.QVBoxLayout(self.first_info_pane)
+
+        self.directory_tree = QTreeView()
+        self.directory_tree.setModel(self.file_model)
+        self.directory_tree.setRootIndex(self.file_model.index(self.project_directory))
+        self.directory_tree.clicked.connect(self.on_treeview_clicked)
+
+        # Hide size, type, and date columns
+        self.directory_tree.setColumnHidden(1, True)  # Size column
+        self.directory_tree.setColumnHidden(2, True)  # Type column
+        self.directory_tree.setColumnHidden(3, True)  # Date column
+
+        self.first_info_layout.addWidget(self.directory_tree)
+        self.horizontal_splitter.addWidget(self.first_info_pane)
+
+        # Tab widget for file editor and topology
+        self.tab_widget = QTabWidget()
+
+        # File editor tab
+        self.file_editor = QtWidgets.QTextEdit()
+        self.tab_widget.addTab(self.file_editor, "File Editor")
+
+        # Topology view tab
+        self.mw_topology_view_area = QtWidgets.QScrollArea()
+        init_topology_data = QtWidgets.QLabel("Nothing to display")
+        init_topology_data.setAlignment(QtCore.Qt.AlignCenter)
+        self.mw_topology_view_area.setWidget(init_topology_data)
+        self.tab_widget.addTab(self.mw_topology_view_area, "Topology View")
+
+        self.horizontal_splitter.addWidget(self.tab_widget)
+
+        # Vertical splitter for the horizontal splitter and the bottom pane
+        self.vertical_splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.vertical_splitter.addWidget(self.horizontal_splitter)
+
+        # Bottom pane for simulation output
+        self.bottom_pane = QPlainTextEdit(self)
+        self.bottom_pane.setReadOnly(True)
+        self.bottom_pane.setMinimumHeight(150)
+        self.vertical_splitter.addWidget(self.bottom_pane)
+
+        self.main_layout.addWidget(self.vertical_splitter, stretch=1)
+
+    def on_treeview_clicked(self, index):
+        """
+        Performs an action when treeview is clicked.
+
+        :param index: Index of file path displayed in the tree.
+        """
+        file_path = self.file_model.filePath(index)
+        if QtCore.QFileInfo(file_path).isFile():
+            with open(file_path, 'r', encoding='utf-8') as file:
+                content = file.read()
+                self.file_editor.setPlainText(content)
+            self.current_file_path = file_path
+            self.tab_widget.setCurrentWidget(self.file_editor)
+
+    def save_file(self):
+        """
+        Saves a file edited.
+        """
+        if hasattr(self, 'current_file_path') and self.current_file_path:
+            with open(self.current_file_path, 'w', encoding='utf-8') as file:
+                file.write(self.file_editor.toPlainText())
+
+    def init_menu_bar(self):
+        """
+        Initialize the menu bar.
+        """
+        self.menu_bar = self.menuBar()
+        self.menu_help_obj.menu_bar_obj = self.menu_bar
         self.menu_help_obj.create_file_menu()
         self.menu_help_obj.create_edit_menu()
         self.menu_help_obj.create_help_menu()
 
         self.ac_help_obj.mw_topology_view_area = self.mw_topology_view_area
         self.ac_help_obj.menu_help_obj = self.menu_help_obj
-        self.ac_help_obj.menu_bar_obj = self.menu_bar_obj
+        self.ac_help_obj.menu_bar_obj = self.menu_bar
+
         self.ac_help_obj.create_topology_action()
         self.ac_help_obj.create_save_action()
-        self.ac_help_obj.create_exit_action()
+
+        # Create exit action and add it to the File menu
+        exit_action = QtWidgets.QAction('Exit', self)
+        exit_action.triggered.connect(self.close)
+        self.menu_help_obj.file_menu_obj.addAction(exit_action)
+
         self.ac_help_obj.create_settings_action()
         self.ac_help_obj.create_about_action()
 
-    # TODO: Comment and say these are to the left
-    def _setup_first_info_pane(self):
-        self.first_info_pane = QtWidgets.QWidget(self)
-
-        left_info_pane1_layout = QtWidgets.QVBoxLayout()
-        self.first_info_pane.setLayout(left_info_pane1_layout)
-        left_info_pane1_init_data = QtWidgets.QLabel(
-            "Nothing to display"
-        )
-        left_info_pane1_init_data.setStyleSheet(
-            "border: 0px"
-        )
-        left_info_pane1_init_data.setAlignment(QtCore.Qt.AlignCenter)
-        left_info_pane1_layout.addWidget(left_info_pane1_init_data)
-        self.first_info_pane.setStyleSheet(
-            "background-color: white;"
-            "border-radius: 5px;"
-            "border: 2px solid black;"
-        )
-
-    def _setup_second_info_pane(self):
-        # left info pane 2 begin here
-        self.second_info_pane = QtWidgets.QWidget(self)
-        left_info_pane2_layout = QtWidgets.QVBoxLayout()
-        self.second_info_pane.setLayout(left_info_pane2_layout)
-        self.second_info_pane.setStyleSheet(
-            "background-color: white;"
-            "border-radius: 5px;"
-            "border: 2px solid black;"
-        )
-        # initial data inside left info pane 2
-        left_info_pane2_init_data = QtWidgets.QLabel(
-            "Nothing to display"
-        )
-        left_info_pane2_init_data.setStyleSheet(
-            "border: none"
-        )
-        left_info_pane2_init_data.setAlignment(QtCore.Qt.AlignCenter)
-        # set layout with initial data
-        left_info_pane2_layout.addWidget(left_info_pane2_init_data)
-
-    def _init_left_splitter(self):
-        self.mw_main_view_left_splitter = QtWidgets.QSplitter()
-        self.mw_main_view_left_splitter.setMinimumWidth(200)
-        self.mw_main_view_left_splitter.setOrientation(QtCore.Qt.Vertical)
-        self.mw_main_view_left_splitter.addWidget(self.first_info_pane)
-        self.mw_main_view_left_splitter.addWidget(self.second_info_pane)
-
-    def _init_third_pane(self):
-        self.bottom_right_pane = QtWidgets.QPlainTextEdit(self)
-        self.bottom_right_pane.setReadOnly(True)
-        self.bottom_right_pane.appendPlainText("No Data to display")
-        self.bottom_right_pane.setMinimumHeight(150)
-        self.bottom_right_pane.setMaximumHeight(200)
-        self.bottom_right_pane.setStyleSheet(
-            "background-color: white;"
-            "border-radius: 5px;"
-            "border: 2px solid black;"
-        )
-
-    def _init_topology(self):
-        init_topology_data = QtWidgets.QLabel(
-            "Nothing to display"
-        )
-        init_topology_data.setStyleSheet(
-            "border: none"
-        )
-        init_topology_data.setAlignment(QtCore.Qt.AlignCenter)
-        self.mw_topology_view_area = QtWidgets.QScrollArea()
-        self.mw_topology_view_area.setAlignment(QtCore.Qt.AlignCenter)
-        self.mw_topology_view_area.setStyleSheet(
-            "background-color: white"
-        )
-        self.mw_topology_view_area.setWidget(init_topology_data)
-
-    def _init_main_splitter(self):
-        self.mw_main_view_splitter = QtWidgets.QSplitter()
-        self.mw_main_view_splitter.setOrientation(QtCore.Qt.Horizontal)
-        self.mw_main_view_splitter.addWidget(
-            self.mw_main_view_left_splitter
-        )
-        self.mw_main_view_splitter.addWidget(
-            self.mw_main_view_right_splitter
-        )
-
-        self.mw_main_view_layout.addWidget(self.mw_main_view_splitter)
-
-        # Set main window central widget
-        self.setCentralWidget(self.mw_main_view_widget)
-
-    def init_mw_view_area(self):
+    def init_tool_bar(self):
         """
-        Adds initial data displayed to the main screen, for example, the topology.
+        Initialize the toolbar.
         """
-        self.mw_main_view_widget = QtWidgets.QWidget(self)
-        self.mw_main_view_widget.setStyleSheet(
-            "background-color: #15b09e;"
-        )
+        self.tool_bar = self.addToolBar('Main Toolbar')
+        self.tool_bar.setMovable(False)
+        self.tool_bar.setIconSize(QtCore.QSize(15, 15))
 
-        self.mw_main_view_layout = QtWidgets.QHBoxLayout()
-        self.mw_main_view_layout.setContentsMargins(5, 5, 5, 5)
-        self.mw_main_view_widget.setLayout(self.mw_main_view_layout)
+        save_action = QtWidgets.QAction('Save', self)
+        save_action.triggered.connect(self.save_file)
+        self.tool_bar.addAction(save_action)
 
-        self._setup_first_info_pane()
-        self._setup_second_info_pane()
-        self._init_left_splitter()
-
-        self.mw_main_view_right_splitter = QtWidgets.QSplitter()
-        self.mw_main_view_right_splitter.setOrientation(QtCore.Qt.Vertical)
-
-        self._init_third_pane()
-        self._init_topology()
-
-        self.mw_main_view_right_splitter.addWidget(self.mw_topology_view_area)
-        self.mw_main_view_right_splitter.addWidget(self.bottom_right_pane)
-
-        self._init_main_splitter()
-
-    def _create_toolbar(self):
-        self.mw_toolbar = QtWidgets.QToolBar()
-        self.addToolBar(QtCore.Qt.TopToolBarArea, self.mw_toolbar)
-        self.mw_toolbar.setStyleSheet("background-color: grey; color: white;")
-        self.mw_toolbar.setMovable(False)
-        self.mw_toolbar.setIconSize(QtCore.QSize(15, 15))
-        self.mw_toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
-
-    def init_mw_tool_bar(self):
-        """
-        Adds controls to the toolbar.
-        """
-        self._create_toolbar()
-
-        self.button_help_obj.bottom_right_pane = self.bottom_right_pane
+        self.button_help_obj.bottom_right_pane = self.bottom_pane  # Ensure this points to QPlainTextEdit
         self.button_help_obj.progress_bar = self.progress_bar
         self.button_help_obj.create_settings_button()
         self.button_help_obj.create_start_button()
         self.button_help_obj.create_stop_button()
         self.button_help_obj.create_pause_button()
 
-        self.mw_toolbar.addSeparator()
-        self.mw_toolbar.addAction(self.button_help_obj.start_button)
-        self.mw_toolbar.addAction(self.button_help_obj.pause_button)
-        self.mw_toolbar.addAction(self.button_help_obj.stop_button)
-        self.mw_toolbar.addSeparator()
-        self.mw_toolbar.addWidget(self.button_help_obj.settings_button)
+        self.tool_bar.addSeparator()
+        self.tool_bar.addAction(self.button_help_obj.start_button)
+        self.tool_bar.addAction(self.button_help_obj.pause_button)
+        self.tool_bar.addAction(self.button_help_obj.stop_button)
+        self.tool_bar.addSeparator()
+        self.tool_bar.addWidget(self.button_help_obj.settings_button)
 
-    def init_mw_status_bar(self):
+    def init_status_bar(self):
         """
-        Initializes the status bar.
+        Initialize the status bar.
         """
-        main_status_bar = self.statusBar()
-        main_status_bar.setStyleSheet("background: gray;")
-        main_status_bar.addWidget(self.progress_bar)
+        self.status_bar = self.statusBar()
+        self.status_bar.showMessage('Active')
+        self.status_bar.addWidget(self.progress_bar)
         self.progress_bar.setVisible(False)
 
-    def center_window(self):
+    def apply_styles(self):
         """
-        Gets the center point of the window.
+        Apply styles to the display.
         """
-        center_point = QtWidgets.QDesktopWidget().screenGeometry().center()  # Calculate the center point of the screen
-        self.move(center_point - self.rect().center())  # Reposition window in the center of the screen
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #f5f5f5;
+            }
 
-    @staticmethod
-    def on_hover_change(label, data, hovered):
-        """
-        Change the display details based on a mouse hover.
-        """
-        if hovered:
-            detailed_data = "<br>".join(f"{k}: {v}" for k, v in data.items())
-            tooltip_text = f"Details:<br>{detailed_data}"
-            label.setToolTip(tooltip_text)
+            QMenuBar {
+                background-color: #ffffff;
+                color: #000;
+                padding-bottom: 5px;  /* Increase padding to the bottom */
+                border-bottom: 1px solid #cccccc;
+            }
+
+            QMenuBar::item {
+                background-color: #ffffff;
+                color: #000;
+                padding: 6px 10px;  /* Increase padding to create more space */
+                margin: 0.5;
+            }
+
+            QMenuBar::item:selected {
+                background-color: #e0e0e0;
+            }
+
+            QMenu {
+                background-color: #ffffff;
+                color: #000;
+                margin: 0;
+            }
+
+            QMenu::item {
+                background-color: #ffffff;
+                color: #000;
+                padding: 4px 10px;
+            }
+
+            QMenu::item:selected {
+                background-color: #e0e0e0;
+            }
+
+            QToolBar {
+                background-color: #ffffff;
+                padding: 5px 0;  /* Add padding to the top and bottom */
+                margin: 0;
+                border-top: 1px solid #cccccc;  /* Add top border to create separation */
+                border-bottom: 1px solid #cccccc;  /* Add bottom border to create separation */
+            }
+
+            QToolButton {
+                background-color: #ffffff;
+                border: none;
+                color: #000;
+                padding: 5px;
+                margin: 0.5px;
+            }
+
+            QToolButton:hover {
+                background-color: #e0e0e0;
+            }
+
+            QSplitter::handle {
+                background-color: #dcdcdc;
+            }
+
+            QTabWidget::pane {
+                border: 1px solid #cccccc;
+                background: #f5f5f5;
+            }
+
+            QTabBar::tab {
+                background: #ffffff;
+                border: 1px solid #cccccc;
+                padding: 5px;
+                margin: 2px;
+            }
+
+            QTabBar::tab:selected {
+                background: #e0e0e0;
+                border-bottom-color: #f5f5f5;
+            }
+
+            QTreeView {
+                background-color: #ffffff;
+                color: #000;
+                border: 1px solid #cccccc;
+                padding: 5px;
+            }
+
+            QTextEdit, QPlainTextEdit {
+                background-color: #ffffff;
+                color: #000;
+                border: 1px solid #cccccc;
+                padding: 5px;
+            }
+
+            QPushButton {
+                background-color: #ffffff;
+                color: #000;
+                border: 1px solid #cccccc;
+                padding: 5px;
+                margin: 2px;
+            }
+
+            QPushButton:hover {
+                background-color: #e0e0e0;
+                border: 1px solid #bcbcbc;
+            }
+        """)
 
 
 if __name__ == '__main__':
