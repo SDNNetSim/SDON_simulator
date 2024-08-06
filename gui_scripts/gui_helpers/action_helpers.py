@@ -38,7 +38,7 @@ class TopologyCanvas(FigureCanvas):
     Draws the topology canvas
     """
 
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
+    def __init__(self, parent=None, width=10, height=8, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
         super(TopologyCanvas, self).__init__(fig)  # pylint: disable=super-with-arguments
@@ -55,6 +55,7 @@ class TopologyCanvas(FigureCanvas):
         """
         self.axes.clear()
         nx.draw(G, pos, ax=self.axes, with_labels=True, node_size=200, font_size=8)
+        self.axes.figure.tight_layout()  # Ensure the plot fits within the canvas
         self.draw()
 
     def set_picker(self, scatter):
@@ -128,7 +129,7 @@ class ActionHelpers:
                      topology_information_dict.items()]
         network_topo = nx.Graph(edge_list)
 
-        pos = nx.spring_layout(network_topo, seed=5, scale=3.5)
+        pos = nx.spring_layout(network_topo, seed=5, scale=2.0)  # Adjust the scale as needed
 
         # Create a canvas and plot the topology
         canvas = TopologyCanvas(self.mw_topology_view_area)
