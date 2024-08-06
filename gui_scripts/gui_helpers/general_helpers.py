@@ -4,40 +4,66 @@ import os
 import signal
 import subprocess
 import sys
+
 from PyQt5 import QtWidgets, QtCore
+
+from gui_scripts.gui_args.config_args import SETTINGS_CONFIG_DICT
 
 
 class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-methods
     """
-    Creates the configuration file or settings dialog.
+    The settings window in the menu bar.
     """
 
     def __init__(self, parent=None):
-        super().__init__(parent)  # pylint: disable=super-with-arguments
-
+        super().__init__(parent)
         self.setWindowTitle("Settings Menu")
         self.resize(400, 600)
         self.layout = QtWidgets.QVBoxLayout()
         self.tabs = QtWidgets.QTabWidget()
+        self.settings_widgets = {}
         self._setup_layout()
 
-        self._setup_holding_time()
-        self._setup_arrival_rate()
-        self._setup_thread_erlangs()
-        self._setup_guard_slots()
-        self._setup_requests()
-        self._setup_max_iter_seg()
-        self._setup_dynam_lps()
-        self._setup_alloc_methods()
-        self._setup_steps()
+        self.setLayout(self.layout)
 
-        self._setup_topology()
-
-        self._setup_snr()
-
-        self._setup_files()
+    def _setup_layout(self):
+        for category in SETTINGS_CONFIG_DICT:
+            tab = QtWidgets.QWidget()
+            tab_layout = QtWidgets.QFormLayout()
+            for setting in category["settings"]:
+                widget, label = self._create_widget(setting)
+                self.settings_widgets[label] = widget
+                tab_layout.addRow(label, widget)
+            tab.setLayout(tab_layout)
+            self.tabs.addTab(tab, category["category"])
+        self.layout.addWidget(self.tabs)
 
         self._setup_buttons()
+
+    @staticmethod
+    def _create_widget(setting):
+        widget_type = setting["type"]
+        label = setting["label"]
+        if widget_type == "combo":
+            widget = QtWidgets.QComboBox()
+            widget.addItems(setting["options"])
+            widget.setCurrentText(setting["default"])
+        elif widget_type == "check":
+            widget = QtWidgets.QCheckBox()
+            widget.setChecked(setting["default"])
+        elif widget_type == "line":
+            widget = QtWidgets.QLineEdit(setting["default"])
+        elif widget_type == "spin":
+            widget = QtWidgets.QSpinBox()
+            widget.setValue(setting["default"])
+            widget.setMinimum(setting.get("min", 0))
+            widget.setMaximum(setting.get("max", 100))
+        elif widget_type == "double_spin":
+            widget = QtWidgets.QDoubleSpinBox()
+            widget.setValue(setting["default"])
+            widget.setMinimum(setting.get("min", 0.0))
+            widget.setSingleStep(setting.get("step", 1.0))
+        return widget, label
 
     def _setup_buttons(self):
         buttons = QtWidgets.QDialogButtonBox(
@@ -47,277 +73,42 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
         buttons.rejected.connect(self.reject)
         self.layout.addWidget(buttons)
 
-        self.setLayout(self.layout)
-
-    def _setup_files(self):
-        file_tab = QtWidgets.QWidget()
-        file_settings_layout = QtWidgets.QFormLayout()
-
-        self.file_type = QtWidgets.QLineEdit("json")
-        file_settings_layout.addRow("File Type:", self.file_type)
-
-        file_tab.setLayout(file_settings_layout)
-        self.tabs.addTab(file_tab, "File Settings")
-
-        self.layout.addWidget(self.tabs)
-
-    def _setup_snr(self):
-        snr_tab = QtWidgets.QWidget()
-        snr_settings_layout = QtWidgets.QFormLayout()
-
-        self.snr_type = QtWidgets.QLineEdit("None")
-        snr_settings_layout.addRow("SNR Type:", self.snr_type)
-
-        self.xt_type = QtWidgets.QLineEdit("without_length")
-        snr_settings_layout.addRow("XT Type:", self.xt_type)
-
-        self.beta = QtWidgets.QDoubleSpinBox()
-        self.beta.setValue(0.5)
-        snr_settings_layout.addRow("Beta:", self.beta)
-
-        self.theta = QtWidgets.QDoubleSpinBox()
-        self.theta.setValue(0.0)
-        snr_settings_layout.addRow("Theta:", self.theta)
-
-        self.input_power = QtWidgets.QDoubleSpinBox()
-        self.input_power.setValue(0.001)
-        snr_settings_layout.addRow("Input Power:", self.input_power)
-
-        self.egn_model = QtWidgets.QCheckBox()
-        self.egn_model.setChecked(False)
-        snr_settings_layout.addRow("EGN Model:", self.egn_model)
-
-        self.phi = QtWidgets.QLineEdit(
-            "{\"QPSK\": 1, \"16-QAM\": 0.68, \"64-QAM\": 0.6190476190476191}")
-        snr_settings_layout.addRow("Phi:", self.phi)
-
-        self.bi_directional = QtWidgets.QCheckBox()
-        self.bi_directional.setChecked(True)
-        snr_settings_layout.addRow("Bi-Directional:", self.bi_directional)
-
-        self.xt_noise = QtWidgets.QCheckBox()
-        self.xt_noise.setChecked(False)
-        snr_settings_layout.addRow("XT Noise:", self.xt_noise)
-
-        self.requested_xt = QtWidgets.QLineEdit(
-            "{\"QPSK\": -18.5, \"16-QAM\": -25.0, \"64-QAM\": -34.0}")
-        snr_settings_layout.addRow("Requested XT:", self.requested_xt)
-
-        snr_tab.setLayout(snr_settings_layout)
-        self.tabs.addTab(snr_tab, "SNR Settings")
-
-    def _setup_topology(self):
-        topology_tab = QtWidgets.QWidget()
-        topology_settings_layout = QtWidgets.QFormLayout()
-
-        self.network = QtWidgets.QLineEdit("USNet")
-        topology_settings_layout.addRow("Network:", self.network)
-
-        self.spectral_slots = QtWidgets.QSpinBox()
-        self.spectral_slots.setValue(128)
-        topology_settings_layout.addRow("Spectral Slots:", self.spectral_slots)
-
-        self.bw_per_slot = QtWidgets.QDoubleSpinBox()
-        self.bw_per_slot.setValue(12.5)
-        topology_settings_layout.addRow("BW per Slot:", self.bw_per_slot)
-
-        self.cores_per_link = QtWidgets.QSpinBox()
-        self.cores_per_link.setValue(1)
-        topology_settings_layout.addRow("Cores per Link:", self.cores_per_link)
-
-        self.const_link_weight = QtWidgets.QCheckBox()
-        self.const_link_weight.setChecked(False)
-        topology_settings_layout.addRow("Const Link Weight:",
-                                        self.const_link_weight)
-
-        topology_tab.setLayout(topology_settings_layout)
-        self.tabs.addTab(topology_tab, "Topology Settings")
-
-    def _setup_steps(self):
-        self.save_snapshots = QtWidgets.QCheckBox()
-        self.save_snapshots.setChecked(False)
-        self.save_snapshots.setToolTip("To save information at certain request intervals")
-        self.general_settings_layout.addRow("Save Snapshots:", self.save_snapshots)
-
-        self.snapshot_step = QtWidgets.QSpinBox()
-        self.snapshot_step.setMinimum(1)
-        self.snapshot_step.setValue(10)
-        self.snapshot_step.setToolTip("Interval for saving snapshot results")
-        self.general_settings_layout.addRow("Snapshot Step:", self.snapshot_step)
-
-        self.print_step = QtWidgets.QSpinBox()
-        self.print_step.setMinimum(1)
-        self.print_step.setValue(1)
-        self.print_step.setToolTip("Interval for printing simulator information")
-        self.general_settings_layout.addRow("Print Step:", self.print_step)
-
-        self.general_tab.setLayout(self.general_settings_layout)
-        self.tabs.addTab(self.general_tab, "General Settings")
-
-    def _setup_alloc_methods(self):
-        self.allocation_method = QtWidgets.QComboBox()
-        self.allocation_method.addItems(
-            ["best_fit", "first_fit", "last_fit", "priority_first",
-             "priority_last", "xt_aware"]
-        )
-        self.allocation_method.setToolTip(
-            "Method for assigning a request to a spectrum"
-        )
-        self.general_settings_layout.addRow("Allocation Method:",
-                                            self.allocation_method)
-
-        self.k_paths = QtWidgets.QSpinBox()
-        self.k_paths.setMinimum(1)
-        self.k_paths.setValue(1)
-        self.general_settings_layout.addRow("K Paths:", self.k_paths)
-
-        self.route_method = QtWidgets.QComboBox()
-        self.route_method.addItems(
-            ["nli_aware", "xt_aware", "least_congested",
-             "shortest_path", "k_shortest_path"]
-        )
-        self.route_method.setToolTip("Method for routing a request")
-        self.general_settings_layout.addRow("Route Method:", self.route_method)
-
-    def _setup_dynam_lps(self):
-        self.dynamic_lps = QtWidgets.QCheckBox()
-        self.dynamic_lps.setChecked(False)
-        self.dynamic_lps.setToolTip(
-            "Use dynamic light path/segment slicing or not"
-        )
-        self.general_settings_layout.addRow("Dynamic LPS:", self.dynamic_lps)
-
-    def _setup_max_iter_seg(self):
-        self.max_iters = QtWidgets.QSpinBox()
-        self.max_iters.setMinimum(1)
-        self.max_iters.setValue(10)
-        self.max_iters.setToolTip("Maximum iterations to run")
-        self.general_settings_layout.addRow("Max Iters:", self.max_iters)
-
-        self.max_segments = QtWidgets.QSpinBox()
-        self.max_segments.setMinimum(1)
-        self.max_segments.setValue(1)
-        self.max_segments.setToolTip("Maximum segments for a single request")
-        self.general_settings_layout.addRow("Max Segments:", self.max_segments)
-
-    def _setup_requests(self):
-        self.num_requests = QtWidgets.QSpinBox()
-        self.num_requests.setMaximum(100000)
-        self.num_requests.setValue(10000)
-        self.general_settings_layout.addRow("Number of Requests:", self.num_requests)
-
-        self.request_distribution = QtWidgets.QLineEdit(
-            "{\"25\": 0.0, \"50\": 0.3, \"100\": 0.5, \"200\": 0.0, \"400\": 0.2}")
-        self.general_settings_layout.addRow("Request Distribution:",
-                                            self.request_distribution)
-
-    def _setup_guard_slots(self):
-        self.guard_slots = QtWidgets.QSpinBox()
-        self.guard_slots.setMinimum(1)
-        self.guard_slots.setValue(1)
-        self.general_settings_layout.addRow("Guard Slots:", self.guard_slots)
-
-    def _setup_thread_erlangs(self):
-        self.thread_erlangs = QtWidgets.QCheckBox()
-        self.thread_erlangs.setChecked(False)
-        self.general_settings_layout.addRow("Thread Erlangs:", self.thread_erlangs)
-
-    def _setup_arrival_rate(self):
-        self.arrival_rate_start = QtWidgets.QSpinBox()
-        self.arrival_rate_start.setValue(2)
-        self.arrival_rate_stop = QtWidgets.QSpinBox()
-        self.arrival_rate_stop.setValue(4)
-        self.arrival_rate_step = QtWidgets.QSpinBox()
-        self.arrival_rate_step.setValue(2)
-        arrival_rate_layout = QtWidgets.QHBoxLayout()
-        arrival_rate_layout.addWidget(QtWidgets.QLabel("Start:"))
-        arrival_rate_layout.addWidget(self.arrival_rate_start)
-        arrival_rate_layout.addWidget(QtWidgets.QLabel("Stop:"))
-        arrival_rate_layout.addWidget(self.arrival_rate_stop)
-        arrival_rate_layout.addWidget(QtWidgets.QLabel("Step:"))
-        arrival_rate_layout.addWidget(self.arrival_rate_step)
-        self.general_settings_layout.addRow("Arrival Rate:", arrival_rate_layout)
-
-    def _setup_holding_time(self):
-        self.holding_time = QtWidgets.QDoubleSpinBox()
-        self.holding_time.setMinimum(0.0)
-        self.holding_time.setSingleStep(0.1)
-        self.holding_time.setStepType(
-            QtWidgets.QAbstractSpinBox.AdaptiveDecimalStepType
-        )
-        self.holding_time.setValue(0.2)
-        self.holding_time.setToolTip("Mean holding time for request generation")
-        self.general_settings_layout.addRow("Holding Time:", self.holding_time)
-
-    def _setup_layout(self):
-        self.general_tab = QtWidgets.QWidget()
-        self.general_settings_layout = QtWidgets.QFormLayout()
-
-        self.sim_type = QtWidgets.QComboBox()
-        self.sim_type.addItems(["yue", "arash"])
-        self.sim_type.setToolTip(
-            """
-            Simulation assumptions for calculating\
-            the Erlang and optical reach
-            """
-        )
-        self.general_settings_layout.addRow("Sim Type:", self.sim_type)
-
     def get_settings(self):
         """
-        Gets and structures all settings.
+        Gets and structures all configuration settings.
 
-        :return: All simulation parameters.
+        :return: The simulation configuration.
         :rtype: dict
         """
-        return {
-            "s1": {
-                "general_settings": {
-                    "sim_type": self.sim_type.currentText(),
-                    "holding_time": self.holding_time.value(),
-                    "arrival_rate": {
-                        "start": self.arrival_rate_start.value(),
-                        "stop": self.arrival_rate_stop.value(),
-                        "step": self.arrival_rate_step.value()
-                    },
-                    "thread_erlangs": self.thread_erlangs.isChecked(),
-                    "guard_slots": self.guard_slots.value(),
-                    "num_requests": self.num_requests.value(),
-                    "request_distribution": self.request_distribution.text(),
-                    "max_iters": self.max_iters.value(),
-                    "max_segments": self.max_segments.value(),
-                    "dynamic_lps": self.dynamic_lps.isChecked(),
-                    "allocation_method": self.allocation_method.text(),
-                    "k_paths": self.k_paths.value(),
-                    "route_method": self.route_method.text(),
-                    "save_snapshots": self.save_snapshots.isChecked(),
-                    "snapshot_step": self.snapshot_step.value(),
-                    "print_step": self.print_step.value()
-                },
-                "topology_settings": {
-                    "network": self.network.text(),
-                    "spectral_slots": self.spectral_slots.value(),
-                    "bw_per_slot": self.bw_per_slot.value(),
-                    "cores_per_link": self.cores_per_link.value(),
-                    "const_link_weight": self.const_link_weight.isChecked()
-                },
-                "snr_settings": {
-                    "snr_type": self.snr_type.text(),
-                    "xt_type": self.xt_type.text(),
-                    "beta": self.beta.value(),
-                    "theta": self.theta.value(),
-                    "input_power": self.input_power.value(),
-                    "egn_model": self.egn_model.isChecked(),
-                    "phi": self.phi.text(),
-                    "bi_directional": self.bi_directional.isChecked(),
-                    "xt_noise": self.xt_noise.isChecked(),
-                    "requested_xt": self.requested_xt.text()
-                },
-                "file_settings": {
-                    "file_type": self.file_type.text()
-                }
-            }
-        }
+        settings = {}
+        for category in SETTINGS_CONFIG_DICT:
+            category_name = category["category"].lower() + "_settings"
+            settings[category_name] = {}
+            for setting in category["settings"]:
+                label = setting["label"]
+                widget = self.settings_widgets[label]
+                settings[category_name][self._format_label(label)] = self._get_widget_value(widget)
+        return {"s1": settings}
+
+    @staticmethod
+    def _format_label(label):
+        return label.lower().replace(" ", "_").replace(":", "")
+
+    @staticmethod
+    def _get_widget_value(widget):
+        resp = None
+        if isinstance(widget, QtWidgets.QComboBox):
+            resp = widget.currentText()
+        elif isinstance(widget, QtWidgets.QCheckBox):
+            resp = widget.isChecked()
+        elif isinstance(widget, QtWidgets.QLineEdit):
+            resp = widget.text()
+        elif isinstance(widget, QtWidgets.QSpinBox):
+            resp = widget.value()
+        elif isinstance(widget, QtWidgets.QDoubleSpinBox):
+            resp = widget.value()
+
+        return resp
 
 
 class SimulationThread(QtCore.QThread):
