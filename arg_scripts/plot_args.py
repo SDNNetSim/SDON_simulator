@@ -1,4 +1,3 @@
-# TODO: Plot scripts still need to be tested
 # pylint: disable=too-few-public-methods
 import copy
 import os

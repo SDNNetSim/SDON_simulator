@@ -20,7 +20,6 @@ class RLProps:
 
         self.paths_list = []  # Potential paths from source to destination for a single request
         self.path_index = None  # Index of the last path chosen in a reinforcement learning (RL) simulation
-        # TODO: chosen_path changed to chosen_path_list
         self.chosen_path_list = []  # The actual chosen path (including the nodes) for a single request
         self.core_index = None  # Index of the last core chosen for a request
 
