@@ -1,7 +1,6 @@
 import ast
 
 
-# TODO: There are arguments here that no longer exist
 def str_to_bool(string: str):
     """
     Convert any giving string to a boolean.
@@ -144,7 +143,6 @@ OTHER_OPTIONS = {
 }
 
 COMMAND_LINE_PARAMS = [
-    ['ai_algorithm', str, ''],
     ['epsilon_start', float, ''],
     ['epsilon_end', float, ''],
     ['learn_rate', float, ''],
