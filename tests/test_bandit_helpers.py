@@ -1,9 +1,8 @@
 import unittest
 from unittest.mock import patch, mock_open, MagicMock
-
 import os
+import shutil
 import numpy as np
-
 from helper_scripts.bandit_helpers import load_model, _get_base_fp, _save_model, save_model
 
 
@@ -44,8 +43,8 @@ class TestBanditHelpers(unittest.TestCase):
 
     @patch('helper_scripts.bandit_helpers.create_dir')
     @patch('numpy.save')
-    @patch('builtins.open', new_callable=mock_open)
-    def test_save_model_function(self, mock_np_save, mock_create_dir, mock_save_model):
+    @patch('helper_scripts.bandit_helpers._save_model')
+    def test_save_model_function(self, mock_save_model, mock_np_save, mock_create_dir):
         """
         Test the overall save_model function that saves both the rewards array and the model.
         """
@@ -84,6 +83,9 @@ class TestBanditHelpers(unittest.TestCase):
         np.testing.assert_array_equal(args[1], np.mean(props.rewards_matrix, axis=0))
         self.assertEqual(args[0], abs_rewards_fp)
 
+        # Print actual call arguments for debugging
+        print("Actual call arguments for _save_model:", mock_save_model.call_args)
+
         actual_call = mock_save_model.call_args
         expected_state_values_dict = {('a', 'b'): np.array([1, 2, 3]), ('c', 'd'): np.array([4, 5, 6])}
         actual_state_values_dict = actual_call[1]['state_values_dict']
@@ -103,6 +105,14 @@ class TestBanditHelpers(unittest.TestCase):
         self.assertEqual(expected_call_kwargs['cores_per_link'], actual_call[1]['cores_per_link'])
         self.assertEqual(expected_call_kwargs['save_dir'], actual_call[1]['save_dir'])
         self.assertEqual(expected_call_kwargs['is_path'], actual_call[1]['is_path'])
+
+    def tearDown(self):
+        """
+        Clean up any created directories or files.
+        """
+        test_dir = os.path.join('logs', 'alg')
+        if os.path.exists(test_dir):
+            shutil.rmtree(test_dir)
 
 
 if __name__ == '__main__':
