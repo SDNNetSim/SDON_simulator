@@ -32,10 +32,12 @@ YUE_REQUIRED_OPTIONS = {
     },
     'topology_settings': {
         'network': str,
-        'spectral_slots': int,
         'bw_per_slot': float,
         'cores_per_link': int,
         'const_link_weight': str_to_bool,
+    },
+    'spectrum_settings': {
+        'c_band': int,
     },
     'file_settings': {
         'file_type': str,
@@ -62,10 +64,12 @@ ARASH_REQUIRED_OPTIONS = {
     },
     'topology_settings': {
         'network': str,
-        'spectral_slots': int,
         'bw_per_slot': float,
         'cores_per_link': int,
         'const_link_weight': str_to_bool,
+    },
+    'spectrum_settings': {
+        'c_band': int,
     },
     'snr_settings': {
         'requested_xt': ast.literal_eval,
@@ -104,6 +108,12 @@ OTHER_OPTIONS = {
         'phi': ast.literal_eval,
         'xt_noise': str_to_bool,
         'requested_xt': ast.literal_eval,
+    },
+    'spectrum_settings': {
+        'o_band': int,
+        'e_band': int,
+        's_band': int,
+        'l_band': int,
     },
     'rl_settings': {
         'learn_rate': float,
@@ -166,7 +176,11 @@ COMMAND_LINE_PARAMS = [
     ['thread_erlangs', bool, ''],
     ['num_requests', int, ''],
     ['max_iters', int, ''],
-    ['spectral_slots', int, ''],
+    ['c_band', int, ''],
+    ['e_band', int, ''],
+    ['o_band', int, ''],
+    ['l_band', int, ''],
+    ['s_band', int, ''],
     ['bw_per_slot', float, ''],
     ['cores_per_link', int, ''],
     ['const_link_weight', bool, ''],
