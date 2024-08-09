@@ -17,11 +17,16 @@ def get_requests(seed: int, engine_props: dict):
     nodes_list = list(engine_props['topology_info']['nodes'].keys())
     set_seed(seed=seed)
 
-    # TODO: Raise error if the user has requests that don't distribute evenly
-    # Create request distribution
     bw_counts_dict = {bandwidth: int(engine_props['request_distribution'][bandwidth] * engine_props['num_requests'])
                       for bandwidth in engine_props['mod_per_bw']}
     bandwidth_list = list(engine_props['mod_per_bw'].keys())
+
+    # Check to see if the number of requests can be distributed
+    difference = engine_props['num_requests'] - sum(bw_counts_dict.values())
+    if difference != 0:
+        raise ValueError('The number of requests could not be distributed in the percentage distributed input. Please'
+                         'either change the number of requests, or change the percentages for the bandwidth values'
+                         'selected.')
 
     # Generate requests, multiply the number of requests by two since we have arrival and departure types
     while len(requests_dict) < (engine_props['num_requests'] * 2):
