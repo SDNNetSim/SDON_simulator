@@ -66,16 +66,17 @@ class RoutingHelpers:
     def _find_link_cost(self, free_channels_dict: dict, taken_channels_dict: dict, num_span: float):
         nli_cost = 0
         num_channels = 0
-        for core_num, free_channels_list in free_channels_dict.items():
-            # Update MCI for available channel
-            for channel in free_channels_list:
-                num_channels += 1
-                # Calculate the center frequency for the open channel
-                center_freq = channel[0] * self.route_props.freq_spacing
-                center_freq += (self.sdn_props.slots_needed * self.route_props.freq_spacing) / 2
+        for band, curr_channels_dict in free_channels_dict.items():
+            for core_num, free_channels_list in curr_channels_dict.items():
+                # Update MCI for available channel
+                for channel in free_channels_list:
+                    num_channels += 1
+                    # Calculate the center frequency for the open channel
+                    center_freq = channel[0] * self.route_props.freq_spacing
+                    center_freq += (self.sdn_props.slots_needed * self.route_props.freq_spacing) / 2
 
-                nli_cost += self._find_channel_mci(channels_list=taken_channels_dict[core_num], center_freq=center_freq,
-                                                   num_span=num_span)
+                    nli_cost += self._find_channel_mci(channels_list=taken_channels_dict[band][core_num],
+                                                       center_freq=center_freq, num_span=num_span)
 
         # A constant score of 1000 if the link is fully congested
         if num_channels == 0:
@@ -127,19 +128,19 @@ class RoutingHelpers:
 
         return adj_core_list
 
-    def _find_num_overlapped(self, channel: int, core_num: int, core_info_dict: dict):
+    def _find_num_overlapped(self, channel: int, core_num: int, core_info_dict: dict, band: str):
         num_overlapped = 0.0
         if core_num != 6:
             adj_cores_list = self._find_adjacent_cores(core_num=core_num)
             for curr_core in adj_cores_list:
-                if core_info_dict[curr_core][channel] > 0:
+                if core_info_dict[band][curr_core][channel] > 0:
                     num_overlapped += 1
 
             num_overlapped /= 3
         # The number of overlapped cores for core six will be different since it's the center core
         else:
             for sub_core_num in range(6):
-                if core_info_dict[sub_core_num][channel] > 0:
+                if core_info_dict[band][sub_core_num][channel] > 0:
                     num_overlapped += 1
 
             num_overlapped /= 6
@@ -158,13 +159,15 @@ class RoutingHelpers:
         """
         xt_cost = 0
         free_slots = 0
-        for core_num in free_slots_dict:
-            free_slots += len(free_slots_dict[core_num])
-            for channel in free_slots_dict[core_num]:
-                core_info_dict = self.sdn_props.net_spec_dict[link_list]['cores_matrix']
-                num_overlapped = self._find_num_overlapped(channel=channel, core_num=core_num,
-                                                           core_info_dict=core_info_dict)
-                xt_cost += num_overlapped
+
+        for band in free_slots_dict:
+            for core_num in free_slots_dict[band]:
+                free_slots += len(free_slots_dict[core_num])
+                for channel in free_slots_dict[core_num]:
+                    core_info_dict = self.sdn_props.net_spec_dict[link_list]['cores_matrix']
+                    num_overlapped = self._find_num_overlapped(channel=channel, core_num=core_num,
+                                                               core_info_dict=core_info_dict, band=band)
+                    xt_cost += num_overlapped
 
         # A constant score of 1000 if the link is fully congested
         if free_slots == 0:
