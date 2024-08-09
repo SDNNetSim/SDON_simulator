@@ -19,11 +19,11 @@ class TestEngine(unittest.TestCase):
         self.engine.reqs_dict = {1.0: {'req_id': 10}}
 
         self.engine.sdn_obj = MagicMock()
-        sdn_path = os.path.join('tests', 'fixtures', 'sdn_props.json')
-        with open(sdn_path, 'r', encoding='utf-8') as file_obj:
+        sdn_path = os.path.join('fixtures', 'sdn_props.json')
+        with open(file=sdn_path, mode='r', encoding='utf-8') as file_obj:
             self.engine.sdn_obj.sdn_props = json.load(file_obj)
 
-        engine_path = os.path.join('tests', 'fixtures', 'engine_props.json')
+        engine_path = os.path.join('fixtures', 'engine_props.json')
         with open(engine_path, 'r', encoding='utf-8') as file_obj:
             self.engine.engine_props = json.load(file_obj)
 
@@ -75,7 +75,7 @@ class TestEngine(unittest.TestCase):
         self.engine.handle_release(curr_time=curr_time)
         self.engine.sdn_obj.handle_event.assert_not_called()
 
-    @patch('sim_scripts.engine.nx.Graph')
+    @patch('src.engine.nx.Graph')
     def test_create_topology(self, mock_graph):
         """
         Tests the create topology method.
