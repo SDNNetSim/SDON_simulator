@@ -1,3 +1,6 @@
+import numpy as np
+import copy
+
 from helper_scripts.sim_helpers import find_free_channels, find_free_slots, get_channel_overlaps
 
 
@@ -14,11 +17,12 @@ class SpectrumHelpers:
         self.start_index = None
         self.end_index = None
         self.core_num = None
+        self.band = None
 
     def _check_free_spectrum(self, link_tuple: tuple, rev_link_tuple: tuple):
-        core_arr = self.sdn_props.net_spec_dict[link_tuple]['cores_matrix'][self.core_num]
+        core_arr = self.sdn_props.net_spec_dict[link_tuple]['cores_matrix'][self.band][self.core_num]
         spectrum_set = core_arr[self.start_index:self.end_index + self.engine_props['guard_slots']]
-        rev_core_arr = self.sdn_props.net_spec_dict[rev_link_tuple]['cores_matrix'][self.core_num]
+        rev_core_arr = self.sdn_props.net_spec_dict[rev_link_tuple]['cores_matrix'][self.band][self.core_num]
         rev_spectrum_set = rev_core_arr[self.start_index:self.end_index + self.engine_props['guard_slots']]
 
         if set(spectrum_set) == {0.0} and set(rev_spectrum_set) == {0.0}:
@@ -43,6 +47,9 @@ class SpectrumHelpers:
         if self.spectrum_props.forced_core is not None:
             self.core_num = self.spectrum_props.forced_core
 
+        if self.spectrum_props.forced_band is not None:
+            self.band = self.spectrum_props['forced_band']
+
         if self.engine_props['allocation_method'] == 'last_fit':
             self.spectrum_props.start_slot = self.end_index
             self.spectrum_props.end_slot = self.start_index + self.engine_props['guard_slots']
@@ -51,6 +58,7 @@ class SpectrumHelpers:
             self.spectrum_props.end_slot = self.end_index + self.engine_props['guard_slots']
 
         self.spectrum_props.core_num = self.core_num
+        self.spectrum_props.band = self.band
         return self.spectrum_props
 
     def check_super_channels(self, open_slots_matrix: list, flag: str):
@@ -137,9 +145,17 @@ class SpectrumHelpers:
         :rtype: int
         """
         path_info = self.find_link_inters()
-        all_channels = get_channel_overlaps(path_info['channel_inters_dict'],
+        all_channels = get_channel_overlaps(path_info['free_channels_dict'],
                                             path_info['free_slots_dict'])
-        sorted_cores = sorted(all_channels['non_over_dict'], key=lambda k: len(all_channels['non_over_dict'][k]))
+        overlapping_results = copy.deepcopy(all_channels[list(all_channels.keys())[0]])
+        for node_pair, channels in all_channels.items():
+            for ch_type, channels_type in channels.items():
+                for band, band_channels in channels_type.items():
+                    for core_num, channel in band_channels.items():
+                        tmp_dict = overlapping_results[ch_type][band][core_num]
+                        overlapping_results[ch_type][band][core_num] = np.intersect1d(tmp_dict, channel)
+        c_band_dict = overlapping_results['non_over_dict']['c']
+        sorted_cores = sorted(c_band_dict, key=lambda k: len(c_band_dict[k]))
 
         # TODO: Comment why
         if len(sorted_cores) > 1:
