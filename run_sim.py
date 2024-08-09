@@ -31,6 +31,7 @@ class NetworkSimulator:
         engine_props['erlang'] = arr_rate_mean / engine_props['holding_time']
         arr_rate_mean *= float(engine_props['cores_per_link'])
         engine_props['arrival_rate'] = arr_rate_mean
+        engine_props['band_list'] = list()
         create_input(engine_props=engine_props, base_fp='data')
 
         if arr_rate_mean == (start * engine_props['cores_per_link']):
@@ -66,6 +67,7 @@ class NetworkSimulator:
         engine_props = copy.deepcopy(self.properties)
         engine_props['arrival_rate'] = (engine_props['cores_per_link'] * erlang) / engine_props['holding_time']
         engine_props['erlang'] = erlang
+        engine_props['band_list'] = list()
         local_props = create_input(base_fp='data', engine_props=engine_props)
 
         if first_erlang:
