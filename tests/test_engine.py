@@ -102,3 +102,20 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(self.engine.stats_obj.topology, self.engine.topology)
         self.assertEqual(self.engine.sdn_obj.sdn_props['net_spec_dict'], self.engine.net_spec_dict)
         self.assertEqual(self.engine.sdn_obj.sdn_props['topology'], self.engine.topology)
+    def test_update_arrival_params(self, curr_time: float):
+        print('Not implemented')
+
+    def test_generate_requests(self, seed: int):
+        print('Not implemented')
+
+    def test_handle_request(self, curr_time: float, req_num: int):
+        print('Not implemented')
+
+    def test_end_iter(self, iteration: int, print_flag: bool = True, base_fp: str = None):
+        print('Not implemented')
+
+    def test_init_iter(self, iteration: int):
+        print('Not implemented')
+
+    def test_run(self):
+        print('Not implemented')
