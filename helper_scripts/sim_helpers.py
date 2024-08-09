@@ -104,26 +104,28 @@ def find_path_cong(path_list: list, net_spec_dict: dict):
         cores_matrix = net_spec_dict[src_dest]['cores_matrix']
         cores_per_link = float(len(cores_matrix))
 
-        # Every core will have the same number of spectral slots
-        total_slots = len(cores_matrix[0])
-        slots_taken = 0
-        for curr_core in cores_matrix:
-            core_slots_taken = float(len(np.where(curr_core != 0.0)[0]))
-            slots_taken += core_slots_taken
+        for curr_band in net_spec_dict[src_dest]['cores_matrix']:
+            # Every core will have the same number of spectral slots
+            total_slots = len(cores_matrix[curr_band][0])
+            slots_taken = 0
+            for curr_core in cores_matrix[curr_band]:
+                core_slots_taken = float(len(np.where(curr_core != 0.0)[0]))
+                slots_taken += core_slots_taken
 
-        links_cong_list.append(slots_taken / (total_slots * cores_per_link))
+            links_cong_list.append(slots_taken / (total_slots * cores_per_link))
 
     average_path_cong = np.mean(links_cong_list)
     return average_path_cong
 
 
-def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
+def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list, band: str):
     """
     Finds the current percentage of congestion on a core along a path.
 
     :param core_index: Index of the core.
     :param net_spec_dict: Network spectrum database.
     :param path_list: Current path.
+    :param band: The current band of allocation.
     :return: The average congestion percentage on the core.
     :rtype: float
     """
@@ -131,12 +133,12 @@ def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
         cores_matrix = net_spec_dict[src_dest]['cores_matrix']
-        cores_per_link = float(len(cores_matrix))
+        cores_per_link = float(len(cores_matrix[band]))
 
         # Every core will have the same number of spectral slots
-        total_slots = len(cores_matrix[0])
+        total_slots = len(cores_matrix[band][0])
         slots_taken = 0
-        core_slots_taken = float(len(np.where(cores_matrix[core_index] != 0.0)[0]))
+        core_slots_taken = float(len(np.where(cores_matrix[band][core_index] != 0.0)[0]))
         slots_taken += core_slots_taken
 
         links_cong_list.append(slots_taken / (total_slots * cores_per_link))
@@ -145,13 +147,14 @@ def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
     return average_core_cong
 
 
-def find_core_frag_cong(net_spec_db: dict, path: list, core: int):
+def find_core_frag_cong(net_spec_db: dict, path: list, core: int, band: str):
     """
     Finds the congestion and fragmentation scores for a specific request.
 
     :param net_spec_db: Current network spectrum database.
     :param path: Current path.
     :param core: Current core.
+    :param band: Current allocated band.
     :return: The congestion and fragmentation scores.
     :rtype: float
     """
@@ -159,7 +162,7 @@ def find_core_frag_cong(net_spec_db: dict, path: list, core: int):
     cong_resp = 0.0
     for src, dest in zip(path, path[1:]):
         src_dest = (src, dest)
-        core_arr = net_spec_db[src_dest]['cores_matrix'][core]
+        core_arr = net_spec_db[src_dest]['cores_matrix'][band][core]
 
         if len(core_arr) != 256:
             raise NotImplementedError('Only works for 256 spectral slots.')
@@ -197,44 +200,42 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict):
     :return: The overlapping and non-overlapping channels for every core.
     :rtype: dict
     """
-    resp = {'overlapped_dict': {}, 'non_over_dict': {}}
-    num_cores = int(len(free_channels_dict.keys()))
+    resp_dict = dict()
+    for link in free_channels_dict.keys():
+        resp_dict.update({link: {'overlapped_dict': {}, 'non_over_dict': {}}})
+        for band, free_channels in free_channels_dict[link].items():
+            num_cores = int(len(free_channels.keys()))
+            resp_dict[link]['overlapped_dict'][band] = dict()
+            resp_dict[link]['non_over_dict'][band] = dict()
+            for core_num, channels_list in free_channels.items():
+                resp_dict[link]['overlapped_dict'][band][core_num] = list()
+                resp_dict[link]['non_over_dict'][band][core_num] = list()
 
-    for core_num, channels_list in free_channels_dict.items():
-        resp['overlapped_dict'][core_num] = list()
-        resp['non_over_dict'][core_num] = list()
+                for curr_channel in channels_list:
+                    for sub_core, slots_dict in free_slots_dict[link][band].items():
+                        if sub_core == core_num:
+                            continue
+                        # The final core overlaps with all other cores
+                        if core_num == num_cores - 1:
+                            result_arr = np.isin(curr_channel, slots_dict[sub_core])
+                        else:
+                            # Only certain cores neighbor each other on a fiber
+                            first_neighbor = 5 if core_num == 0 else core_num - 1
+                            second_neighbor = 0 if core_num == 5 else core_num + 1
 
-        for curr_channel in channels_list:
-            is_overlapped = False
-            for sub_core in range(0, num_cores):
-                if sub_core == core_num:
-                    continue
+                            result_arr = np.isin(curr_channel, free_slots_dict[link][band][first_neighbor])
+                            result_arr = np.append(result_arr,
+                                                   np.isin(curr_channel, free_slots_dict[link][band][second_neighbor]))
+                            result_arr = np.append(result_arr,
+                                                   np.isin(curr_channel, free_slots_dict[link][band][num_cores - 1]))
 
-                for _, slots_dict in free_slots_dict.items():
-                    # The final core overlaps with all other cores
-                    if core_num == num_cores - 1:
-                        result = np.isin(curr_channel, slots_dict[sub_core])
-                    else:
-                        # Only certain cores neighbor each other on a fiber
-                        first_neighbor = 5 if core_num == 0 else core_num - 1
-                        second_neighbor = 0 if core_num == 5 else core_num + 1
+                        if np.any(result_arr == False):
+                            resp_dict[link]['overlapped_dict'][band][core_num].append(curr_channel)
+                            break
 
-                        result = np.isin(curr_channel, slots_dict[first_neighbor])
-                        result = np.append(result, np.isin(curr_channel, slots_dict[second_neighbor]))
-                        result = np.append(result, np.isin(curr_channel, slots_dict[num_cores - 1]))
+                    resp_dict[link]['non_over_dict'][band][core_num].append(curr_channel)
 
-                    if np.any(result):
-                        resp['overlapped_dict'][core_num].append(curr_channel)
-                        is_overlapped = True
-                        break
-
-                    resp['non_over_dict'][core_num].append(curr_channel)
-
-                # No need to check other cores, we already determined this channel overlaps with other channels
-                if is_overlapped:
-                    break
-
-    return resp
+    return resp_dict
 
 
 def find_free_slots(net_spec_dict: dict, link_tuple: tuple):
@@ -246,13 +247,16 @@ def find_free_slots(net_spec_dict: dict, link_tuple: tuple):
     :return: The indexes of the free spectral slots on the link for each core.
     :rtype: dict
     """
-    link = net_spec_dict[link_tuple]['cores_matrix']
-    resp = {}
-    for core_num in range(len(link)):  # pylint: disable=consider-using-enumerate
-        free_slots_list = np.where(link[core_num] == 0)[0]
-        resp.update({core_num: free_slots_list})
+    resp_dict = {}
+    for band in net_spec_dict[link_tuple]['cores_matrix'].keys():
+        resp_dict[band] = dict()
 
-    return resp
+        num_cores = len(net_spec_dict[link_tuple]['cores_matrix'][band])
+        for core_num in range(num_cores):  # pylint: disable=consider-using-enumerate
+            free_slots_list = np.where(net_spec_dict[link_tuple]['cores_matrix'][band][core_num] == 0)[0]
+            resp_dict[band].update({core_num: free_slots_list})
+
+    return resp_dict
 
 
 def find_free_channels(net_spec_dict: dict, slots_needed: int, link_tuple: tuple):
@@ -265,27 +269,32 @@ def find_free_channels(net_spec_dict: dict, slots_needed: int, link_tuple: tuple
     :return: Available super-channels for every core.
     :rtype: dict
     """
-    resp = {}
-    cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'])
-    for core_num, link_list in enumerate(cores_matrix):
-        indexes = np.where(link_list == 0)[0]
-        channels_list = []
-        curr_channel_list = []
+    resp_dict = {}
+    for band in net_spec_dict[link_tuple]['cores_matrix'].keys():
+        cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'][band])
+        resp_dict.update({band: {}})
+        for core_num, link_list in enumerate(cores_matrix):
+            indexes = np.where(link_list == 0)[0]
+            channels_list = []
+            curr_channel_list = []
 
-        for i, free_index in enumerate(indexes):
-            if i == 0:
-                curr_channel_list.append(free_index)
-            elif free_index == indexes[i - 1] + 1:
-                curr_channel_list.append(free_index)
-                if len(curr_channel_list) == slots_needed:
-                    channels_list.append(curr_channel_list.copy())
-                    curr_channel_list.pop(0)
-            else:
-                curr_channel_list = [free_index]
+            for i, free_index in enumerate(indexes):
+                if i == 0:
+                    curr_channel_list.append(free_index)
+                    if len(curr_channel_list) == slots_needed:
+                        channels_list.append(curr_channel_list.copy())
+                        curr_channel_list.pop(0)
+                elif free_index == indexes[i - 1] + 1:
+                    curr_channel_list.append(free_index)
+                    if len(curr_channel_list) == slots_needed:
+                        channels_list.append(curr_channel_list.copy())
+                        curr_channel_list.pop(0)
+                else:
+                    curr_channel_list = [free_index];
 
-        resp.update({core_num: channels_list})
+            resp_dict[band].update({core_num: channels_list})
 
-    return resp
+    return resp_dict
 
 
 def find_taken_channels(net_spec_dict: dict, link_tuple: tuple):
@@ -297,25 +306,27 @@ def find_taken_channels(net_spec_dict: dict, link_tuple: tuple):
     :return: Unavailable super-channels for every core.
     :rtype: dict
     """
-    resp = {}
-    cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'])
-    for core_num, link_list in enumerate(cores_matrix):
-        channels_list = []
-        curr_channel_list = []
+    resp_dict = {}
+    for band, _ in net_spec_dict[link_tuple]['cores_matrix'].items():
+        resp_dict.update({band: {}})
+        cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'][band])
+        for core_num, link_list in enumerate(cores_matrix):
+            channels_list = []
+            curr_channel_list = []
 
-        for value in link_list:
-            if value > 0:
-                curr_channel_list.append(value)
-            elif value < 0 and curr_channel_list:
+            for value in link_list:
+                if value > 0:
+                    curr_channel_list.append(value)
+                elif value < 0 and curr_channel_list:
+                    channels_list.append(curr_channel_list)
+                    curr_channel_list = []
+
+            if curr_channel_list:
                 channels_list.append(curr_channel_list)
-                curr_channel_list = []
 
-        if curr_channel_list:
-            channels_list.append(curr_channel_list)
+            resp_dict[band][core_num] = channels_list
 
-        resp[core_num] = channels_list
-
-    return resp
+    return resp_dict
 
 
 def snake_to_title(snake_str: str):
@@ -502,12 +513,13 @@ def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
     return resp_score
 
 
-def get_hfrag(path_list: list, core_num: int, slots_needed: int, spectral_slots: int, net_spec_dict: dict):
+def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spectral_slots: int, net_spec_dict: dict):
     """
     Gets the shannon entropy fragmentation scores for allocating a request.
 
     :param path_list: The current path.
     :param core_num: The core number.
+    :param band: Current allocated band.
     :param slots_needed: The slots needed by the request.
     :param spectral_slots: The number of spectral slots on a single core.
     :param net_spec_dict: The up-to-date network spectrum database.
@@ -520,7 +532,7 @@ def get_hfrag(path_list: list, core_num: int, slots_needed: int, spectral_slots:
         core_num = 0
 
     for source, dest in zip(path_list, path_list[1:]):
-        core_arr = net_spec_dict[(source, dest)]['cores_matrix'][core_num]
+        core_arr = net_spec_dict[(source, dest)]['cores_matrix'][band][core_num]
         path_alloc_arr = combine_and_one_hot(path_alloc_arr, core_arr)
 
     sc_index_mat = get_super_channels(input_arr=path_alloc_arr, slots_needed=slots_needed)
