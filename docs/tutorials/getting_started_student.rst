@@ -6,6 +6,8 @@ Running Your First Simulation
 Welcome to the Software Defined Elastic Optical Networking Simulator! In this tutorial, we'll guide you through the
 process of running your first simulations and visualizing the results.
 
+Note: make sure you have the most updated version by running ``git fetch``.
+
 To begin, head over to the ``ini`` directory, followed by navigating to the ``example_ini`` directory.
 The diagram below illustrates the location:
 
