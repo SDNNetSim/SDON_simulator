@@ -18,6 +18,7 @@ class StatsProps:
         self.lengths_list = list()  # Average lengths per simulation
         self.route_times_list = list()  # Average route times per simulation
         self.xt_list = list()  # Average cross-talk per simulation
+        self.bands_list = list()  # Tracks the band allocated in a simulation
 
     def __repr__(self):
         return f"StatsProps({self.__dict__})"

@@ -52,6 +52,8 @@ class Engine:
                 "is_sliced": sdn_props.is_sliced,
                 "was_routed": sdn_props.was_routed,
                 "core_list": sdn_props.core_list,
+                # TODO: Update
+                "band": sdn_props.band,
             }})
 
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,
@@ -105,6 +107,7 @@ class Engine:
         """
         self.net_spec_dict = {}
         self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
+
         for link_num, link_data in self.engine_props['topology_info']['links'].items():
             source = link_data['source']
             dest = link_data['destination']
