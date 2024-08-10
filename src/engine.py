@@ -108,10 +108,17 @@ class Engine:
         self.net_spec_dict = {}
         self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
 
+        for band in ['c', 'l', 's', 'o', 'e']:
+            if self.engine_props[f'{band}_band']:
+                self.engine_props['band_list'].append(band)
+
         for link_num, link_data in self.engine_props['topology_info']['links'].items():
             source = link_data['source']
             dest = link_data['destination']
-            cores_matrix = np.zeros((link_data['fiber']['num_cores'], self.engine_props['spectral_slots']))
+
+            cores_matrix = dict()
+            for band in self.engine_props['band_list']:
+                cores_matrix[band] = np.zeros((link_data['fiber']['num_cores'], self.engine_props['spectral_slots']))
 
             self.net_spec_dict[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
             self.net_spec_dict[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
