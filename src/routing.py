@@ -25,13 +25,15 @@ class Routing:
 
         for i in range(len(path_list) - 1):
             link_dict = self.sdn_props.net_spec_dict[(path_list[i], path_list[i + 1])]
-            cores_matrix = link_dict['cores_matrix']
+            free_slots = 0
+            for band in link_dict['cores_matrix']:
+                cores_matrix = link_dict['cores_matrix'][band]
+                for core_arr in cores_matrix:
+                    free_slots += np.sum(core_arr == 0)
 
-            for core_arr in cores_matrix:
-                free_slots = np.sum(core_arr == 0)
-                if free_slots < most_cong_slots or most_cong_link is None:
-                    most_cong_slots = free_slots
-                    most_cong_link = link_dict
+            if free_slots < most_cong_slots or most_cong_link is None:
+                most_cong_slots = free_slots
+                most_cong_link = link_dict
 
         self.route_props.paths_matrix.append({'path_list': path_list,
                                               'link_dict': {'link': most_cong_link,
@@ -163,7 +165,7 @@ class Routing:
                 link_cost *= self.engine_props['beta']
                 link_cost += (1 - self.engine_props['beta']) * xt_cost
             elif self.engine_props['xt_type'] == 'without_length':
-                link_cost = (num_spans / self.route_props.max_span) * xt_cost
+                link_cost = num_spans * xt_cost
             else:
                 raise ValueError(f"XT type not recognized, expected with or without_length, "
                                  f"got: {self.engine_props['xt_type']}")
