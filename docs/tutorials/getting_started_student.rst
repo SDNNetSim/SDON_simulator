@@ -50,7 +50,7 @@ Once completed, this should look like:
 .. image:: _images/first_sim_run.png
    :alt: Example simulation run
    :width: 700px
-   :height: 500px
+   :height: 550px
    :align: center
 
 .. raw:: html
