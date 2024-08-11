@@ -80,3 +80,14 @@ The process to designate a wavelength is called Routing and Wavelength Assignmen
 of this. The first is Random Wavelength Assignment, in which an open wavelength is randomly chosen. Second, there is
 First-Fit, in which each wavelength is numbered and the first available one is chosen. Finally, there are the Least-Used
 and Most-Used methods, which are the opposites of each other in method.
+
+Additional Resources
+--------------------
+
+`[Article] Elastic Optical Networking: Roles and Benefits in Beyond 100-Gb/s Era
+<https://doi.org/10.1109/JLT.2016.2642480>`_
+
+`[Article] Review and Status of Wavelength-Division-Multiplexing Technology and Its Application
+<https://doi.org/10.1109/JLT.1984.1073653>`_
+
+`[Book] Optical Network Design and Planning <https://doi.org/10.1007/978-3-319-05227-4>`_
