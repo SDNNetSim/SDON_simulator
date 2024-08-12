@@ -47,6 +47,7 @@ class SpectrumAssignment:
                     self.spectrum_props.curr_band = channel_dict['band']
                     return
 
+    # TODO: No support for multi-band
     def find_best_fit(self):
         """
         Searches for and allocates the best-fit super channel on each link along the path.
@@ -76,7 +77,7 @@ class SpectrumAssignment:
         channels_list = sorted(channels_list, key=lambda d: len(d['channel']))
         self._allocate_best_fit(channels_list=channels_list)
 
-    # TODO: Update for forced band
+    # TODO: Update for forced band support
     def _setup_first_last(self):
         core_matrix = list()
 
@@ -116,7 +117,7 @@ class SpectrumAssignment:
                     raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
 
                 self.spec_help_obj.core_num = core_num
-                self.spec_help_obj.band = band
+                self.spec_help_obj.curr_band = band
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
                     return

@@ -40,12 +40,12 @@ class SDNController:
                         self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band][core_num][gb_index] = 0
                         self.sdn_props.net_spec_dict[(dest, source)]['cores_matrix'][band][core_num][gb_index] = 0
 
-    def _allocate_gb(self, core_matrix: list, rev_core_matrix: list, core_num: int, end_slot: int):
-        if core_matrix[core_num][end_slot] != 0.0 or rev_core_matrix[core_num][end_slot] != 0.0:
+    def _allocate_gb(self, band: str, core_matrix: list, rev_core_matrix: list, core_num: int, end_slot: int):
+        if core_matrix[band][core_num][end_slot] != 0.0 or rev_core_matrix[band][core_num][end_slot] != 0.0:
             raise BufferError("Attempted to allocate a taken spectrum.")
 
-        core_matrix[core_num][end_slot] = self.sdn_props.req_id * -1
-        rev_core_matrix[core_num][end_slot] = self.sdn_props.req_id * -1
+        core_matrix[band][core_num][end_slot] = self.sdn_props.req_id * -1
+        rev_core_matrix[band][core_num][end_slot] = self.sdn_props.req_id * -1
 
     def allocate(self):
         """
@@ -55,6 +55,7 @@ class SDNController:
         end_slot = self.spectrum_obj.spectrum_props.end_slot
         core_num = self.spectrum_obj.spectrum_props.core_num
         band = self.spectrum_obj.spectrum_props.curr_band
+        self.sdn_props.curr_band = band
 
         if self.engine_props['guard_slots']:
             end_slot = end_slot - 1
@@ -79,8 +80,9 @@ class SDNController:
 
             if self.engine_props['guard_slots']:
                 self._allocate_gb(core_matrix=core_matrix, rev_core_matrix=rev_core_matrix, end_slot=end_slot,
-                                  core_num=core_num)
+                                  core_num=core_num, band=band)
 
+    # TODO: No support for multi-band
     def _update_req_stats(self, bandwidth: str):
         self.sdn_props.bandwidth_list.append(bandwidth)
         for stat_key in self.sdn_props.stat_key_list:
@@ -144,6 +146,7 @@ class SDNController:
         self.sdn_props.reset_params()
 
     def handle_event(self, req_dict: dict, request_type: str, force_slicing: bool = False,
+                     # pylint: disable=too-many-statements
                      force_route_matrix: list = None, forced_index: int = None,
                      force_core: int = None, ml_model=None, force_mod_format: str = None, forced_band: str = None):
         """

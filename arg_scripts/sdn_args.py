@@ -27,6 +27,7 @@ class SDNProps:
         self.single_core = False  # Whether to force single-core
         self.block_reason = None  # Reason for blocking a request
         self.mod_formats_dict = None  # List of valid modulation formats for this bandwidth
+        self.curr_band = None  # Current band of allocation
 
         self.stat_key_list = ['modulation_list', 'xt_list', 'core_list']  # Statistical keys used to save results
 
