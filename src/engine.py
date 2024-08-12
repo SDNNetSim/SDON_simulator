@@ -103,7 +103,7 @@ class Engine:
         """
         Create the physical topology of the simulation.
         """
-        self.net_spec_dict = {}
+        self.net_spec_dict = ()
         self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
         for link_num, link_data in self.engine_props['topology_info']['links'].items():
             source = link_data['source']
