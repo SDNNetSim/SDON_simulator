@@ -40,12 +40,18 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                 self.plot_props.plot_dict[self.time][self.sim_num][ai_key] = ai_dict[ai_key]
 
     def _find_misc_stats(self):
-        average_length = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'lengths_mean'))
-        average_hop = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'hops_mean'))
-        average_time = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'route_times_mean') * 10 ** 3)
+        lengths_list = dict_to_list(self.erlang_dict['iter_stats'], 'lengths_mean')
+        hops_list = dict_to_list(self.erlang_dict['iter_stats'], 'hops_mean')
+        times_list = dict_to_list(self.erlang_dict['iter_stats'], 'route_times_mean') * 10 ** 3
 
-        average_cong = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'congestion', ['block_reasons_dict']))
-        average_dist = np.mean(dict_to_list(self.erlang_dict['iter_stats'], 'distance', ['block_reasons_dict']))
+        cong_list = dict_to_list(self.erlang_dict['iter_stats'], 'congestion', ['block_reasons_dict'])
+        dist_list = dict_to_list(self.erlang_dict['iter_stats'], 'distance', ['block_reasons_dict'])
+
+        average_length = np.nanmean(lengths_list) if lengths_list.size > 0 else 0
+        average_hop = np.nanmean(hops_list) if hops_list.size > 0 else 0
+        average_time = np.nanmean(times_list) if times_list.size > 0 else 0
+        average_cong = np.nanmean(cong_list) if cong_list.size > 0 else 0
+        average_dist = np.nanmean(dist_list) if dist_list.size > 0 else 0
 
         self.plot_props.plot_dict[self.time][self.sim_num].lengths_list.append(average_length)
         self.plot_props.plot_dict[self.time][self.sim_num].hops_list.append(average_hop)
