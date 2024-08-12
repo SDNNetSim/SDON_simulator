@@ -2,8 +2,11 @@ import unittest
 from unittest.mock import patch, mock_open, MagicMock
 import os
 import shutil
+
 import numpy as np
+
 from helper_scripts.bandit_helpers import load_model, _get_base_fp, _save_model, save_model, EpsilonGreedyBandit
+from helper_scripts.bandit_helpers import UCBBandit
 
 
 class TestBanditHelpers(unittest.TestCase):
@@ -154,6 +157,78 @@ class TestEpsilonGreedyBandit(unittest.TestCase):
         action = bandit.select_path_arm(source=0, dest=0)
 
         self.assertEqual(action, 0)
+
+
+class TestUCBBandit(unittest.TestCase):
+    """
+    Unit tests for the UCBBandit class.
+    """
+
+    def setUp(self):
+        """
+        Common setup for all tests.
+        """
+        self.rl_props = MagicMock()
+        self.rl_props.num_nodes = 3
+        self.engine_props = {'k_paths': 3, 'cores_per_link': 2}
+
+        self.counts_mock = np.array([[[1, 2, 3]], [[1, 1, 1]], [[1, 1, 1]]])
+        self.q_table_mock = np.array(
+            [[[1, 2, 3]], [[4, 5, 6]], [[7, 8, 9]]])
+
+    def create_bandit(self, is_path=True):
+        """
+        Helper method to create and return a UCBBandit instance.
+        """
+        with patch('helper_scripts.bandit_helpers.get_q_table', return_value=(self.counts_mock, self.q_table_mock)):
+            return UCBBandit(self.rl_props, self.engine_props, is_path=is_path)
+
+    def test_get_action_with_zero_count(self):
+        """
+        Test the _get_action method when some actions have not been taken yet.
+        """
+        self.counts_mock = np.array([[[0, 1, 2]], [[1, 1, 1]], [[1, 1, 1]]])
+        bandit = self.create_bandit(is_path=True)
+        state_action_pair = (0, 0)
+        action = bandit._get_action(state_action_pair=state_action_pair)  # pylint: disable=protected-access
+
+        self.assertEqual(action, 0)
+
+    def test_get_action_with_all_counts(self):
+        """
+        Test the _get_action method when all actions have non-zero counts.
+        """
+        # All actions have non-zero counts
+        self.counts_mock = np.array([[[1, 1, 1]], [[1, 1, 1]], [[1, 1, 1]]])
+        bandit = self.create_bandit(is_path=True)
+        state_action_pair = (0, 0)
+        action = bandit._get_action(state_action_pair=state_action_pair)  # pylint: disable=protected-access
+
+        self.assertEqual(action, 2)
+
+    def test_select_path_arm(self):
+        """
+        Test the select_path_arm method.
+        """
+        bandit = self.create_bandit(is_path=True)
+        action = bandit.select_path_arm(source=0, dest=0)
+
+        self.assertEqual(action, 2)
+
+    @patch('helper_scripts.bandit_helpers._update_bandit')
+    def test_update(self, mock_update_bandit):
+        """
+        Test the update method.
+        """
+        bandit = self.create_bandit(is_path=True)
+
+        arm = 1
+        reward = 10
+        iteration = 5
+
+        bandit.update(arm=arm, reward=reward, iteration=iteration)
+        mock_update_bandit.assert_called_once_with(iteration=iteration, arm=arm, reward=reward, self=bandit,
+                                                   algorithm='ucb_bandit')
 
 
 if __name__ == '__main__':
