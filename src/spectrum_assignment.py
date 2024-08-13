@@ -77,22 +77,24 @@ class SpectrumAssignment:
         channels_list = sorted(channels_list, key=lambda d: len(d['channel']))
         self._allocate_best_fit(channels_list=channels_list)
 
-    # TODO: Update for forced band support
+
     def _setup_first_last(self):
         core_matrix = list()
 
         if self.spectrum_props.forced_core is not None:
-            core_matrix = [self.spectrum_props.cores_matrix[self.spectrum_props.forced_core]]
-            core_list = [self.spectrum_props.forced_core]
+            core_list = [self.spectrum_props.forced_core] 
         elif self.engine_props['allocation_method'] in ('priority_first', 'priority_last'):
             core_list = [0, 2, 4, 1, 3, 5, 6]
-            for curr_core in core_list:
-                core_matrix.append([self.spectrum_props.cores_matrix[band][curr_core] for band in self.spectrum_props.cores_matrix])
-
-
         else:
-            core_matrix = self.spectrum_props.cores_matrix
             core_list = list(range(0, self.engine_props['cores_per_link']))
+        
+        if self.spectrum_props.forced_band is not None:
+            band_list = [self.spectrum_props.forced_band]
+        else:
+            band_list = self.engine_props['band_list']
+
+        for curr_core in core_list:
+            core_matrix.append([self.spectrum_props.cores_matrix[band][curr_core] for band in band_list])
 
         return core_matrix, core_list, self.engine_props['band_list']
 
