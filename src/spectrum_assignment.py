@@ -87,7 +87,9 @@ class SpectrumAssignment:
         elif self.engine_props['allocation_method'] in ('priority_first', 'priority_last'):
             core_list = [0, 2, 4, 1, 3, 5, 6]
             for curr_core in core_list:
-                core_matrix.append(self.spectrum_props.cores_matrix[curr_core])
+                core_matrix.append([self.spectrum_props.cores_matrix[band][curr_core] for band in self.spectrum_props.cores_matrix])
+
+
         else:
             core_matrix = self.spectrum_props.cores_matrix
             core_list = list(range(0, self.engine_props['cores_per_link']))
@@ -102,22 +104,23 @@ class SpectrumAssignment:
         """
         # TODO: Cores matrix is now a dictionary, change name
         core_matrix, core_list, band_list = self._setup_first_last()
-        for band in band_list:
-            for core_arr, core_num in zip(core_matrix[band], core_list):
-                open_slots_arr = np.where(core_arr == 0)[0]
+
+        for core_arr, core_num in zip(core_matrix, core_list):
+            for band_index in range(len(band_list)):
+                open_slots_arr = np.where(core_arr[band_index] == 0)[0]
 
                 # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
                 if flag in ('last_fit', 'priority_last'):
                     open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
-                                         itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
                 elif flag in ('first_fit', 'priority_first', 'forced_index'):
                     open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                                         itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
                 else:
                     raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
 
                 self.spec_help_obj.core_num = core_num
-                self.spec_help_obj.curr_band = band
+                self.spec_help_obj.curr_band = band_list[band_index]
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
                     return
