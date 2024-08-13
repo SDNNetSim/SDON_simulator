@@ -35,7 +35,7 @@ class SpectrumAssignment:
                     self.spec_help_obj.end_index = end_index
                     self.spec_help_obj.core_num = channel_dict['core']
                     # TODO: This needs to be double checked
-                    self.spec_help_obj.band = channel_dict['band']
+                    self.spec_help_obj.curr_band = channel_dict['band']
                     self.spec_help_obj.check_other_links()
 
                 if self.spectrum_props.is_free or len(self.spectrum_props.path_list) <= 2:
@@ -64,14 +64,14 @@ class SpectrumAssignment:
                     if self.spectrum_props.forced_band is not None and self.spectrum_props.forced_band != band:
                         continue
 
-                    core_arr = self.sdn_props.net_spec_dict[(src, dest)][band]['cores_matrix'][core_num]
+                    core_arr = self.sdn_props.net_spec_dict[(src, dest)]['cores_matrix'][band][core_num]
                     open_slots_arr = np.where(core_arr == 0)[0]
 
                     tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
                                   itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
                     for channel_list in tmp_matrix:
                         if len(channel_list) >= self.spectrum_props.slots_needed:
-                            channels_list.append({'link': (src, dest), 'core': core_num, 'channel': channel_list})
+                            channels_list.append({'link': (src, dest), 'core': core_num, 'channel': channel_list, 'band': band})
 
         # Sort the list of candidate super channels
         channels_list = sorted(channels_list, key=lambda d: len(d['channel']))
