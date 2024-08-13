@@ -49,7 +49,7 @@ class SpectrumHelpers:
             self.core_num = self.spectrum_props.forced_core
 
         if self.spectrum_props.forced_band is not None:
-            self.curr_band = self.spectrum_props['forced_band']
+            self.curr_band = self.spectrum_props.forced_band
 
         if self.engine_props['allocation_method'] == 'last_fit':
             self.spectrum_props.start_slot = self.end_index
