@@ -136,7 +136,6 @@ class SpectrumAssignment:
         :rtype: dict
         """
         core = self.spec_help_obj.find_best_core()
-        # Graph coloring for cores will be in this order
         if core in [0, 2, 4, 6]:
             self.spectrum_props.forced_core = core
             return self.handle_first_last(flag='first_fit')
