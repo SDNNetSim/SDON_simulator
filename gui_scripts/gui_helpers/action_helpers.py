@@ -54,7 +54,15 @@ class TopologyCanvas(FigureCanvas):
         :param pos: Position of this node.
         """
         self.axes.clear()
-        nx.draw(G, pos, ax=self.axes, with_labels=True, node_size=200, font_size=8)
+        nx.draw(
+            G, pos, ax=self.axes,
+            with_labels=True,
+            node_size=400,  # Increased node size
+            font_size=10,  # Increased font size for node labels
+            font_color="white",  # Set font color to white for better visibility
+            font_weight="bold",  # Bold the node labels
+            node_color="#00008B",  # Set node color to a darker blue (hex color)
+        )
         self.axes.figure.tight_layout()  # Ensure the plot fits within the canvas
         self.draw()
 
