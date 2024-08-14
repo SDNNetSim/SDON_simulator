@@ -162,8 +162,8 @@ class RoutingHelpers:
 
         for band in free_slots_dict:
             for core_num in free_slots_dict[band]:
-                free_slots += len(free_slots_dict[core_num])
-                for channel in free_slots_dict[core_num]:
+                free_slots += len(free_slots_dict[band][core_num])
+                for channel in free_slots_dict[band][core_num]:
                     core_info_dict = self.sdn_props.net_spec_dict[link_list]['cores_matrix']
                     num_overlapped = self._find_num_overlapped(channel=channel, core_num=core_num,
                                                                core_info_dict=core_info_dict, band=band)

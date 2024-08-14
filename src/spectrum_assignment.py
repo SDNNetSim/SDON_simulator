@@ -35,7 +35,7 @@ class SpectrumAssignment:
                     self.spec_help_obj.end_index = end_index
                     self.spec_help_obj.core_num = channel_dict['core']
                     # TODO: This needs to be double checked
-                    self.spec_help_obj.band = channel_dict['band']
+                    self.spec_help_obj.curr_band = channel_dict['band']
                     self.spec_help_obj.check_other_links()
 
                 if self.spectrum_props.is_free or len(self.spectrum_props.path_list) <= 2:
@@ -64,33 +64,37 @@ class SpectrumAssignment:
                     if self.spectrum_props.forced_band is not None and self.spectrum_props.forced_band != band:
                         continue
 
-                    core_arr = self.sdn_props.net_spec_dict[(src, dest)][band]['cores_matrix'][core_num]
+                    core_arr = self.sdn_props.net_spec_dict[(src, dest)]['cores_matrix'][band][core_num]
                     open_slots_arr = np.where(core_arr == 0)[0]
 
                     tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
                                   itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
                     for channel_list in tmp_matrix:
                         if len(channel_list) >= self.spectrum_props.slots_needed:
-                            channels_list.append({'link': (src, dest), 'core': core_num, 'channel': channel_list})
+                            channels_list.append({'link': (src, dest), 'core': core_num, 'channel': channel_list, 'band': band})
 
         # Sort the list of candidate super channels
         channels_list = sorted(channels_list, key=lambda d: len(d['channel']))
         self._allocate_best_fit(channels_list=channels_list)
 
-    # TODO: Update for forced band support
+
     def _setup_first_last(self):
         core_matrix = list()
 
         if self.spectrum_props.forced_core is not None:
-            core_matrix = [self.spectrum_props.cores_matrix[self.spectrum_props.forced_core]]
-            core_list = [self.spectrum_props.forced_core]
+            core_list = [self.spectrum_props.forced_core] 
         elif self.engine_props['allocation_method'] in ('priority_first', 'priority_last'):
             core_list = [0, 2, 4, 1, 3, 5, 6]
-            for curr_core in core_list:
-                core_matrix.append(self.spectrum_props.cores_matrix[curr_core])
         else:
-            core_matrix = self.spectrum_props.cores_matrix
             core_list = list(range(0, self.engine_props['cores_per_link']))
+        
+        if self.spectrum_props.forced_band is not None:
+            band_list = [self.spectrum_props.forced_band]
+        else:
+            band_list = self.engine_props['band_list']
+
+        for curr_core in core_list:
+            core_matrix.append([self.spectrum_props.cores_matrix[band][curr_core] for band in band_list])
 
         return core_matrix, core_list, self.engine_props['band_list']
 
@@ -102,22 +106,23 @@ class SpectrumAssignment:
         """
         # TODO: Cores matrix is now a dictionary, change name
         core_matrix, core_list, band_list = self._setup_first_last()
-        for band in band_list:
-            for core_arr, core_num in zip(core_matrix[band], core_list):
-                open_slots_arr = np.where(core_arr == 0)[0]
+
+        for core_arr, core_num in zip(core_matrix, core_list):
+            for band_index in range(len(band_list)):
+                open_slots_arr = np.where(core_arr[band_index] == 0)[0]
 
                 # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
                 if flag in ('last_fit', 'priority_last'):
                     open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
-                                         itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
                 elif flag in ('first_fit', 'priority_first', 'forced_index'):
                     open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                                         itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
                 else:
                     raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
 
                 self.spec_help_obj.core_num = core_num
-                self.spec_help_obj.curr_band = band
+                self.spec_help_obj.curr_band = band_list[band_index]
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
                     return
@@ -131,7 +136,6 @@ class SpectrumAssignment:
         :rtype: dict
         """
         core = self.spec_help_obj.find_best_core()
-        # Graph coloring for cores will be in this order
         if core in [0, 2, 4, 6]:
             self.spectrum_props.forced_core = core
             return self.handle_first_last(flag='first_fit')
