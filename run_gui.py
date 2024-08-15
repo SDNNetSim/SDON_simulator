@@ -86,6 +86,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.directory_tree.setRootIndex(self.file_model.index(self.project_directory))
         self.directory_tree.clicked.connect(self.on_treeview_clicked)
 
+        # Apply custom stylesheet for font size
+        self.directory_tree.setStyleSheet("font-size: 12pt;")  # Increase font size to 12pt
+
         # Hide size, type, and date columns
         self.directory_tree.setColumnHidden(1, True)  # Size column
         self.directory_tree.setColumnHidden(2, True)  # Type column
@@ -99,6 +102,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # File editor tab
         self.file_editor = QtWidgets.QTextEdit()
+        self.file_editor.setStyleSheet("font-size: 12pt;")
         self.tab_widget.addTab(self.file_editor, "File Editor")
 
         # Apply Python syntax highlighter to the file editor
@@ -109,6 +113,7 @@ class MainWindow(QtWidgets.QMainWindow):
         init_topology_data = QtWidgets.QLabel("Nothing to display")
         init_topology_data.setAlignment(QtCore.Qt.AlignCenter)
         self.mw_topology_view_area.setWidget(init_topology_data)
+        self.tab_widget.setStyleSheet("font-size: 12pt")
         self.tab_widget.addTab(self.mw_topology_view_area, "Topology View")
 
         self.horizontal_splitter.addWidget(self.tab_widget)
