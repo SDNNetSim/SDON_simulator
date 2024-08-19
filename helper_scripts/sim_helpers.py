@@ -88,12 +88,14 @@ def find_path_len(path_list: list, topology: nx.Graph):
     return path_len
 
 
-def find_path_cong(path_list: list, net_spec_dict: dict):
+# TODO: Defaulting to 'c' band
+def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
     """
     Finds the average percentage of congestion for a given path.
 
     :param path_list: The path to be analyzed.
     :param net_spec_dict: The current up-to-date network spectrum database.
+    :param band: Band to find congestion on.
     :return: The average congestion as a decimal.
     :rtype: float
     """
@@ -102,7 +104,7 @@ def find_path_cong(path_list: list, net_spec_dict: dict):
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
         cores_matrix = net_spec_dict[src_dest]['cores_matrix']
-        cores_per_link = float(len(cores_matrix))
+        cores_per_link = float(len(cores_matrix[band]))
 
         for curr_band in net_spec_dict[src_dest]['cores_matrix']:
             # Every core will have the same number of spectral slots
@@ -136,14 +138,12 @@ def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
         total_slots = 0
         slots_taken = 0
         for band in cores_matrix:
-            cores_per_link += float(len(cores_matrix[band]))
-
             # Every core will have the same number of spectral slots
             total_slots += len(cores_matrix[band][0])
             core_slots_taken = float(len(np.where(cores_matrix[band][core_index] != 0.0)[0]))
             slots_taken += core_slots_taken
 
-        links_cong_list.append(slots_taken / (total_slots * cores_per_link))
+        links_cong_list.append(slots_taken / total_slots)
 
     average_core_cong = np.mean(links_cong_list)
     return average_core_cong
