@@ -10,7 +10,7 @@ import numpy as np
 
 from helper_scripts.sim_helpers import (
     get_path_mod, find_max_path_len, sort_dict_keys, sort_nested_dict_vals,
-    find_path_len, find_path_cong, get_channel_overlaps, find_free_slots,
+    find_path_len, find_path_cong, find_free_slots,
     find_free_channels, find_taken_channels, snake_to_title, int_to_string,
     dict_to_list, list_to_title, calc_matrix_stats, combine_and_one_hot,
     get_start_time, find_core_cong, find_core_frag_cong, min_max_scale,
