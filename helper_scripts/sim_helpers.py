@@ -292,7 +292,7 @@ def find_free_channels(net_spec_dict: dict, slots_needed: int, link_tuple: tuple
                         channels_list.append(curr_channel_list.copy())
                         curr_channel_list.pop(0)
                 else:
-                    curr_channel_list = [free_index];
+                    curr_channel_list = [free_index]
 
             resp_dict[band].update({core_num: channels_list})
 
@@ -309,7 +309,7 @@ def find_taken_channels(net_spec_dict: dict, link_tuple: tuple):
     :rtype: dict
     """
     resp_dict = {}
-    for band, _ in net_spec_dict[link_tuple]['cores_matrix'].items():
+    for band in net_spec_dict[link_tuple]['cores_matrix'].keys():
         resp_dict.update({band: {}})
         cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'][band])
         for core_num, link_list in enumerate(cores_matrix):

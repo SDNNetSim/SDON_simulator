@@ -85,19 +85,21 @@ class RoutingHelpers:
         link_cost = nli_cost / num_channels
         return link_cost
 
-    def find_worst_nli(self, num_span: float):
+    # TODO: Default to 'c' band
+    def find_worst_nli(self, num_span: float, band: str = 'c'):
         """
         Finds the worst possible non-linear impairment cost.
 
         :param num_span: The number of span a link has.
+        :param band: Band to check NLI on.
         :return: The worst NLI.
         :rtype: float
         """
         links_list = list(self.sdn_props.net_spec_dict.keys())
         sim_link_list = self._get_simulated_link()
 
-        orig_link_list = copy.copy(self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][0])
-        self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][0] = sim_link_list
+        orig_link_list = copy.copy(self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][band])
+        self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][band][0] = sim_link_list
 
         free_channels_dict = find_free_channels(net_spec_dict=self.sdn_props.net_spec_dict,
                                                 slots_needed=self.sdn_props.slots_needed, link_tuple=links_list[0])
@@ -106,7 +108,7 @@ class RoutingHelpers:
         nli_worst = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
                                          num_span=num_span)
 
-        self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][0] = orig_link_list
+        self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][band] = orig_link_list
         return nli_worst
 
     @staticmethod
