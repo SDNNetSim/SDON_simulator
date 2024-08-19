@@ -186,13 +186,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.rl_props.forced_index = None
         # TODO: Check to make sure this doesn't affect anything
-        try:
-            req_info_dict = self.rl_props.arrival_list[self.rl_props.arrival_count]
-        except IndexError:
-            req_info_dict = self.rl_props.arrival_list[self.rl_props.arrival_count - 1]
+        # try:
+        #     req_info_dict = self.rl_props.arrival_list[self.rl_props.arrival_count]
+        # except IndexError:
+        #     req_info_dict = self.rl_props.arrival_list[self.rl_props.arrival_count - 1]
 
-        req_id = req_info_dict['req_id']
-        self.core_agent.get_core(req_id=req_id)
+        self.core_agent.get_core()
 
     def _handle_spectrum_train(self):
         self.route_obj.sdn_props = self.rl_props.mock_sdn_dict
@@ -216,8 +215,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 raise NotImplementedError
         else:
             self._handle_path_train_test()
-            # fixme
-            self.core_agent.get_core(req_id=None)
+            self.core_agent.get_core()
 
         path_len = find_path_len(path_list=self.rl_props.chosen_path_list[0],
                                  topology=self.engine_obj.topology)

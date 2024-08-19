@@ -227,7 +227,7 @@ class TestCoreAgent(unittest.TestCase):
         """
         self.core_agent.core_algorithm = 'q_learning'
         with patch.object(self.core_agent, '_ql_core') as mock_ql_core:
-            self.core_agent.get_core(req_id=50)
+            self.core_agent.get_core()
             mock_ql_core.assert_called_once()
 
     def test_get_core_bandit(self):
@@ -236,7 +236,7 @@ class TestCoreAgent(unittest.TestCase):
         """
         self.core_agent.core_algorithm = 'epsilon_greedy_bandit'
         with patch.object(self.core_agent, '_bandit_core') as mock_bandit_core:
-            self.core_agent.get_core(req_id=50)
+            self.core_agent.get_core()
             mock_bandit_core.assert_called_once()
 
     def test_load_model_q_learning(self):
