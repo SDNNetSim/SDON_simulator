@@ -5,7 +5,7 @@ The Request Generator is responsible for generating requests and request informa
 This component plays a crucial role in simulating realistic network scenarios by generating requests with varying
 characteristics such as arrival times, holding times, source nodes, and destination nodes.
 
-.. automodule:: sim_scripts.request_generator
+.. automodule:: src.request_generator
     :members:
     :undoc-members:
     :private-members:

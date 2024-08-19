@@ -11,7 +11,7 @@ the simulation's requirements:
 - **K-Shortest Path Routing**: Finds the K shortest paths based on various criteria, allowing for increased flexibility in route selection.
 
 
-.. automodule:: sim_scripts.routing
+.. automodule:: src.routing
     :members:
     :undoc-members:
     :private-members:

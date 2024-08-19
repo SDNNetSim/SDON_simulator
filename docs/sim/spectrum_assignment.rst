@@ -11,7 +11,7 @@ The Spectrum Assignment component offers various methods for allocating spectrum
 - **Cross-Talk (XT) Aware Allocation**: Considers cross-talk interference when allocating spectrum resources, optimizing resource utilization and minimizing interference.
 
 
-.. automodule:: sim_scripts.spectrum_assignment
+.. automodule:: src.spectrum_assignment
     :members:
     :undoc-members:
     :private-members:

@@ -6,7 +6,7 @@ aspect of the simulation. From managing the SDN controller to coordinating routi
 and statistical analysis, the Engine ensures seamless integration and interaction between different modules,
 facilitating comprehensive simulation runs and insightful analysis of network behavior.
 
-.. automodule:: sim_scripts.engine
+.. automodule:: src.engine
     :members:
     :undoc-members:
     :private-members:

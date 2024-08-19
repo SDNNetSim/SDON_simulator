@@ -6,7 +6,7 @@ and facilitating efficient communication between network elements. By dynamicall
 the SDN Controller empowers users to implement and evaluate various network management strategies, ensuring optimal
 performance and adaptability in diverse network scenarios.
 
-.. automodule:: sim_scripts.sdn_controller
+.. automodule:: src.sdn_controller
     :members:
     :undoc-members:
     :private-members:
