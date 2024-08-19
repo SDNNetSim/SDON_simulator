@@ -11,6 +11,5 @@ Helper Scripts
     routing_helpers
     setup_helpers
     sim_helpers
-    snr_helpers
     spectrum_helpers
     stats_helpers

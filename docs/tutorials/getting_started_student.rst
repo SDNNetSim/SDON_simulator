@@ -1,5 +1,5 @@
 Getting Started for Students
-===============
+=============================
 
 Running Your First Simulation
 -----------------------------

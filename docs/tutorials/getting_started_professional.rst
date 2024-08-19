@@ -1,5 +1,5 @@
 Getting Started for Professionals
-===============
+==================================
 
 Running a Simulation
 --------------------
