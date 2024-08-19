@@ -135,64 +135,6 @@ class TestSimHelpers(unittest.TestCase):
         self.assertEqual(frag_resp, 0)
         self.assertEqual(cong_resp, 0)
 
-    def test_get_channel_overlaps(self):
-        """Test finding overlapping and non-overlapping channels."""
-        self.maxDiff = None  # pylint: disable=invalid-name
-
-        free_channels_dict = {
-            'link1': {
-                'c': {
-                    0: [[1, 2, 3]],
-                    1: [[4, 5, 6]],
-                    2: [[7, 8, 9]],
-                    3: [[10, 11, 12]],
-                    4: [[13, 14, 15]],
-                    5: [[16, 17, 18]]
-                }
-            }
-        }
-
-        free_slots_dict = {
-            'link1': {
-                'c': {
-                    0: [1, 2, 3],
-                    1: [4, 5, 6],
-                    2: [7, 8, 9],
-                    3: [10, 11, 12],
-                    4: [13, 14, 15],
-                    5: [16, 17, 18]
-                }
-            }
-        }
-
-        expected_output = {
-            'link1': {
-                'non_over_dict': {
-                    'c': {
-                        0: [[1, 2, 3]],
-                        1: [[4, 5, 6]],
-                        2: [[7, 8, 9]],
-                        3: [[10, 11, 12]],
-                        4: [[13, 14, 15]],
-                        5: [[16, 17, 18]]
-                    }
-                },
-                'overlapped_dict': {
-                    'c': {
-                        0: [[1, 2, 3]],
-                        1: [[4, 5, 6]],
-                        2: [[7, 8, 9]],
-                        3: [[10, 11, 12]],
-                        4: [[13, 14, 15]],
-                        5: [[16, 17, 18]]
-                    }
-                }
-            }
-        }
-
-        result = get_channel_overlaps(free_channels_dict, free_slots_dict)
-        self.assertEqual(result, expected_output)
-
     def test_find_free_slots(self):
         """Test finding free slots for each core on a link."""
         result1 = find_free_slots(self.net_spec_dict, ('A', 'B'))

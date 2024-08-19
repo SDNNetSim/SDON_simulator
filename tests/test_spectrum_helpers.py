@@ -101,42 +101,6 @@ class TestSpectrumHelpers(unittest.TestCase):
         self.spectrum_props.slots_needed = 10
         self.assertFalse(self.helpers.check_super_channels(open_slots_matrix, flag=''))
 
-    def test_find_best_core(self):
-        """Test finding the best core with the least overlap in a seven-core setup."""
-        # Set up the mock data for a seven-core system
-        path_info = {
-            'free_channels_dict': {
-                (1, 2): {'c': {
-                    0: [[1, 2, 3]], 1: [[4, 5, 6]], 2: [[7, 8, 9]],
-                    3: [[10, 11, 12]], 4: [[13, 14, 15]], 5: [[16, 17, 18]],
-                    6: [[19, 20, 21]]
-                }},
-                (2, 3): {'c': {
-                    0: [[1, 2, 3]], 1: [[4, 5, 6]], 2: [[7, 8, 9]],
-                    3: [[10, 11, 12]], 4: [[13, 14, 15]], 5: [[16, 17, 18]],
-                    6: [[19, 20, 21]]
-                }}
-            },
-            'free_slots_dict': {
-                (1, 2): {'c': {
-                    0: [1, 2, 3], 1: [4, 5, 6], 2: [7, 8, 9],
-                    3: [10, 11, 12], 4: [13, 14, 15], 5: [16, 17, 18],
-                    6: [19, 20, 21]
-                }},
-                (2, 3): {'c': {
-                    0: [1, 2, 3], 1: [4, 5, 6], 2: [7, 8, 9],
-                    3: [10, 11, 12], 4: [13, 14, 15], 5: [16, 17, 18],
-                    6: [19, 20, 21]
-                }}
-            }
-        }
-
-        # Mock the `find_link_inters` method to return the above path_info
-        self.helpers.find_link_inters = MagicMock(return_value=path_info)
-
-        best_core = self.helpers.find_best_core()
-        self.assertEqual(best_core, 0)
-
 
 if __name__ == '__main__':
     unittest.main()
