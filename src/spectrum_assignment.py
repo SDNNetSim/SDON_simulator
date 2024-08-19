@@ -71,23 +71,23 @@ class SpectrumAssignment:
                                   itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
                     for channel_list in tmp_matrix:
                         if len(channel_list) >= self.spectrum_props.slots_needed:
-                            channels_list.append({'link': (src, dest), 'core': core_num, 'channel': channel_list, 'band': band})
+                            channels_list.append(
+                                {'link': (src, dest), 'core': core_num, 'channel': channel_list, 'band': band})
 
         # Sort the list of candidate super channels
         channels_list = sorted(channels_list, key=lambda d: len(d['channel']))
         self._allocate_best_fit(channels_list=channels_list)
 
-
     def _setup_first_last(self):
         core_matrix = list()
 
         if self.spectrum_props.forced_core is not None:
-            core_list = [self.spectrum_props.forced_core] 
+            core_list = [self.spectrum_props.forced_core]
         elif self.engine_props['allocation_method'] in ('priority_first', 'priority_last'):
             core_list = [0, 2, 4, 1, 3, 5, 6]
         else:
             core_list = list(range(0, self.engine_props['cores_per_link']))
-        
+
         if self.spectrum_props.forced_band is not None:
             band_list = [self.spectrum_props.forced_band]
         else:
@@ -108,16 +108,16 @@ class SpectrumAssignment:
         core_matrix, core_list, band_list = self._setup_first_last()
 
         for core_arr, core_num in zip(core_matrix, core_list):
-            for band_index in range(len(band_list)):
+            for band_index in range(len(band_list)):  # pylint: disable=consider-using-enumerate
                 open_slots_arr = np.where(core_arr[band_index] == 0)[0]
 
                 # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
                 if flag in ('last_fit', 'priority_last'):
                     open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
-                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                                         itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
                 elif flag in ('first_fit', 'priority_first', 'forced_index'):
                     open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                                         itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
                 else:
                     raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
 
