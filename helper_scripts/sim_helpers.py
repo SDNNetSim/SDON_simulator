@@ -134,7 +134,6 @@ def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
         cores_matrix = net_spec_dict[src_dest]['cores_matrix']
-        cores_per_link = 0.0
         total_slots = 0
         slots_taken = 0
         for band in cores_matrix:
@@ -203,7 +202,7 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict):
     :rtype: dict
     """
     resp_dict = dict()
-    for link in free_channels_dict.keys():
+    for link in free_channels_dict.keys():  # pylint: disable=too-many-nested-blocks
         resp_dict.update({link: {'overlapped_dict': {}, 'non_over_dict': {}}})
         for band, free_channels in free_channels_dict[link].items():
             num_cores = int(len(free_channels.keys()))
@@ -231,7 +230,7 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict):
                             result_arr = np.append(result_arr,
                                                    np.isin(curr_channel, free_slots_dict[link][band][num_cores - 1]))
 
-                        if np.any(result_arr == False):
+                        if result_arr is False:
                             resp_dict[link]['overlapped_dict'][band][core_num].append(curr_channel)
                             break
 

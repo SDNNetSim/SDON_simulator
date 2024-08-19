@@ -78,7 +78,7 @@ def read_config(args_obj: dict, config_path: str = None):
     config_dict = {'s1': dict()}
     config = configparser.ConfigParser()
 
-    try:
+    try:  # pylint: disable=too-many-nested-blocks
         if config_path is None:
             config_path = os.path.join('ini', 'run_ini', 'config.ini')
         config.read(config_path)

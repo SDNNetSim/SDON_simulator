@@ -273,7 +273,7 @@ class CoreAgent:
         self.rl_props.core_index = self.agent_obj.select_core_arm(source=int(source), dest=int(dest),
                                                                   path_index=path_index)
 
-    def get_core(self, req_id: int):
+    def get_core(self):
         """
         Assigns a core to the current request.
         """
