@@ -1,8 +1,6 @@
 import unittest
-import os
-import json
 
-from sim_scripts.request_generator import get_requests
+from src.request_generator import get_requests
 
 
 class TestGetRequests(unittest.TestCase):
@@ -13,9 +11,23 @@ class TestGetRequests(unittest.TestCase):
     def setUp(self):
         self.seed = 12345
 
-        file_path = os.path.join('tests', 'fixtures', 'engine_props.json')
-        with open(file_path, 'r', encoding='utf-8') as file_obj:
-            self.engine_props = json.load(file_obj)
+        self.engine_props = {
+            'topology_info': {
+                'nodes': {'A': {}, 'B': {}, 'C': {}},  # Example nodes
+            },
+            'mod_per_bw': {
+                '50GHz': ['QPSK', '16QAM'],  # Example modulation formats per bandwidth
+                '100GHz': ['QPSK']
+            },
+            'request_distribution': {
+                '50GHz': 0.5,
+                '100GHz': 0.5
+            },
+            'num_requests': 10,  # Example number of requests
+            'arrival_rate': 1.0,
+            'holding_time': 2.0,
+            'sim_type': 'default',  # Adjust as needed
+        }
 
     def test_requests_length(self):
         """

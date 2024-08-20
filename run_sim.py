@@ -8,7 +8,7 @@ import concurrent.futures
 
 # Local application imports
 from helper_scripts.setup_helpers import create_input, save_input
-from sim_scripts.engine import Engine
+from src.engine import Engine
 from config_scripts.setup_config import read_config
 from config_scripts.parse_args import parse_args
 
@@ -31,6 +31,7 @@ class NetworkSimulator:
         engine_props['erlang'] = arr_rate_mean / engine_props['holding_time']
         arr_rate_mean *= float(engine_props['cores_per_link'])
         engine_props['arrival_rate'] = arr_rate_mean
+        engine_props['band_list'] = list()
         create_input(engine_props=engine_props, base_fp='data')
 
         if arr_rate_mean == (start * engine_props['cores_per_link']):
@@ -66,6 +67,7 @@ class NetworkSimulator:
         engine_props = copy.deepcopy(self.properties)
         engine_props['arrival_rate'] = (engine_props['cores_per_link'] * erlang) / engine_props['holding_time']
         engine_props['erlang'] = erlang
+        engine_props['band_list'] = list()
         local_props = create_input(base_fp='data', engine_props=engine_props)
 
         if first_erlang:
@@ -147,5 +149,6 @@ def run(sims_dict: dict):
 
 if __name__ == '__main__':
     args_obj = parse_args()
-    all_sims_dict = read_config(args_obj=args_obj)
+    # TODO: Update config path in other AI scripts
+    all_sims_dict = read_config(args_obj=args_obj, config_path=args_obj['config_path'])
     run(sims_dict=all_sims_dict)

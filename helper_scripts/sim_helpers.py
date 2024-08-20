@@ -3,6 +3,7 @@ from datetime import datetime
 
 import networkx as nx
 import numpy as np
+import yaml
 
 
 def get_path_mod(mods_dict: dict, path_len: int):
@@ -87,12 +88,14 @@ def find_path_len(path_list: list, topology: nx.Graph):
     return path_len
 
 
-def find_path_cong(path_list: list, net_spec_dict: dict):
+# TODO: Defaulting to 'c' band
+def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
     """
     Finds the average percentage of congestion for a given path.
 
     :param path_list: The path to be analyzed.
     :param net_spec_dict: The current up-to-date network spectrum database.
+    :param band: Band to find congestion on.
     :return: The average congestion as a decimal.
     :rtype: float
     """
@@ -101,19 +104,92 @@ def find_path_cong(path_list: list, net_spec_dict: dict):
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
         cores_matrix = net_spec_dict[src_dest]['cores_matrix']
-        cores_per_link = float(len(cores_matrix))
+        cores_per_link = float(len(cores_matrix[band]))
 
-        # Every core will have the same number of spectral slots
-        total_slots = len(cores_matrix[0])
-        slots_taken = 0
-        for curr_core in cores_matrix:
-            core_slots_taken = float(len(np.where(curr_core != 0.0)[0]))
-            slots_taken += core_slots_taken
+        for curr_band in net_spec_dict[src_dest]['cores_matrix']:
+            # Every core will have the same number of spectral slots
+            total_slots = len(cores_matrix[curr_band][0])
+            slots_taken = 0
+            for curr_core in cores_matrix[curr_band]:
+                core_slots_taken = float(len(np.where(curr_core != 0.0)[0]))
+                slots_taken += core_slots_taken
 
-        links_cong_list.append(slots_taken / (total_slots * cores_per_link))
+            links_cong_list.append(slots_taken / (total_slots * cores_per_link))
 
     average_path_cong = np.mean(links_cong_list)
     return average_path_cong
+
+
+def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
+    """
+    Finds the current percentage of congestion on a core along a path.
+
+    :param core_index: Index of the core.
+    :param net_spec_dict: Network spectrum database.
+    :param path_list: Current path.
+    :return: The average congestion percentage on the core.
+    :rtype: float
+    """
+    links_cong_list = list()
+    for src, dest in zip(path_list, path_list[1:]):
+        src_dest = (src, dest)
+        cores_matrix = net_spec_dict[src_dest]['cores_matrix']
+        total_slots = 0
+        slots_taken = 0
+        for band in cores_matrix:
+            # Every core will have the same number of spectral slots
+            total_slots += len(cores_matrix[band][0])
+            core_slots_taken = float(len(np.where(cores_matrix[band][core_index] != 0.0)[0]))
+            slots_taken += core_slots_taken
+
+        links_cong_list.append(slots_taken / total_slots)
+
+    average_core_cong = np.mean(links_cong_list)
+    return average_core_cong
+
+
+def find_core_frag_cong(net_spec_db: dict, path: list, core: int, band: str):
+    """
+    Finds the congestion and fragmentation scores for a specific request.
+
+    :param net_spec_db: Current network spectrum database.
+    :param path: Current path.
+    :param core: Current core.
+    :param band: Current allocated band.
+    :return: The congestion and fragmentation scores.
+    :rtype: float
+    """
+    frag_resp = 0.0
+    cong_resp = 0.0
+    for src, dest in zip(path, path[1:]):
+        src_dest = (src, dest)
+        core_arr = net_spec_db[src_dest]['cores_matrix'][band][core]
+
+        if len(core_arr) != 256:
+            raise NotImplementedError('Only works for 256 spectral slots.')
+
+        cong_resp += len(np.where(core_arr != 0)[0])
+
+        count = 0
+        in_zero_group = False
+
+        for number in core_arr:
+            if number == 0:
+                if not in_zero_group:
+                    in_zero_group = True
+            else:
+                if in_zero_group:
+                    count += 1
+                    in_zero_group = False
+
+        frag_resp += count
+
+    num_links = len(path) - 1
+    # The lowest number of slots a request can take is 2, the max number of times [1, 1, 0, 2, 2, 0, ..., 5, 5, 0]
+    # fragmentation can happen is 43 for 128 spectral slots and 86 for 256 spectral slots (Rounded)
+    frag_resp = frag_resp / 86.0 / num_links
+    cong_resp = cong_resp / 256.0 / num_links
+    return frag_resp, cong_resp
 
 
 def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict):
@@ -125,44 +201,42 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict):
     :return: The overlapping and non-overlapping channels for every core.
     :rtype: dict
     """
-    resp = {'overlapped_dict': {}, 'non_over_dict': {}}
-    num_cores = int(len(free_channels_dict.keys()))
+    resp_dict = dict()
+    for link in free_channels_dict.keys():  # pylint: disable=too-many-nested-blocks
+        resp_dict.update({link: {'overlapped_dict': {}, 'non_over_dict': {}}})
+        for band, free_channels in free_channels_dict[link].items():
+            num_cores = int(len(free_channels.keys()))
+            resp_dict[link]['overlapped_dict'][band] = dict()
+            resp_dict[link]['non_over_dict'][band] = dict()
+            for core_num, channels_list in free_channels.items():
+                resp_dict[link]['overlapped_dict'][band][core_num] = list()
+                resp_dict[link]['non_over_dict'][band][core_num] = list()
 
-    for core_num, channels_list in free_channels_dict.items():
-        resp['overlapped_dict'][core_num] = list()
-        resp['non_over_dict'][core_num] = list()
+                for curr_channel in channels_list:
+                    for sub_core, slots_dict in free_slots_dict[link][band].items():
+                        if sub_core == core_num:
+                            continue
+                        # The final core overlaps with all other cores
+                        if core_num == num_cores - 1:
+                            result_arr = np.isin(curr_channel, slots_dict[sub_core])
+                        else:
+                            # Only certain cores neighbor each other on a fiber
+                            first_neighbor = 5 if core_num == 0 else core_num - 1
+                            second_neighbor = 0 if core_num == 5 else core_num + 1
 
-        for curr_channel in channels_list:
-            is_overlapped = False
-            for sub_core in range(0, num_cores):
-                if sub_core == core_num:
-                    continue
+                            result_arr = np.isin(curr_channel, free_slots_dict[link][band][first_neighbor])
+                            result_arr = np.append(result_arr,
+                                                   np.isin(curr_channel, free_slots_dict[link][band][second_neighbor]))
+                            result_arr = np.append(result_arr,
+                                                   np.isin(curr_channel, free_slots_dict[link][band][num_cores - 1]))
 
-                for _, slots_dict in free_slots_dict.items():
-                    # The final core overlaps with all other cores
-                    if core_num == num_cores - 1:
-                        result = np.isin(curr_channel, slots_dict[sub_core])
-                    else:
-                        # Only certain cores neighbor each other on a fiber
-                        first_neighbor = 5 if core_num == 0 else core_num - 1
-                        second_neighbor = 0 if core_num == 5 else core_num + 1
+                        if result_arr is False:
+                            resp_dict[link]['overlapped_dict'][band][core_num].append(curr_channel)
+                            break
 
-                        result = np.isin(curr_channel, slots_dict[first_neighbor])
-                        result = np.append(result, np.isin(curr_channel, slots_dict[second_neighbor]))
-                        result = np.append(result, np.isin(curr_channel, slots_dict[num_cores - 1]))
+                    resp_dict[link]['non_over_dict'][band][core_num].append(curr_channel)
 
-                    if np.any(result):
-                        resp['overlapped_dict'][core_num].append(curr_channel)
-                        is_overlapped = True
-                        break
-
-                    resp['non_over_dict'][core_num].append(curr_channel)
-
-                # No need to check other cores, we already determined this channel overlaps with other channels
-                if is_overlapped:
-                    break
-
-    return resp
+    return resp_dict
 
 
 def find_free_slots(net_spec_dict: dict, link_tuple: tuple):
@@ -174,13 +248,16 @@ def find_free_slots(net_spec_dict: dict, link_tuple: tuple):
     :return: The indexes of the free spectral slots on the link for each core.
     :rtype: dict
     """
-    link = net_spec_dict[link_tuple]['cores_matrix']
-    resp = {}
-    for core_num in range(len(link)):  # pylint: disable=consider-using-enumerate
-        free_slots_list = np.where(link[core_num] == 0)[0]
-        resp.update({core_num: free_slots_list})
+    resp_dict = {}
+    for band in net_spec_dict[link_tuple]['cores_matrix'].keys():
+        resp_dict[band] = dict()
 
-    return resp
+        num_cores = len(net_spec_dict[link_tuple]['cores_matrix'][band])
+        for core_num in range(num_cores):  # pylint: disable=consider-using-enumerate
+            free_slots_list = np.where(net_spec_dict[link_tuple]['cores_matrix'][band][core_num] == 0)[0]
+            resp_dict[band].update({core_num: free_slots_list})
+
+    return resp_dict
 
 
 def find_free_channels(net_spec_dict: dict, slots_needed: int, link_tuple: tuple):
@@ -193,27 +270,32 @@ def find_free_channels(net_spec_dict: dict, slots_needed: int, link_tuple: tuple
     :return: Available super-channels for every core.
     :rtype: dict
     """
-    resp = {}
-    cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'])
-    for core_num, link_list in enumerate(cores_matrix):
-        indexes = np.where(link_list == 0)[0]
-        channels_list = []
-        curr_channel_list = []
+    resp_dict = {}
+    for band in net_spec_dict[link_tuple]['cores_matrix'].keys():
+        cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'][band])
+        resp_dict.update({band: {}})
+        for core_num, link_list in enumerate(cores_matrix):
+            indexes = np.where(link_list == 0)[0]
+            channels_list = []
+            curr_channel_list = []
 
-        for i, free_index in enumerate(indexes):
-            if i == 0:
-                curr_channel_list.append(free_index)
-            elif free_index == indexes[i - 1] + 1:
-                curr_channel_list.append(free_index)
-                if len(curr_channel_list) == slots_needed:
-                    channels_list.append(curr_channel_list.copy())
-                    curr_channel_list.pop(0)
-            else:
-                curr_channel_list = [free_index]
+            for i, free_index in enumerate(indexes):
+                if i == 0:
+                    curr_channel_list.append(free_index)
+                    if len(curr_channel_list) == slots_needed:
+                        channels_list.append(curr_channel_list.copy())
+                        curr_channel_list.pop(0)
+                elif free_index == indexes[i - 1] + 1:
+                    curr_channel_list.append(free_index)
+                    if len(curr_channel_list) == slots_needed:
+                        channels_list.append(curr_channel_list.copy())
+                        curr_channel_list.pop(0)
+                else:
+                    curr_channel_list = [free_index]
 
-        resp.update({core_num: channels_list})
+            resp_dict[band].update({core_num: channels_list})
 
-    return resp
+    return resp_dict
 
 
 def find_taken_channels(net_spec_dict: dict, link_tuple: tuple):
@@ -225,25 +307,27 @@ def find_taken_channels(net_spec_dict: dict, link_tuple: tuple):
     :return: Unavailable super-channels for every core.
     :rtype: dict
     """
-    resp = {}
-    cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'])
-    for core_num, link_list in enumerate(cores_matrix):
-        channels_list = []
-        curr_channel_list = []
+    resp_dict = {}
+    for band in net_spec_dict[link_tuple]['cores_matrix'].keys():
+        resp_dict.update({band: {}})
+        cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'][band])
+        for core_num, link_list in enumerate(cores_matrix):
+            channels_list = []
+            curr_channel_list = []
 
-        for value in link_list:
-            if value > 0:
-                curr_channel_list.append(value)
-            elif value < 0 and curr_channel_list:
+            for value in link_list:
+                if value > 0:
+                    curr_channel_list.append(value)
+                elif value < 0 and curr_channel_list:
+                    channels_list.append(curr_channel_list)
+                    curr_channel_list = []
+
+            if curr_channel_list:
                 channels_list.append(curr_channel_list)
-                curr_channel_list = []
 
-        if curr_channel_list:
-            channels_list.append(curr_channel_list)
+            resp_dict[band][core_num] = channels_list
 
-        resp[core_num] = channels_list
-
-    return resp
+    return resp_dict
 
 
 def snake_to_title(snake_str: str):
@@ -360,7 +444,6 @@ def combine_and_one_hot(arr1: np.array, arr2: np.array):
     return result
 
 
-# TODO: Use this in run_sim.py and generalize this function
 def get_start_time(sim_dict: dict):
     """
     Gets the start time of a simulation.
@@ -372,3 +455,132 @@ def get_start_time(sim_dict: dict):
 
     time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
     sim_dict['s1']['sim_start'] = time_string
+
+    return sim_dict
+
+
+def min_max_scale(value: float, min_value: float, max_value: float):
+    """
+    Scales a value with respect to a min and a max value.
+
+    :param value: The value to be scaled.
+    :param min_value: The minimum value to scale by.
+    :param max_value: The maximum value to scale by.
+    :return: The final scaled value.
+    :rtype: float
+    """
+    return (value - min_value) / (max_value - min_value)
+
+
+def get_super_channels(input_arr: np.array, slots_needed: int):
+    """
+    Gets available super-channels w.r.t. the current request's needs.
+
+    :param input_arr: The current spectrum (a single core).
+    :param slots_needed: Slots needed by the request.
+    :return: A matrix of positions of available super-channels.
+    :rtype: np.array
+    """
+    potential_super_channels = []
+    consecutive_zeros = 0
+
+    for i in range(len(input_arr)):  # pylint: disable=consider-using-enumerate
+        if input_arr[i] == 0:
+            consecutive_zeros += 1
+            # Plus one to account for the guard band
+            if consecutive_zeros >= (slots_needed + 1):
+                start_position = i - slots_needed
+                end_position = i
+
+                if start_position == end_position:
+                    potential_super_channels.append([start_position])
+                else:
+                    potential_super_channels.append([start_position, end_position])
+        else:
+            consecutive_zeros = 0
+
+    return np.array(potential_super_channels)
+
+
+# TODO: Add reference
+# Please refer to this paper for the formulation:
+def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
+    big_n = len(sc_index_mat) * -1.0
+    if big_n == 0.0:
+        return np.inf
+
+    channel_len = len(sc_index_mat[0])
+    resp_score = big_n * (channel_len / spectral_slots) * np.log((channel_len / spectral_slots))
+    return resp_score
+
+
+def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spectral_slots: int, net_spec_dict: dict):
+    """
+    Gets the shannon entropy fragmentation scores for allocating a request.
+
+    :param path_list: The current path.
+    :param core_num: The core number.
+    :param band: Current allocated band.
+    :param slots_needed: The slots needed by the request.
+    :param spectral_slots: The number of spectral slots on a single core.
+    :param net_spec_dict: The up-to-date network spectrum database.
+    :return: An array with all shannon entropy fragmentation scores.
+    """
+    path_alloc_arr = np.zeros(spectral_slots)
+    resp_frag_arr = np.ones(spectral_slots)
+    # TODO: First fit for core, only use in testing
+    if core_num is None:
+        core_num = 0
+
+    for source, dest in zip(path_list, path_list[1:]):
+        core_arr = net_spec_dict[(source, dest)]['cores_matrix'][band][core_num]
+        path_alloc_arr = combine_and_one_hot(path_alloc_arr, core_arr)
+
+    sc_index_mat = get_super_channels(input_arr=path_alloc_arr, slots_needed=slots_needed)
+    hfrag_before = _get_hfrag_score(sc_index_mat=sc_index_mat, spectral_slots=spectral_slots)
+    for super_channel in sc_index_mat:
+        mock_alloc_arr = copy.deepcopy(path_alloc_arr)
+        for index in super_channel:
+            mock_alloc_arr[index] = 1
+
+        tmp_sc_mat = get_super_channels(input_arr=mock_alloc_arr, slots_needed=slots_needed)
+        hfrag_after = _get_hfrag_score(sc_index_mat=tmp_sc_mat, spectral_slots=spectral_slots)
+        delta_hfrag = hfrag_before - hfrag_after
+        start_index = super_channel[0]
+        resp_frag_arr[start_index] = np.round(delta_hfrag, 3)
+
+    resp_frag_arr = np.where(resp_frag_arr == 1, np.inf, resp_frag_arr)
+
+    return sc_index_mat, resp_frag_arr
+
+
+def classify_cong(curr_cong: float):
+    """
+    Classifies congestion percentages to 'levels'.
+
+    :param curr_cong: Current congestion percentage.
+    :return: The congestion indexes or level.
+    :rtype: int
+    """
+    if curr_cong <= 0.3:
+        cong_index = 0
+    else:
+        cong_index = 1
+
+    return cong_index
+
+
+def parse_yaml_file(yaml_file: str):
+    """
+    Parses a YAML file.
+
+    :param yaml_file: YAML file name.
+    :return: The YAML data as an object.
+    :rtype: object
+    """
+    with open(yaml_file, "r", encoding='utf-8') as file_obj:
+        try:
+            yaml_data = yaml.safe_load(file_obj)
+            return yaml_data
+        except yaml.YAMLError as exc:
+            return exc

@@ -1,9 +1,9 @@
 
-# Software Defined Network (SDN) Simulator
+# Software Defined Optical Network (SDON) Simulator
 
 ## About This Project
 
-Welcome to the SDN Simulator, an open-source venture into the future of networking! Our core focus is on simulating Software Defined Elastic Optical Networks (SD-EONs), a cutting-edge approach that promises to revolutionize how data is transmitted over optical fibers. But that's just the beginning. We envision the SDN Simulator as a versatile simulation framework that can evolve to simulate a wide array of networking paradigms, now including the integration of artificial intelligence to enhance network optimization, performance, and decision-making processes.
+Welcome to the SDON Simulator, an open-source venture into the future of networking! Our core focus is on simulating Software Defined Elastic Optical Networks (SD-EONs), a cutting-edge approach that promises to revolutionize how data is transmitted over optical fibers. But that's just the beginning. We envision the SDN Simulator as a versatile simulation framework that can evolve to simulate a wide array of networking paradigms, now including the integration of artificial intelligence to enhance network optimization, performance, and decision-making processes.
 
 We need your insight and creativity! The true strength of open-source lies in community collaboration. Join us in pioneering the networks of tomorrow by contributing your unique simulations and features. Your expertise in AI and networking can help shape the future of this field.
 
@@ -29,20 +29,27 @@ To get started with the SDN Simulator, follow these steps to set up your environ
    ```
 2. Clone the repository:
    ```
-   git clone git@github.com:SDNNetSim/sdn_simulator.git
+   git clone git@github.com:SDNNetSim/SDON_simulator.git
    ```
 3. Change into the project directory:
    ```
-   cd sdn_simulator
+   cd SDON_simulator
    ```
 4. Install the required dependencies:
    ```
    pip install -r requirements.txt
    ```
 5. Navigate to the docs directory and generate the Sphinx documentation:
+
+   On Unix:
    ```
    cd docs
    make html
+   ```
+   On Windows:
+   ```
+   cd docs
+   .\make html
    ```
 6. Finally, navigate to `_build/html/` and open `index.html` in a browser of your choice to view the documentation.
 
@@ -58,4 +65,5 @@ To maintain the quality and consistency of the codebase, we adhere to the follow
 
 ## Contributors
 
-This project is brought to you by the efforts of Arash Rezaee, Ryan McCann, and Suvhasis Mukhopadhyay. We welcome contributions from the community to help make this project even better!
+This project is brought to you by the efforts of Arash Rezaee, Ryan McCann, Suvhasis Mukhopadhyay, Kojo Bempah, and 
+Kimberly Tice. We welcome contributions from the community to help make this project even better!

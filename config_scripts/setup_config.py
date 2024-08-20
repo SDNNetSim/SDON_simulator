@@ -1,5 +1,6 @@
 import os
 import configparser
+import re
 
 from helper_scripts.os_helpers import create_dir
 from arg_scripts.config_args import YUE_REQUIRED_OPTIONS, ARASH_REQUIRED_OPTIONS, OTHER_OPTIONS
@@ -7,7 +8,7 @@ from arg_scripts.config_args import YUE_REQUIRED_OPTIONS, ARASH_REQUIRED_OPTIONS
 
 def _copy_dict_vals(dest_key: str, dictionary: dict):
     """
-    Given a dictionary, copy the values from key s1 to a given simulation key.
+    Given the s1 simulation dictionary, copy the values to another simulation run.
 
     :param dest_key: The destination key where the values will be copied to.
     :param dictionary: The original s1 dictionary.
@@ -33,7 +34,7 @@ def _find_category(category_dict: dict, target_key: str):
 def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section_list: list, types_dict: dict,
                    other_dict: dict, args_obj: dict):
     """
-    Checks if multiple threads/simulations should be run, structure each simulation's parameters.
+    Checks if multiple threads/simulations should be run, structures each simulation's parameters.
 
     :param config: The configuration object.
     :param config_dict: The main simulations configuration params.
@@ -45,7 +46,7 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
     :rtype: dict
     """
     for new_thread in section_list:
-        if not new_thread.startswith('s') or new_thread == 'snr_settings':
+        if not re.match(r'^s\d', new_thread):
             continue
 
         config_dict = _copy_dict_vals(dest_key=new_thread, dictionary=config_dict)
@@ -77,7 +78,7 @@ def read_config(args_obj: dict, config_path: str = None):
     config_dict = {'s1': dict()}
     config = configparser.ConfigParser()
 
-    try:
+    try:  # pylint: disable=too-many-nested-blocks
         if config_path is None:
             config_path = os.path.join('ini', 'run_ini', 'config.ini')
         config.read(config_path)
@@ -115,7 +116,14 @@ def read_config(args_obj: dict, config_path: str = None):
                 if option not in config[category]:
                     config_dict['s1'][option] = None
                 else:
-                    config_dict['s1'][option] = type_obj(config[category][option])
+                    if args_obj[option] is not None:
+                        config_dict['s1'][option] = args_obj[option]
+                    else:
+                        try:
+                            config_dict['s1'][option] = type_obj(config[category][option])
+                        # The option was set to None, skip it
+                        except ValueError:
+                            continue
 
         # Ignoring index zero since we've already handled s1, the first simulation
         resp = _setup_threads(config=config, config_dict=config_dict, section_list=config.sections()[1:],

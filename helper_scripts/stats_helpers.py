@@ -5,13 +5,15 @@ import copy
 from statistics import mean, variance, stdev
 
 import numpy as np
+import pandas as pd
 
-from arg_scripts.stats_args import empty_props
+from arg_scripts.stats_args import StatsProps
 from arg_scripts.stats_args import SNAP_KEYS_LIST
-from helper_scripts.sim_helpers import find_path_len
+from helper_scripts.sim_helpers import find_path_len, find_core_cong
 from helper_scripts.os_helpers import create_dir
 
 
+# TODO: Note that many of these dictionaries were converted to objects, this will affect saving/calculating
 class SimStats:
     """
     The SimStats class finds and stores all relevant statistics in simulations.
@@ -22,7 +24,7 @@ class SimStats:
         if stats_props is not None:
             self.stats_props = stats_props
         else:
-            self.stats_props = empty_props
+            self.stats_props = StatsProps()
 
         self.engine_props = engine_props
         self.sim_info = sim_info
@@ -40,6 +42,9 @@ class SimStats:
         self.block_ci_percent = None
         self.topology = None
         self.iteration = None
+
+        # TODO: Make sure this isn't reset after multiple iterations
+        self.train_data_list = list()
 
     @staticmethod
     def _get_snapshot_info(net_spec_dict: dict, path_list: list):
@@ -68,6 +73,31 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
+    def update_train_data(self, old_req_info_dict: dict, req_info_dict: dict, net_spec_dict: dict):
+        """
+        Updates the training data list with the current request information.
+
+        :param old_req_info_dict: Request dictionary before any potential slicing.
+        :param req_info_dict: Request dictionary after potential slicing.
+        :param net_spec_dict: Network spectrum database.
+        """
+        path_list = req_info_dict['path']
+        cong_arr = np.array([])
+
+        for core_num in range(self.engine_props['cores_per_link']):
+            curr_cong = find_core_cong(core_index=core_num, net_spec_dict=net_spec_dict, path_list=path_list)
+            cong_arr = np.append(cong_arr, curr_cong)
+
+        path_length = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
+        tmp_info_dict = {
+            'old_bandwidth': old_req_info_dict['bandwidth'],
+            'path_length': path_length,
+            'longest_reach': np.max(old_req_info_dict['mod_formats']['QPSK']['max_length']),
+            'ave_cong': float(np.mean(cong_arr)),
+            'num_segments': self.curr_trans,
+        }
+        self.train_data_list.append(tmp_info_dict)
+
     def update_snapshot(self, net_spec_dict: dict, req_num: int, path_list: list = None):
         """
         Finds the total number of occupied slots and guard bands currently allocated in the network or a specific path.
@@ -81,30 +111,30 @@ class SimStats:
                                                                            path_list=path_list)
         blocking_prob = self.blocked_reqs / req_num
 
-        self.stats_props['snapshots_dict'][req_num]['occupied_slots'].append(occupied_slots)
-        self.stats_props['snapshots_dict'][req_num]['guard_slots'].append(guard_slots)
-        self.stats_props['snapshots_dict'][req_num]['active_requests'].append(active_reqs)
-        self.stats_props['snapshots_dict'][req_num]["blocking_prob"].append(blocking_prob)
-        self.stats_props['snapshots_dict'][req_num]['num_segments'].append(self.curr_trans)
+        self.stats_props.snapshots_dict[req_num]['occupied_slots'].append(occupied_slots)
+        self.stats_props.snapshots_dict[req_num]['guard_slots'].append(guard_slots)
+        self.stats_props.snapshots_dict[req_num]['active_requests'].append(active_reqs)
+        self.stats_props.snapshots_dict[req_num]["blocking_prob"].append(blocking_prob)
+        self.stats_props.snapshots_dict[req_num]['num_segments'].append(self.curr_trans)
 
     def _init_snapshots(self):
         for req_num in range(0, self.engine_props['num_requests'] + 1, self.engine_props['snapshot_step']):
-            self.stats_props['snapshots_dict'][req_num] = dict()
+            self.stats_props.snapshots_dict[req_num] = dict()
             for key in SNAP_KEYS_LIST:
-                self.stats_props['snapshots_dict'][req_num][key] = list()
+                self.stats_props.snapshots_dict[req_num][key] = list()
 
     def _init_mods_weights_bws(self):
         for bandwidth, obj in self.engine_props['mod_per_bw'].items():
-            self.stats_props['mods_used_dict'][bandwidth] = dict()
-            self.stats_props['weights_dict'][bandwidth] = dict()
+            self.stats_props.mods_used_dict[bandwidth] = dict()
+            self.stats_props.weights_dict[bandwidth] = dict()
             for modulation in obj.keys():
-                self.stats_props['weights_dict'][bandwidth][modulation] = list()
-                self.stats_props['mods_used_dict'][bandwidth][modulation] = 0
+                self.stats_props.weights_dict[bandwidth][modulation] = list()
+                self.stats_props.mods_used_dict[bandwidth][modulation] = 0
 
-            self.stats_props['block_bw_dict'][bandwidth] = 0
+            self.stats_props.block_bw_dict[bandwidth] = 0
 
     def _init_stat_dicts(self):
-        for stat_key, data_type in self.stats_props.items():
+        for stat_key, data_type in vars(self.stats_props).items():
             if not isinstance(data_type, dict):
                 continue
             if stat_key in ('mods_used_dict', 'weights_dict', 'block_bw_dict'):
@@ -113,19 +143,20 @@ class SimStats:
                 if self.engine_props['save_snapshots']:
                     self._init_snapshots()
             elif stat_key == 'cores_dict':
-                self.stats_props['cores_dict'] = {core: 0 for core in range(self.engine_props['cores_per_link'])}
+                self.stats_props.cores_dict = {core: 0 for core in range(self.engine_props['cores_per_link'])}
             elif stat_key == 'block_reasons_dict':
-                self.stats_props['block_reasons_dict'] = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
+                self.stats_props.block_reasons_dict = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
             elif stat_key != 'iter_stats':
                 raise ValueError('Dictionary statistic was not reset in props.')
 
     def _init_stat_lists(self):
-        for stat_key in self.stats_props:
-            if isinstance(self.stats_props[stat_key], list):
+        for stat_key in vars(self.stats_props).keys():
+            data_type = getattr(self.stats_props, stat_key)
+            if isinstance(data_type, list):
                 # Only reset sim_block_list when we encounter a new traffic volume
                 if self.iteration != 0 and stat_key == 'sim_block_list':
                     continue
-                self.stats_props[stat_key] = list()
+                setattr(self.stats_props, stat_key, list())
 
     def init_iter_stats(self):
         """
@@ -150,55 +181,59 @@ class SimStats:
         else:
             blocking_prob = self.blocked_reqs / self.engine_props['num_requests']
 
-        self.stats_props['sim_block_list'].append(blocking_prob)
+        self.stats_props.sim_block_list.append(blocking_prob)
 
-    def _handle_iter_lists(self, sdn_data: dict):
-        for stat_key in sdn_data['stat_key_list']:
-            for i, data in enumerate(sdn_data[stat_key]):
+    def _handle_iter_lists(self, sdn_data: object):
+        for stat_key in sdn_data.stat_key_list:
+            # TODO: Eventually change this name (sdn_data)
+            curr_sdn_data = sdn_data.get_data(key=stat_key)
+
+            for i, data in enumerate(curr_sdn_data):
                 if stat_key == 'core_list':
-                    self.stats_props['cores_dict'][data] += 1
+                    self.stats_props.cores_dict[data] += 1
                 elif stat_key == 'modulation_list':
-                    bandwidth = sdn_data['bandwidth_list'][i]
-                    self.stats_props['mods_used_dict'][bandwidth][data] += 1
+                    bandwidth = sdn_data.bandwidth_list[i]
+                    self.stats_props.mods_used_dict[bandwidth][data] += 1
                 elif stat_key == 'xt_list':
-                    self.stats_props['xt_list'].append(data)
+                    self.stats_props.xt_list.append(data)
 
-    def iter_update(self, req_data: dict, sdn_data: dict):
+    def iter_update(self, req_data: dict, sdn_data: object):
         """
         Continuously updates the statistical data for each request allocated/blocked in the current iteration.
 
         :param req_data: Holds data relevant to the current request.
-        :param sdn_data: Holds the response data from the sdn controller.
+        :param sdn_data: Hold the response data from the sdn controller.
         :return: None
         """
         # Request was blocked
-        if not sdn_data['was_routed']:
+        if not sdn_data.was_routed:
             self.blocked_reqs += 1
-            self.stats_props['block_reasons_dict'][sdn_data['block_reason']] += 1
-            self.stats_props['block_bw_dict'][req_data['bandwidth']] += 1
+            self.stats_props.block_reasons_dict[sdn_data.block_reason] += 1
+            self.stats_props.block_bw_dict[req_data['bandwidth']] += 1
         else:
-            num_hops = len(sdn_data['path_list']) - 1
-            self.stats_props['hops_list'].append(num_hops)
+            num_hops = len(sdn_data.path_list) - 1
+            self.stats_props.hops_list.append(num_hops)
 
-            path_len = find_path_len(path_list=sdn_data['path_list'], topology=self.topology)
-            self.stats_props['lengths_list'].append(path_len)
+            path_len = find_path_len(path_list=sdn_data.path_list, topology=self.topology)
+            self.stats_props.lengths_list.append(path_len)
 
             self._handle_iter_lists(sdn_data=sdn_data)
-            self.stats_props['route_times_list'].append(sdn_data['route_time'])
-            self.total_trans += sdn_data['num_trans']
-            bandwidth = sdn_data['bandwidth']
-            mod_format = sdn_data['modulation_list'][0]
-            self.stats_props['weights_dict'][bandwidth][mod_format].append(sdn_data['path_weight'])
+            self.stats_props.route_times_list.append(sdn_data.route_time)
+            self.total_trans += sdn_data.num_trans
+            bandwidth = sdn_data.bandwidth
+            mod_format = sdn_data.modulation_list[0]
+
+            self.stats_props.weights_dict[bandwidth][mod_format].append(sdn_data.path_weight)
 
     def _get_iter_means(self):
-        for _, curr_snapshot in self.stats_props['snapshots_dict'].items():
+        for _, curr_snapshot in self.stats_props.snapshots_dict.items():
             for snap_key, data_list in curr_snapshot.items():
                 if data_list:
                     curr_snapshot[snap_key] = mean(data_list)
                 else:
                     curr_snapshot[snap_key] = None
 
-        for _, mod_obj in self.stats_props['weights_dict'].items():
+        for _, mod_obj in self.stats_props.weights_dict.items():
             for modulation, data_list in mod_obj.items():
                 # Modulation was never used
                 if len(data_list) == 0:
@@ -219,14 +254,14 @@ class SimStats:
         :return: None
         """
         if self.engine_props['num_requests'] == self.blocked_reqs:
-            self.stats_props['trans_list'].append(0)
+            self.stats_props.trans_list.append(0)
         else:
             trans_mean = self.total_trans / float(self.engine_props['num_requests'] - self.blocked_reqs)
-            self.stats_props['trans_list'].append(trans_mean)
+            self.stats_props.trans_list.append(trans_mean)
 
         if self.blocked_reqs > 0:
-            for block_type, num_times in self.stats_props['block_reasons_dict'].items():
-                self.stats_props['block_reasons_dict'][block_type] = num_times / float(self.blocked_reqs)
+            for block_type, num_times in self.stats_props.block_reasons_dict.items():
+                self.stats_props.block_reasons_dict[block_type] = num_times / float(self.blocked_reqs)
 
         self._get_iter_means()
 
@@ -237,13 +272,13 @@ class SimStats:
         :return: Whether the simulations should end for this erlang.
         :rtype: bool
         """
-        self.block_mean = mean(self.stats_props['sim_block_list'])
-        if self.block_mean == 0.0 or len(self.stats_props['sim_block_list']) <= 1:
+        self.block_mean = mean(self.stats_props.sim_block_list)
+        if self.block_mean == 0.0 or len(self.stats_props.sim_block_list) <= 1:
             return False
 
-        blocking_variance = variance(self.stats_props['sim_block_list'])
+        blocking_variance = variance(self.stats_props.sim_block_list)
         try:
-            block_ci_rate = 1.645 * (math.sqrt(blocking_variance) / math.sqrt(len(self.stats_props['sim_block_list'])))
+            block_ci_rate = 1.645 * (math.sqrt(blocking_variance) / math.sqrt(len(self.stats_props.sim_block_list)))
             self.block_ci = block_ci_rate
             block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
             self.block_ci_percent = block_ci_percent
@@ -258,6 +293,17 @@ class SimStats:
             return True
 
         return False
+
+    def save_train_data(self, base_fp: str):
+        """
+        Saves training data file.
+
+        :param base_fp: Base file path.
+        """
+        if self.iteration == (self.engine_props['max_iters'] - 1):
+            save_df = pd.DataFrame(self.train_data_list)
+            save_df.to_csv(f"{base_fp}/output/{self.sim_info}/{self.engine_props['erlang']}_train_data.csv",
+                           index=False)
 
     def save_stats(self, base_fp: str):
         """
@@ -274,13 +320,13 @@ class SimStats:
         self.save_dict['ci_percent_block'] = self.block_ci_percent
 
         self.save_dict['iter_stats'][self.iteration] = dict()
-        for stat_key in self.stats_props:
+        for stat_key in vars(self.stats_props).keys():
             if stat_key in ('trans_list', 'hops_list', 'lengths_list', 'route_times_list', 'xt_list'):
                 save_key = f"{stat_key.split('list')[0]}"
                 if stat_key == 'xt_list':
-                    stat_array = [0 if stat is None else stat for stat in self.stats_props[stat_key]]
+                    stat_array = [0 if stat is None else stat for stat in getattr(self.stats_props, stat_key)]
                 else:
-                    stat_array = self.stats_props[stat_key]
+                    stat_array = getattr(self.stats_props, stat_key)
 
                 # Every request was blocked
                 if len(stat_array) == 0:
@@ -292,7 +338,8 @@ class SimStats:
                     self.save_dict['iter_stats'][self.iteration][f'{save_key}min'] = min(stat_array)
                     self.save_dict['iter_stats'][self.iteration][f'{save_key}max'] = max(stat_array)
             else:
-                self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(self.stats_props[stat_key])
+                self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(getattr(self.stats_props,
+                                                                                               stat_key))
 
         if base_fp is None:
             base_fp = 'data'
@@ -304,15 +351,18 @@ class SimStats:
         else:
             raise NotImplementedError
 
+        if self.engine_props['output_train_data']:
+            self.save_train_data(base_fp=base_fp)
+
     def print_iter_stats(self, max_iters: int, print_flag: bool):
         """
         Prints iteration stats, mostly used to ensure simulations are running fine.
 
         :param max_iters: The maximum number of iterations.
-        :param print_flag: Determines if we want to print or not.
+        :param print_flag: Determine if we want to print or not.
         :return: None
         """
         if print_flag:
-            print(
-                f"Iteration {self.iteration + 1} out of {max_iters} completed for Erlang: {self.engine_props['erlang']}")
-            print(f"Mean of blocking: {round(mean(self.stats_props['sim_block_list']), 4)}")
+            print(f"Iteration {self.iteration + 1} out of {max_iters} completed for "
+                  f"Erlang: {self.engine_props['erlang']}")
+            print(f"Mean of blocking: {round(mean(self.stats_props.sim_block_list), 4)}")

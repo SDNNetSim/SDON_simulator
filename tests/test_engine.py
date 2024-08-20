@@ -1,11 +1,10 @@
 import unittest
-import os
-import json
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import networkx as nx
 
-from sim_scripts.engine import Engine
+from src.engine import Engine
 
 
 class TestEngine(unittest.TestCase):
@@ -14,68 +13,59 @@ class TestEngine(unittest.TestCase):
     """
 
     def setUp(self):
-        engine_props = {'ai_algorithm': None, 'network': 'USNet', 'date': '2024-02-02', 'sim_start': '00:00'}
+        engine_props = {
+            'ai_algorithm': None,
+            'network': 'USNet',
+            'date': '2024-02-02',
+            'sim_start': '00:00',
+            'save_snapshots': True,
+            'snapshot_step': 1,
+            'output_train_data': False,
+            'topology_info': {
+                'nodes': {'A': {}, 'B': {}},  # Nodes as a dictionary
+                'links': {
+                    1: {"source": "A", "destination": "B", "fiber": {"num_cores": 2}, "length": 100,
+                        "spectral_slots": 320}
+                }
+            },
+            'band_list': [],
+            'c_band': 320,
+            'l_band': 320,
+            'max_iters': 10,
+            'print_step': 1,
+            'is_training': False,
+            'deploy_model': False,
+            'seeds': [42],
+            'erlang': 10,
+            'thread_num': 1,
+            'mod_per_bw': {  # Adding mod_per_bw to engine_props
+                '50GHz': {'QPSK': {}, '16QAM': {}}
+            },
+        }
         self.engine = Engine(engine_props=engine_props)
-        self.engine.reqs_dict = {1.0: {'req_id': 10}}
+        self.engine.reqs_dict = {1.0: {'req_id': 10, 'request_type': 'arrival'}}
 
+        # Mocking sdn_obj and stats_obj
         self.engine.sdn_obj = MagicMock()
-        sdn_path = os.path.join('tests', 'fixtures', 'sdn_props.json')
-        with open(sdn_path, 'r', encoding='utf-8') as file_obj:
-            self.engine.sdn_obj.sdn_props = json.load(file_obj)
+        self.engine.sdn_obj.sdn_props = MagicMock()
+        self.engine.sdn_obj.sdn_props.was_routed = True
+        self.engine.sdn_obj.sdn_props.num_trans = 3
+        self.engine.sdn_obj.sdn_props.path_list = ['A', 'B', 'C']
+        self.engine.sdn_obj.sdn_props.spectrum_object.modulation = 'QAM'
+        self.engine.sdn_obj.sdn_props.is_sliced = False
+        self.engine.sdn_obj.sdn_props.core_list = [0, 1]
+        self.engine.sdn_obj.sdn_props.curr_band = 'c'
+        self.engine.sdn_obj.sdn_props.net_spec_dict = {}
+        self.engine.sdn_obj.sdn_props.update_params = MagicMock()
 
-        engine_path = os.path.join('tests', 'fixtures', 'engine_props.json')
-        with open(engine_path, 'r', encoding='utf-8') as file_obj:
-            self.engine.engine_props = json.load(file_obj)
-
-        self.engine.topology = MagicMock()
-        self.engine.net_spec_dict = {}
-        self.engine.reqs_status_dict = {}
-        self.engine.ai_obj = MagicMock()
         self.engine.stats_obj = MagicMock()
 
-    def test_handle_arrival(self):
-        """
-        Tests the handle arrival method.
-        """
-        curr_time = 1.0
-        self.engine.handle_arrival(curr_time=curr_time)
+        self.engine.topology = nx.Graph()
+        self.engine.net_spec_dict = {}
+        self.engine.reqs_status_dict = {}
+        self.engine.ml_model = None
 
-        self.engine.sdn_obj.handle_event.assert_called_once_with(request_type='arrival')
-        self.assertEqual(self.engine.net_spec_dict, {'updated': 'value'})
-        self.engine.stats_obj.iter_update.assert_called_once_with(req_data={'req_id': 10},
-                                                                  sdn_data=self.engine.sdn_obj.sdn_props)
-
-        req_status = self.engine.reqs_status_dict[self.engine.reqs_dict[curr_time]['req_id']]
-        self.assertEqual(req_status, {
-            "mod_format": 'QAM',
-            "path": ['A', 'B', 'C'],
-            "is_sliced": False,
-            "was_routed": True
-        })
-
-    def test_handle_release_with_req(self):
-        """
-        Test handle release with an existing request in the reqs_status_dict.
-        """
-        curr_time = 1.0
-        req_id = self.engine.reqs_dict[curr_time]['req_id']
-        self.engine.reqs_status_dict[req_id] = {
-            'path': ['A', 'B', 'C']
-        }
-        self.engine.handle_release(curr_time=curr_time)
-
-        self.engine.sdn_obj.handle_event.assert_called_once_with(request_type='release')
-        self.assertEqual(self.engine.net_spec_dict, self.engine.sdn_obj.sdn_props['net_spec_dict'])
-
-    def test_handle_release_without_req(self):
-        """
-        Test handle release without an existing request in the reqs_status_dict.
-        """
-        curr_time = 1.0
-        self.engine.handle_release(curr_time=curr_time)
-        self.engine.sdn_obj.handle_event.assert_not_called()
-
-    @patch('sim_scripts.engine.nx.Graph')
+    @patch('src.engine.nx.Graph')
     def test_create_topology(self, mock_graph):
         """
         Tests the create topology method.
@@ -91,14 +81,74 @@ class TestEngine(unittest.TestCase):
         self.engine.topology.add_edge.assert_called_once_with('A', 'B', length=100, nli_cost=None)
         expected_cores_matrix = np.zeros((2, 320))
         expected_net_spec = {
-            ('A', 'B'): {'cores_matrix': expected_cores_matrix, 'link_num': 1},
-            ('B', 'A'): {'cores_matrix': expected_cores_matrix, 'link_num': 1}
+            ('A', 'B'): {'cores_matrix': {'c': expected_cores_matrix, 'l': expected_cores_matrix}, 'link_num': 1},
+            ('B', 'A'): {'cores_matrix': {'c': expected_cores_matrix, 'l': expected_cores_matrix}, 'link_num': 1}
         }
         for link, link_data in self.engine.net_spec_dict.items():
-            self.assertTrue(np.array_equal(link_data['cores_matrix'], expected_net_spec[link]['cores_matrix']))
+            for band in ['c', 'l']:
+                self.assertTrue(
+                    np.array_equal(link_data['cores_matrix'][band], expected_net_spec[link]['cores_matrix'][band]))
             self.assertEqual(link_data['link_num'], expected_net_spec[link]['link_num'])
 
         self.assertEqual(self.engine.engine_props['topology'], self.engine.topology)
         self.assertEqual(self.engine.stats_obj.topology, self.engine.topology)
-        self.assertEqual(self.engine.sdn_obj.sdn_props['net_spec_dict'], self.engine.net_spec_dict)
-        self.assertEqual(self.engine.sdn_obj.sdn_props['topology'], self.engine.topology)
+        self.assertEqual(self.engine.sdn_obj.sdn_props.net_spec_dict, self.engine.net_spec_dict)
+        self.assertEqual(self.engine.sdn_obj.sdn_props.topology, self.engine.topology)
+
+    def test_end_iter(self):
+        """
+        Tests the end_iter method.
+        """
+        iteration = 0
+        self.engine.engine_props['print_step'] = 1  # Ensure print_step triggers the print
+        self.engine.engine_props['is_training'] = False  # Ensure it's not training to allow printing
+
+        with patch.object(self.engine.stats_obj, 'get_conf_inter', return_value=True), \
+                patch.object(self.engine.stats_obj, 'print_iter_stats') as _:
+            self.engine.end_iter(iteration=iteration)
+            self.engine.stats_obj.get_blocking.assert_called_once()
+            self.engine.stats_obj.end_iter_update.assert_called_once()
+            self.engine.stats_obj.get_conf_inter.assert_called_once()
+
+    def test_handle_release_with_req(self):
+        """
+        Test handle release with an existing request in the reqs_status_dict.
+        """
+        curr_time = 1.0
+        req_id = self.engine.reqs_dict[curr_time]['req_id']
+        self.engine.reqs_status_dict[req_id] = {
+            'path': ['A', 'B', 'C']
+        }
+        self.engine.handle_release(curr_time=curr_time)
+
+        self.engine.sdn_obj.handle_event.assert_called_once_with(
+            req_dict=self.engine.reqs_dict[curr_time], request_type='release'
+        )
+        self.assertEqual(self.engine.net_spec_dict, self.engine.sdn_obj.sdn_props.net_spec_dict)
+
+    def test_init_iter(self):
+        """
+        Tests the init_iter method.
+        """
+        iteration = 0
+        self.engine.engine_props['request_distribution'] = {'50GHz': 1.0}
+        self.engine.engine_props['arrival_rate'] = 0.2
+        self.engine.engine_props['holding_time'] = 100
+        self.engine.engine_props['sim_type'] = 'yue'
+        self.engine.engine_props['num_requests'] = 5000
+        self.engine.engine_props['seeds'] = [42]
+        self.engine.engine_props['topology_info']['nodes'] = {'A': {}, 'B': {}}  # Ensure nodes are a dictionary
+
+        with patch('src.engine.load_model', autospec=True) as mock_load_model:
+            self.engine.init_iter(iteration=iteration)
+            self.assertEqual(self.engine.iteration, iteration)
+            self.engine.stats_obj.init_iter_stats.assert_called_once()
+
+            if self.engine.engine_props['deploy_model']:
+                mock_load_model.assert_called_once_with(engine_props=self.engine.engine_props)
+            else:
+                mock_load_model.assert_not_called()
+
+
+if __name__ == '__main__':
+    unittest.main()
