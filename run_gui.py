@@ -110,9 +110,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Topology view tab
         self.mw_topology_view_area = QtWidgets.QScrollArea()
-        init_topology_data = QtWidgets.QLabel("Nothing to display")
+        init_topology_data = QtWidgets.QLabel("Nothing to display", self.mw_topology_view_area)
+        init_topology_data.setStyleSheet("font-size: 11pt")
         init_topology_data.setAlignment(QtCore.Qt.AlignCenter)
         self.mw_topology_view_area.setWidget(init_topology_data)
+        self.mw_topology_view_area.setAlignment(QtCore.Qt.AlignCenter)
         self.tab_widget.setStyleSheet("font-size: 12pt")
         self.tab_widget.addTab(self.mw_topology_view_area, "Topology View")
 
