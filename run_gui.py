@@ -140,6 +140,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         file_path = self.file_model.filePath(index)
         if QtCore.QFileInfo(file_path).isFile():
+            file_index = self.tab_widget.indexOf(self.file_editor)
+            self.tab_widget.setTabText(file_index, QtCore.QFileInfo(file_path).fileName())
             with open(file_path, 'r', encoding='utf-8') as file:
                 content = file.read()
                 self.file_editor.setPlainText(content)
