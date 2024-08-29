@@ -22,7 +22,10 @@ SETTINGS_CONFIG_DICT = [
              "options": ["nli_aware", "xt_aware", "least_congested", "shortest_path", "k_shortest_path"]},
             {"type": "check", "label": "Save Snapshots:", "default": False},
             {"type": "spin", "label": "Snapshot Step:", "default": 10, "min": 1},
-            {"type": "spin", "label": "Print Step:", "default": 1, "min": 1}
+            {"type": "spin", "label": "Print Step:", "default": 1, "min": 1},
+            {"type": "header", "label": "Simulation Output"},
+            {"type": "check", "label": "Show iteration step:", "default": True},
+            {"type": "check", "label": "Show blocking probability:", "default": True}
         ]
     },
     {
