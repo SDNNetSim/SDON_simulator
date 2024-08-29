@@ -10,6 +10,7 @@ from gui_scripts.gui_helpers.menu_helpers import MenuHelpers
 from gui_scripts.gui_helpers.action_helpers import ActionHelpers
 from gui_scripts.gui_helpers.button_helpers import ButtonHelpers
 from gui_scripts.gui_helpers.highlight_helpers import PythonHighlighter
+from gui_scripts.gui_helpers.general_helpers import DirectoryTreeView
 from gui_scripts.gui_args.style_args import STYLE_SHEET
 
 
@@ -81,10 +82,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.first_info_pane = QtWidgets.QWidget()
         self.first_info_layout = QtWidgets.QVBoxLayout(self.first_info_pane)
 
-        self.directory_tree = QTreeView()
+        self.directory_tree = DirectoryTreeView()
         self.directory_tree.setModel(self.file_model)
         self.directory_tree.setRootIndex(self.file_model.index(self.project_directory))
-        self.directory_tree.clicked.connect(self.on_treeview_clicked)
+        self.directory_tree.item_double_clicked_sig.connect(self.on_tree_item_clicked)
 
         # Apply custom stylesheet for font size
         self.directory_tree.setStyleSheet("font-size: 12pt;")  # Increase font size to 12pt
@@ -130,7 +131,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.main_layout.addWidget(self.vertical_splitter, stretch=1)
 
-    def on_treeview_clicked(self, index):
+    def on_tree_item_clicked(self, index):
         """
         Performs an action when treeview is clicked.
 

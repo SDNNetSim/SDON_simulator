@@ -202,3 +202,28 @@ class SimulationThread(QtCore.QThread):
             self.paused = False
             self.output_hints_signal.emit('Stopping simulation from thread')
         self.pause_condition.wakeOne()
+
+
+class DirectoryTreeView(QtWidgets.QTreeView):
+    item_double_clicked_sig = QtCore.pyqtSignal(QtCore.QModelIndex)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setSelectionBehavior(QtWidgets.QTreeView.SelectRows)
+        self.setSelectionMode(QtWidgets.QTreeView.SingleSelection)
+
+    def mousePressEvent(self, event):
+        """
+        Overrides mousePressEvent in QTreeView for single press
+        """
+        if event.button() == QtCore.Qt.LeftButton:
+            index = self.indexAt(event.pos())
+            if index.isValid():
+                self.setCurrentIndex(index)
+        super().mousePressEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        index = self.indexAt(event.pos())
+        if event.button() == QtCore.Qt.LeftButton and index.isValid():
+            self.item_double_clicked_sig.emit(index)
+        super().mouseDoubleClickEvent(event)
