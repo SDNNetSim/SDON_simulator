@@ -29,7 +29,7 @@ jobs:
           slack-function: send-message
           slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
           slack-channel: C05LW0SGL6N
-          slack-text: "*New Event* `${{ github.event_name }}` *In* `${{ github.repository }}`\n\n- *Workflow creator:* ${{ github.actor }}\n- *Workflow actor:* ${{ github.triggering_actor }}\n- *Branch:* `${{ github.head_ref }}`"
+          slack-text: "*New Event* `${{ github.event_name }}` *In* `${{ github.repository }}`\n\n- *Title:* ${{ github.event.pull_request.title }}\n- *Workflow creator:* ${{ github.actor }}\n- *Workflow actor:* ${{ github.triggering_actor }}\n- *Branch:* `${{ github.head_ref }}`"
 
 
       - name: Result from "Send Message"
