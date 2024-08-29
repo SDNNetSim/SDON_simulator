@@ -102,6 +102,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # File editor tab
         self.file_editor = QtWidgets.QTextEdit()
+        self.file_editor.setObjectName("src_code_editor")
         self.file_editor.setStyleSheet("font-size: 12pt;")
         self.tab_widget.addTab(self.file_editor, "File Editor")
 
