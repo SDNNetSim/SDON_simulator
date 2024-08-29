@@ -32,8 +32,11 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
             tab_layout = QtWidgets.QFormLayout()
             for setting in category["settings"]:
                 widget, label = self._create_widget(setting)
+                if isinstance(widget, QtWidgets.QLabel): # choosing QLabel for all headers
+                    tab_layout.addRow(widget)
+                else:
+                    tab_layout.addRow(label, widget)
                 self.settings_widgets[label] = widget
-                tab_layout.addRow(label, widget)
             tab.setLayout(tab_layout)
             self.tabs.addTab(tab, category["category"])
         self.layout.addWidget(self.tabs)
@@ -43,6 +46,7 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
     @staticmethod
     def _create_widget(setting):
         widget_type = setting["type"]
+        widget = None
         label = setting["label"]
         if widget_type == "combo":
             widget = QtWidgets.QComboBox()
@@ -63,6 +67,12 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
             widget.setValue(setting["default"])
             widget.setMinimum(setting.get("min", 0.0))
             widget.setSingleStep(setting.get("step", 1.0))
+        elif widget_type == "header":
+            widget = QtWidgets.QLabel(label)
+            widget.setStyleSheet("""
+                font-weight: bold;
+                font-size: 13pt;
+            """)
         return widget, label
 
     def _setup_buttons(self):
