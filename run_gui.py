@@ -90,7 +90,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Apply custom stylesheet for font size
         self.directory_tree.setStyleSheet("font-size: 12pt;")  # Increase font size to 12pt
 
-        # Hide size, type, and date columns
+        # Hide headers, size, type, and date columns
+        self.directory_tree.setHeaderHidden(True)
         self.directory_tree.setColumnHidden(1, True)  # Size column
         self.directory_tree.setColumnHidden(2, True)  # Type column
         self.directory_tree.setColumnHidden(3, True)  # Date column
