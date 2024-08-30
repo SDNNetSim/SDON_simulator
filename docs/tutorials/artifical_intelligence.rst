@@ -8,13 +8,13 @@ words will go here
 Reinforcement Learning
 ----------------------
 
-How to Run a Reinforcement Learning Scenerio on our Simulator
+How to Run a Reinforcement Learning Scenario on our Simulator
 -------------------------------------------------------------
 
 Machine Learning
 ----------------
 
-How to Run a Machine Learning Scenerio on our Simulator
+How to Run a Machine Learning Scenario on our Simulator
 -------------------------------------------------------
 
 Additional Resources
