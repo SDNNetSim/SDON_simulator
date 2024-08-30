@@ -216,10 +216,9 @@ class DirectoryTreeView(QtWidgets.QTreeView):
         """
         Overrides mousePressEvent in QTreeView for single press
         """
-        if event.button() == QtCore.Qt.LeftButton:
-            index = self.indexAt(event.pos())
-            if index.isValid():
-                self.setCurrentIndex(index)
+        index = self.indexAt(event.pos())
+        if event.button() == QtCore.Qt.LeftButton and index.isValid():
+            self.setCurrentIndex(index)
         super().mousePressEvent(event)
 
     def mouseDoubleClickEvent(self, event):
