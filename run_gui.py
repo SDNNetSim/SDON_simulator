@@ -82,8 +82,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.first_info_pane = QtWidgets.QWidget()
         self.first_info_layout = QtWidgets.QVBoxLayout(self.first_info_pane)
 
-        self.directory_tree = DirectoryTreeView()
-        self.directory_tree.setModel(self.file_model)
         self.directory_tree = DirectoryTreeView(self.file_model)
         self.directory_tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.directory_tree.customContextMenuRequested.connect(self.directory_tree.handle_context_menu)
@@ -138,9 +136,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.main_layout.addWidget(self.vertical_splitter, stretch=1)
 
-    def on_tree_item_clicked(self, index):
+    def on_tree_item_dclicked(self, index):
         """
-        Performs an action when treeview is clicked.
+        Performs an action when treeview is double-clicked.
 
         :param index: Index of file path displayed in the tree.
         """
