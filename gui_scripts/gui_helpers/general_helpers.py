@@ -214,6 +214,111 @@ class DirectoryTreeView(QtWidgets.QTreeView):
 
         self.model = file_model
         self.setModel(self.model)
+
+        self.copied_path = None
+        self.is_directory = False
+        self.is_cut_operation = False
+
+    def copy_item(self, source_index, cut=False):
+        # Store the source path and determine if it's a directory
+        self.copied_path = self.model.filePath(source_index)
+        self.is_directory = QtCore.QFileInfo(self.copied_path).isDir()
+        self.is_cut_operation = cut
+
+    def copy_directory(self, source_dir, destination_dir):
+        source = QtCore.QDir(source_dir)
+        destination = QtCore.QDir(destination_dir)
+
+        destination_path = destination.filePath(
+            QtCore.QFileInfo(source_dir).fileName())
+        if not destination.exists(destination_path):
+            destination.mkpath(destination_path)
+
+        for file_name in source.entryList(QtCore.QDir.Files):
+            QtCore.QFile.copy(source.absoluteFilePath(file_name),
+                       QtCore.QDir(destination_path).filePath(file_name))
+
+        for subdir in source.entryList(QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot):
+            self.copy_directory(source.absoluteFilePath(subdir),
+                                QtCore.QDir(destination_path).filePath(subdir))
+
+        if self.is_cut_operation:
+            self.delete_directory(source_dir)
+
+    def paste_item(self, destination_index):
+        if self.copied_path:
+            destination_dir = self.model.filePath(destination_index)
+            if not QtCore.QFileInfo(destination_dir).isDir():
+                destination_dir = QtCore.QFileInfo(destination_dir).absolutePath()
+
+            if self.is_directory:
+                self.copy_directory(self.copied_path, destination_dir)
+            else:
+                file_name = QtCore.QFileInfo(self.copied_path).fileName()
+                if QtCore.QFile.copy(self.copied_path,
+                              QtCore.QDir(destination_dir).filePath(file_name)):
+                    pass # basically do nothing
+                else:
+                    QtWidgets.QMessageBox.critical(self, "Error", "Failed to paste the file")
+
+            if self.is_cut_operation:
+                self._delete()
+            self.refresh_view()
+
+    def delete_item(self, target_index):
+        path = self.model.filePath(target_index)
+        is_directory = QtCore.QFileInfo(path).isDir()
+
+        if is_directory:
+            reply = QtWidgets.QMessageBox.question(self, "Delete Directory",
+                                         f"Are you sure you want to delete the directory '{path}' and all its contents?",
+                                         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                         QtWidgets.QMessageBox.No)
+        else:
+            reply = QtWidgets.QMessageBox.question(self, "Delete File",
+                                         f"Are you sure you want to delete the file '{path}'?",
+                                         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                         QtWidgets.QMessageBox.No)
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            if is_directory:
+                QtCore.QDir(path).removeRecursively()
+            else:
+                QtCore.QFile.remove(path)
+            self.refresh_view()  # Refresh the model to reflect the deletion
+
+    def _delete(self):
+        if self.is_directory:
+            QtCore.QDir(self.copied_path).removeRecursively()
+        else:
+            QtCore.QFile.remove(self.copied_path)
+        self.refresh_view()  # Refresh the model to reflect changes
+
+    def handle_context_menu(self, position):
+        index = self.indexAt(position)
+        if index.isValid():
+            menu = QtWidgets.QMenu(self)
+            menu.addSeparator()
+            copy_action = menu.addAction("Copy")
+            cut_action = menu.addAction("Cut")
+            paste_action = menu.addAction("Paste")
+            delete_action = menu.addAction("Delete")
+            menu.addSeparator()
+            action = menu.exec_(self.viewport().mapToGlobal(position))
+
+            if action == copy_action:
+                self.copy_item(index)
+            elif action == cut_action:
+                self.copy_item(index, cut=True)
+            elif action == paste_action:
+                self.paste_item(index)
+            elif action == delete_action:
+                self.delete_item(index)
+
+    def refresh_view(self):
+        # Refresh the view by resetting the root path
+        self.setRootIndex(self.model.index(self.model.rootPath()))
+
     def mousePressEvent(self, event):
         """
         Overrides mousePressEvent in QTreeView for single press
