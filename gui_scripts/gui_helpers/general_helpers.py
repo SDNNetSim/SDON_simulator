@@ -207,11 +207,13 @@ class SimulationThread(QtCore.QThread):
 class DirectoryTreeView(QtWidgets.QTreeView):
     item_double_clicked_sig = QtCore.pyqtSignal(QtCore.QModelIndex)
 
-    def __init__(self, parent=None):
+    def __init__(self, file_model, parent=None):
         super().__init__(parent)
         self.setSelectionBehavior(QtWidgets.QTreeView.SelectRows)
         self.setSelectionMode(QtWidgets.QTreeView.SingleSelection)
 
+        self.model = file_model
+        self.setModel(self.model)
     def mousePressEvent(self, event):
         """
         Overrides mousePressEvent in QTreeView for single press

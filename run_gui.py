@@ -84,8 +84,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.directory_tree = DirectoryTreeView()
         self.directory_tree.setModel(self.file_model)
+        self.directory_tree = DirectoryTreeView(self.file_model)
+        self.directory_tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.directory_tree.customContextMenuRequested.connect(self.directory_tree.handle_context_menu)
+        # self.directory_tree.setModel(self.file_model)
         self.directory_tree.setRootIndex(self.file_model.index(self.project_directory))
-        self.directory_tree.item_double_clicked_sig.connect(self.on_tree_item_clicked)
+
+        # connect directory tree view signals to slots
+        self.directory_tree.item_double_clicked_sig.connect(self.on_tree_item_dclicked)
 
         # Apply custom stylesheet for font size
         self.directory_tree.setStyleSheet("font-size: 12pt;")  # Increase font size to 12pt
