@@ -60,8 +60,7 @@ if __name__ == "__main__":
     path_to_output = './data/output/NSFNet'
     date_of_simulation = find_newest_file(path_to_output)
     time_of_data_path = find_newest_file(date_of_simulation)
-    add_simulation_run_to_path = time_of_data_path  + '/s1'
+    add_simulation_run_to_path = time_of_data_path + '/s1'
     new_saved_data_path = find_newest_file(add_simulation_run_to_path)
-    ##new_saved_data_path = './data/output/NSFNet/0830/12_36_48_764648/s1/250.0_erlang.json'
     print(new_saved_data_path)
     compare_json_files(old_saved_data_path, new_saved_data_path)
