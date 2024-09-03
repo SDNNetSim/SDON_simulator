@@ -42,7 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main_layout = None
         self.horizontal_splitter = None
         self.first_info_layout = None
-        self.directory_tree = None
+        self.directory_tree_obj = None
         self.tab_widget = None
         self.file_editor = None
         self.mw_topology_view_area = None
@@ -82,25 +82,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.first_info_pane = QtWidgets.QWidget()
         self.first_info_layout = QtWidgets.QVBoxLayout(self.first_info_pane)
 
-        self.directory_tree = DirectoryTreeView(self.file_model)
-        self.directory_tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.directory_tree.customContextMenuRequested.connect(self.directory_tree.handle_context_menu)
+        self.directory_tree_obj = DirectoryTreeView(self.file_model)
+        self.directory_tree_obj.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.directory_tree_obj.customContextMenuRequested.connect(
+            self.directory_tree_obj.handle_context_menu)
         # self.directory_tree.setModel(self.file_model)
-        self.directory_tree.setRootIndex(self.file_model.index(self.project_directory))
+        self.directory_tree_obj.setRootIndex(self.file_model.index(self.project_directory))
 
         # connect directory tree view signals to slots
-        self.directory_tree.item_double_clicked_sig.connect(self.on_tree_item_dclicked)
+        self.directory_tree_obj.item_double_clicked_sig.connect(self.on_tree_item_dclicked)
 
         # Apply custom stylesheet for font size
-        self.directory_tree.setStyleSheet("font-size: 12pt;")  # Increase font size to 12pt
+        self.directory_tree_obj.setStyleSheet("font-size: 12pt;")  # Increase font size to 12pt
 
         # Hide headers, size, type, and date columns
-        self.directory_tree.setHeaderHidden(True)
-        self.directory_tree.setColumnHidden(1, True)  # Size column
-        self.directory_tree.setColumnHidden(2, True)  # Type column
-        self.directory_tree.setColumnHidden(3, True)  # Date column
+        self.directory_tree_obj.setHeaderHidden(True)
+        self.directory_tree_obj.setColumnHidden(1, True)  # Size column
+        self.directory_tree_obj.setColumnHidden(2, True)  # Type column
+        self.directory_tree_obj.setColumnHidden(3, True)  # Date column
 
-        self.first_info_layout.addWidget(self.directory_tree)
+        self.first_info_layout.addWidget(self.directory_tree_obj)
         self.horizontal_splitter.addWidget(self.first_info_pane)
 
         # Tab widget for file editor and topology
