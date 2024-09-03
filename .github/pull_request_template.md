@@ -20,6 +20,10 @@ Please describe the tests that you ran to verify your changes. Provide instructi
 - [ ] Test A
 - [ ] Test B
 
+**Test Configuration**:
+* Operating System:
+* Python version:
+
 ## Does change comply with project standards and guideline?
 Standards and guidelines can be found on the [Project Homepage](https://github.com/SDNNetSim/SDON_simulator).
 - [ ] Commit formatting
