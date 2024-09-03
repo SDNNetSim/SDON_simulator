@@ -1,6 +1,7 @@
 ## Description
 Please include a summary of the change and which issue is fixed. Please 
-also include relevant motivation and context.
+also include relevant motivation and context. For error/bug reporting, 
+please include the error and it's accompanying context.
 
 Fixes # (issue)
 
