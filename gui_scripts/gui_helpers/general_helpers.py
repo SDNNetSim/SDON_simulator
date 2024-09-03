@@ -166,7 +166,7 @@ class SimulationThread(QtCore.QThread):
 
         self._run()
 
-    def handle_process_state(self, process_state):
+    def handle_process_state(self, process_state):  # pylint: disable=consider-using-with
         """
         Starts or runs a specific process.
 
@@ -390,8 +390,7 @@ class DirectoryTreeView(QtWidgets.QTreeView):
         """
         self.setRootIndex(self.model.index(self.model.rootPath()))
 
-    def mousePressEvent(self, event: QtGui.QMouseEvent):  # pylint:
-        # disable=invalid-name
+    def mousePressEvent(self, event: QtGui.QMouseEvent):  # pylint: disable=invalid-name
         """
         Overrides mousePressEvent in QTreeView for single click
 
