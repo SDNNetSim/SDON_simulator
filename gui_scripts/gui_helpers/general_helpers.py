@@ -121,8 +121,7 @@ class SimulationThread(QtCore.QThread):
     output_hints_signal = QtCore.pyqtSignal(str)
 
     def __init__(self):
-        super(SimulationThread,
-              self).__init__()  # pylint: disable=super-with-arguments
+        super(SimulationThread, self).__init__()  # pylint: disable=super-with-arguments
 
         self.simulation_process = None
         self.paused = False
@@ -156,8 +155,7 @@ class SimulationThread(QtCore.QThread):
         """
         command = os.path.join(os.getcwd(), "run_sim.py")
 
-        self.simulation_process = subprocess.Popen(
-            # pylint: disable=consider-using-with
+        self.simulation_process = subprocess.Popen(  # pylint: disable=consider-using-with
             args=[sys.executable, command],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
