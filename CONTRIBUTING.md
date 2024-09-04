@@ -59,6 +59,16 @@ This simulator is an open-source initiative, and we welcome contributions from e
 
 *Check to ensure that your pull request meets the requirements as outlined by the [PR template](https://github.com/SDNNetSim/SDON_simulator/blob/v1_1/.github/pull_request_template.md) before merging.
 
+## Issue Reporting Process
+The github issue tracker is our primary medium for raising and resolving issues. Specific information related to reporting bugs and requesting features can be found below.
+
+### Bug Reports
+For bug reports, please be sure the structure of your report is consistent with the [bug report](https://github.com/SDNNetSim/SDON_simulator/blob/v1_1/.github/issue_template/bug_report.md) template.
+
+### Feature Requests
+For feature requests, please be sure the structure of your request is consistent with the [feature request](https://github.com/SDNNetSim/SDON_simulator/blob/v1_1/.github/issue_template/feature_request.md) template.
+
+
 ## Code of Conduct
 
 Our project adheres to a Code of Conduct that we expect all contributors to follow. Please read the [code of conduct](CODE_OF_CONDUCT.md) document before participating in our community.
