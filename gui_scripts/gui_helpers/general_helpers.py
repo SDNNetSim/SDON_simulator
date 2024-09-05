@@ -7,7 +7,7 @@ import sys
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-from gui_scripts.gui_args.config_args import SETTINGS_CONFIG_DICT
+from gui_scripts.gui_args.config_args import SETTINGS_CONFIG_DICT, DEFAULT_CREDENTIALS
 
 
 class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-methods
@@ -22,8 +22,9 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
         self.layout = QtWidgets.QVBoxLayout()
         self.tabs = QtWidgets.QTabWidget()
         self.settings_widgets = {}
+        self.settings_store = QtCore.QSettings(DEFAULT_CREDENTIALS["group_name"],
+                                              DEFAULT_CREDENTIALS["app_name"])
         self._setup_layout()
-
         self.setLayout(self.layout)
 
     def _setup_layout(self):
@@ -39,6 +40,20 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
         self.layout.addWidget(self.tabs)
 
         self._setup_buttons()
+
+    def _save_settings(self):
+        """
+        Commits current settings thereby persisting them.
+        """
+        for category in SETTINGS_CONFIG_DICT:
+            for setting in category["settings"]:
+                label = setting["label"]
+                widget = self.settings_widgets[label]
+                value = self._get_widget_value(widget)
+                # Use formatted label as the key for settings
+                key = f"{category['category']}/{self._format_label(label)}"
+                self.settings_store.setValue(key, value)
+        self.accept()
 
     @staticmethod
     def _create_widget(setting):
