@@ -99,3 +99,9 @@ SETTINGS_CONFIG_DICT = [
         ]
     }
 ]
+
+# for configuring persistent settings
+DEFAULT_CREDENTIALS = {
+    "group_name" : "acnl",
+    "app_name" : "sdon-gui"
+}
