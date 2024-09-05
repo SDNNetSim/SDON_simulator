@@ -125,6 +125,22 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
         return label.lower().replace(" ", "_").replace(":", "")
 
     @staticmethod
+    def _set_widget_value(widget, value):
+        """
+        Sets the widget to the given value based on its type.
+        """
+        if isinstance(widget, QtWidgets.QComboBox):
+            widget.setCurrentText(value)
+        elif isinstance(widget, QtWidgets.QCheckBox):
+            widget.setChecked(value in ('true', True))
+        elif isinstance(widget, QtWidgets.QLineEdit):
+            widget.setText(value)
+        elif isinstance(widget, QtWidgets.QSpinBox):
+            widget.setValue(int(value))
+        elif isinstance(widget, QtWidgets.QDoubleSpinBox):
+            widget.setValue(float(value))
+
+    @staticmethod
     def _get_widget_value(widget):
         resp = None
         if isinstance(widget, QtWidgets.QComboBox):
