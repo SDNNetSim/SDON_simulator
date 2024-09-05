@@ -95,12 +95,21 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
         return widget, label
 
     def _setup_buttons(self):
-        buttons = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
-        )
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        self.layout.addWidget(buttons)
+        reset_button = QtWidgets.QPushButton('Reset')
+        reset_button.setSizePolicy(QtWidgets.QSizePolicy())
+        reset_button.clicked.connect(self._reset_defaults)
+        cancel_button = QtWidgets.QPushButton('Cancel')
+        cancel_button.setSizePolicy(QtWidgets.QSizePolicy())
+        cancel_button.clicked.connect(self.reject)
+        save_button = QtWidgets.QPushButton('Save')
+        save_button.setSizePolicy(QtWidgets.QSizePolicy())
+        save_button.clicked.connect(self._save_settings)
+        dialog_button_layout = QtWidgets.QHBoxLayout()
+        dialog_button_layout.addWidget(reset_button)
+        dialog_button_layout.addStretch()
+        dialog_button_layout.addWidget(cancel_button)
+        dialog_button_layout.addWidget(save_button)
+        self.layout.addLayout(dialog_button_layout)
 
     def get_settings(self):
         """
