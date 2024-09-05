@@ -26,6 +26,7 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
                                               DEFAULT_CREDENTIALS["app_name"])
         self._setup_layout()
         self.setLayout(self.layout)
+        self._load_settings()
 
     def _setup_layout(self):
         for category in SETTINGS_CONFIG_DICT:
@@ -55,6 +56,19 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
                 self.settings_store.setValue(key, value)
         self.accept()
 
+    def _load_settings(self):
+        """
+        Fetches settings from settings store.
+        """
+        for category in SETTINGS_CONFIG_DICT:
+            for setting in category["settings"]:
+                label = setting["label"]
+                widget = self.settings_widgets[label]
+                # Use formatted label as the key for settings
+                key = f"{category['category']}/{self._format_label(label)}"
+                saved_value = self.settings_store.value(key, setting["default"])
+                # Update the widget with the saved value
+                self._set_widget_value(widget, saved_value)
     @staticmethod
     def _create_widget(setting):
         widget_type = setting["type"]
