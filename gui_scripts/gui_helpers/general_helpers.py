@@ -69,6 +69,27 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
                 saved_value = self.settings_store.value(key, setting["default"])
                 # Update the widget with the saved value
                 self._set_widget_value(widget, saved_value)
+
+    def _reset_defaults(self):
+        """
+        Reset settings to defaults. It also writes the overwrites the settings
+        store with the defaults. This ensures settings behave correctly when
+        the dialog is closed or cancelled after a reset.
+        """
+        for category in SETTINGS_CONFIG_DICT:
+            for setting in category["settings"]:
+                label = setting["label"]
+                widget = self.settings_widgets[label]
+                self._set_widget_value(widget, setting["default"])
+        for category in SETTINGS_CONFIG_DICT:
+            for setting in category["settings"]:
+                label = setting["label"]
+                widget = self.settings_widgets[label]
+                value = self._get_widget_value(widget)
+                # Use formatted label as the key for settings
+                key = f"{category['category']}/{self._format_label(label)}"
+                self.settings_store.setValue(key, value) # write defaults to settings_store
+
     @staticmethod
     def _create_widget(setting):
         widget_type = setting["type"]
