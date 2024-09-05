@@ -166,15 +166,16 @@ class ActionHelpers:
         network_selection_input = QtWidgets.QInputDialog()
         # TODO: Hard coded, should read potential files we have?
         items = ['USNet', 'NSFNet', 'Pan-European']
-        net_name, valid_net_name = network_selection_input.getItem(
+        net_name, valid = network_selection_input.getItem(
             network_selection_dialog, "Choose a network type:",
             "Select Network Type", items, 0, False
         )
 
-        if valid_net_name and net_name:
+        # we should really only be checking if valid is true
+        # if true then user must have provided a valid name since
+        # we give users only three choices anyway. Otherwise, do nothing
+        if valid:
             self._display_topology(net_name=net_name)
-        else:
-            raise NotImplementedError(f"{net_name} is not a valid network name.")
 
     def create_topology_action(self):
         """
