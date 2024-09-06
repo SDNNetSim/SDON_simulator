@@ -164,11 +164,12 @@ class SimulationThread(QtCore.QThread):
 
         self._run()
 
-    def handle_process_state(self, process_state):  # pylint: disable=consider-using-with
+    def handle_process_state(self, process_state: QtCore.QProcess.ProcessState):  # pylint: disable=consider-using-with
         """
         Starts or runs a specific process.
 
         :param process_state: The current state of the process.
+        :return: None
         """
         if process_state == QtCore.QProcess.ProcessState.Starting:
             self.output_hints_signal.emit('Starting process')
