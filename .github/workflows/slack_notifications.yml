@@ -38,6 +38,21 @@ jobs:
             - *Workflow actor:* ${{ github.triggering_actor }}
             - *Branch:* `${{ github.head_ref }}`
 
+      - name: Send Slack Message for Issues
+        if: github.event_name == 'issues'
+        uses: archive/github-actions-slack@v2.0.0
+        id: send-pr-message
+        with:
+          slack-function: send-message
+          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
+          slack-channel: C05LW0SGL6N
+          slack-text: |
+            *New Event In* ${{ github.repository }}
+            - *Type:* ${{ github.event_name }}
+            - *Title:* ${{ github.event.issues.title }}
+            - *Workflow creator:* ${{ github.actor }}
+            - *Workflow actor:* ${{ github.triggering_actor }}
+            - *Branch:* `${{ github.head_ref }}`
 
 
       - name: Result from "Send Message"
