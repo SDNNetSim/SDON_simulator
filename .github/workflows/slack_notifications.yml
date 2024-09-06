@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Send Slack Message for Pull Request
-        if: $ {{ github.event_name }} == 'pull_request'
+        if: github.event_name == 'pull_request'
         uses: archive/github-actions-slack@v2.0.0
         id: send-pr-message
         with:
@@ -41,7 +41,7 @@ jobs:
       - name: Send Slack Message for Issues
         if: github.event_name == 'issues'
         uses: archive/github-actions-slack@v2.0.0
-        id: send-pr-message
+        id: send-issue-message
         with:
           slack-function: send-message
           slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
