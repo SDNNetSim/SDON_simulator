@@ -22,14 +22,22 @@ jobs:
     name: Sends a message to Slack when a pull request, issue, or new tag is made
 
     steps:
-      - name: Send Slack Message
+      - name: Send Slack Message for Pull Request
+        if: github.event_name == 'pull_request'
         uses: archive/github-actions-slack@v2.0.0
-        id: send-message
+        id: send-pr-message
         with:
           slack-function: send-message
           slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
           slack-channel: C05LW0SGL6N
-          slack-text: "*New Event* `${{ github.event_name }}` *In* `${{ github.repository }}`\n\n- *Title:* ${{ github.event.pull_request.title }}\n- *Workflow creator:* ${{ github.actor }}\n- *Workflow actor:* ${{ github.triggering_actor }}\n- *Branch:* `${{ github.head_ref }}`"
+          slack-text: |
+            *New Event In* ${{ github.repository }}
+            - *Type:* ${{ github.event_name }}
+            - *Title:* ${{ github.event.pull_request.title }}
+            - *Workflow creator:* ${{ github.actor }}
+            - *Workflow actor:* ${{ github.triggering_actor }}
+            - *Branch:* `${{ github.head_ref }}`
+
 
 
       - name: Result from "Send Message"
