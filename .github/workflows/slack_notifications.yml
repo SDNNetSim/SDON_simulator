@@ -31,7 +31,7 @@ jobs:
           slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
           slack-channel: C05LW0SGL6N
           slack-text: |
-            *New Event In* ${{ github.repository }}
+            *New Event In* `${{ github.repository }}`
             - *Type:* ${{ github.event_name }}
             - *Title:* ${{ github.event.pull_request.title }}
             - *Workflow creator:* ${{ github.actor }}
@@ -47,9 +47,9 @@ jobs:
           slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
           slack-channel: C05LW0SGL6N
           slack-text: |
-            *New Event In* ${{ github.repository }}
+            *New Event In* `${{ github.repository }}`
             - *Type:* ${{ github.event_name }}
-            - *Title:* ${{ github.event.issues.title }}
+            - *Title:* ${{ github.event.issue.title }}
             - *Workflow creator:* ${{ github.actor }}
             - *Workflow actor:* ${{ github.triggering_actor }}
             - *Branch:* `${{ github.head_ref }}`
