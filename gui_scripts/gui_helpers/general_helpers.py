@@ -245,7 +245,7 @@ class DirectoryTreeView(QtWidgets.QTreeView):
         self.is_directory = QtCore.QFileInfo(self.copied_path).isDir()
         self.is_cut_operation = is_cut_operation
 
-    def copy_directory(
+    def _copy_directory(
         self,
         source_dir: str,
         destination_dir: str
@@ -270,8 +270,7 @@ class DirectoryTreeView(QtWidgets.QTreeView):
 
         for subdir in source_obj.entryList(
                 QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot):
-            self.copy_directory(source_obj.absoluteFilePath(subdir),
-                                QtCore.QDir(destination_path).filePath(subdir))
+            self._copy_directory(source_obj.absoluteFilePath(subdir), QtCore.QDir(destination_path).filePath(subdir))
 
         if self.is_cut_operation:
             self.delete_directory(source_dir)
@@ -293,7 +292,7 @@ class DirectoryTreeView(QtWidgets.QTreeView):
                     destination_dir).absolutePath()
 
             if self.is_directory:
-                self.copy_directory(self.copied_path, destination_dir)
+                self._copy_directory(self.copied_path, destination_dir)
             else:
                 file_name = QtCore.QFileInfo(self.copied_path).fileName()
                 if QtCore.QFile.copy(self.copied_path,
