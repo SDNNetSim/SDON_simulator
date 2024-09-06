@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Send Slack Message for Pull Request
-        if: github.event_name == 'pull_request'
+        if: $ {{ github.event_name }} == 'pull_request'
         uses: archive/github-actions-slack@v2.0.0
         id: send-pr-message
         with:
