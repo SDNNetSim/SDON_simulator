@@ -171,10 +171,8 @@ class ActionHelpers:
             "Select Network Type", items, 0, False
         )
 
-        if valid_net_name and net_name:
+        if valid_net_name:
             self._display_topology(net_name=net_name)
-        else:
-            raise NotImplementedError(f"{net_name} is not a valid network name.")
 
     def create_topology_action(self):
         """
