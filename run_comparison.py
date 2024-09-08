@@ -4,6 +4,7 @@ from config_scripts.setup_config import read_config
 import json
 import sys
 import os
+import configparser
 
 args_obj = parse_args()
 
@@ -13,15 +14,24 @@ def run_comparison():
     # Call the run function from run_sim.py
     run(sims_dict=all_sims_dict)
 
-def find_sim_type():
-    file_type = read_config(args_obj=args_obj, config_path=args_obj['config_path'])
-    if general_settings in file_type:
-        if sim_type in file_type[general_settings]:
-            return file_type[general_settings][sim_type]
-        else:
-            return ValueError("Missing simulation type in configuration file.")
+def find_type_and_saved_path(args_obj=args_obj, config_path=args_obj['config_path']):
+    config = configparser.ConfigParser()
+
+    #Following two blocks are from setup_config to reach the type of patb
+    if config_path is None:
+        config_path = os.path.join('ini', 'run_ini', 'config.ini')
+    config.read(config_path)
+
+    if not config.has_option('general_settings', 'sim_type'):
+        config_path = os.path.join('ini', 'run_ini')
+        create_dir(config_path)
+        raise ValueError("Missing 'general_settings' section in the configuration file. "
+                         "Please ensure you have a file called config.ini in the run_ini directory.")
+
+    if config['general_settings']['sim_type'] == 'yue':
+        return './data/run_comparison_data/yue_run_data.json'
     else:
-        return ValueError("Missing simulation type parameter in configuration file under general_settings")
+        raise ValueError("Error: sim_type not supported by function.")
 
 def compare_json_files(old_file, new_file):
     """Load and compare two JSON files."""
@@ -55,12 +65,10 @@ def find_newest_file(directory):
 
 if __name__ == "__main__":
     run_comparison()
-    ##simulation_test_type = find_sim_type()        TODO: fix find_sim_type so it can read which is which
-    old_saved_data_path = './data/run_comparison_data/yue_run_data.json'
+    old_saved_data_path = find_type_and_saved_path()
     path_to_output = './data/output/NSFNet'
     date_of_simulation = find_newest_file(path_to_output)
     time_of_data_path = find_newest_file(date_of_simulation)
     add_simulation_run_to_path = time_of_data_path + '/s1'
     new_saved_data_path = find_newest_file(add_simulation_run_to_path)
-    print(new_saved_data_path)
     compare_json_files(old_saved_data_path, new_saved_data_path)
