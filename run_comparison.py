@@ -14,10 +14,10 @@ def run_comparison():
     # Call the run function from run_sim.py
     run(sims_dict=all_sims_dict)
 
-def find_type_and_saved_path(args_obj=args_obj, config_path=args_obj['config_path']):
+def find_type_and_saved_path(config_path=args_obj['config_path']):
     config = configparser.ConfigParser()
 
-    #Following two blocks are from setup_config to reach the type of patb
+    #Following two blocks are from setup_config to reach the type of path
     if config_path is None:
         config_path = os.path.join('ini', 'run_ini', 'config.ini')
     config.read(config_path)
