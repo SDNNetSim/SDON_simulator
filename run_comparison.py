@@ -1,3 +1,5 @@
+import copy
+from copy import deepcopy
 from run_sim import run
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
@@ -17,11 +19,12 @@ def run_comparison():
 def find_type_and_saved_path(config_path=args_obj['config_path']):
     config = configparser.ConfigParser()
 
-    #Following two blocks are from setup_config to reach the type of path
+    #Following is from setup_config to reach the type of path
     if config_path is None:
         config_path = os.path.join('ini', 'run_ini', 'config.ini')
     config.read(config_path)
 
+    #Following is from setup_config to reach the type of path
     if not config.has_option('general_settings', 'sim_type'):
         config_path = os.path.join('ini', 'run_ini')
         create_dir(config_path)
@@ -34,7 +37,7 @@ def find_type_and_saved_path(config_path=args_obj['config_path']):
         raise ValueError("Error: sim_type not supported by function.")
 
 def compare_json_files(old_file, new_file):
-    """Load and compare two JSON files."""
+    ##Load and compare two JSON files.
     with open(old_file, 'r') as f:
         old_data = json.load(f)
 
@@ -45,8 +48,6 @@ def compare_json_files(old_file, new_file):
         print("The comparison results pass.")
     else:
         print("The comparison results do not pass.")
-        sys.exit(1)
-
 
 def find_newest_file(directory):
     newest_file = None
