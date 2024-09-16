@@ -8,7 +8,7 @@ from gui_scripts.gui_helpers.general_helpers import SimulationThread
 from gui_scripts.gui_helpers.general_helpers import SettingsDialog
 
 
-class ButtonHelpers:
+class ButtonHelpers(QtCore.QObject):
     """
     Contains methods related to setting up the buttons and their potential options.
     """
