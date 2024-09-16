@@ -136,6 +136,28 @@ class ButtonHelpers(QtCore.QObject):
         ])
         self.simulation_option_dropdown.setCurrentIndex(0)
 
+    @QtCore.pyqtSlot(bool)
+    def update_ml_option(self, ml_enabled: bool):
+        """
+        Enable or disable the Run ML Simulation option.
+
+        :param ml_enabled:    Flag to enable or disable ML option.
+        :return:    None
+        """
+        ml_index = self.simulation_option_dropdown.findText("Run ML Simulation")
+        self.simulation_option_dropdown.model().item(ml_index).setEnabled(ml_enabled)
+
+    @QtCore.pyqtSlot(bool)
+    def update_rl_option(self, rl_enabled: bool):
+        """
+        Enable or disable the Run RL Simulation option.
+
+        :param rl_enabled:    Flag to enable or disable RL option.
+        :return:    None
+        """
+        rl_index = self.simulation_option_dropdown.findText("Run RL Simulation")
+        self.simulation_option_dropdown.model().item(rl_index).setEnabled(rl_enabled)
+
     def create_pause_button(self):
         """
         Creates the pause button and action.
