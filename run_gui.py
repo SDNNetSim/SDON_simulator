@@ -213,11 +213,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button_help_obj.create_start_button()
         self.button_help_obj.create_stop_button()
         self.button_help_obj.create_pause_button()
+        self.button_help_obj.create_simulation_options_dropdown()
+        self.button_help_obj.drop_down_clicked.connect(
+            lambda : self.ac_help_obj.parse_config_action(self.config_file_info)
+        )
+        self.ac_help_obj.ml_sim.connect(self.button_help_obj.update_ml_option)
+        self.ac_help_obj.rl_sim.connect(self.button_help_obj.update_rl_option)
 
         self.tool_bar.addSeparator()
         self.tool_bar.addAction(self.button_help_obj.start_button)
         self.tool_bar.addAction(self.button_help_obj.pause_button)
         self.tool_bar.addAction(self.button_help_obj.stop_button)
+        self.tool_bar.addSeparator()
+        self.tool_bar.addWidget(self.button_help_obj.simulation_option_dropdown)
         self.tool_bar.addSeparator()
         self.tool_bar.addWidget(self.button_help_obj.settings_button)
 
