@@ -133,10 +133,31 @@ class SimulationThread(QtCore.QThread):
         super(SimulationThread, self).__init__()  # pylint: disable=super-with-arguments
 
         self.simulation_process = None
+        self.simulation_script = None
         self.paused = False
         self.stopped = False
         self.mutex = QtCore.QMutex()
         self.pause_condition = QtCore.QWaitCondition()
+
+    def set_simulation_script(self, script: str="run_sim.py"):
+        """
+        Mutator function for simulation script. When set_simulation_script
+        is done running, the simulation_script attribute is set to script
+
+        :params  script:   Name of script to be run for current simulation
+        :return:    None
+        """
+        self.simulation_script = script
+
+    def get_simulation_script(self):
+        """
+        Accessor function for simulation script. Retrieves the value of
+        simulation_script when called.
+
+        :params:    None
+        :return  simulation_script:    str
+        """
+        return self.simulation_script
 
     def _run(self):
         for output_line in self.simulation_process.stdout:
@@ -161,7 +182,7 @@ class SimulationThread(QtCore.QThread):
         """
         Overrides run method in QtCore.QThread.
         """
-        command = os.path.join(os.getcwd(), "run_sim.py")
+        command = os.path.join(os.getcwd(), self.simulation_script)
 
         self.simulation_process = subprocess.Popen(  # pylint: disable=consider-using-with
             args=[sys.executable, command],
