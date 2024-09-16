@@ -206,7 +206,7 @@ class ButtonHelpers(QtCore.QObject):
 
 class DropDownHelper(QtWidgets.QComboBox): # pylint: disable=too-few-public-methods
     """
-    Helper class for the dropdown widget for selecting between
+    Helper class for the dropdown widget for choosing simulation script to run
     """
     clicked = QtCore.pyqtSignal()
 
