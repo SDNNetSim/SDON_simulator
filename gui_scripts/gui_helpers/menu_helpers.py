@@ -16,8 +16,7 @@ class MenuHelpers(QtCore.QObject):
         self.help_menu_obj = None
         self.edit_menu_obj = None
 
-    @staticmethod
-    def load_config_file():
+    def load_config_file(self):
         """
         Loads a configuration file. Currently supported config file format is INI.
         If a config file is successfully read, it is copied to ini/run_ini/config.ini
@@ -35,6 +34,7 @@ class MenuHelpers(QtCore.QObject):
             filter="INI Files (*.ini)"
         )
         if file_path:
+            self.config_file_path_sig.emit(file_path)
             target_dir = QtCore.QDir("ini/run_ini")
             target_path = target_dir.filePath("config.ini")
             if not target_dir.exists():
