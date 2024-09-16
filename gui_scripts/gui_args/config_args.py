@@ -102,3 +102,9 @@ SETTINGS_CONFIG_DICT = [
         ]
     }
 ]
+
+SIM_DEFAULTS = {
+    "Run Simulation" : "run_sim.py",
+    "Run ML Simulation" : "run_ml_sim.py",
+    "Run RL Simulation" : "run_rl_sim.py"
+}
