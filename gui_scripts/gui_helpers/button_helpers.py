@@ -6,6 +6,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 
 from gui_scripts.gui_helpers.general_helpers import SimulationThread
 from gui_scripts.gui_helpers.general_helpers import SettingsDialog
+from gui_scripts.gui_args.config_args import SIM_DEFAULTS
 
 
 class ButtonHelpers(QtCore.QObject):
@@ -15,6 +16,7 @@ class ButtonHelpers(QtCore.QObject):
     drop_down_clicked = QtCore.pyqtSignal()
 
     def __init__(self):
+        super().__init__()
         self.bottom_right_pane = None
         self.progress_bar = None
         self.start_button = None
@@ -54,6 +56,8 @@ class ButtonHelpers(QtCore.QObject):
         self.progress_bar.setVisible(True)
 
         self.simulation_thread = SimulationThread()
+        candidate_simulation = self.simulation_option_dropdown.currentText()
+        self.simulation_thread.set_simulation_script(SIM_DEFAULTS[candidate_simulation])
         self.simulation_thread.output_hints_signal.connect(self.output_hints)
         self.simulation_thread.progress_changed.connect(self.update_progress)
         self.simulation_thread.finished_signal.connect(self.simulation_finished)
