@@ -93,12 +93,15 @@ class TopologyCanvas(FigureCanvas):
         dialog.exec_()
 
 
-class ActionHelpers:
+class ActionHelpers(QtCore.QObject):
     """
     Contains methods related to performing actions.
     """
+    ml_sim = QtCore.pyqtSignal(bool)
+    rl_sim = QtCore.pyqtSignal(bool)
 
     def __init__(self):
+        super().__init__()
         self.menu_bar_obj = None  # Updated from run_gui.py script
         self.menu_help_obj = None  # Created in menu_helpers.py
         self.mw_topology_view_area = None  # Updated from the run_gui.py script
