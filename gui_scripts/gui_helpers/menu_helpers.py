@@ -3,12 +3,14 @@
 from PyQt5 import QtWidgets, QtCore
 
 
-class MenuHelpers:
+class MenuHelpers(QtCore.QObject):
     """
     Contains methods related to setting up the menu and their potential options.
     """
+    config_file_path_sig = QtCore.pyqtSignal(str)
 
     def __init__(self):
+        super().__init__()
         self.menu_bar_obj = None  # Updated from run_gui.py script
         self.file_menu_obj = None
         self.help_menu_obj = None
