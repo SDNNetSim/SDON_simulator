@@ -1,4 +1,5 @@
 # pylint: disable=c-extension-no-member
+import configparser
 import sys
 import networkx as nx
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -215,6 +216,30 @@ class ActionHelpers:
         about_action = QtWidgets.QAction('&About', self.menu_bar_obj)
         about_action.triggered.connect(self.about)
         self.menu_help_obj.help_menu_obj.addAction(about_action)
+
+    @QtCore.pyqtSlot(str)
+    def parse_config_action(self, config_file_path: str):
+        """
+        Parses the config file for ML and RL sections
+
+        :params  config_file_path:    Path to config file
+        :return:    None
+        """
+        # in here, get the path to the config file
+        # parse the config file
+        # if the config file does not have ML section, emit signal accordingly
+        # if the config file does not have RL section, emit signal accordingly
+        # if neither ML nor RL section exists, emit signal accordingly
+        config = configparser.ConfigParser()
+        config.read(config_file_path)
+        if not config.has_section('ml_settings'):
+            self.ml_sim.emit(False)
+        else:
+            self.ml_sim.emit(True)
+        if not config.has_section('rl_settings'):
+            self.rl_sim.emit(False)
+        else:
+            self.rl_sim.emit(True)
 
 
 if __name__ == '__main__':
