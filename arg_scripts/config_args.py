@@ -61,6 +61,7 @@ ARASH_REQUIRED_OPTIONS = {
         'save_snapshots': str_to_bool,
         'snapshot_step': int,
         'print_step': int,
+        'fixed_grid': str_to_bool,
     },
     'topology_settings': {
         'network': str,
