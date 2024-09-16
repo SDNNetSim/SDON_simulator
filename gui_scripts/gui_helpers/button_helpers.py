@@ -12,17 +12,17 @@ class ButtonHelpers(QtCore.QObject):
     """
     Contains methods related to setting up the buttons and their potential options.
     """
+    drop_down_clicked = QtCore.pyqtSignal()
 
     def __init__(self):
         self.bottom_right_pane = None
         self.progress_bar = None
-
         self.start_button = None
+        self.simulation_option_dropdown = None
         self.pause_button = None
         self.stop_button = None
         self.settings_button = None
         self.simulation_thread = None
-
         self.media_dir = 'media'
 
     def output_hints(self, message: str):
@@ -118,6 +118,24 @@ class ButtonHelpers(QtCore.QObject):
         self.start_button.setText("Start")
         self.start_button.triggered.connect(self.start_simulation)
 
+    def create_simulation_options_dropdown(self):
+        """
+        Creates dropdown menu containing simulation script to choose based
+        on configuration file. Initially, all sim options are disabled until
+        a configuration file is loaded.
+
+        :param:    None
+        :return:    None
+        """
+        self.simulation_option_dropdown = DropDownHelper()
+        self.simulation_option_dropdown.clicked.connect(self.drop_down_clicked)
+        self.simulation_option_dropdown.addItems([
+            "Run Simulation",
+            "Run ML Simulation",
+            "Run RL Simulation"
+        ])
+        self.simulation_option_dropdown.setCurrentIndex(0)
+
     def create_pause_button(self):
         """
         Creates the pause button and action.
@@ -162,3 +180,20 @@ class ButtonHelpers(QtCore.QObject):
         self.settings_button.setText("Settings")
         self.settings_button.setStyleSheet("background-color: transparent;")
         self.settings_button.clicked.connect(self.open_settings)
+
+
+class DropDownHelper(QtWidgets.QComboBox): # pylint: disable=too-few-public-methods
+    """
+    Helper class for the dropdown widget for selecting between
+    """
+    clicked = QtCore.pyqtSignal()
+
+    def showPopup(self): # pylint: disable=invalid-name
+        """
+        Calls showPopup method in parent class but after emitted custom signal
+
+        :params:
+        :return:
+        """
+        self.clicked.emit()
+        super().showPopup()
