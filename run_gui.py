@@ -2,6 +2,7 @@
 # pylint: disable=c-extension-no-member
 
 import sys
+import os
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileSystemModel, QTreeView, QTabWidget, QPlainTextEdit
 
@@ -51,6 +52,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tool_bar = None
         self.status_bar = None
         self.highlighter = None
+
+        self.config_file_info = QtCore.QFileInfo(os.path.join('ini', 'run_ini', 'config.ini'))
 
         # Set the project directory as the root for the file model
         self.project_directory = QtCore.QDir.currentPath()
@@ -157,6 +160,15 @@ class MainWindow(QtWidgets.QMainWindow):
             with open(self.current_file_path, 'w', encoding='utf-8') as file:
                 file.write(self.file_editor.toPlainText())
 
+    def update_config_file_location(self, config_file_path):
+        """
+        Updates the config_file_info structure with the path of the config file
+
+        :params  config_file_path:    Path to config file.
+        :return:    None
+        """
+        self.config_file_info.setFile(config_file_path)
+
     def init_menu_bar(self):
         """
         Initialize the menu bar.
@@ -164,6 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menu_bar = self.menuBar()
         self.menu_help_obj.menu_bar_obj = self.menu_bar
         self.menu_help_obj.create_file_menu()
+        self.menu_help_obj.config_file_path_sig.connect(self.update_config_file_location)
         self.menu_help_obj.create_edit_menu()
         self.menu_help_obj.create_help_menu()
 
