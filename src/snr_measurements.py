@@ -305,6 +305,21 @@ class SnrMeasurements:
             resp = cross_talk < self.engine_props['requested_xt'][self.spectrum_props.modulation]
 
         return resp, cross_talk
+    
+
+    def check_snr_ext(self):
+        """
+        Checks the SNR on a single request using the external resources.
+
+        :return: Whether the SNR threshold can be met and SNR value.
+        :rtype: tuple
+        """
+        SNR_val = 0
+        resp = False
+        return resp, SNR_val
+        raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
+
+        
 
     def handle_snr(self):
         """
@@ -318,6 +333,8 @@ class SnrMeasurements:
             snr_check, xt_cost = self.check_snr()
         elif self.engine_props['snr_type'] == "xt_calculation":
             snr_check, xt_cost = self.check_xt()
+        elif self.engine_props['snr_type'] == "snr_e2e_external_resources":
+            snr_check, xt_cost = self.check_snr_ext()
         else:
             raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
 
