@@ -57,10 +57,6 @@ class SDNController:
         band = self.spectrum_obj.spectrum_props.curr_band
         self.sdn_props.curr_band = band
 
-        if self.engine_props['guard_slots']:
-            end_slot = end_slot - 1
-        else:
-            end_slot += 1
 
         for link_tuple in zip(self.sdn_props.path_list, self.sdn_props.path_list[1:]):
             # Remember, Python list indexing is up to and NOT including!
