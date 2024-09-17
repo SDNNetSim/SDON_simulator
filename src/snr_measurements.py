@@ -306,7 +306,7 @@ class SnrMeasurements:
 
         return resp, cross_talk
     
-
+    # TODO: update the method based on external resources
     def check_snr_ext(self):
         """
         Checks the SNR on a single request using the external resources.
@@ -314,12 +314,11 @@ class SnrMeasurements:
         :return: Whether the SNR threshold can be met and SNR value.
         :rtype: tuple
         """
+        
         SNR_val = 0
         resp = False
         return resp, SNR_val
         raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
-
-        
 
     def handle_snr(self):
         """
