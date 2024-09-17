@@ -62,6 +62,7 @@ ARASH_REQUIRED_OPTIONS = {
         'snapshot_step': int,
         'print_step': int,
         'fixed_grid': str_to_bool,
+        'worst_case_mod_selection': str_to_bool,
     },
     'topology_settings': {
         'network': str,
@@ -223,6 +224,7 @@ COMMAND_LINE_PARAMS = [
     ['dynamic_reward', bool, ''],
     ['config_path', str, ''],
     ['fixed_grid', bool, ''],
+    ['worst_case_mod_selection', bool, ''],
 
     # StableBaselines3 arguments
     ['algo', str, ''],
