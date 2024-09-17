@@ -178,7 +178,10 @@ class SpectrumAssignment:
                 bandwidth_dict = self.engine_props['mod_per_bw'][slice_bandwidth]
                 self.spectrum_props.slots_needed = bandwidth_dict[modulation]['slots_needed']
             else:
-                self.spectrum_props.slots_needed = self.sdn_props.mod_formats_dict[modulation]['slots_needed']
+                if self.engine_props['fixed_grid']:
+                    self.spectrum_props.slots_needed = 1
+                else:
+                    self.spectrum_props.slots_needed = self.sdn_props.mod_formats_dict[modulation]['slots_needed']
             self._get_spectrum()
 
             if self.spectrum_props.is_free:
