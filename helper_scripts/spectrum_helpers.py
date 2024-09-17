@@ -53,10 +53,10 @@ class SpectrumHelpers:
 
         if self.engine_props['allocation_method'] == 'last_fit':
             self.spectrum_props.start_slot = self.end_index
-            self.spectrum_props.end_slot = self.start_index + self.engine_props['guard_slots']
+            self.spectrum_props.end_slot = self.start_index 
         else:
             self.spectrum_props.start_slot = self.start_index
-            self.spectrum_props.end_slot = self.end_index + self.engine_props['guard_slots']
+            self.spectrum_props.end_slot = self.end_index 
 
         self.spectrum_props.core_num = self.core_num
         self.spectrum_props.curr_band = self.curr_band
