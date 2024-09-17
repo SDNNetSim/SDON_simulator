@@ -41,7 +41,7 @@ class SpectrumAssignment:
                 if self.spectrum_props.is_free or len(self.spectrum_props.path_list) <= 2:
                     self.spectrum_props.is_free = True
                     self.spectrum_props.start_slot = start_index
-                    self.spectrum_props.end_slot = end_index + self.engine_props['guard_slots']
+                    self.spectrum_props.end_slot = end_index #+ self.engine_props['guard_slots'] # TODO: check the GB
                     self.spectrum_props.core_num = channel_dict['core']
                     # TODO: This needs to be checked
                     self.spectrum_props.curr_band = channel_dict['band']
