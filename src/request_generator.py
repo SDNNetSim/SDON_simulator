@@ -32,10 +32,7 @@ def get_requests(seed: int, engine_props: dict):
     while len(requests_dict) < (engine_props['num_requests'] * 2):
         current_time += get_exponential_rv(scale_param=engine_props['arrival_rate'])
 
-        if engine_props['sim_type'] == 'arash':
-            depart_time = current_time + get_exponential_rv(scale_param=1 / engine_props['holding_time'])
-        else:
-            depart_time = current_time + get_exponential_rv(scale_param=engine_props['holding_time'])
+        depart_time = current_time + get_exponential_rv(scale_param=1 / engine_props['holding_time'])
 
         source = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]
         dest = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]
