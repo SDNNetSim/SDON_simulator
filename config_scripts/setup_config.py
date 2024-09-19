@@ -83,7 +83,7 @@ def read_config(args_obj: dict, config_path: str = None):
             config_path = os.path.join('ini', 'run_ini', 'config.ini')
         config.read(config_path)
 
-        if not config.has_option('general_settings', 'sim_type'):
+        if not config.has_section('general_settings'):
             config_path = os.path.join('ini', 'run_ini')
             create_dir(config_path)
             raise ValueError("Missing 'general_settings' section in the configuration file. "
