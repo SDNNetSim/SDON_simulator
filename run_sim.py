@@ -63,7 +63,7 @@ class NetworkSimulator:
             for arr_rate_mean in range(start, stop, step):
                 self._run_yue(arr_rate_mean=arr_rate_mean, start=start)
 
-    def _run_arash(self, erlang: float, first_erlang: float):
+    def _run_arash(self, erlang: float, first_erlang: bool):
         engine_props = copy.deepcopy(self.properties)
         engine_props['arrival_rate'] = (engine_props['cores_per_link'] * erlang) / engine_props['holding_time']
         engine_props['erlang'] = erlang
