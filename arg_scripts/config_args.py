@@ -137,7 +137,6 @@ COMMAND_LINE_PARAMS = [
     ['xt_noise', bool, ''],
     ['requested_xt', dict, ''],
     ['k_paths', int, ''],
-    ['sim_type', str, ''],
     ['network', str, ''],
     ['holding_time', float, ''],
     ['erlangs', dict, ''],
