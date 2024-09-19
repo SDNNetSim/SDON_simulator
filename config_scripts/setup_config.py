@@ -3,7 +3,7 @@ import configparser
 import re
 
 from helper_scripts.os_helpers import create_dir
-from arg_scripts.config_args import YUE_REQUIRED_OPTIONS, ARASH_REQUIRED_OPTIONS, OTHER_OPTIONS
+from arg_scripts.config_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS
 
 
 def _copy_dict_vals(dest_key: str, dictionary: dict):
@@ -89,10 +89,7 @@ def read_config(args_obj: dict, config_path: str = None):
             raise ValueError("Missing 'general_settings' section in the configuration file. "
                              "Please ensure you have a file called config.ini in the run_ini directory.")
 
-        if config['general_settings']['sim_type'] == 'arash':
-            required_dict = ARASH_REQUIRED_OPTIONS
-        else:
-            required_dict = YUE_REQUIRED_OPTIONS
+        required_dict = SIM_REQUIRED_OPTIONS
         other_dict = OTHER_OPTIONS
 
         for category, options_dict in required_dict.items():
