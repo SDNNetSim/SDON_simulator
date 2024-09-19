@@ -117,10 +117,7 @@ class NetworkSimulator:
         # To keep track of each thread run and save results
         self.properties['thread_num'] = kwargs['thread_num']
 
-        if self.properties['sim_type'] == 'yue':
-            self.run_yue()
-        else:
-            self.run_arash()
+        self.run_arash()
 
 
 def run(sims_dict: dict):
