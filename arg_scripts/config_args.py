@@ -12,55 +12,23 @@ def str_to_bool(string: str):
     return string.lower() in ['true', 'yes', '1']
 
 
-YUE_REQUIRED_OPTIONS = {
+SIM_REQUIRED_OPTIONS = {
     'general_settings': {
-        'sim_type': str,
         'holding_time': float,
         'arrival_rate': ast.literal_eval,
-        'thread_erlangs': str_to_bool,
-        'guard_slots': int,
-        'num_requests': int,
-        'request_distribution': ast.literal_eval,
-        'max_iters': int,
-        'max_segments': int,
-        'dynamic_lps': str_to_bool,
-        'allocation_method': str,
-        'route_method': str,
-        'save_snapshots': str_to_bool,
-        'snapshot_step': int,
-        'print_step': int,
-    },
-    'topology_settings': {
-        'network': str,
-        'bw_per_slot': float,
-        'cores_per_link': int,
-        'const_link_weight': str_to_bool,
-    },
-    'spectrum_settings': {
-        'c_band': int,
-    },
-    'file_settings': {
-        'file_type': str,
-    },
-}
-
-ARASH_REQUIRED_OPTIONS = {
-    'general_settings': {
-        'sim_type': str,
-        'holding_time': float,
         'erlangs': ast.literal_eval,
         'thread_erlangs': str_to_bool,
-        'guard_slots': int,
         'num_requests': int,
         'request_distribution': ast.literal_eval,
+        'guard_slots': int,
         'max_iters': int,
         'max_segments': int,
         'dynamic_lps': str_to_bool,
-        'route_method': str,
         'allocation_method': str,
+        'route_method': str,
+        'print_step': int,
         'save_snapshots': str_to_bool,
         'snapshot_step': int,
-        'print_step': int,
     },
     'topology_settings': {
         'network': str,
@@ -83,8 +51,8 @@ ARASH_REQUIRED_OPTIONS = {
         'input_power': float,
     },
     'file_settings': {
-        'file_type': str,
-    },
+        'file_type': str
+    }
 }
 
 OTHER_OPTIONS = {
