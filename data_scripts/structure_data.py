@@ -15,7 +15,7 @@ def assign_link_lengths(network_fp: str, node_pairs_dict: dict, constant_weight:
     with open(network_fp, 'r', encoding='utf-8') as file_obj:
         for line in file_obj:
             src, dest, link_len_str = line.strip().split('\t')
-            link_len = int(link_len_str) if not constant_weight else 1
+            link_len = float(link_len_str) if not constant_weight else 1
 
             if node_pairs_dict != {}:
                 src_dest_tuple = (node_pairs_dict[src], node_pairs_dict[dest])
@@ -49,6 +49,8 @@ def create_network(net_name: str, base_fp: str = None, const_weight: bool = Fals
         network_fp = os.path.join(base_fp, 'nsf_network.txt')
     elif net_name == 'Pan-European':
         network_fp = os.path.join(base_fp, 'europe_network.txt')
+    elif net_name == 'USbackbode60':
+        network_fp = os.path.join(base_fp, 'USB6014.txt')
     else:
         raise NotImplementedError(f"Unknown network name. Expected USNet, NSFNet, or Pan-European. Got: {net_name}")
 
