@@ -316,7 +316,7 @@ class SnrMeasurements:
         """
         
         SNR_val = 0
-        resp = False
+        resp = True
         return resp, SNR_val
         raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
 
