@@ -13,8 +13,10 @@ def get_requests(seed: int, engine_props: dict):
     requests_dict = {}
     current_time = 0
     request_id = 1
-
-    nodes_list = list(engine_props['topology_info']['nodes'].keys())
+    if engine_props['is_only_core_node']:
+        nodes_list = list(engine_props['topology_info']['nodes'].keys())
+    else:
+        nodes_list = engine_props['core_nodes']
     set_seed(seed=seed)
 
     bw_counts_dict = {bandwidth: int(engine_props['request_distribution'][bandwidth] * engine_props['num_requests'])
