@@ -69,6 +69,7 @@ ARASH_REQUIRED_OPTIONS = {
         'bw_per_slot': float,
         'cores_per_link': int,
         'const_link_weight': str_to_bool,
+        'is_only_core_node': str_to_bool,
     },
     'spectrum_settings': {
         'c_band': int,
@@ -225,6 +226,7 @@ COMMAND_LINE_PARAMS = [
     ['config_path', str, ''],
     ['fixed_grid', bool, ''],
     ['pre_calc_mod_selection', bool, ''],
+    ['is_only_core_node', bool, ''],
 
     # StableBaselines3 arguments
     ['algo', str, ''],
