@@ -13,13 +13,14 @@ class SpectrumAssignment:
     Attempt to find the available spectrum for a given request.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object):
+    def __init__(self, engine_props: dict, sdn_props: object, route_props: object):
         self.spectrum_props = SpectrumProps()
         self.engine_props = engine_props
         self.sdn_props = sdn_props
+        self.route_props = route_props
 
         self.snr_obj = SnrMeasurements(engine_props=self.engine_props, sdn_props=self.sdn_props,
-                                       spectrum_props=self.spectrum_props)
+                                       spectrum_props=self.spectrum_props, route_props=self.route_props)
         self.spec_help_obj = SpectrumHelpers(engine_props=self.engine_props, sdn_props=self.sdn_props,
                                              spectrum_props=self.spectrum_props)
 
@@ -161,7 +162,7 @@ class SpectrumAssignment:
         self.spectrum_props.rev_cores_matrix = self.sdn_props.net_spec_dict[rev_link_tuple]['cores_matrix']
         self.spectrum_props.is_free = False
 
-    def get_spectrum(self, mod_format_list: list, slice_bandwidth: str = None):
+    def get_spectrum(self, mod_format_list: list, slice_bandwidth: str = None, path_index: int = None):
         """
         Controls the class, attempts to find an available spectrum.
 
@@ -187,7 +188,7 @@ class SpectrumAssignment:
             if self.spectrum_props.is_free:
                 self.spectrum_props.modulation = modulation
                 if self.engine_props['snr_type'] != 'None' and self.engine_props['snr_type'] is not None:
-                    snr_check, xt_cost = self.snr_obj.handle_snr()
+                    snr_check, xt_cost = self.snr_obj.handle_snr(path_index)
                     self.spectrum_props.xt_cost = xt_cost
                     if not snr_check:
                         self.spectrum_props.is_free = False
