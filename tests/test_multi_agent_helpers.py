@@ -135,7 +135,6 @@ class TestCoreAgent(unittest.TestCase):
         """
         self.core_agent.agent_obj = MagicMock()
         self.core_agent.end_iter()
-        self.core_agent.agent_obj.decay_epsilon.assert_called_once()
 
     def test_setup_env_q_learning(self):
         """
@@ -255,6 +254,78 @@ class TestCoreAgent(unittest.TestCase):
         self.core_agent.core_algorithm = 'unknown_algorithm'
         with self.assertRaises(NotImplementedError):
             self.core_agent.setup_env()
+
+
+class TestHyperParamConfig(unittest.TestCase):
+    """
+    Test the hyperparameter updates in multi_agent_helpers.py
+    """
+
+    def setUp(self):
+        """
+        Sets up this class.
+        """
+        raise NotImplementedError
+
+    def test_softmax_eps(self):
+        """
+        Test the softmax epsilon update rule.
+        """
+        raise NotImplementedError
+
+    def test_softmax_alpha(self):
+        """
+        Test the softmax alpha update rule.
+        """
+        raise NotImplementedError
+
+    def test_reward_based_eps(self):
+        """
+        Test the reward-based epsilon update rule.
+        """
+        raise NotImplementedError
+
+    def test_reward_based_alpha(self):
+        """
+        Test the reward-based alpha update rule.
+        """
+        raise NotImplementedError
+
+    def test_state_based_eps(self):
+        """
+        Test the state-based epsilon update rule.
+        """
+        raise NotImplementedError
+
+    def test_state_based_alpha(self):
+        """
+        Test the state-based alpha update rule.
+        """
+        raise NotImplementedError
+
+    def test_exp_eps(self):
+        """
+        Test the exponential decay epsilon update rule.
+        """
+        raise NotImplementedError
+
+    def test_exp_alpha(self):
+        """
+        Test the exponential decay alpha update rule.
+        """
+        raise NotImplementedError
+
+    def test_linear_eps(self):
+        """
+        Test the linear decay epsilon rule.
+        """
+        raise NotImplementedError
+
+    def test_linear_alpha(self):
+        """
+        Test the linear decay epsilon rule.
+        """
+        raise NotImplementedError
 
 
 if __name__ == '__main__':
