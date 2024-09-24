@@ -20,7 +20,7 @@ class SDNController:
 
         self.ai_obj = None
         self.route_obj = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
-        self.spectrum_obj = SpectrumAssignment(engine_props=self.engine_props, sdn_props=self.sdn_props)
+        self.spectrum_obj = SpectrumAssignment(engine_props=self.engine_props, sdn_props=self.sdn_props, route_props=self.route_obj.route_props)
 
     def release(self):
         """
@@ -205,7 +205,7 @@ class SDNController:
                         self.spectrum_obj.spectrum_props.forced_core = force_core
                         self.spectrum_obj.spectrum_props.path_list = path_list
                         self.spectrum_obj.spectrum_props.forced_band = forced_band
-                        self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
+                        self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, path_index = path_index)
                         # Request was blocked for this path
                         if self.spectrum_obj.spectrum_props.is_free is not True:
                             self.sdn_props.block_reason = 'congestion'
