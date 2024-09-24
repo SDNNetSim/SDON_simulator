@@ -381,20 +381,23 @@ class HyperparamConfig:
     Controls all hyperparameter starts, ends, and episodic and or time step modifications.
     """
 
-    def __init__(self):
-        self.total_steps = None
+    def __init__(self, engine_props: dict):
+        self.total_steps = engine_props['num_requests']
+        # TODO: Must be updated somewhere
         self.time_step = None
-        self.update_strategy = None
+        self.alpha_update = engine_props['alpha_update']
+        self.epsilon_update = engine_props['epsilon_update']
 
-        self.alpha_start = None
-        self.alpha_end = None
+        self.alpha_start = engine_props['alpha_start']
+        self.alpha_end = engine_props['alpha_end']
         self.curr_alpha = None
 
-        self.epsilon_start = None
-        self.epsilon_end = None
+        self.epsilon_start = engine_props['epsilon_start']
+        self.epsilon_end = engine_props['epsilon_end']
         self.curr_epsilon = None
 
-        self.temperature = None
+        self.temperature = engine_props['temperature']
+        # TODO: Update data structures
         self.state_visit_dict = None
         self.reward_dict = None
         self.q_table_dict = None
@@ -493,13 +496,5 @@ class HyperparamConfig:
     def update_hyperparams(self):
         """
         Controls the class.
-        """
-        raise NotImplementedError
-
-    def init_hyperparams(self, engine_props: dict):
-        """
-        Initializes this class.
-
-        :param engine_props: The properties of the simulation run.
         """
         raise NotImplementedError

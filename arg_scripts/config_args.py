@@ -116,29 +116,38 @@ OTHER_OPTIONS = {
         'l_band': int,
     },
     'rl_settings': {
-        'learn_rate': float,
-        'discount_factor': float,
-        'epsilon_start': float,
-        'epsilon_end': float,
-        'is_training': str_to_bool,
-        'path_algorithm': str,
-        'path_model': str,
-        'core_algorithm': str,
-        'core_model': str,
-        'spectrum_algorithm': str,
-        'spectrum_model': str,
+        'device': str,
         'optimize': str_to_bool,
         'optimize_hyperparameters': str_to_bool,
+        'is_training': str_to_bool,
+
+        'path_algorithm': str,
+        'path_model': str,
+
+        'core_algorithm': str,
+        'core_model': str,
+
+        'spectrum_algorithm': str,
+        'spectrum_model': str,
+
         'super_channel_space': int,
-        'device': str,
-        'policy': str,
+
+        'alpha_update': str,
+        'alpha_start': float,
+        'alpha_end': float,
+
+        'discount_factor': float,
+
+        'epsilon_update': str,
+        'epsilon_start': float,
+        'epsilon_end': float,
+
         'reward': float,
         'penalty': float,
+        'dynamic_reward': str_to_bool,
+
         'path_levels': int,
         'core_beta': float,
-        'gamma': float,
-        'decay_factor': float,
-        'dynamic_reward': str_to_bool,
     },
     'ml_settings': {
         'output_train_data': str_to_bool,
