@@ -375,11 +375,14 @@ class SpectrumAgent:
         return drl_reward
 
 
+# TODO: Class needs to be used and updated properly
 class HyperparamConfig:
     """
     Controls all hyperparameter starts, ends, and episodic and or time step modifications.
     """
+
     def __init__(self):
+        self.total_steps = None
         self.time_step = None
         self.update_strategy = None
 
@@ -395,66 +398,97 @@ class HyperparamConfig:
         self.state_visit_dict = None
         self.reward_dict = None
         self.q_table_dict = None
+        self.decay_rate = None
+
+    def _softmax(self, q_vals_list: list):
+        """
+        Compute the softmax probabilities for a given set of Q-values
+        """
+        exp_values = np.exp(np.array(q_vals_list) / self.temperature)
+        probabilities = exp_values / np.sum(exp_values)
+        return probabilities
 
     def _softmax_eps(self):
         """
         Softmax epsilon update rule.
         """
-        raise NotImplementedError
+        # TODO: Update data structure
+        q_vals_list = list(self.q_table_dict.values())
+        softmax_probs = self._softmax(q_vals_list=q_vals_list)
+        self.curr_epsilon = self.epsilon_start * np.sum(softmax_probs)
 
     def _softmax_alpha(self):
         """
         Softmax alpha update rule.
         """
-        raise NotImplementedError
+        # TODO Update data structure
+        q_vals_list = list(self.q_table_dict.values())
+        softmax_probs = self._softmax(q_vals_list=q_vals_list)
+        self.curr_alpha = self.alpha_start * np.sum(softmax_probs)
 
     def _reward_based_eps(self):
         """
         Reward-based epsilon update.
         """
-        raise NotImplementedError
+        # TODO: Update data structure
+        curr_reward = self.reward_dict["curr_reward"]
+        last_reward = self.reward_dict["last_reward"]
+        reward_diff = abs(curr_reward - last_reward)
+        self.curr_epsilon = self.epsilon_start * (1 / (1 + reward_diff))
 
     def _reward_based_alpha(self):
         """
         Reward-based alpha update.
         """
-        raise NotImplementedError
+        # TODO: Update data structure
+        curr_reward = self.reward_dict["curr_reward"]
+        last_reward = self.reward_dict["last_reward"]
+        reward_diff = abs(curr_reward - last_reward)
+        self.curr_alpha = self.alpha_start * (1 / (1 + reward_diff))
 
     def _state_based_eps(self):
         """
         State visitation epsilon update.
         """
-        raise NotImplementedError
+        # TODO: Update data structure
+        total_visits = sum(self.state_visit_dict.values())
+        self.curr_epsilon = self.epsilon_start / (1 + total_visits)
 
     def _state_based_alpha(self):
         """
         State visitation alpha update.
         """
-        raise NotImplementedError
+        # TODO: Update data structure
+        total_visits = sum(self.state_visit_dict.values())
+        self.curr_alpha = 1 / (1 + total_visits)
 
     def _exp_eps(self):
         """
         Exponential distribution epsilon update.
         """
-        raise NotImplementedError
+        self.curr_epsilon = self.epsilon_start * (self.decay_rate ** self.time_step)
 
     def _exp_alpha(self):
         """
         Exponential distribution alpha update.
         """
-        raise NotImplementedError
+        self.curr_alpha = self.alpha_start * (self.decay_rate ** self.time_step)
 
     def _linear_eps(self):
         """
         Linear decay epsilon update.
         """
-        raise NotImplementedError
+        self.curr_epsilon = self.epsilon_end + (
+                (self.epsilon_start - self.epsilon_end) * (self.total_steps - self.time_step) / self.total_steps
+        )
 
     def _linear_alpha(self):
         """
         Linear decay alpha update.
         """
-        raise NotImplementedError
+        self.curr_alpha = self.alpha_end + (
+                (self.alpha_start - self.alpha_end) * (self.total_steps - self.time_step) / self.total_steps
+        )
 
     def update_hyperparams(self):
         """
