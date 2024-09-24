@@ -376,7 +376,7 @@ class SpectrumAgent:
 
 
 # TODO: Class needs to be used and updated properly in other scripts
-class HyperparamConfig:
+class HyperparamConfig:  # pylint: disable=too-few-public-methods
     """
     Controls all hyperparameter starts, ends, and episodic and or time step modifications.
     """
@@ -402,6 +402,22 @@ class HyperparamConfig:
         self.reward_dict = None
         self.q_table_dict = None
         self.decay_rate = None
+
+        self.alpha_strategies = {
+            'softmax': self._softmax_alpha,
+            'reward_based': self._reward_based_alpha,
+            'state_based': self._state_based_alpha,
+            'exp_decay': self._exp_alpha,
+            'linear_decay': self._linear_alpha,
+        }
+
+        self.epsilon_strategies = {
+            'softmax': self._softmax_eps,
+            'reward_based': self._reward_based_eps,
+            'state_based': self._state_based_eps,
+            'exp_decay': self._exp_eps,
+            'linear_decay': self._linear_eps,
+        }
 
     def _softmax(self, q_vals_list: list):
         """
@@ -497,4 +513,12 @@ class HyperparamConfig:
         """
         Controls the class.
         """
-        raise NotImplementedError
+        if self.alpha_update in self.alpha_strategies:
+            self.alpha_strategies[self.alpha_update]()
+        else:
+            raise NotImplementedError(f'{self.alpha_update} not in any known strategies: {self.alpha_strategies}')
+
+        if self.epsilon_update in self.epsilon_strategies:
+            self.epsilon_strategies[self.epsilon_update]()
+        else:
+            raise NotImplementedError(f'{self.epsilon_update} not in any known strategies: {self.epsilon_strategies}')
