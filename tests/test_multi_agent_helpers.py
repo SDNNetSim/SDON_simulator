@@ -271,121 +271,118 @@ class TestHyperParamConfig(unittest.TestCase):
         """
         Sets up this class.
         """
-        self.config = HyperparamConfig()
-        self.config.alpha_start = 0.5
-        self.config.alpha_end = 0.1
-        self.config.epsilon_start = 1.0
-        self.config.epsilon_end = 0.01
-        self.config.temperature = 1.0
-        self.config.time_step = 0
-        self.config.state_visit_dict = {"state1": 10, "state2": 5}
-        self.config.reward_dict = {"R_t": 15.0, "R_t-1": 10.0}
+        self.config_obj = HyperparamConfig()
+        self.config_obj.alpha_start = 0.5
+        self.config_obj.alpha_end = 0.1
+        self.config_obj.epsilon_start = 1.0
+        self.config_obj.epsilon_end = 0.01
+        self.config_obj.temperature = 1.0
+        self.config_obj.time_step = 0
+        self.config_obj.state_visit_dict = {"state1": 10, "state2": 5}
+        self.config_obj.reward_dict = {"curr_reward": 15.0, "last_reward": 10.0}
+        self.config_obj.q_table_dict = {'state1': 9, 'state2': 3}
 
     def test_softmax_eps(self):
         """
         Test the softmax epsilon update rule.
         """
-        self.config._softmax_eps()
-        q_values = list(self.config.q_table_dict.values())
-        softmax_probs = self.config._softmax(q_values, self.config.temperature)
-        expected_epsilon = self.config.epsilon_start * np.sum(softmax_probs)
-        self.assertAlmostEqual(self.config.curr_epsilon, expected_epsilon, places=5)
+        self.config_obj._softmax_eps()
+        softmax_probs = self.config_obj._softmax(self.config_obj.temperature)
+        expected_epsilon = self.config_obj.epsilon_start * np.sum(softmax_probs)
+        self.assertAlmostEqual(self.config_obj.curr_epsilon, expected_epsilon, places=5)
 
     def test_softmax_alpha(self):
         """
         Test the softmax alpha update rule.
         """
-        self.config._softmax_alpha()
-        q_values = list(self.config.q_table_dict.values())
-        softmax_probs = self.config._softmax(q_values, self.config.temperature)
-        expected_alpha = self.config.alpha_start * np.sum(softmax_probs)
-        self.assertAlmostEqual(self.config.curr_alpha, expected_alpha, places=5)
+        self.config_obj._softmax_alpha()
+        softmax_probs = self.config_obj._softmax(self.config_obj.temperature)
+        expected_alpha = self.config_obj.alpha_start * np.sum(softmax_probs)
+        self.assertAlmostEqual(self.config_obj.curr_alpha, expected_alpha, places=5)
 
     def test_reward_based_eps(self):
         """
         Test the reward-based epsilon update rule.
         """
-        curr_reward = self.config.reward_dict["R_t"]
-        last_reward = self.config.reward_dict["R_t-1"]
+        curr_reward = self.config_obj.reward_dict['curr_reward']
+        last_reward = self.config_obj.reward_dict['last_reward']
         reward_diff = abs(curr_reward - last_reward)
-        expected_epsilon = self.config.epsilon_start * (1 / (1 + reward_diff))
-        self.config._reward_based_eps()
-        self.assertAlmostEqual(self.config.curr_epsilon, expected_epsilon, places=5)
+        expected_epsilon = self.config_obj.epsilon_start * (1 / (1 + reward_diff))
+        self.config_obj._reward_based_eps()
+        self.assertAlmostEqual(self.config_obj.curr_epsilon, expected_epsilon, places=5)
 
     def test_reward_based_alpha(self):
         """
         Test the reward-based alpha update rule.
         """
-        curr_reward = self.config.reward_dict["R_t"]
-        last_reward = self.config.reward_dict["R_t-1"]
+        curr_reward = self.config_obj.reward_dict['curr_reward']
+        last_reward = self.config_obj.reward_dict['last_reward']
         reward_diff = abs(curr_reward - last_reward)
-        expected_alpha = self.config.alpha_start * (1 / (1 + reward_diff))
-        self.config._reward_based_alpha()
-        self.assertAlmostEqual(self.config.curr_alpha, expected_alpha, places=5)
+        expected_alpha = self.config_obj.alpha_start * (1 / (1 + reward_diff))
+        self.config_obj._reward_based_alpha()
+        self.assertAlmostEqual(self.config_obj.curr_alpha, expected_alpha, places=5)
 
     def test_state_based_eps(self):
         """
         Test the state-based epsilon update rule.
         """
-        state = "state2"
-        num_visits = self.config.state_visit_dict[state]
-        expected_epsilon = self.config.epsilon_start / (1 + num_visits)
-        self.config._state_based_eps()
-        self.assertAlmostEqual(self.config.curr_epsilon, expected_epsilon, places=5)
+        num_visits = 15
+        expected_epsilon = self.config_obj.epsilon_start / (1 + num_visits)
+        self.config_obj._state_based_eps()
+        self.assertAlmostEqual(self.config_obj.curr_epsilon, expected_epsilon, places=5)
 
     def test_state_based_alpha(self):
         """
         Test the state-based alpha update rule.
         """
-        state = "state1"
-        num_visits = self.config.state_visit_dict[state]
+        num_visits = 15
         expected_alpha = 1 / (1 + num_visits)
-        self.config._state_based_alpha()
-        self.assertAlmostEqual(self.config.curr_alpha, expected_alpha, places=5)
+        self.config_obj._state_based_alpha()
+        self.assertAlmostEqual(self.config_obj.curr_alpha, expected_alpha, places=5)
 
     def test_exp_eps(self):
         """
         Test the exponential decay epsilon update rule.
         """
-        self.config.time_step = 10
-        decay_rate = 0.99
-        self.config._exp_eps()
-        expected_epsilon = self.config.epsilon_start * (decay_rate ** self.config.time_step)
-        self.assertAlmostEqual(self.config.curr_epsilon, expected_epsilon, places=5)
+        self.config_obj.time_step = 10
+        self.config_obj.decay_rate = 0.99
+        self.config_obj._exp_eps()
+        expected_epsilon = self.config_obj.epsilon_start * (self.config_obj.decay_rate ** self.config_obj.time_step)
+        self.assertAlmostEqual(self.config_obj.curr_epsilon, expected_epsilon, places=5)
 
     def test_exp_alpha(self):
         """
         Test the exponential decay alpha update rule.
         """
-        self.config.time_step = 50
-        decay_rate = 0.1
-        self.config._exp_alpha()
-        expected_alpha = self.config.alpha_start * (decay_rate ** self.config.time_step)
-        self.assertAlmostEqual(self.config.curr_alpha, expected_alpha, places=5)
+        self.config_obj.time_step = 50
+        self.config_obj.decay_rate = 0.1
+        self.config_obj._exp_alpha()
+        expected_alpha = self.config_obj.alpha_start * (self.config_obj.decay_rate ** self.config_obj.time_step)
+        self.assertAlmostEqual(self.config_obj.curr_alpha, expected_alpha, places=5)
 
     def test_linear_eps(self):
         """
         Test the linear decay epsilon rule.
         """
-        self.config.time_step = 50
-        total_steps = 100
-        self.config._linear_eps()
-        expected_epsilon = (self.config.epsilon_end +
-                            (self.config.epsilon_start - self.config.epsilon_end) *
-                            (total_steps - self.config.time_step) / total_steps)
-        self.assertAlmostEqual(self.config.curr_epsilon, expected_epsilon, places=5)
+        self.config_obj.time_step = 50
+        self.config_obj.total_steps = 2
+        self.config_obj._linear_eps()
+        expected_epsilon = (self.config_obj.epsilon_end +
+                            (self.config_obj.epsilon_start - self.config_obj.epsilon_end) *
+                            (self.config_obj.total_steps - self.config_obj.time_step) / self.config_obj.total_steps)
+        self.assertAlmostEqual(self.config_obj.curr_epsilon, expected_epsilon, places=5)
 
     def test_linear_alpha(self):
         """
         Test the linear decay epsilon rule.
         """
-        self.config.time_step = 1
-        total_steps = 100
-        self.config._linear_alpha()
-        expected_alpha = (self.config.alpha_end +
-                          (self.config.alpha_start - self.config.alpha_end) *
-                          (total_steps - self.config.time_step) / total_steps)
-        self.assertAlmostEqual(self.config.curr_alpha, expected_alpha, places=5)
+        self.config_obj.time_step = 1
+        self.config_obj.total_steps = 100
+        self.config_obj._linear_alpha()
+        expected_alpha = (self.config_obj.alpha_end +
+                          (self.config_obj.alpha_start - self.config_obj.alpha_end) *
+                          (self.config_obj.total_steps - self.config_obj.time_step) / self.config_obj.total_steps)
+        self.assertAlmostEqual(self.config_obj.curr_alpha, expected_alpha, places=5)
 
 
 if __name__ == '__main__':

@@ -375,7 +375,7 @@ class SpectrumAgent:
         return drl_reward
 
 
-# TODO: Class needs to be used and updated properly
+# TODO: Class needs to be used and updated properly in other scripts
 class HyperparamConfig:
     """
     Controls all hyperparameter starts, ends, and episodic and or time step modifications.
@@ -496,8 +496,10 @@ class HyperparamConfig:
         """
         raise NotImplementedError
 
-    def init_hyperparams(self):
+    def init_hyperparams(self, engine_props: dict):
         """
         Initializes this class.
+
+        :param engine_props: The properties of the simulation run.
         """
         raise NotImplementedError
