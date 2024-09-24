@@ -258,6 +258,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props.destination = int(curr_req['destination'])
         self.rl_props.mock_sdn_dict = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
 
+        _ = self._handle_test_train_obs(curr_req=curr_req)
         slots_needed, source_obs, dest_obs, super_channels = self._get_spectrum_obs(curr_req=curr_req)
         obs_dict = {
             'slots_needed': slots_needed,
@@ -322,7 +323,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.optimize = self.sim_dict['optimize']
         self.rl_props.k_paths = self.sim_dict['k_paths']
         self.rl_props.cores_per_link = self.sim_dict['cores_per_link']
-        self.rl_props.spectral_slots = self.sim_dict['spectral_slots']
+        # TODO: Only support for 'c' band...Maybe add multi-band
+        self.rl_props.spectral_slots = self.sim_dict['c_band']
 
         self._create_input()
 

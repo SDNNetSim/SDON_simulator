@@ -109,6 +109,7 @@ class Engine:
         self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
 
         # TODO: Improve this
+        self.engine_props['band_list'] = list()
         for band in ['c', 'l', 's', 'o', 'e']:
             try:
                 if self.engine_props[f'{band}_band']:
