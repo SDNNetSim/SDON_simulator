@@ -373,3 +373,97 @@ class SpectrumAgent:
             drl_reward = 1.0
 
         return drl_reward
+
+
+class HyperparamConfig:
+    """
+    Controls all hyperparameter starts, ends, and episodic and or time step modifications.
+    """
+    def __init__(self):
+        self.time_step = None
+        self.update_strategy = None
+
+        self.alpha_start = None
+        self.alpha_end = None
+        self.curr_alpha = None
+
+        self.epsilon_start = None
+        self.epsilon_end = None
+        self.curr_epsilon = None
+
+        self.temperature = None
+        self.state_visit_dict = None
+        self.reward_dict = None
+        self.q_table_dict = None
+
+    def _softmax_eps(self):
+        """
+        Softmax epsilon update rule.
+        """
+        raise NotImplementedError
+
+    def _softmax_alpha(self):
+        """
+        Softmax alpha update rule.
+        """
+        raise NotImplementedError
+
+    def _reward_based_eps(self):
+        """
+        Reward-based epsilon update.
+        """
+        raise NotImplementedError
+
+    def _reward_based_alpha(self):
+        """
+        Reward-based alpha update.
+        """
+        raise NotImplementedError
+
+    def _state_based_eps(self):
+        """
+        State visitation epsilon update.
+        """
+        raise NotImplementedError
+
+    def _state_based_alpha(self):
+        """
+        State visitation alpha update.
+        """
+        raise NotImplementedError
+
+    def _exp_eps(self):
+        """
+        Exponential distribution epsilon update.
+        """
+        raise NotImplementedError
+
+    def _exp_alpha(self):
+        """
+        Exponential distribution alpha update.
+        """
+        raise NotImplementedError
+
+    def _linear_eps(self):
+        """
+        Linear decay epsilon update.
+        """
+        raise NotImplementedError
+
+    def _linear_alpha(self):
+        """
+        Linear decay alpha update.
+        """
+        raise NotImplementedError
+
+    def update_hyperparams(self):
+        """
+        Controls the class.
+        """
+        raise NotImplementedError
+
+    def init_hyperparams(self):
+        """
+        Initializes this class.
+        """
+        raise NotImplementedError
