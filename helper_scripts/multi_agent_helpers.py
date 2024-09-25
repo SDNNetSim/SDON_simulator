@@ -5,7 +5,7 @@ from gymnasium import spaces
 
 from .ql_helpers import QLearningHelpers
 from .bandit_helpers import EpsilonGreedyBandit
-from .bandit_helpers import UCBBandit
+from .bandit_helpers import UCBBandit, get_q_table
 
 
 class PathAgent:
@@ -381,10 +381,21 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
     Controls all hyperparameter starts, ends, and episodic and or time step modifications.
     """
 
-    def __init__(self, engine_props: dict):
+    def __init__(self, engine_props: dict, rl_props: object, is_path: bool):
+        self.engine_props = engine_props
         self.total_steps = engine_props['num_requests']
+        self.num_nodes = rl_props.num_nodes
+        self.is_path = is_path
+        if is_path:
+            self.n_arms = engine_props['k_paths']
+        else:
+            self.n_arms = engine_props['cores_per_link']
         # TODO: Must be updated somewhere
         self.time_step = None
+        # TODO: Must be updates somewhere
+        self.curr_reward = None
+        # TODO: Must be updates somewhere
+        self.state_action_pair = None
         self.alpha_update = engine_props['alpha_update']
         self.epsilon_update = engine_props['epsilon_update']
 
@@ -397,11 +408,10 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         self.curr_epsilon = None
 
         self.temperature = engine_props['temperature']
-        # TODO: Update data structures
-        self.state_visit_dict = None
-        self.reward_dict = None
-        self.q_table_dict = None
-        self.decay_rate = None
+        self.counts = None
+        self.values = None
+        self.reward_list = None
+        self.decay_rate = engine_props['decay_rate']
 
         self.alpha_strategies = {
             'softmax': self._softmax_alpha,
@@ -410,7 +420,6 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
             'exp_decay': self._exp_alpha,
             'linear_decay': self._linear_alpha,
         }
-
         self.epsilon_strategies = {
             'softmax': self._softmax_eps,
             'reward_based': self._reward_based_eps,
@@ -418,6 +427,8 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
             'exp_decay': self._exp_eps,
             'linear_decay': self._linear_eps,
         }
+
+        self.reset()
 
     def _softmax(self, q_vals_list: list):
         """
@@ -427,31 +438,36 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         probabilities = exp_values / np.sum(exp_values)
         return probabilities
 
+    # TODO: Does not work for bandits, needs a next state!
     def _softmax_eps(self):
         """
         Softmax epsilon update rule.
         """
-        # TODO: Update data structure
-        q_vals_list = list(self.q_table_dict.values())
-        softmax_probs = self._softmax(q_vals_list=q_vals_list)
-        self.curr_epsilon = self.epsilon_start * np.sum(softmax_probs)
+        raise NotImplementedError
+        # q_vals_list = list(self.values[self.state_action_pair])
+        # softmax_probs = self._softmax(q_vals_list=q_vals_list)
+        # self.curr_epsilon = self.epsilon_start * np.sum(softmax_probs)
 
+    # TODO: Does not work for bandits, needs a next state!
     def _softmax_alpha(self):
         """
         Softmax alpha update rule.
         """
-        # TODO Update data structure
-        q_vals_list = list(self.q_table_dict.values())
-        softmax_probs = self._softmax(q_vals_list=q_vals_list)
-        self.curr_alpha = self.alpha_start * np.sum(softmax_probs)
+        raise NotImplementedError
+        # q_vals_list = list(self.values.values())
+        # softmax_probs = self._softmax(q_vals_list=q_vals_list)
+        # self.curr_alpha = self.alpha_start * np.sum(softmax_probs)
 
     def _reward_based_eps(self):
         """
         Reward-based epsilon update.
         """
-        # TODO: Update data structure
-        curr_reward = self.reward_dict["curr_reward"]
-        last_reward = self.reward_dict["last_reward"]
+        if len(self.reward_list != 2):
+            print('Did not update epsilon due to the length of the reward list.')
+            return
+
+        curr_reward = self.reward_list[0]
+        last_reward = self.reward_list[1]
         reward_diff = abs(curr_reward - last_reward)
         self.curr_epsilon = self.epsilon_start * (1 / (1 + reward_diff))
 
@@ -459,9 +475,12 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         Reward-based alpha update.
         """
-        # TODO: Update data structure
-        curr_reward = self.reward_dict["curr_reward"]
-        last_reward = self.reward_dict["last_reward"]
+        if len(self.reward_list != 2):
+            print('Did not update alpha due to the length of the reward list.')
+            return
+
+        curr_reward = self.reward_list[0]
+        last_reward = self.reward_list[1]
         reward_diff = abs(curr_reward - last_reward)
         self.curr_alpha = self.alpha_start * (1 / (1 + reward_diff))
 
@@ -469,16 +488,16 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         State visitation epsilon update.
         """
-        # TODO: Update data structure
-        total_visits = sum(self.state_visit_dict.values())
+        self.counts[self.state_action_pair] += 1
+        total_visits = self.counts[self.state_action_pair]
         self.curr_epsilon = self.epsilon_start / (1 + total_visits)
 
     def _state_based_alpha(self):
         """
         State visitation alpha update.
         """
-        # TODO: Update data structure
-        total_visits = sum(self.state_visit_dict.values())
+        self.counts[self.state_action_pair] += 1
+        total_visits = self.counts[self.state_action_pair]
         self.curr_alpha = 1 / (1 + total_visits)
 
     def _exp_eps(self):
@@ -509,10 +528,24 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
                 (self.alpha_start - self.alpha_end) * (self.total_steps - self.time_step) / self.total_steps
         )
 
+    def _update_data(self):
+        if len(self.reward_list) == 2:
+            # Moves old current reward to now last reward, current reward always first index
+            self.reward_list = [self.curr_reward, self.reward_list[0]]
+        elif len(self.reward_list) == 1:
+            last_reward = self.reward_list[0]
+            self.reward_list = [self.curr_reward, last_reward]
+        else:
+            self.reward_list.append(self.curr_reward)
+
+        raise NotImplementedError
+
     def update_hyperparams(self):
         """
         Controls the class.
         """
+        self._update_data()
+
         if self.alpha_update in self.alpha_strategies:
             self.alpha_strategies[self.alpha_update]()
         else:
@@ -522,3 +555,10 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
             self.epsilon_strategies[self.epsilon_update]()
         else:
             raise NotImplementedError(f'{self.epsilon_update} not in any known strategies: {self.epsilon_strategies}')
+
+    def reset(self):
+        """
+        Resets certain class variables.
+        """
+        self.reward_list = list()
+        self.counts, self.values = get_q_table(self=self)
