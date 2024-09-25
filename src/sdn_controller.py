@@ -55,7 +55,6 @@ class SDNController:
         end_slot = self.spectrum_obj.spectrum_props.end_slot
         core_num = self.spectrum_obj.spectrum_props.core_num
         band = self.spectrum_obj.spectrum_props.curr_band
-        self.sdn_props.curr_band = band
 
         if self.engine_props['guard_slots']:
             end_slot = end_slot - 1
@@ -91,6 +90,8 @@ class SDNController:
                 spectrum_key = 'xt_cost'
             elif spectrum_key == 'core':
                 spectrum_key = 'core_num'
+            elif spectrum_key == 'band':
+                spectrum_key = 'curr_band'
 
             self.sdn_props.update_params(key=stat_key, spectrum_key=spectrum_key, spectrum_obj=self.spectrum_obj)
 
