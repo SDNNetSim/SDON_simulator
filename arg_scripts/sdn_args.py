@@ -18,6 +18,7 @@ class SDNProps:
         self.bandwidth_list = []  # Multiple bandwidths used (typically for light-segment slicing)
         self.modulation_list = []  # List of modulation formats used by a single request
         self.core_list = []  # List of cores used (typically for light-segment slicing)
+        self.band_list = []  # List of bands used (typically for light-segment slicing)
         self.xt_list = []  # List of crosstalk calculations for a single request
         self.num_trans = None  # Number of transponders a single request has used
         self.arrive = None  # Arrival time for a single request
@@ -27,9 +28,9 @@ class SDNProps:
         self.single_core = False  # Whether to force single-core
         self.block_reason = None  # Reason for blocking a request
         self.mod_formats_dict = None  # List of valid modulation formats for this bandwidth
-        self.curr_band = None  # Current band of allocation
+        
 
-        self.stat_key_list = ['modulation_list', 'xt_list', 'core_list']  # Statistical keys used to save results
+        self.stat_key_list = ['modulation_list', 'xt_list', 'core_list', 'band_list']  # Statistical keys used to save results
 
     def update_params(self, key: str, spectrum_key: str, spectrum_obj: object, value: int = None):
         """
@@ -58,6 +59,7 @@ class SDNProps:
         self.modulation_list = list()
         self.xt_list = list()
         self.core_list = list()
+        self.band_list = list()
 
     # TODO: Update standards and guidelines, this should be a standardized function name.
     def get_data(self, key: str):
