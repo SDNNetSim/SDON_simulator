@@ -322,7 +322,15 @@ class SnrMeasurements:
         3: "8-QAM",
         2: "QPSK",
         1: "BPSK"
-    }
+        }
+        BW_mapping = {
+        "64-QAM": 600,
+        "32-QAM": 500,
+        "16-QAM": 400,
+        "8-QAM": 300,
+        "QPSK": 200,
+        "BPSK": 100
+        }
         if self.spectrum_props.core_num == 6:
             loaded_data = np.load('MF-USB6014-MCF7-C6.npy', allow_pickle=True)
         else:
@@ -340,7 +348,7 @@ class SnrMeasurements:
         else:
             NotImplementedError(f"Unexpected band: {self.spectrum_props.curr_band}")
         mod_format = loaded_data[self.route_props.connection_index[0]][slot_index][path_index]
-        if mod_format_mapping[mod_format] == self.spectrum_props.modulation:
+        if mod_format_mapping[mod_format] == self.spectrum_props.modulation and BW_mapping[self.spectrum_props.modulation] >= int(self.sdn_props.bandwidth):
             resp = True
         else:
             resp = False
