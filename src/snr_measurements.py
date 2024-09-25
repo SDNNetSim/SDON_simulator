@@ -354,7 +354,7 @@ class SnrMeasurements:
         :return: Whether snr is acceptable for allocation or not for a given request and its cost
         :rtype: tuple
         """
-        self.num_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot
+        self.num_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
         if self.engine_props['snr_type'] == "snr_calc_nli":
             snr_check, xt_cost = self.check_snr()
         elif self.engine_props['snr_type'] == "xt_calculation":
