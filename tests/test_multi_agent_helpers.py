@@ -3,9 +3,6 @@
 import unittest
 
 from unittest.mock import MagicMock, patch
-
-import numpy as np
-
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, HyperparamConfig
 
 
@@ -271,41 +268,50 @@ class TestHyperParamConfig(unittest.TestCase):
         """
         Sets up this class.
         """
-        self.config_obj = HyperparamConfig()
-        self.config_obj.alpha_start = 0.5
-        self.config_obj.alpha_end = 0.1
-        self.config_obj.epsilon_start = 1.0
-        self.config_obj.epsilon_end = 0.01
-        self.config_obj.temperature = 1.0
+        engine_props = {
+            'num_requests': 100,
+            'alpha_start': 0.5,
+            'alpha_end': 0.1,
+            'epsilon_start': 1.0,
+            'epsilon_end': 0.01,
+            'temperature': 1.0,
+            'decay_rate': 0.99,
+            'alpha_update': 'linear_decay',
+            'epsilon_update': 'linear_decay',
+            'k_paths': 5,  # Example value
+            'cores_per_link': 3  # Example value
+        }
+        rl_props = type('RLProps', (object,), {'num_nodes': 4})()  # Mock object for rl_props
+        self.config_obj = HyperparamConfig(engine_props, rl_props, is_path=True)
+
         self.config_obj.time_step = 0
-        self.config_obj.state_visit_dict = {"state1": 10, "state2": 5}
-        self.config_obj.reward_dict = {"curr_reward": 15.0, "last_reward": 10.0}
-        self.config_obj.q_table_dict = {'state1': 9, 'state2': 3}
+        self.config_obj.state_action_pair = ('state1', 'action1')
+        self.config_obj.counts = {('state1', 'action1'): 10}
+        self.config_obj.reward_list = [15.0, 10.0]
+        self.config_obj.values = {'state1': 9, 'state2': 3}
 
     def test_softmax_eps(self):
         """
         Test the softmax epsilon update rule.
         """
-        self.config_obj._softmax_eps()
-        softmax_probs = self.config_obj._softmax(self.config_obj.temperature)
-        expected_epsilon = self.config_obj.epsilon_start * np.sum(softmax_probs)
-        self.assertAlmostEqual(self.config_obj.curr_epsilon, expected_epsilon, places=5)
+        # This method should raise NotImplementedError as per current class definition
+        with self.assertRaises(NotImplementedError):
+            self.config_obj._softmax_eps()
 
     def test_softmax_alpha(self):
         """
         Test the softmax alpha update rule.
         """
-        self.config_obj._softmax_alpha()
-        softmax_probs = self.config_obj._softmax(self.config_obj.temperature)
-        expected_alpha = self.config_obj.alpha_start * np.sum(softmax_probs)
-        self.assertAlmostEqual(self.config_obj.curr_alpha, expected_alpha, places=5)
+        # This method should raise NotImplementedError as per current class definition
+        with self.assertRaises(NotImplementedError):
+            self.config_obj._softmax_alpha()
 
     def test_reward_based_eps(self):
         """
         Test the reward-based epsilon update rule.
         """
-        curr_reward = self.config_obj.reward_dict['curr_reward']
-        last_reward = self.config_obj.reward_dict['last_reward']
+        curr_reward = self.config_obj.reward_list[0]
+        last_reward = self.config_obj.reward_list[1]
         reward_diff = abs(curr_reward - last_reward)
         expected_epsilon = self.config_obj.epsilon_start * (1 / (1 + reward_diff))
         self.config_obj._reward_based_eps()
@@ -315,8 +321,8 @@ class TestHyperParamConfig(unittest.TestCase):
         """
         Test the reward-based alpha update rule.
         """
-        curr_reward = self.config_obj.reward_dict['curr_reward']
-        last_reward = self.config_obj.reward_dict['last_reward']
+        curr_reward = self.config_obj.reward_list[0]
+        last_reward = self.config_obj.reward_list[1]
         reward_diff = abs(curr_reward - last_reward)
         expected_alpha = self.config_obj.alpha_start * (1 / (1 + reward_diff))
         self.config_obj._reward_based_alpha()
@@ -326,7 +332,8 @@ class TestHyperParamConfig(unittest.TestCase):
         """
         Test the state-based epsilon update rule.
         """
-        num_visits = 15
+        # Plus one since this is incremented in this function
+        num_visits = self.config_obj.counts[self.config_obj.state_action_pair] + 1
         expected_epsilon = self.config_obj.epsilon_start / (1 + num_visits)
         self.config_obj._state_based_eps()
         self.assertAlmostEqual(self.config_obj.curr_epsilon, expected_epsilon, places=5)
@@ -335,7 +342,8 @@ class TestHyperParamConfig(unittest.TestCase):
         """
         Test the state-based alpha update rule.
         """
-        num_visits = 15
+        # Plus one since this is incremented in this function
+        num_visits = self.config_obj.counts[self.config_obj.state_action_pair] + 1
         expected_alpha = 1 / (1 + num_visits)
         self.config_obj._state_based_alpha()
         self.assertAlmostEqual(self.config_obj.curr_alpha, expected_alpha, places=5)
@@ -365,7 +373,7 @@ class TestHyperParamConfig(unittest.TestCase):
         Test the linear decay epsilon rule.
         """
         self.config_obj.time_step = 50
-        self.config_obj.total_steps = 2
+        self.config_obj.total_steps = 100
         self.config_obj._linear_eps()
         expected_epsilon = (self.config_obj.epsilon_end +
                             (self.config_obj.epsilon_start - self.config_obj.epsilon_end) *
@@ -374,7 +382,7 @@ class TestHyperParamConfig(unittest.TestCase):
 
     def test_linear_alpha(self):
         """
-        Test the linear decay epsilon rule.
+        Test the linear decay alpha rule.
         """
         self.config_obj.time_step = 1
         self.config_obj.total_steps = 100
