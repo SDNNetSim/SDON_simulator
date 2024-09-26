@@ -376,6 +376,7 @@ class SpectrumAgent:
 
 
 # TODO: Class needs to be used and updated properly in other scripts
+# TODO: Update class diagram for new variables and what not
 class HyperparamConfig:  # pylint: disable=too-few-public-methods
     """
     Controls all hyperparameter starts, ends, and episodic and or time step modifications.
@@ -462,7 +463,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         Reward-based epsilon update.
         """
-        if len(self.reward_list != 2):
+        if len(self.reward_list) != 2:
             print('Did not update epsilon due to the length of the reward list.')
             return
 
@@ -475,7 +476,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         Reward-based alpha update.
         """
-        if len(self.reward_list != 2):
+        if len(self.reward_list) != 2:
             print('Did not update alpha due to the length of the reward list.')
             return
 
