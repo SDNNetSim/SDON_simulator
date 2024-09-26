@@ -43,6 +43,7 @@ class SpectrumAssignment:
                     self.spectrum_props.is_free = True
                     self.spectrum_props.start_slot = start_index
                     self.spectrum_props.end_slot = end_index + self.engine_props['guard_slots']
+                    self.spectrum_props.end_slot = end_index
                     self.spectrum_props.core_num = channel_dict['core']
                     # TODO: This needs to be checked
                     self.spectrum_props.curr_band = channel_dict['band']
@@ -147,7 +148,9 @@ class SpectrumAssignment:
         if self.spectrum_props.forced_index is not None:
             self.handle_first_last(flag='forced_index')
         elif self.engine_props['allocation_method'] == 'best_fit':
+            raise Warning('Best fit does not have support for no guard slots.')
             self.find_best_fit()
+        # TODO: Double check last fit
         elif self.engine_props['allocation_method'] in ('first_fit', 'last_fit', 'priority_first', 'priority_last'):
             self.handle_first_last(flag=self.engine_props['allocation_method'])
         elif self.engine_props['allocation_method'] == 'xt_aware':
@@ -183,6 +186,10 @@ class SpectrumAssignment:
                     self.spectrum_props.slots_needed = 1
                 else:
                     self.spectrum_props.slots_needed = self.sdn_props.mod_formats_dict[modulation]['slots_needed']
+
+            if self.spectrum_props.slots_needed is None:
+                raise ValueError('Slots needed cannot be none.')
+
             self._get_spectrum()
 
             if self.spectrum_props.is_free:

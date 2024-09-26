@@ -20,7 +20,8 @@ class SDNController:
 
         self.ai_obj = None
         self.route_obj = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
-        self.spectrum_obj = SpectrumAssignment(engine_props=self.engine_props, sdn_props=self.sdn_props, route_props=self.route_obj.route_props)
+        self.spectrum_obj = SpectrumAssignment(engine_props=self.engine_props, sdn_props=self.sdn_props,
+                                               route_props=self.route_obj.route_props)
 
     def release(self):
         """
@@ -56,7 +57,7 @@ class SDNController:
         core_num = self.spectrum_obj.spectrum_props.core_num
         band = self.spectrum_obj.spectrum_props.curr_band
 
-        if self.engine_props['guard_slots']:
+        if self.engine_props['guard_slots'] != 0:
             end_slot = end_slot - 1
         else:
             end_slot += 1
@@ -68,6 +69,9 @@ class SDNController:
 
             tmp_set = set(link_dict['cores_matrix'][band][core_num][start_slot:end_slot])
             rev_tmp_set = set(rev_link_dict['cores_matrix'][band][core_num][start_slot:end_slot])
+
+            if tmp_set == {} or rev_tmp_set == {}:
+                raise ValueError('Nothing detected on the spectrum when allocating.')
 
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
