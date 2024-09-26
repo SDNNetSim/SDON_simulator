@@ -62,7 +62,8 @@ class QProps:
         # All important parameters to be saved in a QL simulation run
         self.save_params_dict = {
             'q_params_list': ['rewards_dict', 'errors_dict', 'epsilon_list', 'sum_rewards_dict', 'sum_errors_dict'],
-            'engine_params_list': ['epsilon_start', 'epsilon_end', 'max_iters', 'learn_rate', 'discount_factor']
+            'engine_params_list': ['epsilon_start', 'epsilon_end', 'max_iters', 'alpha_start', 'alpha_end',
+                                   'discount_factor', 'epsilon_update', 'alpha_update']
         }
 
     def get_data(self, key: str):

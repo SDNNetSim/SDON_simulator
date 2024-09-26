@@ -207,7 +207,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         if 'bandit' in self.engine_props['path_algorithm']:
             self.counts, self.values = get_q_table(self=self)
         else:
-            raise NotImplementedError
+            pass
 
 
 class PathAgent:
@@ -293,6 +293,7 @@ class PathAgent:
 
         self.agent_obj.iteration = iteration
         if self.path_algorithm == 'q_learning':
+            self.agent_obj.learn_rate = self.hyperparam_obj.curr_alpha
             self.agent_obj.update_routes_matrix(reward=reward, level_index=self.level_index,
                                                 net_spec_dict=net_spec_dict)
         elif self.path_algorithm == 'epsilon_greedy_bandit':
@@ -303,7 +304,7 @@ class PathAgent:
             raise NotImplementedError
 
     def __ql_route(self, random_float: float):
-        if random_float < self.agent_obj.props.epsilon:
+        if random_float < self.hyperparam_obj.curr_epsilon:
             self.rl_props.chosen_path_index = np.random.choice(self.rl_props.k_paths)
             # The level will always be the last index
             self.level_index = self.cong_list[self.rl_props.chosen_path_index][-1]
