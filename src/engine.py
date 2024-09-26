@@ -53,7 +53,7 @@ class Engine:
                 "was_routed": sdn_props.was_routed,
                 "core_list": sdn_props.core_list,
                 # TODO: Update
-                "band": sdn_props.curr_band,
+                "band": sdn_props.band_list,
             }})
 
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,
