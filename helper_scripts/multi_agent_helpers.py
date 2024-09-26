@@ -8,14 +8,203 @@ from .bandit_helpers import EpsilonGreedyBandit
 from .bandit_helpers import UCBBandit, get_q_table
 
 
-class PathAgent:
+# TODO: Class needs to be used and updated properly in other scripts
+# TODO: Update class diagram for new variables and what not
+class HyperparamConfig:  # pylint: disable=too-few-public-methods
+    """
+    Controls all hyperparameter starts, ends, and episodic and or time step modifications.
+    """
+
+    def __init__(self, engine_props: dict, rl_props: object, is_path: bool):
+        self.engine_props = engine_props
+        self.total_steps = engine_props['num_requests']
+        self.num_nodes = rl_props.num_nodes
+        self.is_path = is_path
+        if is_path:
+            self.n_arms = engine_props['k_paths']
+        else:
+            self.n_arms = engine_props['cores_per_link']
+        # TODO: Must be updated somewhere
+        self.time_step = None
+        self.curr_reward = None
+        # TODO: Must be updates somewhere
+        self.state_action_pair = None
+        self.alpha_update = engine_props['alpha_update']
+        self.epsilon_update = engine_props['epsilon_update']
+
+        self.alpha_start = engine_props['alpha_start']
+        self.alpha_end = engine_props['alpha_end']
+        self.curr_alpha = None
+
+        self.epsilon_start = engine_props['epsilon_start']
+        self.epsilon_end = engine_props['epsilon_end']
+        self.curr_epsilon = None
+
+        self.temperature = engine_props['temperature']
+        self.counts = None
+        self.values = None
+        self.reward_list = None
+        self.decay_rate = engine_props['decay_rate']
+
+        self.alpha_strategies = {
+            'softmax': self._softmax_alpha,
+            'reward_based': self._reward_based_alpha,
+            'state_based': self._state_based_alpha,
+            'exp_decay': self._exp_alpha,
+            'linear_decay': self._linear_alpha,
+        }
+        self.epsilon_strategies = {
+            'softmax': self._softmax_eps,
+            'reward_based': self._reward_based_eps,
+            'state_based': self._state_based_eps,
+            'exp_decay': self._exp_eps,
+            'linear_decay': self._linear_eps,
+        }
+
+        self.reset()
+
+    def _softmax(self, q_vals_list: list):
+        """
+        Compute the softmax probabilities for a given set of Q-values
+        """
+        exp_values = np.exp(np.array(q_vals_list) / self.temperature)
+        probabilities = exp_values / np.sum(exp_values)
+        return probabilities
+
+    # TODO: Does not work for bandits due to a prime (next state)
+    def _softmax_eps(self):
+        """
+        Softmax epsilon update rule.
+        """
+        raise NotImplementedError
+        # q_vals_list = list(self.values[self.state_action_pair])
+        # softmax_probs = self._softmax(q_vals_list=q_vals_list)
+        # self.curr_epsilon = self.epsilon_start * np.sum(softmax_probs)
+
+    # TODO: Does not work for bandits due to a prime (next state)
+    def _softmax_alpha(self):
+        """
+        Softmax alpha update rule.
+        """
+        raise NotImplementedError
+        # q_vals_list = list(self.values.values())
+        # softmax_probs = self._softmax(q_vals_list=q_vals_list)
+        # self.curr_alpha = self.alpha_start * np.sum(softmax_probs)
+
+    def _reward_based_eps(self):
+        """
+        Reward-based epsilon update.
+        """
+        if len(self.reward_list) != 2:
+            print('Did not update epsilon due to the length of the reward list.')
+            return
+
+        curr_reward = self.reward_list[0]
+        last_reward = self.reward_list[1]
+        reward_diff = abs(curr_reward - last_reward)
+        self.curr_epsilon = self.epsilon_start * (1 / (1 + reward_diff))
+
+    def _reward_based_alpha(self):
+        """
+        Reward-based alpha update.
+        """
+        if len(self.reward_list) != 2:
+            print('Did not update alpha due to the length of the reward list.')
+            return
+
+        curr_reward = self.reward_list[0]
+        last_reward = self.reward_list[1]
+        reward_diff = abs(curr_reward - last_reward)
+        self.curr_alpha = self.alpha_start * (1 / (1 + reward_diff))
+
+    def _state_based_eps(self):
+        """
+        State visitation epsilon update.
+        """
+        self.counts[self.state_action_pair] += 1
+        total_visits = self.counts[self.state_action_pair]
+        self.curr_epsilon = self.epsilon_start / (1 + total_visits)
+
+    def _state_based_alpha(self):
+        """
+        State visitation alpha update.
+        """
+        self.counts[self.state_action_pair] += 1
+        total_visits = self.counts[self.state_action_pair]
+        self.curr_alpha = 1 / (1 + total_visits)
+
+    def _exp_eps(self):
+        """
+        Exponential distribution epsilon update.
+        """
+        self.curr_epsilon = self.epsilon_start * (self.decay_rate ** self.time_step)
+
+    def _exp_alpha(self):
+        """
+        Exponential distribution alpha update.
+        """
+        self.curr_alpha = self.alpha_start * (self.decay_rate ** self.time_step)
+
+    def _linear_eps(self):
+        """
+        Linear decay epsilon update.
+        """
+        self.curr_epsilon = self.epsilon_end + (
+                (self.epsilon_start - self.epsilon_end) * (self.total_steps - self.time_step) / self.total_steps
+        )
+
+    def _linear_alpha(self):
+        """
+        Linear decay alpha update.
+        """
+        self.curr_alpha = self.alpha_end + (
+                (self.alpha_start - self.alpha_end) * (self.total_steps - self.time_step) / self.total_steps
+        )
+
+    def _update_data(self):
+        if len(self.reward_list) == 2:
+            # Moves old current reward to now last reward, current reward always first index
+            self.reward_list = [self.curr_reward, self.reward_list[0]]
+        elif len(self.reward_list) == 1:
+            last_reward = self.reward_list[0]
+            self.reward_list = [self.curr_reward, last_reward]
+        else:
+            self.reward_list.append(self.curr_reward)
+
+        raise NotImplementedError
+
+    def update_hyperparams(self):
+        """
+        Controls the class.
+        """
+        self._update_data()
+
+        if self.alpha_update in self.alpha_strategies:
+            self.alpha_strategies[self.alpha_update]()
+        else:
+            raise NotImplementedError(f'{self.alpha_update} not in any known strategies: {self.alpha_strategies}')
+
+        if self.epsilon_update in self.epsilon_strategies:
+            self.epsilon_strategies[self.epsilon_update]()
+        else:
+            raise NotImplementedError(f'{self.epsilon_update} not in any known strategies: {self.epsilon_strategies}')
+
+    def reset(self):
+        """
+        Resets certain class variables.
+        """
+        self.reward_list = list()
+        self.counts, self.values = get_q_table(self=self)
+
+
+class PathAgent(HyperparamConfig):
     """
     A class that handles everything related to path assignment in reinforcement learning simulations.
     """
 
     def __init__(self, path_algorithm: str, rl_props: object, rl_help_obj: object):
         self.path_algorithm = path_algorithm
-        self.engine_props = None
+        self.engine_props = dict()
         self.rl_props = rl_props
         self.rl_help_obj = rl_help_obj
         self.agent_obj = None
@@ -24,12 +213,16 @@ class PathAgent:
         self.level_index = None
         self.cong_list = None
 
+        super().__init__(engine_props=self.engine_props, rl_props=rl_props, is_path=True)
+
     def end_iter(self):
         """
         Ends an iteration for the path agent.
         """
-        if self.path_algorithm == 'q_learning':
-            self.agent_obj.decay_epsilon()
+        self.update_hyperparams()
+        # TODO: Delete
+        # if self.path_algorithm == 'q_learning':
+        #     self.agent_obj.decay_epsilon()
 
     def setup_env(self):
         """
@@ -45,6 +238,7 @@ class PathAgent:
         else:
             raise NotImplementedError
 
+    # TODO: Do we still want to use path length?
     def get_reward(self, was_allocated: bool, path_length: int):
         """
         Get the current reward for the last agent's action.
@@ -57,7 +251,7 @@ class PathAgent:
         if was_allocated:
             return self.engine_props['reward']
 
-        return self.engine_props['penalty'] - path_length
+        return self.engine_props['penalty']
 
     def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int, path_length: int):
         """
@@ -69,9 +263,12 @@ class PathAgent:
         :param iteration: The current iteration.
         """
         reward = self.get_reward(was_allocated=was_allocated, path_length=path_length)
+        self.curr_reward = reward
+        self.update_hyperparams()
 
         self.agent_obj.iteration = iteration
         if self.path_algorithm == 'q_learning':
+            # TODO: The hyperparameters must change for q-learning, they're only set up for bandits!
             self.agent_obj.update_routes_matrix(reward=reward, level_index=self.level_index,
                                                 net_spec_dict=net_spec_dict)
         elif self.path_algorithm == 'epsilon_greedy_bandit':
@@ -142,6 +339,7 @@ class PathAgent:
             self.agent_obj.props.routes_matrix = np.load(model_path, allow_pickle=True)
 
 
+# TODO: This class is no longer supported
 class CoreAgent:
     """
     A class that handles everything related to core assignment in reinforcement learning simulations.
@@ -373,193 +571,3 @@ class SpectrumAgent:
             drl_reward = 1.0
 
         return drl_reward
-
-
-# TODO: Class needs to be used and updated properly in other scripts
-# TODO: Update class diagram for new variables and what not
-class HyperparamConfig:  # pylint: disable=too-few-public-methods
-    """
-    Controls all hyperparameter starts, ends, and episodic and or time step modifications.
-    """
-
-    def __init__(self, engine_props: dict, rl_props: object, is_path: bool):
-        self.engine_props = engine_props
-        self.total_steps = engine_props['num_requests']
-        self.num_nodes = rl_props.num_nodes
-        self.is_path = is_path
-        if is_path:
-            self.n_arms = engine_props['k_paths']
-        else:
-            self.n_arms = engine_props['cores_per_link']
-        # TODO: Must be updated somewhere
-        self.time_step = None
-        # TODO: Must be updates somewhere
-        self.curr_reward = None
-        # TODO: Must be updates somewhere
-        self.state_action_pair = None
-        self.alpha_update = engine_props['alpha_update']
-        self.epsilon_update = engine_props['epsilon_update']
-
-        self.alpha_start = engine_props['alpha_start']
-        self.alpha_end = engine_props['alpha_end']
-        self.curr_alpha = None
-
-        self.epsilon_start = engine_props['epsilon_start']
-        self.epsilon_end = engine_props['epsilon_end']
-        self.curr_epsilon = None
-
-        self.temperature = engine_props['temperature']
-        self.counts = None
-        self.values = None
-        self.reward_list = None
-        self.decay_rate = engine_props['decay_rate']
-
-        self.alpha_strategies = {
-            'softmax': self._softmax_alpha,
-            'reward_based': self._reward_based_alpha,
-            'state_based': self._state_based_alpha,
-            'exp_decay': self._exp_alpha,
-            'linear_decay': self._linear_alpha,
-        }
-        self.epsilon_strategies = {
-            'softmax': self._softmax_eps,
-            'reward_based': self._reward_based_eps,
-            'state_based': self._state_based_eps,
-            'exp_decay': self._exp_eps,
-            'linear_decay': self._linear_eps,
-        }
-
-        self.reset()
-
-    def _softmax(self, q_vals_list: list):
-        """
-        Compute the softmax probabilities for a given set of Q-values
-        """
-        exp_values = np.exp(np.array(q_vals_list) / self.temperature)
-        probabilities = exp_values / np.sum(exp_values)
-        return probabilities
-
-    # TODO: Does not work for bandits, needs a next state!
-    def _softmax_eps(self):
-        """
-        Softmax epsilon update rule.
-        """
-        raise NotImplementedError
-        # q_vals_list = list(self.values[self.state_action_pair])
-        # softmax_probs = self._softmax(q_vals_list=q_vals_list)
-        # self.curr_epsilon = self.epsilon_start * np.sum(softmax_probs)
-
-    # TODO: Does not work for bandits, needs a next state!
-    def _softmax_alpha(self):
-        """
-        Softmax alpha update rule.
-        """
-        raise NotImplementedError
-        # q_vals_list = list(self.values.values())
-        # softmax_probs = self._softmax(q_vals_list=q_vals_list)
-        # self.curr_alpha = self.alpha_start * np.sum(softmax_probs)
-
-    def _reward_based_eps(self):
-        """
-        Reward-based epsilon update.
-        """
-        if len(self.reward_list) != 2:
-            print('Did not update epsilon due to the length of the reward list.')
-            return
-
-        curr_reward = self.reward_list[0]
-        last_reward = self.reward_list[1]
-        reward_diff = abs(curr_reward - last_reward)
-        self.curr_epsilon = self.epsilon_start * (1 / (1 + reward_diff))
-
-    def _reward_based_alpha(self):
-        """
-        Reward-based alpha update.
-        """
-        if len(self.reward_list) != 2:
-            print('Did not update alpha due to the length of the reward list.')
-            return
-
-        curr_reward = self.reward_list[0]
-        last_reward = self.reward_list[1]
-        reward_diff = abs(curr_reward - last_reward)
-        self.curr_alpha = self.alpha_start * (1 / (1 + reward_diff))
-
-    def _state_based_eps(self):
-        """
-        State visitation epsilon update.
-        """
-        self.counts[self.state_action_pair] += 1
-        total_visits = self.counts[self.state_action_pair]
-        self.curr_epsilon = self.epsilon_start / (1 + total_visits)
-
-    def _state_based_alpha(self):
-        """
-        State visitation alpha update.
-        """
-        self.counts[self.state_action_pair] += 1
-        total_visits = self.counts[self.state_action_pair]
-        self.curr_alpha = 1 / (1 + total_visits)
-
-    def _exp_eps(self):
-        """
-        Exponential distribution epsilon update.
-        """
-        self.curr_epsilon = self.epsilon_start * (self.decay_rate ** self.time_step)
-
-    def _exp_alpha(self):
-        """
-        Exponential distribution alpha update.
-        """
-        self.curr_alpha = self.alpha_start * (self.decay_rate ** self.time_step)
-
-    def _linear_eps(self):
-        """
-        Linear decay epsilon update.
-        """
-        self.curr_epsilon = self.epsilon_end + (
-                (self.epsilon_start - self.epsilon_end) * (self.total_steps - self.time_step) / self.total_steps
-        )
-
-    def _linear_alpha(self):
-        """
-        Linear decay alpha update.
-        """
-        self.curr_alpha = self.alpha_end + (
-                (self.alpha_start - self.alpha_end) * (self.total_steps - self.time_step) / self.total_steps
-        )
-
-    def _update_data(self):
-        if len(self.reward_list) == 2:
-            # Moves old current reward to now last reward, current reward always first index
-            self.reward_list = [self.curr_reward, self.reward_list[0]]
-        elif len(self.reward_list) == 1:
-            last_reward = self.reward_list[0]
-            self.reward_list = [self.curr_reward, last_reward]
-        else:
-            self.reward_list.append(self.curr_reward)
-
-        raise NotImplementedError
-
-    def update_hyperparams(self):
-        """
-        Controls the class.
-        """
-        self._update_data()
-
-        if self.alpha_update in self.alpha_strategies:
-            self.alpha_strategies[self.alpha_update]()
-        else:
-            raise NotImplementedError(f'{self.alpha_update} not in any known strategies: {self.alpha_strategies}')
-
-        if self.epsilon_update in self.epsilon_strategies:
-            self.epsilon_strategies[self.epsilon_update]()
-        else:
-            raise NotImplementedError(f'{self.epsilon_update} not in any known strategies: {self.epsilon_strategies}')
-
-    def reset(self):
-        """
-        Resets certain class variables.
-        """
-        self.reward_list = list()
-        self.counts, self.values = get_q_table(self=self)
