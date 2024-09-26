@@ -146,7 +146,7 @@ class EpsilonGreedyBandit:
         else:
             self.n_arms = engine_props['cores_per_link']
 
-        self.epsilon = engine_props['epsilon_start']
+        self.epsilon = None
         self.num_nodes = rl_props.num_nodes
         self.counts, self.values = get_q_table(self=self)  # Amount of times an action has been taken and every V(s,a)
 

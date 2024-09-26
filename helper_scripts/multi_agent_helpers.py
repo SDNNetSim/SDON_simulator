@@ -24,7 +24,6 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
             self.n_arms = engine_props['k_paths']
         else:
             self.n_arms = engine_props['cores_per_link']
-        # TODO: Must be updated somewhere
         self.time_step = None
         self.curr_reward = None
         # TODO: Must be updates somewhere
@@ -34,13 +33,13 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
 
         self.alpha_start = engine_props['alpha_start']
         self.alpha_end = engine_props['alpha_end']
-        self.curr_alpha = None
+        self.curr_alpha = self.alpha_start
 
         self.epsilon_start = engine_props['epsilon_start']
         self.epsilon_end = engine_props['epsilon_end']
-        self.curr_epsilon = None
+        self.curr_epsilon = self.epsilon_start
 
-        self.temperature = engine_props['temperature']
+        self.temperature = None
         self.counts = None
         self.values = None
         self.reward_list = None
@@ -171,8 +170,6 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         else:
             self.reward_list.append(self.curr_reward)
 
-        raise NotImplementedError
-
     def update_hyperparams(self):
         """
         Controls the class.
@@ -197,7 +194,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         self.counts, self.values = get_q_table(self=self)
 
 
-class PathAgent(HyperparamConfig):
+class PathAgent:
     """
     A class that handles everything related to path assignment in reinforcement learning simulations.
     """
@@ -213,14 +210,14 @@ class PathAgent(HyperparamConfig):
         self.level_index = None
         self.cong_list = None
 
-        super().__init__(engine_props=self.engine_props, rl_props=rl_props, is_path=True)
+        self.hyperparam_obj = None
 
     def end_iter(self):
         """
         Ends an iteration for the path agent.
         """
-        self.update_hyperparams()
-        # TODO: Delete
+        self.hyperparam_obj.update_hyperparams()
+        # TODO: Delete once q-learning support added
         # if self.path_algorithm == 'q_learning':
         #     self.agent_obj.decay_epsilon()
 
@@ -228,6 +225,7 @@ class PathAgent(HyperparamConfig):
         """
         Sets up the environment for the path agent.
         """
+        self.hyperparam_obj = HyperparamConfig(engine_props=self.engine_props, rl_props=self.rl_props, is_path=True)
         if self.path_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
             self.agent_obj.setup_env()
@@ -263,8 +261,11 @@ class PathAgent(HyperparamConfig):
         :param iteration: The current iteration.
         """
         reward = self.get_reward(was_allocated=was_allocated, path_length=path_length)
-        self.curr_reward = reward
-        self.update_hyperparams()
+        req_info_dict = self.rl_props.arrival_list[self.rl_props.arrival_count]
+        req_id = req_info_dict['req_id']
+        self.hyperparam_obj.time_step = req_id
+        self.hyperparam_obj.curr_reward = reward
+        self.hyperparam_obj.update_hyperparams()
 
         self.agent_obj.iteration = iteration
         if self.path_algorithm == 'q_learning':
@@ -311,6 +312,8 @@ class PathAgent(HyperparamConfig):
         paths_list = route_obj.route_props.paths_matrix
         source = paths_list[0][0]
         dest = paths_list[0][-1]
+
+        self.agent_obj.epsilon = self.hyperparam_obj.curr_epsilon
         self.rl_props.chosen_path_index = self.agent_obj.select_path_arm(source=int(source), dest=int(dest))
         self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[self.rl_props.chosen_path_index]
 
