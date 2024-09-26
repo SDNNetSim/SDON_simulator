@@ -7,9 +7,10 @@ from .ql_helpers import QLearningHelpers
 from .bandit_helpers import EpsilonGreedyBandit
 from .bandit_helpers import UCBBandit, get_q_table
 
+EPISODIC_STRATEGIES = ['exp_decay', 'linear_decay']
 
-# TODO: Class needs to be used and updated properly in other scripts
-# TODO: Update class diagram for new variables and what not
+
+# TODO: Update UML class (When PR is created)
 class HyperparamConfig:  # pylint: disable=too-few-public-methods
     """
     Controls all hyperparameter starts, ends, and episodic and or time step modifications.
@@ -17,19 +18,24 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
 
     def __init__(self, engine_props: dict, rl_props: object, is_path: bool):
         self.engine_props = engine_props
-        self.total_steps = engine_props['num_requests']
+        self.total_iters = engine_props['max_iters']
         self.num_nodes = rl_props.num_nodes
         self.is_path = is_path
         if is_path:
             self.n_arms = engine_props['k_paths']
         else:
             self.n_arms = engine_props['cores_per_link']
-        self.time_step = None
+
+        self.iteration = 0
         self.curr_reward = None
-        # TODO: Must be updates somewhere
         self.state_action_pair = None
-        self.alpha_update = engine_props['alpha_update']
-        self.epsilon_update = engine_props['epsilon_update']
+        self.alpha_strategy = engine_props['alpha_update']
+        self.epsilon_strategy = engine_props['epsilon_update']
+
+        if self.alpha_strategy not in EPISODIC_STRATEGIES or self.epsilon_strategy not in EPISODIC_STRATEGIES:
+            self.fully_episodic = False
+        else:
+            self.fully_episodic = True
 
         self.alpha_start = engine_props['alpha_start']
         self.alpha_end = engine_props['alpha_end']
@@ -60,7 +66,8 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
             'linear_decay': self._linear_eps,
         }
 
-        self.reset()
+        if self.iteration == 0:
+            self.reset()
 
     def _softmax(self, q_vals_list: list):
         """
@@ -136,20 +143,20 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         Exponential distribution epsilon update.
         """
-        self.curr_epsilon = self.epsilon_start * (self.decay_rate ** self.time_step)
+        self.curr_epsilon = self.epsilon_start * (self.decay_rate ** self.iteration)
 
     def _exp_alpha(self):
         """
         Exponential distribution alpha update.
         """
-        self.curr_alpha = self.alpha_start * (self.decay_rate ** self.time_step)
+        self.curr_alpha = self.alpha_start * (self.decay_rate ** self.iteration)
 
     def _linear_eps(self):
         """
         Linear decay epsilon update.
         """
         self.curr_epsilon = self.epsilon_end + (
-                (self.epsilon_start - self.epsilon_end) * (self.total_steps - self.time_step) / self.total_steps
+                (self.epsilon_start - self.epsilon_end) * (self.total_iters - self.iteration) / self.total_iters
         )
 
     def _linear_alpha(self):
@@ -157,10 +164,13 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         Linear decay alpha update.
         """
         self.curr_alpha = self.alpha_end + (
-                (self.alpha_start - self.alpha_end) * (self.total_steps - self.time_step) / self.total_steps
+                (self.alpha_start - self.alpha_end) * (self.total_iters - self.iteration) / self.total_iters
         )
 
-    def _update_data(self):
+    def update_timestep_data(self):
+        """
+        Updates data structures used for updating alpha and epsilon.
+        """
         if len(self.reward_list) == 2:
             # Moves old current reward to now last reward, current reward always first index
             self.reward_list = [self.curr_reward, self.reward_list[0]]
@@ -170,28 +180,34 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         else:
             self.reward_list.append(self.curr_reward)
 
-    def update_hyperparams(self):
+    def update_eps(self):
         """
-        Controls the class.
+        Update epsilon.
         """
-        self._update_data()
-
-        if self.alpha_update in self.alpha_strategies:
-            self.alpha_strategies[self.alpha_update]()
+        if self.epsilon_strategy in self.epsilon_strategies:
+            self.epsilon_strategies[self.epsilon_strategy]()
         else:
-            raise NotImplementedError(f'{self.alpha_update} not in any known strategies: {self.alpha_strategies}')
+            raise NotImplementedError(f'{self.epsilon_strategy} not in any known strategies: {self.epsilon_strategies}')
 
-        if self.epsilon_update in self.epsilon_strategies:
-            self.epsilon_strategies[self.epsilon_update]()
+    def update_alpha(self):
+        """
+        Updates alpha.
+        """
+        if self.alpha_strategy in self.alpha_strategies:
+            self.alpha_strategies[self.alpha_strategy]()
         else:
-            raise NotImplementedError(f'{self.epsilon_update} not in any known strategies: {self.epsilon_strategies}')
+            raise NotImplementedError(f'{self.alpha_strategy} not in any known strategies: {self.alpha_strategies}')
 
     def reset(self):
         """
         Resets certain class variables.
         """
         self.reward_list = list()
-        self.counts, self.values = get_q_table(self=self)
+        # TODO: Only works for bandit algorithms
+        if 'bandit' in self.engine_props['path_algorithm']:
+            self.counts, self.values = get_q_table(self=self)
+        else:
+            raise NotImplementedError
 
 
 class PathAgent:
@@ -201,6 +217,7 @@ class PathAgent:
 
     def __init__(self, path_algorithm: str, rl_props: object, rl_help_obj: object):
         self.path_algorithm = path_algorithm
+        self.iteration = None
         self.engine_props = dict()
         self.rl_props = rl_props
         self.rl_help_obj = rl_help_obj
@@ -216,10 +233,11 @@ class PathAgent:
         """
         Ends an iteration for the path agent.
         """
-        self.hyperparam_obj.update_hyperparams()
-        # TODO: Delete once q-learning support added
-        # if self.path_algorithm == 'q_learning':
-        #     self.agent_obj.decay_epsilon()
+        self.hyperparam_obj.iteration += 1
+        if self.hyperparam_obj.alpha_strategy in EPISODIC_STRATEGIES:
+            self.hyperparam_obj.update_alpha()
+        if self.hyperparam_obj.epsilon_strategy in EPISODIC_STRATEGIES:
+            self.hyperparam_obj.update_eps()
 
     def setup_env(self):
         """
@@ -251,6 +269,14 @@ class PathAgent:
 
         return self.engine_props['penalty']
 
+    def _handle_hyperparams(self):
+        if not self.hyperparam_obj.fully_episodic:
+            self.hyperparam_obj.update_timestep_data()
+        if self.hyperparam_obj.alpha_strategy not in EPISODIC_STRATEGIES:
+            self.hyperparam_obj.update_alpha()
+        if self.hyperparam_obj.epsilon_strategy not in EPISODIC_STRATEGIES:
+            self.hyperparam_obj.update_epsilon()
+
     def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int, path_length: int):
         """
         Makes updates to the agent for each time step.
@@ -261,15 +287,12 @@ class PathAgent:
         :param iteration: The current iteration.
         """
         reward = self.get_reward(was_allocated=was_allocated, path_length=path_length)
-        req_info_dict = self.rl_props.arrival_list[self.rl_props.arrival_count]
-        req_id = req_info_dict['req_id']
-        self.hyperparam_obj.time_step = req_id
         self.hyperparam_obj.curr_reward = reward
-        self.hyperparam_obj.update_hyperparams()
+        self.iteration = iteration
+        self._handle_hyperparams()
 
         self.agent_obj.iteration = iteration
         if self.path_algorithm == 'q_learning':
-            # TODO: The hyperparameters must change for q-learning, they're only set up for bandits!
             self.agent_obj.update_routes_matrix(reward=reward, level_index=self.level_index,
                                                 net_spec_dict=net_spec_dict)
         elif self.path_algorithm == 'epsilon_greedy_bandit':
