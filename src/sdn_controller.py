@@ -58,7 +58,8 @@ class SDNController:
         band = self.spectrum_obj.spectrum_props.curr_band
 
         if self.engine_props['guard_slots'] != 0:
-            end_slot = end_slot - 1
+            if self.spectrum_obj.spectrum_props.slots_needed != 1:
+                end_slot = end_slot - 1
         else:
             end_slot += 1
 

@@ -148,9 +148,7 @@ class SpectrumAssignment:
         if self.spectrum_props.forced_index is not None:
             self.handle_first_last(flag='forced_index')
         elif self.engine_props['allocation_method'] == 'best_fit':
-            raise Warning('Best fit does not have support for no guard slots.')
             self.find_best_fit()
-        # TODO: Double check last fit
         elif self.engine_props['allocation_method'] in ('first_fit', 'last_fit', 'priority_first', 'priority_last'):
             self.handle_first_last(flag=self.engine_props['allocation_method'])
         elif self.engine_props['allocation_method'] == 'xt_aware':
