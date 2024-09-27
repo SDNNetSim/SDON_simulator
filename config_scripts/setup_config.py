@@ -32,7 +32,7 @@ def _find_category(category_dict: dict, target_key: str):
 
 
 def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section_list: list, types_dict: dict,
-                   other_dict: dict, args_obj: dict):
+                   other_dict: dict, args_dict: dict):
     """
     Checks if multiple threads/simulations should be run, structures each simulation's parameters.
 
@@ -41,7 +41,7 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
     :param section_list: Every section in the ini file.
     :param types_dict: Contains option conversion types.
     :param other_dict: Contains non-required options.
-    :param args_obj: Arguments passed via the command line (if any).
+    :param args_dict: Arguments passed via the command line (if any).
     :return: Every simulation's structured parameters.
     :rtype: dict
     """
@@ -61,19 +61,19 @@ def _setup_threads(config: configparser.ConfigParser, config_dict: dict, section
                 type_obj = other_dict[category][key]
             config_dict[new_thread][key] = type_obj(value)
             # TODO: Only support for changing all s<values> as of now
-            if args_obj[key] is not None:
-                config_dict[new_thread][key] = args_obj[key]
+            if args_dict[key] is not None:
+                config_dict[new_thread][key] = args_dict[key]
 
     return config_dict
 
 
-def read_config(args_obj: dict, config_path: str = None):
+def read_config(args_dict: dict, config_path: str = None):
     """
     Structures necessary data from the configuration file in the run_ini directory.
 
-    :param args_obj: Arguments passed via the command line (if any).
+    :param args_dict: Arguments passed via the command line (if any).
     :param config_path: The configuration file path.
-    :type args_obj: dict
+    :type args_dict: dict
     """
     config_dict = {'s1': dict()}
     config = configparser.ConfigParser()
@@ -104,8 +104,9 @@ def read_config(args_obj: dict, config_path: str = None):
                     config_dict['s1'][option] = type_obj(config[category][option])
 
                 # TODO: Only support for changing all s<values> as of now
-                if args_obj[option] is not None:
-                    config_dict['s1'][option] = args_obj[option]
+                # if cmdline argument was provided, prioritize that
+                if args_dict[option] is not None:
+                    config_dict['s1'][option] = args_dict[option]
 
         # Init other options to None if they haven't been specified
         for category, options_dict in other_dict.items():
@@ -113,8 +114,8 @@ def read_config(args_obj: dict, config_path: str = None):
                 if option not in config[category]:
                     config_dict['s1'][option] = None
                 else:
-                    if args_obj[option] is not None:
-                        config_dict['s1'][option] = args_obj[option]
+                    if args_dict[option] is not None:
+                        config_dict['s1'][option] = args_dict[option]
                     else:
                         try:
                             config_dict['s1'][option] = type_obj(config[category][option])
@@ -124,7 +125,7 @@ def read_config(args_obj: dict, config_path: str = None):
 
         # Ignoring index zero since we've already handled s1, the first simulation
         resp = _setup_threads(config=config, config_dict=config_dict, section_list=config.sections()[1:],
-                              types_dict=required_dict, other_dict=other_dict, args_obj=args_obj)
+                              types_dict=required_dict, other_dict=other_dict, args_dict=args_dict)
 
         return resp
 
@@ -134,4 +135,4 @@ def read_config(args_obj: dict, config_path: str = None):
 
 
 if __name__ == '__main__':
-    read_config(args_obj={'Test': None})
+    read_config(args_dict={'Test': None})
