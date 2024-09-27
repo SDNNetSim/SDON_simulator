@@ -29,6 +29,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         self.iteration = 0
         self.curr_reward = None
         self.state_action_pair = None
+        self.action_index = None
         self.alpha_strategy = engine_props['alpha_update']
         self.epsilon_strategy = engine_props['epsilon_update']
 
@@ -127,16 +128,16 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         State visitation epsilon update.
         """
-        self.counts[self.state_action_pair] += 1
-        total_visits = self.counts[self.state_action_pair]
+        self.counts[self.state_action_pair][self.action_index] += 1
+        total_visits = self.counts[self.state_action_pair][self.action_index]
         self.curr_epsilon = self.epsilon_start / (1 + total_visits)
 
     def _state_based_alpha(self):
         """
         State visitation alpha update.
         """
-        self.counts[self.state_action_pair] += 1
-        total_visits = self.counts[self.state_action_pair]
+        self.counts[self.state_action_pair][self.action_index] += 1
+        total_visits = self.counts[self.state_action_pair][self.action_index]
         self.curr_alpha = 1 / (1 + total_visits)
 
     def _exp_eps(self):
@@ -167,10 +168,14 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
                 (self.alpha_start - self.alpha_end) * (self.total_iters - self.iteration) / self.total_iters
         )
 
-    def update_timestep_data(self):
+    # TODO: Types?
+    def update_timestep_data(self, state_action_pair, action_index):
         """
         Updates data structures used for updating alpha and epsilon.
         """
+        self.state_action_pair = state_action_pair
+        self.action_index = action_index
+
         if len(self.reward_list) == 2:
             # Moves old current reward to now last reward, current reward always first index
             self.reward_list = [self.curr_reward, self.reward_list[0]]
@@ -228,6 +233,8 @@ class PathAgent:
         self.cong_list = None
 
         self.hyperparam_obj = None
+        self.state_action_pair = None
+        self.action_index = None
 
     def end_iter(self):
         """
@@ -269,9 +276,18 @@ class PathAgent:
 
         return self.engine_props['penalty']
 
+    def _get_sa(self):
+        if 'bandit' in self.path_algorithm:
+            self.state_action_pair = (self.rl_props.source, self.rl_props.destination)
+            self.action_index = self.rl_props.chosen_path_index
+        else:
+            self.state_action_pair, self.action_index = None
+
     def _handle_hyperparams(self):
         if not self.hyperparam_obj.fully_episodic:
-            self.hyperparam_obj.update_timestep_data()
+            self._get_sa()
+            self.hyperparam_obj.update_timestep_data(state_action_pair=self.state_action_pair,
+                                                     action_index=self.action_index)
         if self.hyperparam_obj.alpha_strategy not in EPISODIC_STRATEGIES:
             self.hyperparam_obj.update_alpha()
         if self.hyperparam_obj.epsilon_strategy not in EPISODIC_STRATEGIES:
