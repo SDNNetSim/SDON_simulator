@@ -207,3 +207,67 @@ class SpectrumAssignment:
 
             self.spectrum_props.block_reason = 'congestion'
             continue
+
+
+    def get_spectrum_dynamic_slicing(self, mod_format_list: list, slice_bandwidth: str = None, path_index: int = None):
+        """
+        Controls the class, attempts to find an available spectrum.
+
+        :param mod_format_list: A list of modulation formats to attempt allocation.
+        :param slice_bandwidth: A bandwidth used for light-segment slicing.
+        """
+        self._init_spectrum_info()
+
+        if self.engine_props['fixed_grid']:
+            self.spectrum_props.slots_needed = 1
+            self._get_spectrum()
+            if self.spectrum_props.is_free:
+                mod_format, bw = self.snr_obj.handle_snr_dynamic_slicing(path_index)
+                self.spectrum_props.modulation = mod_format
+                self.spectrum_props.is_free = True
+                self.sdn_props.block_reason = None
+                return mod_format, bw
+        else:
+            # bandwidth_dict = self.engine_props['mod_per_bw'][slice_bandwidth]
+            return 0,0
+            self.spectrum_props.slots_needed = bandwidth_dict[modulation]['slots_needed']
+
+
+            self._get_spectrum()
+
+        # for modulation in mod_format_list:
+        #     if modulation is False:
+        #         self.sdn_props.block_reason = 'distance'
+        #         continue
+
+        #     if slice_bandwidth:
+        #         bandwidth_dict = self.engine_props['mod_per_bw'][slice_bandwidth]
+        #         self.spectrum_props.slots_needed = bandwidth_dict[modulation]['slots_needed']
+        #     else:
+        #         if self.engine_props['fixed_grid']:
+        #             self.spectrum_props.slots_needed = 1
+        #         else:
+        #             self.spectrum_props.slots_needed = self.sdn_props.mod_formats_dict[modulation]['slots_needed']
+
+        #     if self.spectrum_props.slots_needed is None:
+        #         raise ValueError('Slots needed cannot be none.')
+
+        #     self._get_spectrum()
+
+        #     if self.spectrum_props.is_free:
+        #         self.spectrum_props.modulation = modulation
+        #         if self.engine_props['snr_type'] != 'None' and self.engine_props['snr_type'] is not None:
+        #             snr_check, xt_cost = self.snr_obj.handle_snr(path_index)
+        #             self.spectrum_props.xt_cost = xt_cost
+        #             if not snr_check:
+        #                 self.spectrum_props.is_free = False
+        #                 self.sdn_props.block_reason = 'xt_threshold'
+        #                 continue
+
+        #             self.spectrum_props.is_free = True
+        #             self.sdn_props.block_reason = None
+
+        #         return
+
+        #     self.spectrum_props.block_reason = 'congestion'
+        #     continue
