@@ -208,11 +208,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         Resets certain class variables.
         """
         self.reward_list = list()
-        # TODO: Only works for bandit algorithms
-        if 'bandit' in self.engine_props['path_algorithm']:
-            self.counts, self.values = get_q_table(self=self)
-        else:
-            pass
+        self.counts, self.values = get_q_table(self=self)
 
 
 class PathAgent:
@@ -276,16 +272,10 @@ class PathAgent:
 
         return self.engine_props['penalty']
 
-    def _get_sa(self):
-        if 'bandit' in self.path_algorithm:
-            self.state_action_pair = (self.rl_props.source, self.rl_props.destination)
-            self.action_index = self.rl_props.chosen_path_index
-        else:
-            self.state_action_pair, self.action_index = None
-
     def _handle_hyperparams(self):
         if not self.hyperparam_obj.fully_episodic:
-            self._get_sa()
+            self.state_action_pair = (self.rl_props.source, self.rl_props.destination)
+            self.action_index = self.rl_props.chosen_path_index
             self.hyperparam_obj.update_timestep_data(state_action_pair=self.state_action_pair,
                                                      action_index=self.action_index)
         if self.hyperparam_obj.alpha_strategy not in EPISODIC_STRATEGIES:
