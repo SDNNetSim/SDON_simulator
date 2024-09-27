@@ -196,6 +196,15 @@ class SimStats:
                     self.stats_props.mods_used_dict[bandwidth][data] += 1
                 elif stat_key == 'xt_list':
                     self.stats_props.xt_list.append(data)
+                elif stat_key == 'start_slot_list':
+                    self.stats_props.start_slot_list.append(data)
+                elif stat_key == 'end_slot_list':
+                    self.stats_props.end_slot_list.append(data)
+                elif stat_key == 'modulation_list':
+                    self.stats_props.modulation_list.append(data)
+                elif stat_key == 'bandwidth_list':
+                    self.stats_props.bandwidth_list.append(data)
+                
 
     def iter_update(self, req_data: dict, sdn_data: object):
         """
