@@ -97,6 +97,10 @@ class SDNController:
                 spectrum_key = 'core_num'
             elif spectrum_key == 'band':
                 spectrum_key = 'curr_band'
+            elif spectrum_key == 'start':
+                spectrum_key = 'start_slot'
+            elif spectrum_key == 'end':
+                spectrum_key = 'end_slot'
 
             self.sdn_props.update_params(key=stat_key, spectrum_key=spectrum_key, spectrum_obj=self.spectrum_obj)
 
@@ -146,6 +150,32 @@ class SDNController:
                 return
 
             self.sdn_props.is_sliced = False
+
+    def _handle_dynamic_slicing(self, path_list: list, path_index: int, forced_segments: int ):
+        remaining_bw = int(self.sdn_props.bandwidth)
+        path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
+        bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
+        self.spectrum_obj.spectrum_props.path_list = path_list
+        while remaining_bw > 0:
+            if self.engine_props['fixed_grid']:
+                self.sdn_props.was_routed = True
+                mod_format, bw = self.spectrum_obj.get_spectrum_dynamic_slicing(mod_format_list = [], path_index = path_index)
+                if self.spectrum_obj.spectrum_props.is_free:
+                    self.allocate()
+                    dedicated_bw = bw if remaining_bw > bw else remaining_bw
+                    self._update_req_stats(bandwidth=str(dedicated_bw))
+                    remaining_bw -= bw
+                else:
+                    self.sdn_props.was_routed = False
+                    self.sdn_props.block_reason = 'congestion'
+                    self.release()
+                    break
+            else:
+                # mod_format = get_path_mod(mods_dict=mods_dict, path_len=path_len)
+                # TODO: develop dynamic slicing to flexigrid 
+                raise NotImplementedError("TO BE DEVELOPED")
+                bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
+                
 
     def _init_req_stats(self):
         self.sdn_props.bandwidth_list = list()
@@ -205,11 +235,13 @@ class SDNController:
                     # fixme: Looping twice (Due to segment slicing flag)
                     if segment_slicing or force_slicing or forced_segments > 1:
                         force_slicing = True
-
-                        self._handle_slicing(path_list=path_list, forced_segments=forced_segments)
-                        if not self.sdn_props.was_routed:
-                            self.sdn_props.num_trans = 1
-                            continue
+                        if self.engine_props['dynamic_lps']:
+                            self._handle_dynamic_slicing(path_list= path_list, path_index= path_index, forced_segments= force_slicing )
+                        else:
+                            self._handle_slicing(path_list=path_list, forced_segments=forced_segments)
+                            if not self.sdn_props.was_routed:
+                                self.sdn_props.num_trans = 1
+                                continue
                     else:
                         self.spectrum_obj.spectrum_props.forced_index = forced_index
                         self.spectrum_obj.spectrum_props.forced_core = force_core
