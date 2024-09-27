@@ -255,7 +255,7 @@ class PathAgent:
             raise NotImplementedError
 
     # TODO: Do we still want to use path length?
-    def get_reward(self, was_allocated: bool, path_length: int):
+    def get_reward(self, was_allocated: bool, path_length: int):  # pylint: disable=unused-argument
         """
         Get the current reward for the last agent's action.
 
@@ -275,7 +275,7 @@ class PathAgent:
         if self.hyperparam_obj.alpha_strategy not in EPISODIC_STRATEGIES:
             self.hyperparam_obj.update_alpha()
         if self.hyperparam_obj.epsilon_strategy not in EPISODIC_STRATEGIES:
-            self.hyperparam_obj.update_epsilon()
+            self.hyperparam_obj.update_eps()
 
     def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int, path_length: int):
         """
@@ -388,8 +388,7 @@ class CoreAgent:
         """
         Ends an iteration for the core agent.
         """
-        if self.core_algorithm == 'q_learning':
-            self.agent_obj.decay_epsilon()
+        raise NotImplementedError
 
     def setup_env(self):
         """
