@@ -47,11 +47,14 @@ class Engine:
             self.stats_obj.curr_trans = sdn_props.num_trans
 
             self.reqs_status_dict.update({self.reqs_dict[curr_time]['req_id']: {
-                "mod_format": sdn_props.spectrum_object.modulation,
+                "mod_format": sdn_props.modulation_list,
                 "path": sdn_props.path_list,
                 "is_sliced": sdn_props.is_sliced,
                 "was_routed": sdn_props.was_routed,
                 "core_list": sdn_props.core_list,
+                "start_slot_list":sdn_props.start_slot_list,
+                "end_slot_list":sdn_props.end_slot_list,
+                "bandwidth_list": sdn_props.bandwidth_list,
                 # TODO: Update
                 "band": sdn_props.band_list,
             }})
