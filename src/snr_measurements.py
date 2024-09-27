@@ -355,6 +355,52 @@ class SnrMeasurements:
         return resp, SNR_val
         raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
 
+
+    def check_snr_ext_slicing(self, path_index):
+        """
+        Checks the SNR on a single request using the external resources.
+
+        :return: Whether the SNR threshold can be met and SNR value.
+        :rtype: tuple
+        """
+        mod_format_mapping = {
+        6: "64-QAM",
+        5: "32-QAM",
+        4: "16-QAM",
+        3: "8-QAM",
+        2: "QPSK",
+        1: "BPSK"
+        }
+        BW_mapping = {
+        "64-QAM": 600,
+        "32-QAM": 500,
+        "16-QAM": 400,
+        "8-QAM": 300,
+        "QPSK": 200,
+        "BPSK": 100
+        }
+        if self.spectrum_props.core_num == 6:
+            loaded_data = np.load('MF-USB6014-MCF7-C6.npy', allow_pickle=True)
+        else:
+            loaded_data = np.load('MF-USB6014-MCF7-C3.npy', allow_pickle=True)
+        SNR_val = 0
+        slot_index = 0
+        if self.spectrum_props.curr_band == 'l':
+            slot_index = self.spectrum_props.start_slot
+        elif self.spectrum_props.curr_band == 'c':
+            slot_index = self.engine_props['l_band'] + self.spectrum_props.start_slot
+        elif self.spectrum_props.curr_band == 's':
+            slot_index = (self.engine_props['l_band'] + 
+                          self.engine_props['c_band'] + 
+                          self.spectrum_props.start_slot)
+        else:
+            NotImplementedError(f"Unexpected band: {self.spectrum_props.curr_band}")
+        mod_format = mod_format_mapping[loaded_data[self.route_props.connection_index[0]][slot_index][path_index]]
+        supported_bw = BW_mapping[mod_format]
+        return mod_format, supported_bw
+
+
+
     def handle_snr(self, path_index):
         """
         Controls the methods of this class.
@@ -373,3 +419,22 @@ class SnrMeasurements:
             raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
 
         return snr_check, xt_cost
+
+    def handle_snr_dynamic_slicing(self, path_index):
+        """
+        Controls the methods of this class.
+
+        :return: Whether snr is acceptable for allocation or not for a given request and its cost
+        :rtype: tuple
+        """
+        self.num_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
+        # if self.engine_props['snr_type'] == "snr_calc_nli":
+        #     snr_check, xt_cost = self.check_snr()
+        # elif self.engine_props['snr_type'] == "xt_calculation":
+        #     snr_check, xt_cost = self.check_xt()
+        if self.engine_props['snr_type'] == "snr_e2e_external_resources":
+            mod_format, bw = self.check_snr_ext_slicing(path_index)
+        else:
+            raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
+
+        return mod_format, bw
