@@ -14,8 +14,9 @@ def str_to_bool(string: str):
 
 SIM_REQUIRED_OPTIONS = {
     'general_settings': {
+        'mod_assumption': str,
+        'mod_assumptions_path': str,
         'holding_time': float,
-        'arrival_rate': ast.literal_eval,
         'erlangs': ast.literal_eval,
         'thread_erlangs': str_to_bool,
         'num_requests': int,
@@ -188,6 +189,8 @@ COMMAND_LINE_PARAMS = [
     ['decay_factor', float, ''],
     ['dynamic_reward', bool, ''],
     ['config_path', str, ''],
+    ['mod_assumption', str, ''],
+    ['mod_assumptions_path', str, ''],
 
     # StableBaselines3 arguments
     ['algo', str, ''],
