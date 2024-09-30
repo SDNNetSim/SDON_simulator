@@ -31,8 +31,8 @@ Papers Written by Members of this Project
 -----------------------------------------
 `[Article] Dynamic Crosstalk-Aware Routing, Modulation, Core, and Spectrum Allocation for Sliceable Demands in SDM-EONs
 <https://doi.org/10.1109/LANMAN61958.2024.10621885>`_
-    ##TODO: if ANTS papers are accepted, link here
-    ##TODO: add LATINCOM paper when published
+# TODO: if ANTS papers are accepted, link here
+# TODO: add LATINCOM paper when published
 
 How to run a Machine Learning scenario on our simulator
 -------------------------------------------------------
