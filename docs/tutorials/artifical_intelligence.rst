@@ -36,11 +36,25 @@ Papers Written by Members of this Project
 
 How to run a Machine Learning scenario on our simulator
 -------------------------------------------------------
-fill out eventually
+To run a machine learning scenario, the following is a config file that works for v5.0.0
+
+.. code-block:: python
+
+    [ml_settings]
+    deploy_model = False
+    output_train_data = False
+    ml_training = True
+    ml_model = decision_tree
+    train_file_path = Pan-European/0531/22_00_16_630834
+    test_size = 0.3
 
 How to run a Reinforcement Learning scenario on our simulator
 -------------------------------------------------------------
-fill out eventually
+To run a reinforcement learning scenario, the following is a config file that works for v5.0.0
+
+.. code-block:: python
+
+
 
 Additional Resources
 --------------------
