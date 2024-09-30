@@ -53,7 +53,38 @@ How to run a Reinforcement Learning scenario on our simulator
 To run a reinforcement learning scenario, the following is a config file that works for v5.0.0
 
 .. code-block:: python
+    [rl_settings]
+    device = cpu
+    optimize = False
+    is_training = True
+    path_algorithm = ucb_bandit
+    path_model = greedy_bandit/NSFNet/0617/16_47_22_694727/state_vals_e750.0_routes_c4.json
+    core_algorithm = first_fit
+    core_model = greedy_bandit/NSFNet/0617/16_57_13_315030/state_vals_e750.0_cores_c4.json
+    spectrum_algorithm = first_fit
+    spectrum_model = ppo/NSFNet/0512/12_57_55_484293
 
+For deep reinforcement learning, add:
+
+.. code-block:: python
+    render_mode = None
+    super_channel_space = 3
+
+For Q-learning, add:
+
+.. code-block:: python
+
+    learn_rate = 0.01
+    discount_factor = 0.95
+    epsilon_start = 0.2
+    epsilon_end = 0.05
+    reward = 1
+    penalty = -100
+    dynamic_reward = False
+    path_levels = 2
+    decay_factor = 0.01
+    core_beta = 0.1
+    gamma = 0.1
 
 
 Additional Resources
