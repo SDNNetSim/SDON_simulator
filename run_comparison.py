@@ -37,17 +37,25 @@ def find_type_and_saved_path(config_path=args_obj['config_path']):
         raise ValueError("Error: sim_type not supported by function.")
 
 def compare_json_files(old_file, new_file):
-    ##Load and compare two JSON files.
+    '''Loads the two JSON files and runs the dict comparison module'''
     with open(old_file, 'r') as f:
         old_data = json.load(f)
 
     with open(new_file, 'r') as g:
         new_data = json.load(g)
 
-    if old_data == new_data:
-        print("The comparison results pass.")
-    else:
-        print("The comparison results do not pass.")
+    compare_nested_dicts(old_data, new_data)
+
+def compare_nested_dicts(old_dict, new_dict):
+    '''Compares the nested dictionaries for differences.'''
+    for key, val in old_dict.items():
+        while isinstance(val, dict):
+            compare_nested_dicts(val, new_dict)
+        if old_dict[key] != new_dict[key]:
+            raise ValueError(
+                "The saved value for {} is not the same as the current value {}.".format
+                (old_dict[key], new_dict[key]))
+
 
 def find_newest_file(directory):
     newest_file = None
