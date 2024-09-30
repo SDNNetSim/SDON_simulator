@@ -11,12 +11,14 @@ import configparser
 args_obj = parse_args()
 
 def run_comparison():
+    '''Runs the simulation with the current config file.'''
     all_sims_dict = read_config(args_obj=args_obj, config_path=args_obj['config_path'])
 
     # Call the run function from run_sim.py
     run(sims_dict=all_sims_dict)
 
 def find_type_and_saved_path(config_path=args_obj['config_path']):
+    '''Finds the type of simulation and the saved path of the current config file.'''
     config = configparser.ConfigParser()
 
     #Following is from setup_config to reach the type of path
@@ -58,6 +60,7 @@ def compare_nested_dicts(old_dict, new_dict):
 
 
 def find_newest_file(directory):
+    '''Finds most recent simulation run.'''
     newest_file = None
     latest_time = 0
 
