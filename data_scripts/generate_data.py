@@ -1,6 +1,7 @@
 import math
 import json
 import os
+import sys
 
 
 def create_pt(cores_per_link: int, net_spec_dict: dict):
@@ -54,9 +55,15 @@ def create_bw_info(mod_assumption: str, mod_assumptions_path: str = None):
     if mod_assumptions_path is None:
         mod_assumptions_path = os.path.join('json_input', 'run_mods', 'mod_formats.json')
 
-    with open(mod_assumptions_path, 'r', encoding='utf-8') as mod_assumptions_fp:
-        mod_formats_obj = json.load(mod_assumptions_fp)
+    try:
+        with open(mod_assumptions_path, 'r', encoding='utf-8') as mod_assumptions_fp:
+            mod_formats_obj = json.load(mod_assumptions_fp)
 
-    if mod_assumption in mod_formats_obj.keys():
-        return mod_formats_obj[mod_assumption]
+        if mod_assumption in mod_formats_obj.keys():
+            return mod_formats_obj[mod_assumption]
+    except FileNotFoundError as fnf:
+        print(f"{fnf.strerror}: {fnf.filename}")
+        print(f"Please ensure file exists then try again")
+        sys.exit(1)
+
     raise NotImplementedError(f"Unknown modulation assumption '{mod_assumption}'")
