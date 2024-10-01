@@ -100,7 +100,8 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                 modulations_dict[bandwidth].setdefault(modulation, []).append(mean(mod_usages))
 
     def _find_sim_info(self, input_dict: dict):
-        info_item_list = ['holding_time', 'cores_per_link', 'spectral_slots', 'network', 'num_requests',
+        # TODO: Does not support all slots
+        info_item_list = ['holding_time', 'cores_per_link', 'c_band', 'network', 'num_requests',
                           'cores_per_link', 'max_segments']
         self.plot_props = self.plot_props.plot_dict[self.time][self.sim_num].update_info_dict(
             plot_props=self.plot_props,
@@ -256,6 +257,7 @@ def _and_filters(filter_dict: dict, file_dict: dict):
         file_value = None
         for curr_key in keys_list:
             file_value = file_dict.get(curr_key)
+            file_dict = file_value
 
         if file_value != check_value:
             keep_config = False

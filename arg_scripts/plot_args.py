@@ -50,7 +50,8 @@ class PlotArgs:
         self.cong_block_list = []  # Percentage of blocking due to a congestion constraint
         self.holding_time = None  # Holding time for the simulation run
         self.cores_per_link = None  # Number of cores per link
-        self.spectral_slots = None  # Spectral slots per core
+        # TODO: Does not support all bands
+        self.c_band = None  # Spectral slots per core for the c-band
         self.learn_rate = None  # For artificial intelligence (AI), learning rate used if any
         self.discount_factor = None  # For AI, discount factor used if any
 
@@ -74,7 +75,7 @@ class PlotArgs:
         """
         resp_plot_props = copy.deepcopy(plot_props)
         for info_item in info_item_list:
-            resp_plot_props.plot_dict[time][sim_num][info_item] = input_dict[info_item]
+            resp_plot_props.plot_dict[time][sim_num].info_item = input_dict[info_item]
 
         return resp_plot_props
 
