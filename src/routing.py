@@ -183,6 +183,8 @@ class Routing:
         self.route_props.paths_matrix = list()
         self.route_props.mod_formats_matrix = list()
         self.route_props.weights_list = list()
+        self.route_props.connection_index = list()
+        self.route_props.path_index = list()
 
     def load_k_shortest(self):
         """
@@ -214,7 +216,7 @@ class Routing:
                                                     nested_key='max_length')
                     mod_formats = list(mod_formats_dict.keys())
                     self.route_props.paths_matrix.append(temp_path)
-                    self.route_props.mod_formats_matrix.append(mod_formats)
+                    self.route_props.mod_formats_matrix.append(mod_formats[::-1])
                     self.route_props.weights_list.append(path_len)
                     self.route_props.path_index.append(cnt)
 
