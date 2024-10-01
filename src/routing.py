@@ -188,11 +188,11 @@ class Routing:
         """
         Load the k-shortest paths from an external file.
         """
-        loaded_data = np.load('USB6014-10SP.npy', allow_pickle=True)
+        loaded_data_dict = np.load('USB6014-10SP.npy', allow_pickle=True)
         src_des_list = [int(self.sdn_props.source), int(self.sdn_props.destination)]
         
         path_cnt = 0
-        for item in loaded_data:
+        for item in loaded_data_dict:
             cnt = 0
             first_element = item[5][0][0][0][0]
             last_element = item[5][0][0][0][-1]
