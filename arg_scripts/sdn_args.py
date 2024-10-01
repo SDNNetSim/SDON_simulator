@@ -20,8 +20,8 @@ class SDNProps:
         self.core_list = []  # List of cores used (typically for light-segment slicing)
         self.band_list = []  # List of bands used (typically for light-segment slicing)
         self.xt_list = []  # List of crosstalk calculations for a single request
-        self.start_slot_list = []
-        self.end_slot_list = []
+        self.start_slot_list = [] # List of allocated start slot  index for slicing approach
+        self.end_slot_list = [] # List of allocated end slot  index for slicing approach
         self.num_trans = None  # Number of transponders a single request has used
         self.arrive = None  # Arrival time for a single request
         self.depart = None  # Departure time for a single request
