@@ -428,10 +428,6 @@ class SnrMeasurements:
         :rtype: tuple
         """
         self.num_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
-        # if self.engine_props['snr_type'] == "snr_calc_nli":
-        #     snr_check, xt_cost = self.check_snr()
-        # elif self.engine_props['snr_type'] == "xt_calculation":
-        #     snr_check, xt_cost = self.check_xt()
         if self.engine_props['snr_type'] == "snr_e2e_external_resources":
             mod_format, bw = self.check_snr_ext_slicing(path_index)
         else:
