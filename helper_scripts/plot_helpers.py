@@ -121,7 +121,11 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
     @staticmethod
     def _read_json_file(file_path: str):
         with open(file_path, 'r', encoding='utf-8') as file_obj:
-            return json.load(file_obj)
+            try:
+                return json.load(file_obj)
+            except json.JSONDecodeError:
+                print('JSON file did not finishing writing, skipping!')
+                return None
 
     def _read_input_output(self):
         base_fp = os.path.join(self.data_dict['network'], self.data_dict['date'], self.time)
@@ -145,6 +149,10 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                 for erlang in erlang_list:
                     self.erlang = erlang
                     input_dict, self.erlang_dict = self._read_input_output()
+
+                    if input_dict is None or self.erlang_dict is None:
+                        continue
+
                     self.plot_props.plot_dict[time][sim_num].erlang_list.append(float(erlang))
 
                     self.plot_props.erlang_dict = self.erlang_dict
@@ -257,7 +265,11 @@ def _and_filters(filter_dict: dict, file_dict: dict):
         file_value = None
         for curr_key in keys_list:
             file_value = file_dict.get(curr_key)
-            file_dict = file_value
+
+            if isinstance(file_value, dict):
+                file_dict = file_value
+            else:
+                break
 
         if file_value != check_value:
             keep_config = False

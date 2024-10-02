@@ -8,7 +8,7 @@ from helper_scripts.os_helpers import create_dir
 from helper_scripts.plot_helpers import find_times, PlotHelpers
 from arg_scripts.plot_args import PlotProps
 
-NETWORK_LIST = ['NSFNet', 'USNet', 'Pan-European']
+NETWORK_LIST = ['Pan-European']
 ARRIVAL_RATE_LIST = [80, 100, 140, 180]
 
 inf_baselines = {
@@ -22,16 +22,17 @@ inf_baselines = {
     ('USNet', 140): 0.0175,
     ('USNet', 180): 0.024,
 
+    # 4,000 requests and 500 episodes
     ('Pan-European', 80): 0.0,
     ('Pan-European', 100): 0.0,
-    ('Pan-European', 140): 0.0,
-    ('Pan-European', 180): 0.0,
+    ('Pan-European', 140): 0.0187,
+    ('Pan-European', 180): 0.0512,
 }
 
 ksp_baselines = {
     ('NSFNet', 80): 0.0215,
     ('NSFNet', 100): 0.0505,
-    ('NSFNet', 100): 0.0735,
+    ('NSFNet', 140): 0.0735,
     ('NSFNet', 180): 0.1065,
 
     ('USNet', 80): 0.0295,
@@ -39,16 +40,17 @@ ksp_baselines = {
     ('USNet', 140): 0.051,
     ('USNet', 180): 0.0715,
 
-    ('Pan-European', 80): 0.0,
-    ('Pan-European', 100): 0.0,
-    ('Pan-European', 140): 0.0,
-    ('Pan-European', 180): 0.001,
+    # 4,000 requests and 500 episodes
+    ('Pan-European', 80): 0.0013,
+    ('Pan-European', 100): 0.006,
+    ('Pan-European', 140): 0.0387,
+    ('Pan-European', 180): 0.0767,
 }
 
 spf_baselines = {
     ('NSFNet', 80): 0.081,
     ('NSFNet', 100): 0.128,
-    ('NSFNet', 100): 0.168,
+    ('NSFNet', 140): 0.168,
     ('NSFNet', 180): 0.208,
 
     ('USNet', 80): 0.056,
@@ -56,10 +58,11 @@ spf_baselines = {
     ('USNet', 140): 0.0965,
     ('USNet', 180): 0.111,
 
-    ('Pan-European', 80): 0.0,
-    ('Pan-European', 100): 0.0,
-    ('Pan-European', 140): 0.0015,
-    ('Pan-European', 180): 0.012,
+    # 4,000 requests and 500 episodes
+    ('Pan-European', 80): 0.005,
+    ('Pan-European', 100): 0.0227,
+    ('Pan-European', 140): 0.068,
+    ('Pan-European', 180): 0.1062,
 }
 
 for network in NETWORK_LIST:
@@ -67,7 +70,8 @@ for network in NETWORK_LIST:
         filter_dict = {
             'and_filter_list': [
                 ['arrival_rate', 'start', arrival_rate],
-                ['max_iters', 400],
+                # TODO: Now filter function doesn't work
+                # ['max_iters', 400],
             ],
             'or_filter_list': [
             ],
@@ -77,7 +81,7 @@ for network in NETWORK_LIST:
             ]
         }
 
-        sims_info_dict = find_times(dates_dict={'0927': network, '0930': network, '1001': network},
+        sims_info_dict = find_times(dates_dict={'1002': network},
                                     filter_dict=filter_dict)
         helpers_obj = PlotHelpers(plot_props=PlotProps(), net_names_list=sims_info_dict['networks_matrix'])
         helpers_obj.get_file_info(sims_info_dict=sims_info_dict)
@@ -110,9 +114,17 @@ for network in NETWORK_LIST:
                 return False, False
 
             with open(output_fp, 'r', encoding='utf-8') as file_path:
-                output_dict = json.load(file_path)
+                try:
+                    output_dict = json.load(file_path)
+                except json.JSONDecodeError:
+                    print('Output dict not found.')
+                    return False, False
             with open(input_fp, 'r', encoding='utf-8') as file_path:
-                input_dict = json.load(file_path)
+                try:
+                    input_dict = json.load(file_path)
+                except json.JSONDecodeError:
+                    print('Input dict not found.')
+                    return False, False
 
             return input_dict, output_dict
 
@@ -206,9 +218,9 @@ for network in NETWORK_LIST:
 
             input_dict, output_dict = read_files()
 
-            if '19' in input_dict['sim_start'][0:2]:
+            if not input_dict or not output_dict:
                 continue
-            if not input_dict:
+            if '19' in input_dict['sim_start'][0:2]:
                 continue
 
             tmp_dict = get_dict(
