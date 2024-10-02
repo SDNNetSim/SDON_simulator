@@ -23,6 +23,8 @@ from arg_scripts.rl_args import VALID_SPECTRUM_ALGORITHMS, get_optuna_hyperparam
 
 # TODO: No support for core or spectrum assignment
 # TODO: Update tests
+# TODO: Need to print traffic volume for every iteration
+# TODO: Multiple q tables didn't save?
 
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
@@ -500,6 +502,8 @@ def run_rl_sim():
         for arrival_rate in arrival_list:
             env.engine_obj.engine_props['erlang'] = arrival_rate / env.sim_dict['holding_time']
             env.engine_obj.engine_props['arrival_rate'] = arrival_rate * env.sim_dict['cores_per_link']
+            # TODO: How much else should be reset? Shouldn't we just redo the object in the loop...
+            env.iteration = 0
             _run(env=env, sim_dict=env.sim_dict)
             # TODO: Only works for path agent
             sum_returns = np.sum(env.path_agent.reward_penalty_list)
