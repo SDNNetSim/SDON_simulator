@@ -1,4 +1,38 @@
 # pylint: disable=too-few-public-methods
+import optuna
+
+
+# TODO: Add to the configuration file
+# TODO: Only use decay rate if exponential
+# TODO: Test
+def get_optuna_hyperparams(trial: optuna.trial):
+    """
+    Suggests hyperparameters for the Optuna trial.
+    """
+    resp_dict = dict()
+
+    resp_dict['alpha_start'] = trial.suggest_float('alpha_start', 1e-4, 1e-1, log=True)
+    resp_dict['alpha_end'] = trial.suggest_float('alpha_end', 1e-4, 1e-1, log=True)
+    resp_dict['alpha_update'] = trial.suggest_categorical('alpha_update', ['linear_decay', 'exp_decay', 'reward_based',
+                                                                           'state_based'])
+
+    resp_dict['epsilon_start'] = trial.suggest_float('epsilon_start', 1e-4, 1e-1, log=True)
+    resp_dict['epsilon_end'] = trial.suggest_float('epsilon_end', 1e-4, 1e-1, log=True)
+    resp_dict['epsilon_update'] = trial.suggest_categorical('epsilon_update', ['linear_decay', 'exp_decay',
+                                                                               'reward_based', 'state_based'])
+
+    resp_dict['discount_factor'] = trial.suggest_float('discount_factor', 0.8, 1.0)
+
+    resp_dict['reward'] = trial.suggest_float('reward', 1e-4, 1e-1, log=True)
+    resp_dict['penalty'] = trial.suggest_float('penalty', 1e-4, 1e-1, log=True)
+
+    if 'exp_decay' in (resp_dict['epsilon_update'], resp_dict['alpha_update']):
+        resp_dict['decay_rate'] = trial.suggest_float('decay_rate', 0.1, 0.5)
+    else:
+        resp_dict['decay_rate'] = None
+
+    return resp_dict
+
 
 class RLProps:
     """

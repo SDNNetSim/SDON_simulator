@@ -231,6 +231,7 @@ class PathAgent:
         self.hyperparam_obj = None
         self.state_action_pair = None
         self.action_index = None
+        self.reward_penalty_list = None
 
     def end_iter(self):
         """
@@ -246,6 +247,8 @@ class PathAgent:
         """
         Sets up the environment for the path agent.
         """
+        # TODO: Double check this
+        self.reward_penalty_list = np.zeros(self.engine_props['max_iters'])
         self.hyperparam_obj = HyperparamConfig(engine_props=self.engine_props, rl_props=self.rl_props, is_path=True)
         if self.path_algorithm == 'q_learning':
             self.agent_obj = QLearningHelpers(rl_props=self.rl_props, engine_props=self.engine_props)
@@ -292,7 +295,11 @@ class PathAgent:
         :param path_length: Length of the path.
         :param iteration: The current iteration.
         """
+        if self.hyperparam_obj.iteration >= self.engine_props['max_iters']:
+            return
+
         reward = self.get_reward(was_allocated=was_allocated, path_length=path_length)
+        self.reward_penalty_list[self.hyperparam_obj.iteration] += reward
         self.hyperparam_obj.curr_reward = reward
         self.iteration = iteration
         self._handle_hyperparams()

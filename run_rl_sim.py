@@ -1,6 +1,8 @@
 import os
 import copy
 import subprocess
+import optuna
+import pickle
 
 from torch import nn  # pylint: disable=unused-import
 import gymnasium as gym
@@ -16,8 +18,11 @@ from helper_scripts.callback_helpers import GetModelParams
 from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
 from arg_scripts.rl_args import RLProps, LOCAL_RL_COMMANDS_LIST, VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
-from arg_scripts.rl_args import VALID_SPECTRUM_ALGORITHMS
+from arg_scripts.rl_args import VALID_SPECTRUM_ALGORITHMS, get_optuna_hyperparams
 
+
+# TODO: No support for core or spectrum assignment
+# TODO: Update tests
 
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
@@ -481,7 +486,52 @@ def run_rl_sim():
     callback = GetModelParams()
     env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
     env.sim_dict['callback'] = callback
-    _run(env=env, sim_dict=env.sim_dict)
+
+    def objective(trial: optuna.trial):
+        hyperparam_dict = get_optuna_hyperparams(trial)
+        for param, value in hyperparam_dict.items():
+            if param not in list(env.sim_dict.keys()):
+                raise NotImplementedError(f'Param: {param} does not exist in simulation dictionary.')
+            env.sim_dict[param] = value
+
+        total_rewards = []
+        # TODO: Integrate with configuration file somehow
+        arrival_list = [80, 100]
+        for arrival_rate in arrival_list:
+            env.engine_obj.engine_props['erlang'] = arrival_rate / env.sim_dict['holding_time']
+            env.engine_obj.engine_props['arrival_rate'] = arrival_rate * env.sim_dict['cores_per_link']
+            _run(env=env, sim_dict=env.sim_dict)
+            # TODO: Only works for path agent
+            sum_returns = np.sum(env.path_agent.reward_penalty_list)
+            total_rewards.append(sum_returns)
+
+        return np.mean(total_rewards)
+
+    # TODO: Need something here to optimize or not without interfere with DRL
+    # TODO: Update name to something more specific
+    # TODO: Add study name to config?
+    study_name = "hyperparam_study.pkl"
+    study = optuna.create_study(direction='maximize', study_name=study_name)
+    n_trials = env.sim_dict['n_trials']
+    study.optimize(objective, n_trials=n_trials)
+
+    # TODO: Repeat code, only work for path agent
+    date_time = os.path.join(env.engine_obj.engine_props['network'], env.engine_obj.engine_props['date'],
+                             env.engine_obj.engine_props['sim_start'])
+    save_dir = os.path.join('logs', env.engine_obj.engine_props['path_algorithm'], date_time)
+    save_fp = os.path.join(save_dir, study_name)
+    with open(save_fp, 'wb') as curr_f:
+        pickle.dump(study, curr_f)
+
+    best_params = study.best_params
+    best_reward = study.best_value
+    save_fp = os.path.join(save_dir, 'best_hyperparams.txt')
+    with open(save_fp, 'w') as curr_f:
+        curr_f.write("Best Hyperparameters:\n")
+        for key, value in best_params.items():
+            curr_f.write(f"{key}: {value}\n")
+
+        curr_f.write(f"\nBest Trial Reward: {best_reward}\n")
 
 
 if __name__ == '__main__':

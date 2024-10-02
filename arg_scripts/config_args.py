@@ -140,6 +140,7 @@ OTHER_OPTIONS = {
         'path_levels': int,
         'core_beta': float,
         'decay_rate': float,
+        'n_trials': int,
     },
     'ml_settings': {
         'output_train_data': str_to_bool,
@@ -207,6 +208,7 @@ COMMAND_LINE_PARAMS = [
     ['path_algorithm', str, ''],
     ['core_algorithm', str, ''],
     ['spectrum_algorithm', str, ''],
+    ['optimize', str, ''],
     ['optimize_hyperparameters', str, ''],
     ['reward', float, ''],
     ['penalty', float, ''],

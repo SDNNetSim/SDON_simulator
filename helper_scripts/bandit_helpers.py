@@ -194,7 +194,7 @@ class EpsilonGreedyBandit:
         :param reward: Reward received from R(s, a).
         :param iteration: Current episode or iteration.
         """
-        _update_bandit(self=self, iteration=iteration, reward=reward, arm=arm, algorithm='epsilon_greedy')
+        _update_bandit(self=self, iteration=iteration, reward=reward, arm=arm, algorithm='epsilon_greedy_bandit')
 
 
 class UCBBandit:
