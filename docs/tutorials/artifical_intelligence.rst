@@ -52,11 +52,15 @@ How to run a Reinforcement Learning scenario on our simulator
 -------------------------------------------------------------
 To run a reinforcement learning scenario, the following is a config file that works for v5.0.0
 
+Note: the values for ``path_model``, ``core_model``, and ``spectrum_model`` are all for a pre-trained model. Due to the
+model being pre-trained, ``is_training`` is set to ``false``. If one were to train the model themselves, these
+parameters would be different and ``is_training`` would be set to true.
+
 .. code-block:: python
     [rl_settings]
     device = cpu
     optimize = False
-    is_training = True
+    is_training = False
     path_algorithm = ucb_bandit
     path_model = greedy_bandit/NSFNet/0617/16_47_22_694727/state_vals_e750.0_routes_c4.json
     core_algorithm = first_fit
