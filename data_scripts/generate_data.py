@@ -63,9 +63,11 @@ def create_bw_info(mod_assumption: str, mod_assumptions_path: str = None):
             return mod_formats_obj[mod_assumption]
     except json.JSONDecodeError as json_decode_error:
         print(f"Bad document: {json_decode_error.doc}")
-        print(f"Ensure file is a valid JSON document then try again")
+        print("Ensure file is a valid JSON document then try again")
         sys.exit(1)
-        print(f"Please ensure file exists then try again")
+    except FileNotFoundError as file_not_found:
+        print(f"{file_not_found.strerror}: {file_not_found.filename}")
+        print("Please ensure file exists then try again")
         sys.exit(1)
 
     raise NotImplementedError(f"Unknown modulation assumption '{mod_assumption}'")
