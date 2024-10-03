@@ -61,8 +61,10 @@ def create_bw_info(mod_assumption: str, mod_assumptions_path: str = None):
 
         if mod_assumption in mod_formats_obj.keys():
             return mod_formats_obj[mod_assumption]
-    except FileNotFoundError as fnf:
-        print(f"{fnf.strerror}: {fnf.filename}")
+    except json.JSONDecodeError as json_decode_error:
+        print(f"Bad document: {json_decode_error.doc}")
+        print(f"Ensure file is a valid JSON document then try again")
+        sys.exit(1)
         print(f"Please ensure file exists then try again")
         sys.exit(1)
 
