@@ -165,10 +165,13 @@ class SDNController:
                     dedicated_bw = bw if remaining_bw > bw else remaining_bw
                     self._update_req_stats(bandwidth=str(dedicated_bw))
                     remaining_bw -= bw
+                    self.sdn_props.is_sliced = True
                 else:
                     self.sdn_props.was_routed = False
                     self.sdn_props.block_reason = 'congestion'
-                    self.release()
+                    if remaining_bw != int(self.sdn_props.bandwidth):
+                        self.release()
+                    self.sdn_props.is_sliced = False
                     break
             else:
                 # mod_format = get_path_mod(mods_dict=mods_dict, path_len=path_len)
@@ -237,6 +240,8 @@ class SDNController:
                         force_slicing = True
                         if self.engine_props['dynamic_lps']:
                             self._handle_dynamic_slicing(path_list= path_list, path_index= path_index, forced_segments= force_slicing )
+                            if not self.sdn_props.was_routed:
+                                continue
                         else:
                             self._handle_slicing(path_list=path_list, forced_segments=forced_segments)
                             if not self.sdn_props.was_routed:
