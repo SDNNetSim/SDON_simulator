@@ -17,7 +17,7 @@ set -e
 # shellcheck disable=SC2164
 cd
 # shellcheck disable=SC2164
-cd /work/pi_vinod_vokkarane_uml_edu/git/sdn_simulator/
+cd /home/arash_rezaee_student_uml_edu/Git/SDON_simulator/
 
 # Load the required Python module
 module load python/3.11.0
@@ -28,13 +28,8 @@ source venvs/unity_venv/venv/bin/activate
 # Install the required Python packages
 pip install -r requirements.txt
 
-# Register custom reinforcement learning environments in Stable Baselines 3
-./bash_scripts/register_rl_env.sh ppo SimEnv
-
 # Define default parameters for the simulation
-NETWORK="Pan-European"
-TRAIN_FILE_PATH="Pan-European/0531/22_00_16_630834"
-ML_MODEL="knn"
+x="BSC"
 
 # Run the non-artificial intelligence simulation with the specified parameters
-python run_sim.py --network "$NETWORK" --train_file_path "$TRAIN_FILE_PATH" --ml_model "$ML_MODEL"
+python run_sim.py --spectrum_allocation_priority "$x"
