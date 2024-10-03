@@ -253,9 +253,9 @@ class TestGenerateData(unittest.TestCase):
         """
         Tests an invalid bandwidth assumption.
         """
-        sim_type = 'invalid'
+        mod_assumption = 'invalid'
         with self.assertRaises(NotImplementedError):
-            create_bw_info(sim_type)
+            create_bw_info(mod_assumption)
 
 
 if __name__ == '__main__':
