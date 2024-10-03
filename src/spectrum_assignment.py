@@ -109,25 +109,47 @@ class SpectrumAssignment:
         # TODO: Cores matrix is now a dictionary, change name
         core_matrix, core_list, band_list = self._setup_first_last()
 
-        for core_arr, core_num in zip(core_matrix, core_list):
+        if self.engine_props['spectrum_allocation_priority'] == 'BSC':
+            
             for band_index in range(len(band_list)):  # pylint: disable=consider-using-enumerate
-                open_slots_arr = np.where(core_arr[band_index] == 0)[0]
+                for core_arr, core_num in zip(core_matrix, core_list):
+                    open_slots_arr = np.where(core_arr[band_index] == 0)[0]
 
-                # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
-                if flag in ('last_fit', 'priority_last'):
-                    open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
-                                         itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-                elif flag in ('first_fit', 'priority_first', 'forced_index'):
-                    open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                                         itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-                else:
-                    raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
+                    # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
+                    if flag in ('last_fit', 'priority_last'):
+                        open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                    elif flag in ('first_fit', 'priority_first', 'forced_index'):
+                        open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                    else:
+                        raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
 
-                self.spec_help_obj.core_num = core_num
-                self.spec_help_obj.curr_band = band_list[band_index]
-                was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
-                if was_allocated:
-                    return
+                    self.spec_help_obj.core_num = core_num
+                    self.spec_help_obj.curr_band = band_list[band_index]
+                    was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
+                    if was_allocated:
+                        return
+        else:
+            for core_arr, core_num in zip(core_matrix, core_list):
+                for band_index in range(len(band_list)):  # pylint: disable=consider-using-enumerate
+                    open_slots_arr = np.where(core_arr[band_index] == 0)[0]
+
+                    # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
+                    if flag in ('last_fit', 'priority_last'):
+                        open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                    elif flag in ('first_fit', 'priority_first', 'forced_index'):
+                        open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                    else:
+                        raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
+
+                    self.spec_help_obj.core_num = core_num
+                    self.spec_help_obj.curr_band = band_list[band_index]
+                    was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
+                    if was_allocated:
+                        return
 
     # fixme: Only works for 7 cores
     def xt_aware(self):
