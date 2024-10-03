@@ -2,7 +2,6 @@ import unittest
 import json
 from unittest.mock import mock_open, patch
 
-from arg_scripts.data_args import YUE_MOD_ASSUMPTIONS, ARASH_MOD_ASSUMPTIONS
 from data_scripts.generate_data import create_pt, create_bw_info
 
 
@@ -84,14 +83,88 @@ class TestGenerateData(unittest.TestCase):
             check_top_dict['links'][int(link_num)] = data_dict
         self.assertEqual(topology_dict, check_top_dict)
 
-    def test_create_bw_info_yue(self):
+    @patch('builtins.open', new_callable=mock_open, read_data=json.dumps({
+            "example_mod_a": {
+                "25": {
+                    "QPSK": {
+                        "max_length": 22160,
+                        "slots_needed": 1
+                    },
+                    "16-QAM": {
+                        "max_length": 9500,
+                        "slots_needed": 1
+                    },
+                    "64-QAM": {
+                        "max_length": 3664,
+                        "slots_needed": 1
+                    }
+                },
+                "50": {
+                    "QPSK": {
+                        "max_length": 11080,
+                        "slots_needed": 2
+                    },
+                    "16-QAM": {
+                        "max_length": 4750,
+                        "slots_needed": 1
+                    },
+                    "64-QAM": {
+                        "max_length": 1832,
+                        "slots_needed": 1
+                    }
+                },
+                "100": {
+                    "QPSK": {
+                        "max_length": 5540,
+                        "slots_needed": 4
+                    },
+                    "16-QAM": {
+                        "max_length": 2375,
+                        "slots_needed": 2
+                    },
+                    "64-QAM": {
+                        "max_length": 916,
+                        "slots_needed": 2
+                    }
+                },
+                "200": {
+                    "QPSK": {
+                        "max_length": 2770,
+                        "slots_needed": 8
+                    },
+                    "16-QAM": {
+                        "max_length": 1187,
+                        "slots_needed": 4
+                    },
+                    "64-QAM": {
+                        "max_length": 458,
+                        "slots_needed": 3
+                    }
+                },
+                "400": {
+                    "QPSK": {
+                        "max_length": 1385,
+                        "slots_needed": 16
+                    },
+                    "16-QAM": {
+                        "max_length": 594,
+                        "slots_needed": 8
+                    },
+                    "64-QAM": {
+                        "max_length": 229,
+                        "slots_needed": 6
+                    }
+                }
+            }
+        }))
+    def test_create_bw_info_yue(self, mock_file):
         """
         Tests creating Yue's bandwidth assumptions.
         """
-        sim_type = 'yue'
-        expected_bw_mod_dict = YUE_MOD_ASSUMPTIONS
-        bw_mod_dict = create_bw_info(sim_type)
-        self.assertEqual(bw_mod_dict, expected_bw_mod_dict)
+        mod_assumption = 'example_mod_a'
+        expected_bw_mod_dict = json.loads(mock_file().read())
+        bw_mod_dict = create_bw_info(mod_assumption)
+        self.assertEqual(bw_mod_dict, expected_bw_mod_dict[mod_assumption])
 
     def test_create_bw_info_arash(self):
         """
