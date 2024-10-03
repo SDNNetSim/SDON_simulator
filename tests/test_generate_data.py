@@ -166,14 +166,88 @@ class TestGenerateData(unittest.TestCase):
         bw_mod_dict = create_bw_info(mod_assumption)
         self.assertEqual(bw_mod_dict, expected_bw_mod_dict[mod_assumption])
 
-    def test_create_bw_info_arash(self):
+    @patch('builtins.open', new_callable=mock_open, read_data=json.dumps({
+        "example_mod_b": {
+            "25": {
+                "QPSK": {
+                    "max_length": 20759,
+                    "slots_needed": 1
+                },
+                "16-QAM": {
+                    "max_length": 9295,
+                    "slots_needed": 1
+                },
+                "64-QAM": {
+                    "max_length": 3503,
+                    "slots_needed": 1
+                }
+            },
+            "50": {
+                "QPSK": {
+                    "max_length": 10380,
+                    "slots_needed": 2
+                },
+                "16-QAM": {
+                    "max_length": 4648,
+                    "slots_needed": 1
+                },
+                "64-QAM": {
+                    "max_length": 1752,
+                    "slots_needed": 1
+                }
+            },
+            "100": {
+                "QPSK": {
+                    "max_length": 5190,
+                    "slots_needed": 3
+                },
+                "16-QAM": {
+                    "max_length": 2324,
+                    "slots_needed": 2
+                },
+                "64-QAM": {
+                    "max_length": 876,
+                    "slots_needed": 1
+                }
+            },
+            "200": {
+                "QPSK": {
+                    "max_length": 2595,
+                    "slots_needed": 5
+                },
+                "16-QAM": {
+                    "max_length": 1162,
+                    "slots_needed": 3
+                },
+                "64-QAM": {
+                    "max_length": 438,
+                    "slots_needed": 2
+                }
+            },
+            "400": {
+                "QPSK": {
+                    "max_length": 1298,
+                    "slots_needed": 10
+                },
+                "16-QAM": {
+                    "max_length": 581,
+                    "slots_needed": 5
+                },
+                "64-QAM": {
+                    "max_length": 219,
+                    "slots_needed": 4
+                }
+            }
+        }
+    }))
+    def test_create_bw_info_arash(self, mock_file):
         """
         Tests creating Arash's bandwidth assumptions.
         """
-        sim_type = 'arash'
-        expected_bw_mod_dict = ARASH_MOD_ASSUMPTIONS
-        bw_mod_dict = create_bw_info(sim_type)
-        self.assertEqual(bw_mod_dict, expected_bw_mod_dict)
+        mod_assumption = 'example_mod_b'
+        expected_bw_mod_dict = json.loads(mock_file().read())
+        bw_mod_dict = create_bw_info(mod_assumption)
+        self.assertEqual(bw_mod_dict, expected_bw_mod_dict[mod_assumption])
 
     def test_create_bw_info_invalid(self):
         """
