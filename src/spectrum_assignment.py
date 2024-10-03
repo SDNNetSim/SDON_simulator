@@ -249,6 +249,8 @@ class SpectrumAssignment:
                 self.spectrum_props.is_free = True
                 self.sdn_props.block_reason = None
                 return mod_format, bw
+            else:
+                return 0, 0
         else:
             # TODO: develop it for flexigrid
             return 0,0
