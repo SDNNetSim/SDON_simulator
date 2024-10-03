@@ -63,6 +63,7 @@ ARASH_REQUIRED_OPTIONS = {
         'print_step': int,
         'fixed_grid': str_to_bool,
         'pre_calc_mod_selection': str_to_bool,
+        'spectrum_allocation_priority': str,
     },
     'topology_settings': {
         'network': str,
@@ -227,6 +228,7 @@ COMMAND_LINE_PARAMS = [
     ['fixed_grid', bool, ''],
     ['pre_calc_mod_selection', bool, ''],
     ['is_only_core_node', bool, ''],
+    ['spectrum_allocation_priority', str, ''],
 
     # StableBaselines3 arguments
     ['algo', str, ''],
