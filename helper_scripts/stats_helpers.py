@@ -282,12 +282,16 @@ class SimStats:
         :rtype: bool
         """
         self.block_mean = mean(self.stats_props.sim_block_list)
-        if self.block_mean == 0.0 or len(self.stats_props.sim_block_list) <= 1:
+        if len(self.stats_props.sim_block_list) <= 1:
             return False
+        
+        self.block_variance = variance(self.stats_props.sim_block_list)
 
-        blocking_variance = variance(self.stats_props.sim_block_list)
+        if self.block_mean == 0.0:
+            return False
+        
         try:
-            block_ci_rate = 1.645 * (math.sqrt(blocking_variance) / math.sqrt(len(self.stats_props.sim_block_list)))
+            block_ci_rate = 1.645 * (math.sqrt(self.block_variance) / math.sqrt(len(self.stats_props.sim_block_list)))
             self.block_ci = block_ci_rate
             block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
             self.block_ci_percent = block_ci_percent
