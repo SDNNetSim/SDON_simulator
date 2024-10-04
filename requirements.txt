@@ -48,7 +48,7 @@ mpmath~=1.3.0
 sympy~=1.12
 platformdirs~=4.2.0
 tqdm~=4.66.2
-triton~=2.2.0
+triton~=2.2.0; sys_platform=='linux'
 packaging~=24.0
 urllib3~=2.2.1
 fsspec~=2024.3.1
