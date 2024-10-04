@@ -1,3 +1,5 @@
+# pylint: disable=cell-var-from-loop
+
 import os
 import json
 
@@ -198,10 +200,10 @@ for network in NETWORK_LIST:
             return tmp_dict
 
 
-        if not os.path.exists(csv_file):
-            header = True
+        if not os.path.exists(csv_file):  # pylint: disable=simplifiable-if-statement
+            HEADER = True
         else:
-            header = False
+            HEADER = False
 
         # TODO: Only supports 's1'
         for run_time, run_obj in helpers_obj.file_info.items():
@@ -237,14 +239,14 @@ for network in NETWORK_LIST:
                 print(f'Completed one batch of {BATCH_SIZE}, appending to a CSV!')
                 df_to_write = pd.concat([pd.DataFrame(d, index=[0]) for d in dict_list])
                 df_to_write.to_csv(
-                    csv_file, mode='a', index=False, header=header, encoding='utf-8')
+                    csv_file, mode='a', index=False, header=HEADER, encoding='utf-8')
                 counter = 0  # pylint: disable=invalid-name
                 dict_list = []
-                header = False
+                HEADER = False
 
         if dict_list:
             pd.concat([pd.DataFrame(d, index=[0]) for d in dict_list]).to_csv(
-                csv_file, mode='a', index=False, header=header, encoding='utf-8')
+                csv_file, mode='a', index=False, header=HEADER, encoding='utf-8')
 
         df = pd.read_csv(csv_file, encoding='utf-8')
         df = df.sort_values(by='Blocking')
