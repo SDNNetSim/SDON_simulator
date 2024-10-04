@@ -1,10 +1,10 @@
 #!/bin/bash
 
 #SBATCH -p cpu-long
-#SBATCH -c 1
+#SBATCH -c 20
 #SBATCH -G 0
-#SBATCH --mem=16000
-#SBATCH -t 1-00:00:00
+#SBATCH --mem=40000
+#SBATCH -t 4-00:00:00
 #SBATCH -o slurm-%j.out
 
 # This script is designed to run a non-artificial intelligence simulation on the Unity cluster at UMass Amherst.
