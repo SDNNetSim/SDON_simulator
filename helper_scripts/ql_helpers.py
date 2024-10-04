@@ -242,7 +242,7 @@ class QLearningHelpers:
         """
         date_time = os.path.join(self.engine_props['network'], self.engine_props['date'],
                                  self.engine_props['sim_start'])
-        save_dir = os.path.join('logs', 'ql', date_time)
+        save_dir = os.path.join('logs', 'q_learning', date_time)
         create_dir(file_path=save_dir)
 
         erlang = self.engine_props['erlang']
