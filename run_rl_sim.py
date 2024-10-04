@@ -481,6 +481,7 @@ def _run(env: object, sim_dict: dict):
         _run_testing(sim_dict=sim_dict, env=env)
 
 
+# fixme: Saves extra input directory
 def run_rl_sim():
     """
     The main function that controls reinforcement learning simulations, including hyperparameter optimization.
@@ -505,7 +506,10 @@ def run_rl_sim():
             env.sim_dict[param] = value
 
         arrival_list = get_arrival_rates(arrival_dict=env.sim_dict['arrival_dict'])
-        return run_simulation_for_arrival_rates(env=env, arrival_list=arrival_list, run_func=_run)
+        mean_reward = run_simulation_for_arrival_rates(env=env, arrival_list=arrival_list, run_func=_run)
+        trial.set_user_attr("sim_start_time", env.sim_dict['sim_start'])
+
+        return mean_reward
 
     callback = GetModelParams()
     env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
@@ -519,10 +523,11 @@ def run_rl_sim():
         n_trials = env.sim_dict['n_trials']
         study.optimize(objective, n_trials=n_trials)
 
+        best_trial = study.best_trial
+        best_reward = best_trial.value
+        best_start_time = best_trial.user_attrs.get("sim_start_time")
         best_params = study.best_params
-        best_reward = study.best_value
-        start_time = env.sim_dict['sim_start']
-        save_study_results(study, env, study_name, best_params, best_reward, start_time)
+        save_study_results(study, env, study_name, best_params, best_reward, best_start_time)
 
 
 if __name__ == '__main__':
