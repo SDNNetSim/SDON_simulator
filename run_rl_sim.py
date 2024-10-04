@@ -2,7 +2,6 @@ import os
 import copy
 import subprocess
 import optuna
-import pickle
 
 from torch import nn  # pylint: disable=unused-import
 import gymnasium as gym
@@ -22,11 +21,8 @@ from arg_scripts.rl_args import RLProps, LOCAL_RL_COMMANDS_LIST, VALID_PATH_ALGO
 from arg_scripts.rl_args import VALID_SPECTRUM_ALGORITHMS, get_optuna_hyperparams
 
 
-# TODO: No support for core or spectrum assignment
 # TODO: Update tests
-# TODO: Need to print traffic volume for every iteration
-# TODO: Multiple q tables didn't save?
-# TODO: Just overwrites table every time...
+# TODO: No support for core or spectrum assignment
 
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
