@@ -2,9 +2,6 @@
 import optuna
 
 
-# TODO: Add to the configuration file
-# TODO: Only use decay rate if exponential
-# TODO: Test
 def get_optuna_hyperparams(trial: optuna.trial):
     """
     Suggests hyperparameters for the Optuna trial.
