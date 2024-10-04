@@ -1,4 +1,6 @@
 import copy
+import os
+import pickle
 from datetime import datetime
 
 import networkx as nx
@@ -584,3 +586,66 @@ def parse_yaml_file(yaml_file: str):
             return yaml_data
         except yaml.YAMLError as exc:
             return exc
+
+
+def get_arrival_rates(arrival_dict: dict):
+    """
+    Generate a list of arrival rates based on the configuration dictionary.
+
+    :param arrival_dict: The configuration dictionary containing values for generating the arrival rates.
+    :return: A list of arrival rates generated from the configuration.
+    :rtype: list
+    """
+    start = arrival_dict['start']
+    stop = arrival_dict['stop']
+    step = arrival_dict['step']
+
+    return list(range(start, stop + 1, step))
+
+
+def run_simulation_for_arrival_rates(env, arrival_list: list, run_func):
+    """
+    Run the simulation for each arrival rate in the given list.
+
+    :param env: The simulation environment instance.
+    :param arrival_list: A list of arrival rates to simulate.
+    :param run_func: The function to run a simulation.
+    :return: The mean of total rewards from all simulations.
+    :rtype: float
+    """
+    total_rewards = []
+    for arrival_rate in arrival_list:
+        env.engine_obj.engine_props['erlang'] = arrival_rate / env.sim_dict['holding_time']
+        env.engine_obj.engine_props['arrival_rate'] = arrival_rate * env.sim_dict['cores_per_link']
+        run_func(env=env, sim_dict=env.sim_dict)
+        sum_returns = np.sum(env.path_agent.reward_penalty_list)
+        total_rewards.append(sum_returns)
+
+    return np.mean(total_rewards)
+
+
+def save_study_results(study, env, study_name: str, best_params: dict, best_reward: float):
+    """
+    Save the results of the study, including the best hyperparameters and the best reward value.
+
+    :param study: The Optuna study object containing the results.
+    :param env: The simulation environment instance.
+    :param study_name: The name of the study file to save.
+    :param best_params: The best hyperparameters found by Optuna.
+    :param best_reward: The best reward value from the study.
+    """
+    date_time = os.path.join(env.engine_obj.engine_props['network'], env.engine_obj.engine_props['date'],
+                             env.engine_obj.engine_props['sim_start'])
+    save_dir = os.path.join('logs', env.engine_obj.engine_props['path_algorithm'], date_time)
+    os.makedirs(save_dir, exist_ok=True)
+
+    save_fp = os.path.join(save_dir, study_name)
+    with open(save_fp, 'wb') as f:
+        pickle.dump(study, f)
+
+    save_fp = os.path.join(save_dir, 'best_hyperparams.txt')
+    with open(save_fp, 'w') as f:
+        f.write("Best Hyperparameters:\n")
+        for key, value in best_params.items():
+            f.write(f"{key}: {value}\n")
+        f.write(f"\nBest Trial Reward: {best_reward}\n")

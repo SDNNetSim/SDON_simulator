@@ -16,6 +16,7 @@ from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
 from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod
+from helper_scripts.sim_helpers import get_arrival_rates, run_simulation_for_arrival_rates, save_study_results
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
 from arg_scripts.rl_args import RLProps, LOCAL_RL_COMMANDS_LIST, VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
 from arg_scripts.rl_args import VALID_SPECTRUM_ALGORITHMS, get_optuna_hyperparams
@@ -25,6 +26,7 @@ from arg_scripts.rl_args import VALID_SPECTRUM_ALGORITHMS, get_optuna_hyperparam
 # TODO: Update tests
 # TODO: Need to print traffic volume for every iteration
 # TODO: Multiple q tables didn't save?
+# TODO: Just overwrites table every time...
 
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
@@ -483,59 +485,45 @@ def _run(env: object, sim_dict: dict):
 
 def run_rl_sim():
     """
-    The main function that controls reinforcement learning simulations.
+    The main function that controls reinforcement learning simulations, including hyperparameter optimization.
     """
+
+    def objective(trial: optuna.Trial):
+        """
+        Objective function for Optuna, used to optimize hyperparameters during simulations.
+
+        :param trial: The Optuna trial object used to suggest hyperparameters.
+        :return: The mean of total rewards from all simulations.
+        :rtype: float
+        """
+        callback = GetModelParams()
+        env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
+        env.sim_dict['callback'] = callback
+
+        hyperparam_dict = get_optuna_hyperparams(trial=trial)
+        for param, value in hyperparam_dict.items():
+            if param not in env.sim_dict:
+                raise NotImplementedError(f'Param: {param} does not exist in simulation dictionary.')
+            env.sim_dict[param] = value
+
+        arrival_rates = get_arrival_rates(arrival_dict=env.sim_dict['arrival_rate'])
+        return run_simulation_for_arrival_rates(env=env, arrival_list=arrival_rates, run_func=_run)
+
     callback = GetModelParams()
     env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
     env.sim_dict['callback'] = callback
 
-    def objective(trial: optuna.trial):
-        hyperparam_dict = get_optuna_hyperparams(trial)
-        for param, value in hyperparam_dict.items():
-            if param not in list(env.sim_dict.keys()):
-                raise NotImplementedError(f'Param: {param} does not exist in simulation dictionary.')
-            env.sim_dict[param] = value
+    if not env.sim_dict.engine_obj.engine_props['optimize']:
+        _run(env=env, sim_dict=env.sim_dict)
+    else:
+        study_name = "hyperparam_study.pkl"
+        study = optuna.create_study(direction='maximize', study_name=study_name)
+        n_trials = env.sim_dict['n_trials']
+        study.optimize(objective, n_trials=n_trials)
 
-        total_rewards = []
-        # TODO: Integrate with configuration file somehow
-        arrival_list = [80, 100]
-        for arrival_rate in arrival_list:
-            env.engine_obj.engine_props['erlang'] = arrival_rate / env.sim_dict['holding_time']
-            env.engine_obj.engine_props['arrival_rate'] = arrival_rate * env.sim_dict['cores_per_link']
-            # TODO: How much else should be reset? Shouldn't we just redo the object in the loop...
-            env.iteration = 0
-            _run(env=env, sim_dict=env.sim_dict)
-            # TODO: Only works for path agent
-            sum_returns = np.sum(env.path_agent.reward_penalty_list)
-            total_rewards.append(sum_returns)
-
-        return np.mean(total_rewards)
-
-    # TODO: Need something here to optimize or not without interfere with DRL
-    # TODO: Update name to something more specific
-    # TODO: Add study name to config?
-    study_name = "hyperparam_study.pkl"
-    study = optuna.create_study(direction='maximize', study_name=study_name)
-    n_trials = env.sim_dict['n_trials']
-    study.optimize(objective, n_trials=n_trials)
-
-    # TODO: Repeat code, only work for path agent
-    date_time = os.path.join(env.engine_obj.engine_props['network'], env.engine_obj.engine_props['date'],
-                             env.engine_obj.engine_props['sim_start'])
-    save_dir = os.path.join('logs', env.engine_obj.engine_props['path_algorithm'], date_time)
-    save_fp = os.path.join(save_dir, study_name)
-    with open(save_fp, 'wb') as curr_f:
-        pickle.dump(study, curr_f)
-
-    best_params = study.best_params
-    best_reward = study.best_value
-    save_fp = os.path.join(save_dir, 'best_hyperparams.txt')
-    with open(save_fp, 'w') as curr_f:
-        curr_f.write("Best Hyperparameters:\n")
-        for key, value in best_params.items():
-            curr_f.write(f"{key}: {value}\n")
-
-        curr_f.write(f"\nBest Trial Reward: {best_reward}\n")
+        best_params = study.best_params
+        best_reward = study.best_value
+        save_study_results(study, env, study_name, best_params, best_reward)
 
 
 if __name__ == '__main__':
