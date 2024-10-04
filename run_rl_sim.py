@@ -334,6 +334,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self._create_input()
 
         # fixme
+        self.sim_dict['arrival_dict'] = self.sim_dict['arrival_rate']
         try:
             start_arr_rate = float(self.sim_dict['arrival_rate']['start'])
         except TypeError:
@@ -369,7 +370,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props.arrival_list = list()
         self.rl_props.depart_list = list()
 
-        if self.optimize or self.optimize is None:
+        # TODO: fixme statement breaks for DRL
+        if self.optimize is None:
             self.iteration = 0
             self.setup()
 
@@ -502,14 +504,14 @@ def run_rl_sim():
                 raise NotImplementedError(f'Param: {param} does not exist in simulation dictionary.')
             env.sim_dict[param] = value
 
-        arrival_rates = get_arrival_rates(arrival_dict=env.sim_dict['arrival_rate'])
-        return run_simulation_for_arrival_rates(env=env, arrival_list=arrival_rates, run_func=_run)
+        arrival_list = get_arrival_rates(arrival_dict=env.sim_dict['arrival_dict'])
+        return run_simulation_for_arrival_rates(env=env, arrival_list=arrival_list, run_func=_run)
 
     callback = GetModelParams()
     env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
     env.sim_dict['callback'] = callback
 
-    if not env.sim_dict.engine_obj.engine_props['optimize']:
+    if not env.sim_dict['optimize']:
         _run(env=env, sim_dict=env.sim_dict)
     else:
         study_name = "hyperparam_study.pkl"
@@ -519,7 +521,8 @@ def run_rl_sim():
 
         best_params = study.best_params
         best_reward = study.best_value
-        save_study_results(study, env, study_name, best_params, best_reward)
+        start_time = env.sim_dict['sim_start']
+        save_study_results(study, env, study_name, best_params, best_reward, start_time)
 
 
 if __name__ == '__main__':

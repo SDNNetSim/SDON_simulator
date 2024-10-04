@@ -624,7 +624,7 @@ def run_simulation_for_arrival_rates(env, arrival_list: list, run_func):
     return np.mean(total_rewards)
 
 
-def save_study_results(study, env, study_name: str, best_params: dict, best_reward: float):
+def save_study_results(study, env, study_name: str, best_params: dict, best_reward: float, start_time: str):
     """
     Save the results of the study, including the best hyperparameters and the best reward value.
 
@@ -633,6 +633,7 @@ def save_study_results(study, env, study_name: str, best_params: dict, best_rewa
     :param study_name: The name of the study file to save.
     :param best_params: The best hyperparameters found by Optuna.
     :param best_reward: The best reward value from the study.
+    :param start_time: Start time of simulation run.
     """
     date_time = os.path.join(env.engine_obj.engine_props['network'], env.engine_obj.engine_props['date'],
                              env.engine_obj.engine_props['sim_start'])
@@ -640,7 +641,7 @@ def save_study_results(study, env, study_name: str, best_params: dict, best_rewa
     os.makedirs(save_dir, exist_ok=True)
 
     save_fp = os.path.join(save_dir, study_name)
-    with open(save_fp, 'wb', encoding='utf-8') as file_path:
+    with open(save_fp, 'wb') as file_path:
         pickle.dump(study, file_path)
 
     save_fp = os.path.join(save_dir, 'best_hyperparams.txt')
@@ -649,3 +650,4 @@ def save_study_results(study, env, study_name: str, best_params: dict, best_rewa
         for key, value in best_params.items():
             file_path.write(f"{key}: {value}\n")
         file_path.write(f"\nBest Trial Reward: {best_reward}\n")
+        file_path.write(f"\nBest Trial Start Time: {start_time}\n")
