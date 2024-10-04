@@ -3,6 +3,7 @@ numpy==1.26.3
 pylint==3.0.3
 sphinx==7.2.6
 sphinx_rtd_theme==2.0.0
+pyarrow
 pandas==2.2.0
 openpyxl==3.1.2
 matplotlib==3.8.2
