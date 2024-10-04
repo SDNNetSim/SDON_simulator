@@ -2,46 +2,35 @@
 import optuna
 
 
-def round_floats(resp_dict, precision=4):
-    """
-    Rounds all floating point values in the dictionary to the specified precision.
-    Ignores NoneType and integer values.
-    """
-    for key, value in resp_dict.items():
-        if isinstance(value, float):
-            resp_dict[key] = round(value, precision)
-
-    return resp_dict
-
-
+# TODO: Only works for path algorithm
+# TODO: Fine-tine 'c' for UCB bandit?
 def get_optuna_hyperparams(sim_dict: dict, trial: optuna.trial):
     """
     Suggests hyperparameters for the Optuna trial.
     """
     resp_dict = dict()
 
-    resp_dict['alpha_start'] = trial.suggest_float('alpha_start', low=0.001, high=0.5, log=True)
-    resp_dict['alpha_end'] = trial.suggest_float('alpha_end', low=0.001, high=0.1, log=True)
-    resp_dict['alpha_update'] = trial.suggest_categorical('alpha_update', ['linear_decay', 'exp_decay', 'reward_based',
-                                                                           'state_based'])
+    # There is no alpha in bandit algorithms
+    if 'bandit' not in sim_dict['path_algorithm']:
+        resp_dict['alpha_start'] = trial.suggest_float('alpha_start', low=0.01, high=0.5, log=False, step=0.01)
+        resp_dict['alpha_end'] = trial.suggest_float('alpha_end', low=0.01, high=0.1, log=False, step=0.01)
+    else:
+        resp_dict['alpha_start'], resp_dict['alpha_end'] = None, None
 
-    resp_dict['epsilon_start'] = trial.suggest_float('epsilon_start', low=0.01, high=0.5, log=True)
-    resp_dict['epsilon_end'] = trial.suggest_float('epsilon_end', low=0.01, high=0.1, log=True)
-    resp_dict['epsilon_update'] = trial.suggest_categorical('epsilon_update', ['linear_decay', 'exp_decay',
-                                                                               'reward_based', 'state_based'])
+    resp_dict['epsilon_start'] = trial.suggest_float('epsilon_start', low=0.01, high=0.5, log=False, step=0.01)
+    resp_dict['epsilon_end'] = trial.suggest_float('epsilon_end', low=0.01, high=0.1, log=False, step=0.01)
 
-    # TODO: Only works for path algorithm
     if 'q_learning' in (sim_dict['path_algorithm']):
-        resp_dict['discount_factor'] = trial.suggest_float('discount_factor', low=0.8, high=1.0)
+        resp_dict['discount_factor'] = trial.suggest_float('discount_factor', low=0.8, high=1.0, step=0.01)
     else:
         resp_dict['discount_factor'] = None
 
-    if 'exp_decay' in (resp_dict['epsilon_update'], resp_dict['alpha_update']):
-        resp_dict['decay_rate'] = trial.suggest_float('decay_rate', low=0.1, high=0.5)
+    if 'exp_decay' in (sim_dict['epsilon_update'], sim_dict['alpha_update']):
+        resp_dict['decay_rate'] = trial.suggest_float('decay_rate', low=0.1, high=0.5, step=0.01)
     else:
         resp_dict['decay_rate'] = None
 
-    return round_floats(resp_dict)
+    return resp_dict
 
 
 class RLProps:

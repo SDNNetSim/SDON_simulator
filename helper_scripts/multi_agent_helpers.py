@@ -239,7 +239,8 @@ class PathAgent:
         """
         self.hyperparam_obj.iteration += 1
         if self.hyperparam_obj.alpha_strategy in EPISODIC_STRATEGIES:
-            self.hyperparam_obj.update_alpha()
+            if 'bandit' not in self.engine_props['path_algorithm']:
+                self.hyperparam_obj.update_alpha()
         if self.hyperparam_obj.epsilon_strategy in EPISODIC_STRATEGIES:
             self.hyperparam_obj.update_eps()
 
@@ -282,7 +283,8 @@ class PathAgent:
             self.hyperparam_obj.update_timestep_data(state_action_pair=self.state_action_pair,
                                                      action_index=self.action_index)
         if self.hyperparam_obj.alpha_strategy not in EPISODIC_STRATEGIES:
-            self.hyperparam_obj.update_alpha()
+            if 'bandit' not in self.engine_props['path_algorithm']:
+                self.hyperparam_obj.update_alpha()
         if self.hyperparam_obj.epsilon_strategy not in EPISODIC_STRATEGIES:
             self.hyperparam_obj.update_eps()
 
