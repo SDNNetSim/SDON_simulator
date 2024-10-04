@@ -640,12 +640,12 @@ def save_study_results(study, env, study_name: str, best_params: dict, best_rewa
     os.makedirs(save_dir, exist_ok=True)
 
     save_fp = os.path.join(save_dir, study_name)
-    with open(save_fp, 'wb') as f:
-        pickle.dump(study, f)
+    with open(save_fp, 'wb', encoding='utf-8') as file_path:
+        pickle.dump(study, file_path)
 
     save_fp = os.path.join(save_dir, 'best_hyperparams.txt')
-    with open(save_fp, 'w') as f:
-        f.write("Best Hyperparameters:\n")
+    with open(save_fp, 'w', encoding='utf-8') as file_path:
+        file_path.write("Best Hyperparameters:\n")
         for key, value in best_params.items():
-            f.write(f"{key}: {value}\n")
-        f.write(f"\nBest Trial Reward: {best_reward}\n")
+            file_path.write(f"{key}: {value}\n")
+        file_path.write(f"\nBest Trial Reward: {best_reward}\n")
