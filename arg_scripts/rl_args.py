@@ -36,9 +36,6 @@ def get_optuna_hyperparams(sim_dict: dict, trial: optuna.trial):
     else:
         resp_dict['discount_factor'] = None
 
-    resp_dict['reward'] = trial.suggest_int('reward', low=0, high=50)
-    resp_dict['penalty'] = trial.suggest_int('penalty', low=-50, high=0)
-
     if 'exp_decay' in (resp_dict['epsilon_update'], resp_dict['alpha_update']):
         resp_dict['decay_rate'] = trial.suggest_float('decay_rate', low=0.1, high=0.5)
     else:
