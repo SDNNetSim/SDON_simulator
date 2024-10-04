@@ -499,7 +499,7 @@ def run_rl_sim():
         env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
         env.sim_dict['callback'] = callback
 
-        hyperparam_dict = get_optuna_hyperparams(trial=trial)
+        hyperparam_dict = get_optuna_hyperparams(sim_dict=env.sim_dict, trial=trial)
         for param, value in hyperparam_dict.items():
             if param not in env.sim_dict:
                 raise NotImplementedError(f'Param: {param} does not exist in simulation dictionary.')
