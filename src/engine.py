@@ -147,7 +147,7 @@ class Engine:
         # TODO: Needs to be a flag for artificial intelligence (especially RL) simulations
         # seed = 0
         self.reqs_dict = get_requests(seed=seed, engine_props=self.engine_props)
-        self.reqs_dict = dict(sorted(self.reqs_dict.items()))
+        self.reqs_dict = dict(sorted(self.reqs_dict.items(), key=lambda x: x[0][1]))
 
     def handle_request(self, curr_time: float, req_num: int):
         """
