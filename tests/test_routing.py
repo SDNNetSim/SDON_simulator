@@ -22,7 +22,8 @@ class TestRouting(unittest.TestCase):
             'k_paths': 2,
             'xt_type': 'with_length',
             'beta': 0.5,
-            'route_method': 'k_shortest_path'
+            'route_method': 'k_shortest_path',
+            'pre_calc_mod_selection': True # check False
         }
         self.engine_props['topology'].add_edge('A', 'B', weight=1, xt_cost=10, length=1)
         self.engine_props['topology'].add_edge('B', 'C', weight=1, xt_cost=5, length=1)
