@@ -27,6 +27,7 @@ class TestGetRequests(unittest.TestCase):
             'arrival_rate': 1.0,
             'holding_time': 2.0,
             'sim_type': 'default',  # Adjust as needed
+            'is_only_core_node': True # check for False
         }
 
     def test_requests_length(self):
