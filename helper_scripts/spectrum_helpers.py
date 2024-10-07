@@ -22,9 +22,23 @@ class SpectrumHelpers:
 
     def _check_free_spectrum(self, link_tuple: tuple, rev_link_tuple: tuple):
         core_arr = self.sdn_props.net_spec_dict[link_tuple]['cores_matrix'][self.curr_band][self.core_num]
-        spectrum_set = core_arr[self.start_index:self.end_index + self.engine_props['guard_slots']]
         rev_core_arr = self.sdn_props.net_spec_dict[rev_link_tuple]['cores_matrix'][self.curr_band][self.core_num]
-        rev_spectrum_set = rev_core_arr[self.start_index:self.end_index + self.engine_props['guard_slots']]
+        if self.spectrum_props.slots_needed == 1 and self.engine_props['guard_slots'] == 0:
+            if core_arr[self.start_index] == 0.0 and rev_core_arr[self.start_index] == 0.0:
+                return True
+            else:
+                return False
+        else:
+            if self.engine_props['guard_slots'] == 0:
+                tmp_end_index = self.end_index + 1
+            else:
+                tmp_end_index = self.end_index
+
+            spectrum_set = core_arr[self.start_index:tmp_end_index + self.engine_props['guard_slots']]
+            rev_spectrum_set = rev_core_arr[self.start_index:tmp_end_index + self.engine_props['guard_slots']]
+
+        if set(spectrum_set) == {} or set(rev_spectrum_set) == {}:
+            raise ValueError('Spectrum set cannot be empty.')
 
         if set(spectrum_set) == {0.0} and set(rev_spectrum_set) == {0.0}:
             return True

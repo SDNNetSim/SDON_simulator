@@ -117,10 +117,14 @@ class Routing:
                 break
             path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
             chosen_bw = self.sdn_props.bandwidth
-            mod_format = get_path_mod(mods_dict=self.engine_props['mod_per_bw'][chosen_bw], path_len=path_len)
-
+            if self.engine_props['pre_calc_mod_selection']:
+                mod_formats = [get_path_mod(mods_dict=self.engine_props['mod_per_bw'][chosen_bw], path_len=path_len)]
+            else:
+                mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats_dict,
+                                                    nested_key='max_length')
+                mod_formats = list(mod_formats_dict.keys())
             self.route_props.paths_matrix.append(path_list)
-            self.route_props.mod_formats_matrix.append([mod_format])
+            self.route_props.mod_formats_matrix.append(mod_formats)
             self.route_props.weights_list.append(path_len)
 
     def find_least_nli(self):
@@ -179,6 +183,50 @@ class Routing:
         self.route_props.paths_matrix = list()
         self.route_props.mod_formats_matrix = list()
         self.route_props.weights_list = list()
+        self.route_props.connection_index = list()
+        self.route_props.path_index = list()
+
+    def load_k_shortest(self):
+        """
+        Load the k-shortest paths from an external file.
+        """
+        loaded_data_dict = np.load('USB6014-10SP.npy', allow_pickle=True)
+        src_des_list = [int(self.sdn_props.source), int(self.sdn_props.destination)]
+        
+        path_cnt = 0
+        for item in loaded_data_dict:
+            cnt = 0
+            first_element = item[5][0][0][0][0]
+            last_element = item[5][0][0][0][-1]
+            if first_element in src_des_list and last_element in src_des_list:
+                self.route_props.connection_index.append(path_cnt)
+                for path in item[5][0]:
+                    if cnt == 3:
+                        break
+                    if first_element == int(self.sdn_props.source):
+                        temp_path = list(path[0])
+                    else:
+                        temp_path = list(path[0][::-1])
+
+                    
+                    temp_path = list(map(str, temp_path))
+                    path_len1 = find_path_len(path_list=temp_path, topology=self.engine_props['topology'])
+                    path_len = item[3][0][cnt]
+                    mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats_dict,
+                                                    nested_key='max_length')
+                    mod_formats = list(mod_formats_dict.keys())
+                    self.route_props.paths_matrix.append(temp_path)
+                    self.route_props.mod_formats_matrix.append(mod_formats[::-1])
+                    self.route_props.weights_list.append(path_len)
+                    self.route_props.path_index.append(cnt)
+
+                    cnt += 1
+                break
+            path_cnt += 1
+
+                
+
+
 
     def get_route(self):
         """
@@ -198,5 +246,7 @@ class Routing:
             self.find_least_weight(weight='length')
         elif self.engine_props['route_method'] == 'k_shortest_path':
             self.find_k_shortest()
+        elif self.engine_props['route_method'] == 'external_ksp':
+            self.load_k_shortest()
         else:
             raise NotImplementedError(f"Routing method not recognized, got: {self.engine_props['route_method']}.")
