@@ -31,7 +31,7 @@ def find_type_and_saved_path(config_path=args_obj['config_path']):
                          "Please ensure you have a file called config.ini in the run_ini directory.")
 
     if config['general_settings']['sim_type'] == 'yue':
-        return './data/run_comparison_data/yue_run_data.json'
+        return './tests/run_comparison_data/yue_run_data.json'
     else:
         raise ValueError("Error: sim_type not supported by function.")
 
