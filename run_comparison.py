@@ -15,18 +15,18 @@ def run_comparison():
     # Call the run function from run_sim.py
     run(sims_dict=all_sims_dict)
 
+
 def find_type_and_saved_path(config_path=args_obj['config_path']):
-    '''Finds the type of simulation and the saved path of the current config file.'''
+    """Finds the type of simulation and the saved path of the current config file."""
     config = configparser.ConfigParser()
 
-    #Following is from setup_config to reach the type of path
+    # Following is from setup_config to reach the type of path
     if config_path is None:
         config_path = os.path.join('ini', 'run_ini', 'config.ini')
     config.read(config_path)
 
-    #Following is from setup_config to reach the type of path
+    # Following is from setup_config to reach the type of path
     if not config.has_option('general_settings', 'sim_type'):
-        config_path = os.path.join('ini', 'run_ini')
         raise ValueError("Missing 'general_settings' section in the configuration file. "
                          "Please ensure you have a file called config.ini in the run_ini directory.")
 
@@ -35,8 +35,9 @@ def find_type_and_saved_path(config_path=args_obj['config_path']):
     else:
         raise ValueError("Error: sim_type not supported by function.")
 
+
 def compare_json_files(old_file, new_file):
-    '''Loads the two JSON files and runs the dict comparison module'''
+    """Loads the two JSON files and runs the dict comparison module"""
     with open(old_file, 'r') as f:
         old_data = json.load(f)
 
@@ -45,8 +46,9 @@ def compare_json_files(old_file, new_file):
 
     compare_nested_dicts(old_data, new_data)
 
-def compare_nested_dicts(old_dict: dict, new_dict: dict, path = ''):
-    '''Compares the nested dictionaries for differences.'''
+
+def compare_nested_dicts(old_dict: dict, new_dict: dict, path=''):
+    """Compares the nested dictionaries for differences."""
     for key in old_dict:
         current_path = f"{path}.{key}"
         if key not in new_dict:
@@ -60,7 +62,7 @@ def compare_nested_dicts(old_dict: dict, new_dict: dict, path = ''):
 
 
 def find_newest_file(directory):
-    '''Finds most recent simulation run.'''
+    """Finds most recent simulation run."""
     newest_file = None
     latest_time = 0
 
