@@ -596,9 +596,9 @@ def get_arrival_rates(arrival_dict: dict):
     :return: A list of arrival rates generated from the configuration.
     :rtype: list
     """
-    start = arrival_dict['start']
-    stop = arrival_dict['stop']
-    step = arrival_dict['step']
+    start = int(arrival_dict['start'])
+    stop = int(arrival_dict['stop'])
+    step = int(arrival_dict['step'])
 
     return list(range(start, stop + 1, step))
 
