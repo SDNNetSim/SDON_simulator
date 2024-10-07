@@ -1,17 +1,15 @@
-import copy
-from copy import deepcopy
 from run_sim import run
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 import json
-import sys
 import os
 import configparser
 
 args_obj = parse_args()
 
+
 def run_comparison():
-    '''Runs the simulation with the current config file.'''
+    """Runs the simulation with the current config file."""
     all_sims_dict = read_config(args_obj=args_obj, config_path=args_obj['config_path'])
 
     # Call the run function from run_sim.py
@@ -29,7 +27,6 @@ def find_type_and_saved_path(config_path=args_obj['config_path']):
     #Following is from setup_config to reach the type of path
     if not config.has_option('general_settings', 'sim_type'):
         config_path = os.path.join('ini', 'run_ini')
-        create_dir(config_path)
         raise ValueError("Missing 'general_settings' section in the configuration file. "
                          "Please ensure you have a file called config.ini in the run_ini directory.")
 
@@ -48,15 +45,18 @@ def compare_json_files(old_file, new_file):
 
     compare_nested_dicts(old_data, new_data)
 
-def compare_nested_dicts(old_dict, new_dict):
+def compare_nested_dicts(old_dict: dict, new_dict: dict, path = ''):
     '''Compares the nested dictionaries for differences.'''
-    for key, val in old_dict.items():
-        while isinstance(val, dict):
-            compare_nested_dicts(val, new_dict)
+    for key in old_dict:
+        current_path = f"{path}.{key}"
+        if key not in new_dict:
+            print("Error: Key {} not found in the saved file".format(key))
+        if isinstance(old_dict[key], dict) and isinstance(new_dict[key], dict):
+            compare_nested_dicts(old_dict[key], new_dict[key], current_path)
         if old_dict[key] != new_dict[key]:
-            raise ValueError(
-                "The saved value for {} is not the same as the current value {}.".format
-                (old_dict[key], new_dict[key]))
+            print(
+                "The saved value for {} = {} is not the same as the value of the simulation that was just run where {} "
+                "= {}"".".format(current_path, old_dict[key], current_path, new_dict[key]))
 
 
 def find_newest_file(directory):
