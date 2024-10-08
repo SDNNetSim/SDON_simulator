@@ -84,7 +84,7 @@ class TestGenerateData(unittest.TestCase):
             check_top_dict['links'][int(link_num)] = data_dict
         self.assertEqual(topology_dict, check_top_dict)
 
-    def test_create_bw_info_yue(self, mock_file):
+    def test_create_bw_info_example_mod_a(self):
         """
         Tests creating Yue's bandwidth assumptions.
         """
