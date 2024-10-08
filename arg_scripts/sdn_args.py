@@ -10,6 +10,7 @@ class SDNProps:
         self.was_routed = None  # Flag to determine successful route
         self.topology = None  # Networkx topology
         self.net_spec_dict = None  # Current network spectrum database
+        self.lightpath_status_dict = None # Current lightpath status
 
         self.req_id = None  # Current request ID number
         self.source = None  # Source node
