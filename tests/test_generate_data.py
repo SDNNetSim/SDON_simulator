@@ -1,5 +1,6 @@
 import unittest
 import json
+import os
 from unittest.mock import mock_open, patch
 
 from data_scripts.generate_data import create_pt, create_bw_info
@@ -254,8 +255,9 @@ class TestGenerateData(unittest.TestCase):
         Tests an invalid bandwidth assumption.
         """
         mod_assumption = 'invalid'
+        mod_assumption_path = os.path.join('tests', 'fixtures', 'test_mod_formats.json')
         with self.assertRaises(NotImplementedError):
-            create_bw_info(mod_assumption)
+            create_bw_info(mod_assumption, mod_assumption_path)
 
 
 if __name__ == '__main__':
