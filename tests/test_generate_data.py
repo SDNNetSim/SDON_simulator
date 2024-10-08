@@ -89,7 +89,9 @@ class TestGenerateData(unittest.TestCase):
         Tests creating Yue's bandwidth assumptions.
         """
         mod_assumption = 'example_mod_a'
-        expected_bw_mod_dict = json.loads(mock_file().read())
+        input_mod_format = os.path.join('tests', 'fixtures', 'test_mod_formats.json')
+        with open(input_mod_format, 'r', encoding='utf-8') as mod_format_obj:
+            expected_bw_mod_dict = json.load(mod_format_obj)
         bw_mod_dict = create_bw_info(mod_assumption)
         self.assertEqual(bw_mod_dict, expected_bw_mod_dict[mod_assumption])
 
@@ -98,7 +100,9 @@ class TestGenerateData(unittest.TestCase):
         Tests creating Arash's bandwidth assumptions.
         """
         mod_assumption = 'example_mod_b'
-        expected_bw_mod_dict = json.loads(mock_file().read())
+        input_mod_format = os.path.join('tests', 'fixtures', 'test_mod_formats.json')
+        with open(input_mod_format, 'r', encoding='utf-8') as mod_format_obj:
+            expected_bw_mod_dict = json.load(mod_format_obj)
         bw_mod_dict = create_bw_info(mod_assumption)
         self.assertEqual(bw_mod_dict, expected_bw_mod_dict[mod_assumption])
 
