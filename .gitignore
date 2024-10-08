@@ -31,3 +31,5 @@ venvs/unity_venv/venv
 
 # vscode-generated cache files
 __pycache__/
+
+json_input/run_mods/

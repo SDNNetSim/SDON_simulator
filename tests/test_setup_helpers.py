@@ -19,7 +19,9 @@ class TestSetupHelpers(unittest.TestCase):
             'date': '2024-08-19',
             'sim_start': '00:00',
             'const_link_weight': 10,
-            'cores_per_link': 7
+            'cores_per_link': 7,
+            'mod_assumption': 'example_mod_a',
+            'mod_assumptions_path': 'json_input/run_mods/mod_formats.json'
         }
         self.bw_info_dict = {'bandwidth': 100}
         self.network_dict = {'nodes': [], 'links': []}
@@ -42,7 +44,8 @@ class TestSetupHelpers(unittest.TestCase):
         result = create_input(self.base_fp, self.engine_props)
 
         # Assertions
-        mock_create_bw_info.assert_called_once_with(sim_type=self.engine_props['sim_type'])
+        mock_create_bw_info.assert_called_once_with(mod_assumption=self.engine_props['mod_assumption'],
+                                                    mod_assumptions_path=self.engine_props['mod_assumptions_path'])
         mock_save_input.assert_called_once_with(
             base_fp=self.base_fp,
             properties=self.engine_props,
