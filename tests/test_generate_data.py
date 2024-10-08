@@ -93,7 +93,7 @@ class TestGenerateData(unittest.TestCase):
         bw_mod_dict = create_bw_info(mod_assumption)
         self.assertEqual(bw_mod_dict, expected_bw_mod_dict[mod_assumption])
 
-    def test_create_bw_info_arash(self, mock_file):
+    def test_create_bw_info_example_mod_b(self):
         """
         Tests creating Arash's bandwidth assumptions.
         """
