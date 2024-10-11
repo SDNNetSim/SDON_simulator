@@ -156,6 +156,7 @@ class SDNController:
         path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
         bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
         self.spectrum_obj.spectrum_props.path_list = path_list
+        self.sdn_props.num_trans = 0
         while remaining_bw > 0:
             if self.engine_props['fixed_grid']:
                 self.sdn_props.was_routed = True
@@ -165,10 +166,12 @@ class SDNController:
                     dedicated_bw = bw if remaining_bw > bw else remaining_bw
                     self._update_req_stats(bandwidth=str(dedicated_bw))
                     remaining_bw -= bw
+                    self.sdn_props.num_trans += 1
                     self.sdn_props.is_sliced = True
                 else:
                     self.sdn_props.was_routed = False
                     self.sdn_props.block_reason = 'congestion'
+                    self.sdn_props.num_trans = 1
                     if remaining_bw != int(self.sdn_props.bandwidth):
                         self.release()
                     self.sdn_props.is_sliced = False
