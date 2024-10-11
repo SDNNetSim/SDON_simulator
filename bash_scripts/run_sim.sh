@@ -6,6 +6,7 @@
 #SBATCH --mem=40000
 #SBATCH -t 4-00:00:00
 #SBATCH -o slurm-%j.out
+#SBATCH --array=0-3
 
 # This script is designed to run a non-artificial intelligence simulation on the Unity cluster at UMass Amherst.
 # Users can provide custom parameters via the command line using -- before the parameter list.
@@ -28,8 +29,28 @@ source venvs/unity_venv/venv/bin/activate
 # Install the required Python packages
 pip install -r requirements.txt
 
-# Define default parameters for the simulation
-x="BSC"
+# define parameters
+allocation_methods=("first_fit" "last_fit")  
+spectrum_allocation_priorities=("CSB" "BSC")  
 
-# Run the non-artificial intelligence simulation with the specified parameters
-python run_sim.py --spectrum_allocation_priority "$x"
+total_combinations=$(( ${#allocation_methods[@]} * ${#spectrum_allocation_priorities[@]} ))
+
+# Ensure the task ID is within the range of total combinations
+if [ "$SLURM_ARRAY_TASK_ID" -ge "$total_combinations" ]; then
+  echo "SLURM_ARRAY_TASK_ID out of range."
+  exit 1
+fi
+
+# Calculate the allocation method and spectrum allocation priority index based on SLURM_ARRAY_TASK_ID
+allocation_method_index=$(( SLURM_ARRAY_TASK_ID / ${#spectrum_allocation_priorities[@]} ))
+spectrum_priority_index=$(( SLURM_ARRAY_TASK_ID % ${#spectrum_allocation_priorities[@]} ))
+
+# Get the allocation method and spectrum priority for the current task
+allocation_method=${allocation_methods[$allocation_method_index]}
+spectrum_priority=${spectrum_allocation_priorities[$spectrum_priority_index]}
+
+# Print the combination being used
+echo "Running simulation with allocation_method: $allocation_method and spectrum_allocation_priority: $spectrum_priority"
+
+# Run the simulation
+python run_sim.py --allocation_method "$allocation_method" --spectrum_allocation_priority "$spectrum_priority"
