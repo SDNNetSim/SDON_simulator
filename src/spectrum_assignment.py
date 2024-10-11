@@ -244,8 +244,9 @@ class SpectrumAssignment:
             self.spectrum_props.slots_needed = 1
             self._get_spectrum()
             if self.spectrum_props.is_free:
-                mod_format, bw = self.snr_obj.handle_snr_dynamic_slicing(path_index)
+                mod_format, bw, snr_val = self.snr_obj.handle_snr_dynamic_slicing(path_index)
                 self.spectrum_props.modulation = mod_format
+                self.spectrum_props.xt_cost = snr_val
                 self.spectrum_props.is_free = True
                 self.sdn_props.block_reason = None
                 return mod_format, bw
