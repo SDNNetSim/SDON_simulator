@@ -55,6 +55,7 @@ class Engine:
                 "start_slot_list":sdn_props.start_slot_list,
                 "end_slot_list":sdn_props.end_slot_list,
                 "bandwidth_list": sdn_props.bandwidth_list,
+                "snr_cost": sdn_props.xt_list,
                 # TODO: Update
                 "band": sdn_props.band_list,
             }})
