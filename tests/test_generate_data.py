@@ -92,7 +92,7 @@ class TestGenerateData(unittest.TestCase):
         input_mod_format = os.path.join('tests', 'fixtures', 'test_mod_formats.json')
         with open(input_mod_format, 'r', encoding='utf-8') as mod_format_obj:
             expected_bw_mod_dict = json.load(mod_format_obj)
-        bw_mod_dict = create_bw_info(mod_assumption)
+        bw_mod_dict = create_bw_info(mod_assumption, input_mod_format)
         self.assertEqual(bw_mod_dict, expected_bw_mod_dict[mod_assumption])
 
     def test_create_bw_info_example_mod_b(self):
@@ -103,7 +103,7 @@ class TestGenerateData(unittest.TestCase):
         input_mod_format = os.path.join('tests', 'fixtures', 'test_mod_formats.json')
         with open(input_mod_format, 'r', encoding='utf-8') as mod_format_obj:
             expected_bw_mod_dict = json.load(mod_format_obj)
-        bw_mod_dict = create_bw_info(mod_assumption)
+        bw_mod_dict = create_bw_info(mod_assumption, input_mod_format)
         self.assertEqual(bw_mod_dict, expected_bw_mod_dict[mod_assumption])
 
     def test_create_bw_info_invalid(self):
