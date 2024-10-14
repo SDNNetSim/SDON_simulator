@@ -46,8 +46,9 @@ class NetworkSimulator:
         Runs a simulation using the Yue's simulation assumptions. Reference: Wang, Yue. Dynamic Traffic Scheduling
         Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
         """
-        arr_rate_dict = self.properties['arrival_rate']
-        start, stop, step = arr_rate_dict['start'], arr_rate_dict['stop'], arr_rate_dict['step']
+        # arr_rate_dict = self.properties['arrival_rate']
+        start, stop, step = self.properties['arrival_start'], self.properties['arrival_stop'], \
+            self.properties['arrival_step']
 
         if self.properties['thread_erlangs']:
             with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -60,7 +61,7 @@ class NetworkSimulator:
                 for future in concurrent.futures.as_completed(futures_list):
                     future.result()
         else:
-            for arr_rate_mean in range(start, stop, step):
+            for arr_rate_mean in range(int(start), int(stop), int(step)):
                 self._run_yue(arr_rate_mean=arr_rate_mean, start=start)
 
     def _run_arash(self, erlang: float, first_erlang: float):

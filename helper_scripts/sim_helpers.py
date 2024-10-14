@@ -1,5 +1,6 @@
 import copy
 import os
+import json
 import pickle
 from datetime import datetime
 
@@ -651,3 +652,25 @@ def save_study_results(study, env, study_name: str, best_params: dict, best_rewa
             file_path.write(f"{key}: {value}\n")
         file_path.write(f"\nBest Trial Reward: {best_reward}\n")
         file_path.write(f"\nBest Trial Start Time: {start_time}\n")
+
+
+# TODO: Only support for one process
+def modify_multiple_json_values(file_path: str, update_list: list):
+    """
+    Opens a JSON file, modifies multiple key-value pairs in a dictionary, and saves it back to the file.
+
+    :param file_path: The path to the JSON file.
+    :param update_list: A list of tuples containing keys and their new values to be updated.
+                        Example: [('key1', 'new_value1'), ('key2', 'new_value2')]
+    """
+    with open(file_path, 'r') as json_file:
+        data = json.load(json_file)
+
+    for key, new_value in update_list:
+        if key in data:
+            data[key] = new_value
+        else:
+            raise KeyError(f"Key '{key}' not found in the JSON file.")
+
+    with open(file_path, 'w') as json_file:
+        json.dump(data, json_file, indent=4)

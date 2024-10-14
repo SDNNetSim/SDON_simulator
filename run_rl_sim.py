@@ -14,7 +14,7 @@ from helper_scripts.rl_setup_helpers import setup_rl_sim, print_info, setup_ppo
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
-from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod
+from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod, modify_multiple_json_values
 from helper_scripts.sim_helpers import get_arrival_rates, run_simulation_for_arrival_rates, save_study_results
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
 from arg_scripts.rl_args import RLProps, LOCAL_RL_COMMANDS_LIST, VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
@@ -500,10 +500,17 @@ def run_rl_sim():
         env.sim_dict['callback'] = callback
 
         hyperparam_dict = get_optuna_hyperparams(sim_dict=env.sim_dict, trial=trial)
+        update_list = list()
         for param, value in hyperparam_dict.items():
             if param not in env.sim_dict:
                 raise NotImplementedError(f'Param: {param} does not exist in simulation dictionary.')
             env.sim_dict[param] = value
+            update_list.append((param, value))
+
+        # Overrides the previous input file
+        file_path = os.path.join('data', 'input', env.sim_dict['network'], env.sim_dict['date'],
+                                 env.sim_dict['sim_start'], 'sim_input_s1.json')
+        modify_multiple_json_values(file_path=file_path, update_list=update_list)
 
         arrival_list = get_arrival_rates(arrival_dict=env.sim_dict['arrival_dict'])
         mean_reward = run_simulation_for_arrival_rates(env=env, arrival_list=arrival_list, run_func=_run)
