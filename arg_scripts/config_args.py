@@ -64,7 +64,7 @@ ARASH_REQUIRED_OPTIONS = {
         'fixed_grid': str_to_bool,
         'pre_calc_mod_selection': str_to_bool,
         'spectrum_allocation_priority': str,
-        'is_grooming_enabled': str,
+        'is_grooming_enabled': str_to_bool,
         'save_step': int,
     },
     'topology_settings': {
@@ -231,7 +231,7 @@ COMMAND_LINE_PARAMS = [
     ['pre_calc_mod_selection', bool, ''],
     ['is_only_core_node', bool, ''],
     ['spectrum_allocation_priority', str, ''],
-    ['is_grooming_enabled', str, ''],
+    ['is_grooming_enabled', bool, ''],
     ['save_step', int, ''],
 
     # StableBaselines3 arguments
