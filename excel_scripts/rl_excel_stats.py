@@ -10,70 +10,159 @@ from helper_scripts.os_helpers import create_dir
 from helper_scripts.plot_helpers import find_times, PlotHelpers
 from arg_scripts.plot_args import PlotProps
 
-NETWORK_LIST = ['Pan-European']
-ARRIVAL_RATE_LIST = [80, 100, 140, 180]
+NETWORK_LIST = ['NSFNet', 'USNet']
+ARRIVAL_RATE_LIST = [10, 20, 30, 50, 70, 90, 110, 130, 150, 170, 190]
 
 inf_baselines = {
-    ('NSFNet', 80): 0.0,
-    ('NSFNet', 100): 0.0005,
-    ('NSFNet', 140): 0.0335,
-    ('NSFNet', 180): 0.071,
+    # With 2,000 requests and k=3
+    ('NSFNet', 40): 0.00065,
+    ('NSFNet', 60): 0.0176,
+    ('NSFNet', 80): 0.04785,
+    ('NSFNet', 100): 0.0765,
+    ('NSFNet', 120): 0.0986,
+    ('NSFNet', 140): 0.119,
+    ('NSFNet', 160): 0.136,
+    ('NSFNet', 180): 0.148,
+    ('NSFNet', 200): 0.16,
 
-    ('USNet', 80): 0.011,
-    ('USNet', 100): 0.0115,
-    ('USNet', 140): 0.0175,
-    ('USNet', 180): 0.024,
+    # With 2,000 requests and k=4
+    ('USNet', 40): 0.031,
+    ('USNet', 60): 0.041,
+    ('USNet', 80): 0.0528,
+    ('USNet', 100): 0.063,
+    ('USNet', 120): 0.0733,
+    ('USNet', 140): 0.0823,
+    ('USNet', 160): 0.09315,
+    ('USNet', 180): 0.1009,
+    ('USNet', 200): 0.109,
 
-    # 4,000 requests and 500 episodes
-    ('Pan-European', 80): 0.0,
-    ('Pan-European', 100): 0.0,
-    ('Pan-European', 140): 0.0187,
-    ('Pan-European', 180): 0.0512,
+    # With 4,000 requests and k=4
+    ('Pan-European', 40): 0.0,
+    ('Pan-European', 60): 0.0,
+    ('Pan-European', 80): 0.0045,
+    ('Pan-European', 100): 0.019,
+    ('Pan-European', 120): 0.0399,
+    ('Pan-European', 140): 0.0586,
+    ('Pan-European', 160): 0.0757,
+    ('Pan-European', 180): 0.0934,
+    ('Pan-European', 200): 0.1081,
 }
 
 ksp_baselines = {
-    ('NSFNet', 80): 0.0215,
-    ('NSFNet', 100): 0.0505,
-    ('NSFNet', 140): 0.0735,
-    ('NSFNet', 180): 0.1065,
+    ('NSFNet', 10): 0.0,
+    ('NSFNet', 20): 0.0,
+    ('NSFNet', 30): 0.00165,
+    ('NSFNet', 40): 0.01155,
+    ('NSFNet', 50): 0.0274,
+    ('NSFNet', 60): 0.0402,
+    ('NSFNet', 70): 0.05345,
+    ('NSFNet', 80): 0.0685,
+    ('NSFNet', 90): 0.084,
+    ('NSFNet', 100): 0.0948,
+    ('NSFNet', 110): 0.1078,
+    ('NSFNet', 120): 0.11935,
+    ('NSFNet', 130): 0.127,
+    ('NSFNet', 140): 0.13985,
+    ('NSFNet', 150): 0.1456,
+    ('NSFNet', 160): 0.1545,
+    ('NSFNet', 170): 0.161,
+    ('NSFNet', 180): 0.1665,
+    ('NSFNet', 190): 0.173,
+    ('NSFNet', 200): 0.17875,
 
-    ('USNet', 80): 0.0295,
-    ('USNet', 100): 0.035,
-    ('USNet', 140): 0.051,
-    ('USNet', 180): 0.0715,
+    ('USNet', 10): 0.0247,
+    ('USNet', 20): 0.0247,
+    ('USNet', 30): 0.0274,
+    ('USNet', 40): 0.03485,
+    ('USNet', 50): 0.041,
+    ('USNet', 60): 0.04965,
+    ('USNet', 70): 0.0581,
+    ('USNet', 80): 0.0677,
+    ('USNet', 90): 0.076,
+    ('USNet', 100): 0.08125,
+    ('USNet', 110): 0.0878,
+    ('USNet', 120): 0.0929,
+    ('USNet', 130): 0.09715,
+    ('USNet', 140): 0.1024,
+    ('USNet', 150): 0.1068,
+    ('USNet', 160): 0.1102,
+    ('USNet', 170): 0.114,
+    ('USNet', 180): 0.118,
+    ('USNet', 190): 0.121,
+    ('USNet', 200): 0.125,
 
-    # 4,000 requests and 500 episodes
-    ('Pan-European', 80): 0.0013,
-    ('Pan-European', 100): 0.006,
-    ('Pan-European', 140): 0.0387,
-    ('Pan-European', 180): 0.0767,
+    ('Pan-European', 40): 0.0,
+    ('Pan-European', 60): 0.0008,
+    ('Pan-European', 80): 0.012,
+    ('Pan-European', 100): 0.0295,
+    ('Pan-European', 120): 0.0534,
+    ('Pan-European', 140): 0.076,
+    ('Pan-European', 160): 0.095,
+    ('Pan-European', 180): 0.1133,
+    ('Pan-European', 200): 0.1294,
 }
 
 spf_baselines = {
-    ('NSFNet', 80): 0.081,
-    ('NSFNet', 100): 0.128,
-    ('NSFNet', 140): 0.168,
-    ('NSFNet', 180): 0.208,
+    ('NSFNet', 10): 0.0,
+    ('NSFNet', 20): 0.0,
+    ('NSFNet', 30): 0.0068,
+    ('NSFNet', 40): 0.0341,
+    ('NSFNet', 50): 0.0667,
+    ('NSFNet', 60): 0.093,
+    ('NSFNet', 70): 0.115,
+    ('NSFNet', 80): 0.1338,
+    ('NSFNet', 90): 0.15075,
+    ('NSFNet', 100): 0.16245,
+    ('NSFNet', 110): 0.172,
+    ('NSFNet', 120): 0.1844,
+    ('NSFNet', 130): 0.1942,
+    ('NSFNet', 140): 0.202,
+    ('NSFNet', 150): 0.212,
+    ('NSFNet', 160): 0.2165,
+    ('NSFNet', 170): 0.225,
+    ('NSFNet', 180): 0.2304,
+    ('NSFNet', 190): 0.2367,
+    ('NSFNet', 200): 0.24105,
 
-    ('USNet', 80): 0.056,
-    ('USNet', 100): 0.071,
-    ('USNet', 140): 0.0965,
-    ('USNet', 180): 0.111,
+    ('USNet', 10): 0.0247,
+    ('USNet', 20): 0.0247,
+    ('USNet', 30): 0.0326,
+    ('USNet', 40): 0.055,
+    ('USNet', 50): 0.0705,
+    ('USNet', 60): 0.08375,
+    ('USNet', 70): 0.0951,
+    ('USNet', 80): 0.10845,
+    ('USNet', 90): 0.1184,
+    ('USNet', 100): 0.1282,
+    ('USNet', 110): 0.1357,
+    ('USNet', 120): 0.144,
+    ('USNet', 130): 0.1502,
+    ('USNet', 140): 0.1566,
+    ('USNet', 150): 0.1629,
+    ('USNet', 160): 0.16815,
+    ('USNet', 170): 0.1729,
+    ('USNet', 180): 0.1778,
+    ('USNet', 190): 0.18305,
+    ('USNet', 200): 0.1855,
 
-    # 4,000 requests and 500 episodes
-    ('Pan-European', 80): 0.005,
-    ('Pan-European', 100): 0.0227,
-    ('Pan-European', 140): 0.068,
-    ('Pan-European', 180): 0.1062,
+    ('Pan-European', 40): 0.0,
+    ('Pan-European', 60): 0.007,
+    ('Pan-European', 80): 0.029,
+    ('Pan-European', 100): 0.0565,
+    ('Pan-European', 120): 0.081425,
+    ('Pan-European', 140): 0.107,
+    ('Pan-European', 160): 0.1262,
+    ('Pan-European', 180): 0.145,
+    ('Pan-European', 200): 0.161,
 }
 
 for network in NETWORK_LIST:
     for arrival_rate in ARRIVAL_RATE_LIST:
         filter_dict = {
             'and_filter_list': [
-                ['arrival_rate', 'start', arrival_rate],
+                ['arrival_start', arrival_rate],
                 # TODO: Now filter function doesn't work
-                # ['max_iters', 400],
+                # ['max_iters', 200],
             ],
             'or_filter_list': [
             ],
@@ -83,8 +172,19 @@ for network in NETWORK_LIST:
             ]
         }
 
-        sims_info_dict = find_times(dates_dict={'1002': network},
+        sims_info_dict = find_times(dates_dict={'1014': network, '1015': network},
                                     filter_dict=filter_dict)
+
+        is_empty = True
+        for _, data_list in sims_info_dict.items():
+            if len(data_list) > 0:
+                is_empty = False
+                break
+
+        if is_empty:
+            print(f'No file matches for: {filter_dict}')
+            continue
+
         helpers_obj = PlotHelpers(plot_props=PlotProps(), net_names_list=sims_info_dict['networks_matrix'])
         helpers_obj.get_file_info(sims_info_dict=sims_info_dict)
 
