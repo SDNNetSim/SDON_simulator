@@ -215,13 +215,13 @@ class SpectrumAssignment:
             if self.spectrum_props.is_free:
                 self.spectrum_props.modulation = modulation
                 if self.engine_props['snr_type'] != 'None' and self.engine_props['snr_type'] is not None:
-                    snr_check, xt_cost = self.snr_obj.handle_snr(path_index)
+                    snr_check, xt_cost, lp_bw = self.snr_obj.handle_snr(path_index)
                     self.spectrum_props.xt_cost = xt_cost
                     if not snr_check:
                         self.spectrum_props.is_free = False
                         self.sdn_props.block_reason = 'xt_threshold'
                         continue
-
+                    self.spectrum_props.lightpath_bandwidth = lp_bw
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
 
