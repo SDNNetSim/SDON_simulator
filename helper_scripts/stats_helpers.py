@@ -187,15 +187,16 @@ class SimStats:
         for stat_key in sdn_data.stat_key_list:
             # TODO: Eventually change this name (sdn_data)
             curr_sdn_data = sdn_data.get_data(key=stat_key)
-
+            if stat_key == 'xt_list':
+                self.stats_props.xt_list.append(mean(curr_sdn_data)) # TODO: double-check
             for i, data in enumerate(curr_sdn_data):
                 if stat_key == 'core_list':
                     self.stats_props.cores_dict[data] += 1
                 elif stat_key == 'modulation_list':
                     bandwidth = sdn_data.bandwidth_list[i]
                     self.stats_props.mods_used_dict[bandwidth][data] += 1
-                elif stat_key == 'xt_list':
-                    self.stats_props.xt_list.append(int(data)) # TODO: double-check
+                # elif stat_key == 'xt_list':
+                #     self.stats_props.xt_list.append(int(data)) # TODO: double-check
                 elif stat_key == 'start_slot_list':
                     self.stats_props.start_slot_list.append(int(data))
                 elif stat_key == 'end_slot_list':
