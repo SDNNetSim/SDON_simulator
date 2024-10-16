@@ -24,6 +24,7 @@ class Engine:
         self.net_spec_dict = dict()
         self.reqs_dict = None
         self.reqs_status_dict = dict()
+        self.lightpath_status_dict = dict()
 
         self.iteration = 0
         self.topology = nx.Graph()
@@ -55,9 +56,26 @@ class Engine:
                 "start_slot_list":sdn_props.start_slot_list,
                 "end_slot_list":sdn_props.end_slot_list,
                 "bandwidth_list": sdn_props.bandwidth_list,
+                "lightpath_id_list": sdn_props.lightpath_id_list,
                 # TODO: Update
                 "band": sdn_props.band_list,
             }})
+            # if self.engine_props["is_grooming_enabled"]:
+            light_id = tuple(sorted([sdn_props.path_list[0], sdn_props.path_list[-1]]))
+            for lp_cnt in range(0, len(sdn_props.lightpath_id_list)):
+                if light_id not in self.lightpath_status_dict:
+                    self.lightpath_status_dict[light_id] = {}
+                self.lightpath_status_dict[light_id][sdn_props.lightpath_id_list[lp_cnt]] = {
+                    "path": sdn_props.path_list,
+                    "core": sdn_props.core_list[lp_cnt],
+                    "start_slot":sdn_props.start_slot_list[lp_cnt],
+                    "end_slot":sdn_props.end_slot_list[lp_cnt],
+                    "band": sdn_props.band_list[lp_cnt],
+                    "mod_format": sdn_props.modulation_list[lp_cnt],
+                    "lightpath_bandwidth": sdn_props.lightpath_bandwidth_list[lp_cnt], # TODO: check
+                    "remaining_bandwidth": sdn_props.lightpath_bandwidth_list[lp_cnt] - int(sdn_props.bandwidth_list[lp_cnt]),
+                    'requests_dict':{self.reqs_dict[curr_time]['req_id']: int(self.reqs_dict[curr_time]['bandwidth'])},
+                }
 
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,
                        force_slicing: bool = False, forced_index: int = None, force_mod_format: str = None):
@@ -75,6 +93,8 @@ class Engine:
             # TODO: This should be changed in reqs_dict eventually
             if req_key == 'mod_formats':
                 req_key = 'mod_formats_dict'
+            if req_key in ['lightpath_id_list']:
+                continue
             self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
 
         self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
@@ -82,6 +102,7 @@ class Engine:
                                   ml_model=self.ml_model, req_dict=self.reqs_dict[curr_time],
                                   force_mod_format=force_mod_format)
         self.net_spec_dict = self.sdn_obj.sdn_props.net_spec_dict
+        self.lightpath_status_dict = self.sdn_obj.sdn_props.lightpath_status_dict 
         self.update_arrival_params(curr_time=curr_time)
 
     def handle_release(self, curr_time: float):
@@ -97,9 +118,15 @@ class Engine:
             self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
 
         if self.reqs_dict[curr_time]['req_id'] in self.reqs_status_dict:
+            if not self.engine_props['is_grooming_enabled']:
+                lightpath_id_list = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['lightpath_id_list']
+            else:
+                # TODO: devop grooming function
+                raise NotImplementedError
             self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']
-            self.sdn_obj.handle_event(req_dict=self.reqs_dict[curr_time], request_type='release')
+            self.sdn_obj.handle_event(req_dict=self.reqs_dict[curr_time], request_type='release', lightpath_id_list=lightpath_id_list)
             self.net_spec_dict = self.sdn_obj.sdn_props.net_spec_dict
+            self.lightpath_status_dict = self.sdn_obj.sdn_props.lightpath_status_dict
         # Request was blocked, nothing to release
         else:
             pass
@@ -137,6 +164,7 @@ class Engine:
         self.stats_obj.topology = self.topology
         self.sdn_obj.sdn_props.net_spec_dict = self.net_spec_dict
         self.sdn_obj.sdn_props.topology = self.topology
+        self.sdn_obj.sdn_props.lightpath_status_dict = self.lightpath_status_dict 
 
     def generate_requests(self, seed: int):
         """
@@ -160,6 +188,7 @@ class Engine:
         if req_type == "arrival":
             old_net_spec_dict = copy.deepcopy(self.net_spec_dict)
             old_req_info_dict = copy.deepcopy(self.reqs_dict[curr_time])
+            old_lightpath_dict = copy.deepcopy(self.lightpath_status_dict)  # TODO: check for future AI based methods
             self.handle_arrival(curr_time=curr_time)
 
             if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
