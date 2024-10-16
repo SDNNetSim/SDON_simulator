@@ -350,10 +350,11 @@ class SnrMeasurements:
         mod_format = loaded_data[self.route_props.connection_index[0]][slot_index][path_index]
         if mod_format_mapping[mod_format] == self.spectrum_props.modulation and BW_mapping[self.spectrum_props.modulation] >= int(self.sdn_props.bandwidth):
             resp = True
+            bw_resp = BW_mapping[self.spectrum_props.modulation]
         else:
             resp = False
-        return resp, SNR_val
-        raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
+            bw_resp = 0
+        return resp, SNR_val, bw_resp
 
 
     def check_snr_ext_slicing(self, path_index):
@@ -414,11 +415,11 @@ class SnrMeasurements:
         elif self.engine_props['snr_type'] == "xt_calculation":
             snr_check, xt_cost = self.check_xt()
         elif self.engine_props['snr_type'] == "snr_e2e_external_resources":
-            snr_check, xt_cost = self.check_snr_ext(path_index)
+            snr_check, xt_cost, bw_resp = self.check_snr_ext(path_index)
         else:
             raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
 
-        return snr_check, xt_cost
+        return snr_check, xt_cost, bw_resp
 
     def handle_snr_dynamic_slicing(self, path_index):
         """
