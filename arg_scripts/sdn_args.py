@@ -20,6 +20,8 @@ class SDNProps:
         self.modulation_list = []  # List of modulation formats used by a single request
         self.core_list = []  # List of cores used (typically for light-segment slicing)
         self.band_list = []  # List of bands used (typically for light-segment slicing)
+        self.lightpath_bandwidth_list = []  # List of lightpath bandwidth
+        self.lightpath_id_list = []  # List of lightpath id
         self.xt_list = []  # List of crosstalk calculations for a single request
         self.start_slot_list = [] # List of allocated start slot  index for slicing approach
         self.end_slot_list = [] # List of allocated end slot  index for slicing approach
@@ -31,9 +33,10 @@ class SDNProps:
         self.single_core = False  # Whether to force single-core
         self.block_reason = None  # Reason for blocking a request
         self.mod_formats_dict = None  # List of valid modulation formats for this bandwidth
+        self.lightpath_counter = 0 # counter to set id t lightpaths
         
 
-        self.stat_key_list = ['modulation_list', 'xt_list', 'core_list', 'band_list', 'start_slot_list', 'end_slot_list']  # Statistical keys used to save results
+        self.stat_key_list = ['modulation_list', 'xt_list', 'core_list', 'band_list', 'start_slot_list', 'end_slot_list', 'lightpath_bandwidth_list', 'lightpath_id_list']  # Statistical keys used to save results
 
     def update_params(self, key: str, spectrum_key: str, spectrum_obj: object, value: int = None):
         """
@@ -65,7 +68,14 @@ class SDNProps:
         self.band_list = list()
         self.start_slot_list = list()
         self.end_slot_list = list()
+        self.bandwidth_list = list()
+        self.lightpath_bandwidth_list = list()
+        self.lightpath_id_list = list()
 
+    def get_lightpath_id(self):
+        self.lightpath_counter += 1
+        return self.lightpath_counter
+    
     # TODO: Update standards and guidelines, this should be a standardized function name.
     def get_data(self, key: str):
         """
