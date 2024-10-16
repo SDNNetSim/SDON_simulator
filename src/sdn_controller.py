@@ -23,7 +23,7 @@ class SDNController:
         self.spectrum_obj = SpectrumAssignment(engine_props=self.engine_props, sdn_props=self.sdn_props,
                                                route_props=self.route_obj.route_props)
 
-    def release(self):
+    def release(self, lightpath_id: int):
         """
         Removes a previously allocated request from the network.
         """
@@ -31,8 +31,8 @@ class SDNController:
             for band in self.engine_props['band_list']:
                 for core_num in range(self.engine_props['cores_per_link']):
                     core_arr = self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band][core_num]
-                    req_id_arr = np.where(core_arr == self.sdn_props.req_id)
-                    gb_arr = np.where(core_arr == (self.sdn_props.req_id * -1))
+                    req_id_arr = np.where(core_arr == lightpath_id)
+                    gb_arr = np.where(core_arr == (lightpath_id * -1))
 
                     for req_index in req_id_arr:
                         self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band][core_num][req_index] = 0
@@ -41,12 +41,12 @@ class SDNController:
                         self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band][core_num][gb_index] = 0
                         self.sdn_props.net_spec_dict[(dest, source)]['cores_matrix'][band][core_num][gb_index] = 0
 
-    def _allocate_gb(self, band: str, core_matrix: list, rev_core_matrix: list, core_num: int, end_slot: int):
+    def _allocate_gb(self, band: str, core_matrix: list, rev_core_matrix: list, core_num: int, end_slot: int, lightpath_id: int):
         if core_matrix[band][core_num][end_slot] != 0.0 or rev_core_matrix[band][core_num][end_slot] != 0.0:
             raise BufferError("Attempted to allocate a taken spectrum.")
 
-        core_matrix[band][core_num][end_slot] = self.sdn_props.req_id * -1
-        rev_core_matrix[band][core_num][end_slot] = self.sdn_props.req_id * -1
+        core_matrix[band][core_num][end_slot] = lightpath_id * -1
+        rev_core_matrix[band][core_num][end_slot] = lightpath_id * -1
 
     def allocate(self):
         """
@@ -56,6 +56,7 @@ class SDNController:
         end_slot = self.spectrum_obj.spectrum_props.end_slot
         core_num = self.spectrum_obj.spectrum_props.core_num
         band = self.spectrum_obj.spectrum_props.curr_band
+        lightpath_id = self.spectrum_obj.spectrum_props.lightpath_id
 
         if self.engine_props['guard_slots'] != 0:
             if self.spectrum_obj.spectrum_props.slots_needed != 1:
@@ -79,12 +80,12 @@ class SDNController:
 
             core_matrix = link_dict['cores_matrix']
             rev_core_matrix = rev_link_dict['cores_matrix']
-            core_matrix[band][core_num][start_slot:end_slot] = self.sdn_props.req_id
-            rev_core_matrix[band][core_num][start_slot:end_slot] = self.sdn_props.req_id
+            core_matrix[band][core_num][start_slot:end_slot] = lightpath_id
+            rev_core_matrix[band][core_num][start_slot:end_slot] = lightpath_id
 
             if self.engine_props['guard_slots']:
                 self._allocate_gb(core_matrix=core_matrix, rev_core_matrix=rev_core_matrix, end_slot=end_slot,
-                                  core_num=core_num, band=band)
+                                  core_num=core_num, band=band, lightpath_id=lightpath_id)
 
     # TODO: No support for multi-band
     def _update_req_stats(self, bandwidth: str):
@@ -101,6 +102,10 @@ class SDNController:
                 spectrum_key = 'start_slot'
             elif spectrum_key == 'end':
                 spectrum_key = 'end_slot'
+            elif spectrum_key == 'lightpath' and stat_key.split('_')[1] == 'id':
+                spectrum_key = 'lightpath_id'
+            elif spectrum_key == 'lightpath' and stat_key.split('_')[1] == 'bandwidth':
+                spectrum_key = 'lightpath_bandwidth'
 
             self.sdn_props.update_params(key=stat_key, spectrum_key=spectrum_key, spectrum_obj=self.spectrum_obj)
 
@@ -161,6 +166,10 @@ class SDNController:
                 self.sdn_props.was_routed = True
                 mod_format, bw = self.spectrum_obj.get_spectrum_dynamic_slicing(mod_format_list = [], path_index = path_index)
                 if self.spectrum_obj.spectrum_props.is_free:
+                    lp_id = self.sdn_props.get_lightpath_id()
+                    self.spectrum_obj.spectrum_props.lightpath_id = lp_id
+                    self.spectrum_obj.spectrum_props.lightpath_bandwidth = bw
+                    self.spectrum_obj
                     self.allocate()
                     dedicated_bw = bw if remaining_bw > bw else remaining_bw
                     self._update_req_stats(bandwidth=str(dedicated_bw))
@@ -187,7 +196,7 @@ class SDNController:
     def handle_event(self, req_dict: dict, request_type: str, force_slicing: bool = False,
                      # pylint: disable=too-many-statements
                      force_route_matrix: list = None, forced_index: int = None,
-                     force_core: int = None, ml_model=None, force_mod_format: str = None, forced_band: str = None):
+                     force_core: int = None, ml_model=None, force_mod_format: str = None, forced_band: str = None, lightpath_id_list: int = None):
         """
         Handles any event that occurs in the simulation, controls this class.
 
@@ -200,13 +209,15 @@ class SDNController:
         :param force_core: Force a specific core.
         :param ml_model: An optional machine learning model.
         :param forced_band: Whether to force a band or not.
+        :param lightpath_id: Lightpath id for release
         """
         self._init_req_stats()
         # Even if the request is blocked, we still consider one transponder
         self.sdn_props.num_trans = 1
 
         if request_type == "release":
-            self.release()
+            for lightpath_id in lightpath_id_list:
+                self.release(lightpath_id=lightpath_id)
             return
 
         start_time = time.time()
@@ -257,6 +268,8 @@ class SDNController:
                         if self.spectrum_obj.spectrum_props.is_free is not True:
                             self.sdn_props.block_reason = 'congestion'
                             continue
+                        lp_id = self.sdn_props.get_lightpath_id()
+                        self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                         self._update_req_stats(bandwidth=self.sdn_props.bandwidth)
 
                     self.sdn_props.was_routed = True
