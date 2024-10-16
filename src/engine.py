@@ -57,6 +57,7 @@ class Engine:
                 "end_slot_list":sdn_props.end_slot_list,
                 "bandwidth_list": sdn_props.bandwidth_list,
                 "lightpath_id_list": sdn_props.lightpath_id_list,
+                "snr_cost": sdn_props.xt_list,
                 # TODO: Update
                 "band": sdn_props.band_list,
             }})
@@ -72,6 +73,7 @@ class Engine:
                     "end_slot":sdn_props.end_slot_list[lp_cnt],
                     "band": sdn_props.band_list[lp_cnt],
                     "mod_format": sdn_props.modulation_list[lp_cnt],
+                    "snr_cost": sdn_props.xt_list[lp_cnt],
                     "lightpath_bandwidth": sdn_props.lightpath_bandwidth_list[lp_cnt], # TODO: check
                     "remaining_bandwidth": sdn_props.lightpath_bandwidth_list[lp_cnt] - int(sdn_props.bandwidth_list[lp_cnt]),
                     'requests_dict':{self.reqs_dict[curr_time]['req_id']: int(self.reqs_dict[curr_time]['bandwidth'])},
