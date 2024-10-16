@@ -26,6 +26,7 @@ class SDNController:
     def release(self, lightpath_id: int):
         """
         Removes a previously allocated request from the network.
+        :param lightpath_id: Lightpath id for release resources
         """
         for source, dest in zip(self.sdn_props.path_list, self.sdn_props.path_list[1:]):
             for band in self.engine_props['band_list']:
@@ -40,6 +41,10 @@ class SDNController:
                     for gb_index in gb_arr:
                         self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band][core_num][gb_index] = 0
                         self.sdn_props.net_spec_dict[(dest, source)]['cores_matrix'][band][core_num][gb_index] = 0
+
+        # Remove lightpath from lightpath_status_dict
+        light_id = tuple(sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]]))
+        self.sdn_props.lightpath_status_dict[light_id].pop(lightpath_id)
 
     def _allocate_gb(self, band: str, core_matrix: list, rev_core_matrix: list, core_num: int, end_slot: int, lightpath_id: int):
         if core_matrix[band][core_num][end_slot] != 0.0 or rev_core_matrix[band][core_num][end_slot] != 0.0:
