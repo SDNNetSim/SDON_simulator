@@ -333,9 +333,10 @@ class SnrMeasurements:
         }
         if self.spectrum_props.core_num == 6:
             loaded_data = np.load('MF-USB6014-MCF7-C6.npy', allow_pickle=True)
+            loaded_data_gsnr = np.load('GSNR-USB6014-MCF7-C6.npy', allow_pickle=True)
         else:
             loaded_data = np.load('MF-USB6014-MCF7-C3.npy', allow_pickle=True)
-        SNR_val = 0
+            loaded_data_gsnr = np.load('GSNR-USB6014-MCF7-C3.npy', allow_pickle=True)
         slot_index = 0
         if self.spectrum_props.curr_band == 'l':
             slot_index = self.spectrum_props.start_slot
@@ -348,6 +349,7 @@ class SnrMeasurements:
         else:
             NotImplementedError(f"Unexpected band: {self.spectrum_props.curr_band}")
         mod_format = loaded_data[self.route_props.connection_index[0]][slot_index][path_index]
+        SNR_val = loaded_data_gsnr[self.route_props.connection_index[0]][slot_index][path_index]
         if mod_format_mapping[mod_format] == self.spectrum_props.modulation and BW_mapping[self.spectrum_props.modulation] >= int(self.sdn_props.bandwidth):
             resp = True
             bw_resp = BW_mapping[self.spectrum_props.modulation]
@@ -382,9 +384,10 @@ class SnrMeasurements:
         }
         if self.spectrum_props.core_num == 6:
             loaded_data = np.load('MF-USB6014-MCF7-C6.npy', allow_pickle=True)
+            loaded_data_gsnr = np.load('GSNR-USB6014-MCF7-C6.npy', allow_pickle=True)
         else:
             loaded_data = np.load('MF-USB6014-MCF7-C3.npy', allow_pickle=True)
-        SNR_val = 0
+            loaded_data_gsnr = np.load('GSNR-USB6014-MCF7-C3.npy', allow_pickle=True)
         slot_index = 0
         if self.spectrum_props.curr_band == 'l':
             slot_index = self.spectrum_props.start_slot
@@ -397,8 +400,9 @@ class SnrMeasurements:
         else:
             NotImplementedError(f"Unexpected band: {self.spectrum_props.curr_band}")
         mod_format = mod_format_mapping[loaded_data[self.route_props.connection_index[0]][slot_index][path_index]]
+        SNR_val = loaded_data_gsnr[self.route_props.connection_index[0]][slot_index][path_index]
         supported_bw = BW_mapping[mod_format]
-        return mod_format, supported_bw
+        return mod_format, supported_bw, SNR_val
 
 
 
@@ -430,8 +434,8 @@ class SnrMeasurements:
         """
         self.num_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
         if self.engine_props['snr_type'] == "snr_e2e_external_resources":
-            mod_format, bw = self.check_snr_ext_slicing(path_index)
+            mod_format, bw, SNR_val = self.check_snr_ext_slicing(path_index)
         else:
             raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
 
-        return mod_format, bw
+        return mod_format, bw, SNR_val
