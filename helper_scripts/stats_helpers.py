@@ -187,15 +187,25 @@ class SimStats:
         for stat_key in sdn_data.stat_key_list:
             # TODO: Eventually change this name (sdn_data)
             curr_sdn_data = sdn_data.get_data(key=stat_key)
-
+            if stat_key == 'xt_list':
+                self.stats_props.xt_list.append(mean(curr_sdn_data)) # TODO: double-check
             for i, data in enumerate(curr_sdn_data):
                 if stat_key == 'core_list':
                     self.stats_props.cores_dict[data] += 1
                 elif stat_key == 'modulation_list':
                     bandwidth = sdn_data.bandwidth_list[i]
                     self.stats_props.mods_used_dict[bandwidth][data] += 1
-                elif stat_key == 'xt_list':
-                    self.stats_props.xt_list.append(data)
+                # elif stat_key == 'xt_list':
+                #     self.stats_props.xt_list.append(data) # TODO: double-check
+                elif stat_key == 'start_slot_list':
+                    self.stats_props.start_slot_list.append(int(data))
+                elif stat_key == 'end_slot_list':
+                    self.stats_props.end_slot_list.append(int(data))
+                elif stat_key == 'modulation_list':
+                    self.stats_props.modulation_list.append(int(data))
+                elif stat_key == 'bandwidth_list':
+                    self.stats_props.bandwidth_list.append(int(data))
+                
 
     def iter_update(self, req_data: dict, sdn_data: object):
         """
@@ -215,7 +225,7 @@ class SimStats:
             self.stats_props.hops_list.append(num_hops)
 
             path_len = find_path_len(path_list=sdn_data.path_list, topology=self.topology)
-            self.stats_props.lengths_list.append(path_len)
+            self.stats_props.lengths_list.append(round(float(path_len),2))
 
             self._handle_iter_lists(sdn_data=sdn_data)
             self.stats_props.route_times_list.append(sdn_data.route_time)
@@ -223,7 +233,7 @@ class SimStats:
             bandwidth = sdn_data.bandwidth
             mod_format = sdn_data.modulation_list[0]
 
-            self.stats_props.weights_dict[bandwidth][mod_format].append(sdn_data.path_weight)
+            self.stats_props.weights_dict[bandwidth][mod_format].append(round(float(sdn_data.path_weight),2))
 
     def _get_iter_means(self):
         for _, curr_snapshot in self.stats_props.snapshots_dict.items():
@@ -273,12 +283,16 @@ class SimStats:
         :rtype: bool
         """
         self.block_mean = mean(self.stats_props.sim_block_list)
-        if self.block_mean == 0.0 or len(self.stats_props.sim_block_list) <= 1:
+        if len(self.stats_props.sim_block_list) <= 1:
             return False
+        
+        self.block_variance = variance(self.stats_props.sim_block_list)
 
-        blocking_variance = variance(self.stats_props.sim_block_list)
+        if self.block_mean == 0.0:
+            return False
+        
         try:
-            block_ci_rate = 1.645 * (math.sqrt(blocking_variance) / math.sqrt(len(self.stats_props.sim_block_list)))
+            block_ci_rate = 1.645 * (math.sqrt(self.block_variance) / math.sqrt(len(self.stats_props.sim_block_list)))
             self.block_ci = block_ci_rate
             block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
             self.block_ci_percent = block_ci_percent
@@ -334,9 +348,9 @@ class SimStats:
                     self.save_dict['iter_stats'][self.iteration][f'{save_key}min'] = None
                     self.save_dict['iter_stats'][self.iteration][f'{save_key}max'] = None
                 else:
-                    self.save_dict['iter_stats'][self.iteration][f'{save_key}mean'] = mean(stat_array)
-                    self.save_dict['iter_stats'][self.iteration][f'{save_key}min'] = min(stat_array)
-                    self.save_dict['iter_stats'][self.iteration][f'{save_key}max'] = max(stat_array)
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}mean'] = round(float(mean(stat_array)),2)
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}min'] = round(float(min(stat_array)),2)
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}max'] = round(float(max(stat_array)),2)
             else:
                 self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(getattr(self.stats_props,
                                                                                                stat_key))

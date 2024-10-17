@@ -25,6 +25,7 @@ ini/run_ini/*
 bash_scripts/slurm/*
 
 .vscode/
+.venv/
 
 # Virtual environments
 venvs/unity_venv/venv

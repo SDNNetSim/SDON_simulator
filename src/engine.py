@@ -47,13 +47,17 @@ class Engine:
             self.stats_obj.curr_trans = sdn_props.num_trans
 
             self.reqs_status_dict.update({self.reqs_dict[curr_time]['req_id']: {
-                "mod_format": sdn_props.spectrum_object.modulation,
+                "mod_format": sdn_props.modulation_list,
                 "path": sdn_props.path_list,
                 "is_sliced": sdn_props.is_sliced,
                 "was_routed": sdn_props.was_routed,
                 "core_list": sdn_props.core_list,
+                "start_slot_list":sdn_props.start_slot_list,
+                "end_slot_list":sdn_props.end_slot_list,
+                "bandwidth_list": sdn_props.bandwidth_list,
+                "snr_cost": sdn_props.xt_list,
                 # TODO: Update
-                "band": sdn_props.curr_band,
+                "band": sdn_props.band_list,
             }})
 
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,
@@ -187,13 +191,17 @@ class Engine:
         self.stats_obj.end_iter_update()
         # Some form of ML/RL is being used, ignore confidence intervals for training and testing
         if not self.engine_props['is_training']:
-            return bool(self.stats_obj.get_conf_inter())
-
+            resp = bool(self.stats_obj.get_conf_inter())
+        else:
+            resp = False
         if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
             self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], print_flag=print_flag)
 
-        self.stats_obj.save_stats(base_fp=base_fp)
-        return False
+        if (iteration + 1) % self.engine_props['save_step'] == 0 or iteration == 0 or (iteration + 1) == self.engine_props['max_iters']:
+            self.stats_obj.save_stats(base_fp=base_fp)
+
+        
+        return resp
 
     def init_iter(self, iteration: int):
         """

@@ -13,13 +13,14 @@ class SpectrumAssignment:
     Attempt to find the available spectrum for a given request.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object):
+    def __init__(self, engine_props: dict, sdn_props: object, route_props: object):
         self.spectrum_props = SpectrumProps()
         self.engine_props = engine_props
         self.sdn_props = sdn_props
+        self.route_props = route_props
 
         self.snr_obj = SnrMeasurements(engine_props=self.engine_props, sdn_props=self.sdn_props,
-                                       spectrum_props=self.spectrum_props)
+                                       spectrum_props=self.spectrum_props, route_props=self.route_props)
         self.spec_help_obj = SpectrumHelpers(engine_props=self.engine_props, sdn_props=self.sdn_props,
                                              spectrum_props=self.spectrum_props)
 
@@ -42,6 +43,7 @@ class SpectrumAssignment:
                     self.spectrum_props.is_free = True
                     self.spectrum_props.start_slot = start_index
                     self.spectrum_props.end_slot = end_index + self.engine_props['guard_slots']
+                    self.spectrum_props.end_slot = end_index
                     self.spectrum_props.core_num = channel_dict['core']
                     # TODO: This needs to be checked
                     self.spectrum_props.curr_band = channel_dict['band']
@@ -107,25 +109,47 @@ class SpectrumAssignment:
         # TODO: Cores matrix is now a dictionary, change name
         core_matrix, core_list, band_list = self._setup_first_last()
 
-        for core_arr, core_num in zip(core_matrix, core_list):
+        if self.engine_props['spectrum_allocation_priority'] == 'BSC':
+            
             for band_index in range(len(band_list)):  # pylint: disable=consider-using-enumerate
-                open_slots_arr = np.where(core_arr[band_index] == 0)[0]
+                for core_arr, core_num in zip(core_matrix, core_list):
+                    open_slots_arr = np.where(core_arr[band_index] == 0)[0]
 
-                # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
-                if flag in ('last_fit', 'priority_last'):
-                    open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
-                                         itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-                elif flag in ('first_fit', 'priority_first', 'forced_index'):
-                    open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
-                                         itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
-                else:
-                    raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
+                    # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
+                    if flag in ('last_fit', 'priority_last'):
+                        open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                    elif flag in ('first_fit', 'priority_first', 'forced_index'):
+                        open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                    else:
+                        raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
 
-                self.spec_help_obj.core_num = core_num
-                self.spec_help_obj.curr_band = band_list[band_index]
-                was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
-                if was_allocated:
-                    return
+                    self.spec_help_obj.core_num = core_num
+                    self.spec_help_obj.curr_band = band_list[band_index]
+                    was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
+                    if was_allocated:
+                        return
+        else:
+            for core_arr, core_num in zip(core_matrix, core_list):
+                for band_index in range(len(band_list)):  # pylint: disable=consider-using-enumerate
+                    open_slots_arr = np.where(core_arr[band_index] == 0)[0]
+
+                    # Source: https://stackoverflow.com/questions/3149440/splitting-list-based-on-missing-numbers-in-a-sequence
+                    if flag in ('last_fit', 'priority_last'):
+                        open_slots_matrix = [list(map(itemgetter(1), g))[::-1] for k, g in
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                    elif flag in ('first_fit', 'priority_first', 'forced_index'):
+                        open_slots_matrix = [list(map(itemgetter(1), g)) for k, g in
+                                            itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])]
+                    else:
+                        raise NotImplementedError(f'Invalid flag, got: {flag} and expected last_fit or first_fit.')
+
+                    self.spec_help_obj.core_num = core_num
+                    self.spec_help_obj.curr_band = band_list[band_index]
+                    was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
+                    if was_allocated:
+                        return
 
     # fixme: Only works for 7 cores
     def xt_aware(self):
@@ -161,7 +185,7 @@ class SpectrumAssignment:
         self.spectrum_props.rev_cores_matrix = self.sdn_props.net_spec_dict[rev_link_tuple]['cores_matrix']
         self.spectrum_props.is_free = False
 
-    def get_spectrum(self, mod_format_list: list, slice_bandwidth: str = None):
+    def get_spectrum(self, mod_format_list: list, slice_bandwidth: str = None, path_index: int = None):
         """
         Controls the class, attempts to find an available spectrum.
 
@@ -178,13 +202,20 @@ class SpectrumAssignment:
                 bandwidth_dict = self.engine_props['mod_per_bw'][slice_bandwidth]
                 self.spectrum_props.slots_needed = bandwidth_dict[modulation]['slots_needed']
             else:
-                self.spectrum_props.slots_needed = self.sdn_props.mod_formats_dict[modulation]['slots_needed']
+                if self.engine_props['fixed_grid']:
+                    self.spectrum_props.slots_needed = 1
+                else:
+                    self.spectrum_props.slots_needed = self.sdn_props.mod_formats_dict[modulation]['slots_needed']
+
+            if self.spectrum_props.slots_needed is None:
+                raise ValueError('Slots needed cannot be none.')
+
             self._get_spectrum()
 
             if self.spectrum_props.is_free:
                 self.spectrum_props.modulation = modulation
                 if self.engine_props['snr_type'] != 'None' and self.engine_props['snr_type'] is not None:
-                    snr_check, xt_cost = self.snr_obj.handle_snr()
+                    snr_check, xt_cost = self.snr_obj.handle_snr(path_index)
                     self.spectrum_props.xt_cost = xt_cost
                     if not snr_check:
                         self.spectrum_props.is_free = False
@@ -198,3 +229,31 @@ class SpectrumAssignment:
 
             self.spectrum_props.block_reason = 'congestion'
             continue
+
+
+    def get_spectrum_dynamic_slicing(self, mod_format_list: list, slice_bandwidth: str = None, path_index: int = None):
+        """
+        Controls the class, attempts to find an available spectrum.
+
+        :param mod_format_list: A list of modulation formats to attempt allocation.
+        :param slice_bandwidth: A bandwidth used for light-segment slicing.
+        """
+        self._init_spectrum_info()
+
+        if self.engine_props['fixed_grid']:
+            self.spectrum_props.slots_needed = 1
+            self._get_spectrum()
+            if self.spectrum_props.is_free:
+                mod_format, bw, snr_val = self.snr_obj.handle_snr_dynamic_slicing(path_index)
+                self.spectrum_props.modulation = mod_format
+                self.spectrum_props.xt_cost = snr_val
+                self.spectrum_props.is_free = True
+                self.sdn_props.block_reason = None
+                return mod_format, bw
+            else:
+                return 0, 0
+        else:
+            # TODO: develop it for flexigrid
+            return 0,0
+
+

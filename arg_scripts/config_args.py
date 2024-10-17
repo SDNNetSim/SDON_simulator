@@ -61,12 +61,17 @@ ARASH_REQUIRED_OPTIONS = {
         'save_snapshots': str_to_bool,
         'snapshot_step': int,
         'print_step': int,
+        'fixed_grid': str_to_bool,
+        'pre_calc_mod_selection': str_to_bool,
+        'spectrum_allocation_priority': str,
+        'save_step': int,
     },
     'topology_settings': {
         'network': str,
         'bw_per_slot': float,
         'cores_per_link': int,
         'const_link_weight': str_to_bool,
+        'is_only_core_node': str_to_bool,
     },
     'spectrum_settings': {
         'c_band': int,
@@ -221,6 +226,11 @@ COMMAND_LINE_PARAMS = [
     ['decay_factor', float, ''],
     ['dynamic_reward', bool, ''],
     ['config_path', str, ''],
+    ['fixed_grid', bool, ''],
+    ['pre_calc_mod_selection', bool, ''],
+    ['is_only_core_node', bool, ''],
+    ['spectrum_allocation_priority', str, ''],
+    ['save_step', int, ''],
 
     # StableBaselines3 arguments
     ['algo', str, ''],
