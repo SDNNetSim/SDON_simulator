@@ -73,6 +73,7 @@ SIM_REQUIRED_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "const_link_weight": str_to_bool,
         "is_only_core_node": str_to_bool,
         "multi_fiber": str_to_bool,
+        "hollow_core_fiber": str_to_bool,
     },
     "spectrum_settings": {
         "c_band": int,
@@ -90,6 +91,7 @@ SIM_REQUIRED_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "snr_recheck": str_to_bool,
         "recheck_adjacent_cores": str_to_bool,
         "recheck_crossband": str_to_bool,
+        "optimized_power": str_to_bool,
     },
     "file_settings": {
         "file_type": str,
