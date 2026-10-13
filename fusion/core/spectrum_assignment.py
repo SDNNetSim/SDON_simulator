@@ -14,6 +14,7 @@ import numpy as np
 from fusion.core.properties import RoutingProps, SDNProps, SpectrumProps
 from fusion.core.snr_measurements import SnrMeasurements
 from fusion.modules.spectrum.utils import SpectrumHelpers
+from fusion.utils.bandwidth import parse_bandwidth
 from fusion.utils.data import sort_nested_dict_values
 from fusion.utils.logging_config import get_logger
 from fusion.utils.spectrum import find_common_channels_on_paths
@@ -547,10 +548,12 @@ class SpectrumAssignment:
             if self.sdn_props.remaining_bw is None:
                 raise ValueError("Remaining bandwidth must be set for partial grooming")
 
-            remaining_bw = int(self.sdn_props.remaining_bw)
+            remaining_bw = parse_bandwidth(self.sdn_props.remaining_bw)
 
             # Find next higher bandwidth tier
-            available_bw_tiers = [int(k) for k in self.engine_props_dict["mod_per_bw"].keys() if int(k) >= remaining_bw]
+            available_bw_tiers = [
+                parse_bandwidth(k) for k in self.engine_props_dict["mod_per_bw"].keys() if parse_bandwidth(k) >= remaining_bw
+            ]
 
             if not available_bw_tiers:
                 return None
@@ -633,7 +636,7 @@ class SpectrumAssignment:
 
         # For NEW lightpaths, populate requests_dict with current request
         # For groomed lightpaths, this will be updated by the grooming module
-        requests_dict_initial = {self.sdn_props.request_id: int(dedicated_bw)}
+        requests_dict_initial = {self.sdn_props.request_id: parse_bandwidth(dedicated_bw)}
 
         self.sdn_props.lightpath_status_dict[light_id][lp_id] = {
             "path": self.sdn_props.path_list,
@@ -803,7 +806,7 @@ class SpectrumAssignment:
                     self.spectrum_props.crosstalk_cost = snr_value
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
-                return modulation_format or False, int(bandwidth)
+                return modulation_format or False, parse_bandwidth(bandwidth)
 
             failed_modulation_format, failed_bandwidth = (False, False)
             return failed_modulation_format, failed_bandwidth
@@ -831,7 +834,7 @@ class SpectrumAssignment:
                 self.spectrum_props.crosstalk_cost = snr_value
                 self.spectrum_props.is_free = True
                 self.sdn_props.block_reason = None
-                return mod, int(bandwidth)
+                return mod, parse_bandwidth(bandwidth)
 
         self.spectrum_props.is_free = False
         return False, False

@@ -26,6 +26,7 @@ import numpy as np
 
 from fusion.core.properties import RoutingProps, SDNProps, SNRProps, SpectrumProps
 from fusion.modules.snr.utils import compute_response, get_loaded_files, get_slot_index
+from fusion.utils.bandwidth import parse_bandwidth
 
 logger = logging.getLogger(__name__)
 
@@ -903,7 +904,7 @@ class SnrMeasurements:
                     raise ValueError("bandwidth must be initialized for GSNR response calculation")
                 if self.engine_props_dict["fixed_grid"]:
                     if not self.spectrum_props.slicing_flag:
-                        if bw_mapping[self.spectrum_props.modulation] >= int(self.sdn_props.bandwidth):
+                        if bw_mapping[self.spectrum_props.modulation] >= parse_bandwidth(self.sdn_props.bandwidth):
                             bw_resp = bw_mapping[self.spectrum_props.modulation]
                         else:
                             resp = False
@@ -913,7 +914,7 @@ class SnrMeasurements:
                     if self.spectrum_props.slicing_flag:
                         bw_resp = 0
                     else:
-                        bw_resp = int(self.sdn_props.bandwidth)
+                        bw_resp = parse_bandwidth(self.sdn_props.bandwidth)
 
         return resp, gsnr_db, bw_resp
 
@@ -1216,7 +1217,7 @@ class SnrMeasurements:
                     raise ValueError("bandwidth must be initialized for GSNR response calculation")
                 if self.engine_props_dict["fixed_grid"]:
                     if not self.spectrum_props.slicing_flag:
-                        if bw_mapping[self.spectrum_props.modulation] >= int(self.sdn_props.bandwidth):
+                        if bw_mapping[self.spectrum_props.modulation] >= parse_bandwidth(self.sdn_props.bandwidth):
                             bw_resp = bw_mapping[self.spectrum_props.modulation]
                         else:
                             resp = False
@@ -1226,7 +1227,7 @@ class SnrMeasurements:
                     if self.spectrum_props.slicing_flag:
                         bw_resp = 0
                     else:
-                        bw_resp = int(self.sdn_props.bandwidth)
+                        bw_resp = parse_bandwidth(self.sdn_props.bandwidth)
 
         # Dynamic modulation selection for slicing with dynamic lightpaths
         if _is_dyn:
@@ -1273,7 +1274,7 @@ class SnrMeasurements:
         if self.spectrum_props.slicing_flag:
             bw_resp = None
         else:
-            bw_resp = int(self.sdn_props.bandwidth)
+            bw_resp = parse_bandwidth(self.sdn_props.bandwidth)
         return response, xt_path_db, bw_resp
     
     # -------------------------------------------------------------------------

@@ -107,6 +107,15 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
     # CORE OPTIONAL PARAMETERS (used by both legacy engine and orchestrator)
     # =========================================================================
     "general_settings": {
+        "traffic_type": str,
+        "request_sort": str,
+        "request_sort_order": str,
+        "traffic_matrix_file": str,
+        "traffic_matrix_sheet": str,
+        "traffic_matrix_direction": str,
+        "traffic_matrix_format": str,
+        "traffic_matrix_scale": float,
+        "traffic_node_map_file": str,
         "filter_mods": bool,
         "request_distribution": str,
         "fragmentation_metrics": str,
@@ -115,6 +124,8 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
     "topology_settings": {
         "bi_directional": str_to_bool,
         "is_only_core_node": str_to_bool,
+        "topology_file": str,
+        "topology_name": str,
     },
     "spectrum_settings": {
         "o_band": int,
