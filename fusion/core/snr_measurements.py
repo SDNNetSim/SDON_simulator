@@ -26,6 +26,7 @@ import numpy as np
 
 from fusion.core.properties import RoutingProps, SDNProps, SNRProps, SpectrumProps
 from fusion.modules.snr.utils import compute_response, get_loaded_files, get_slot_index
+from fusion.utils.bandwidth import parse_bandwidth
 
 logger = logging.getLogger(__name__)
 
@@ -696,7 +697,7 @@ class SnrMeasurements:
             supported_bandwidth = 0
         else:
             modulation_format = self.snr_props.modulation_format_mapping_dict[modulation_format_key]
-            supported_bandwidth = self.snr_props.bandwidth_mapping_dict[modulation_format]
+            supported_bandwidth = self.snr_props.bandwidth_mapping_dict[self.engine_props_dict["bw_per_slot"]][modulation_format]
 
         # Retrieve SNR value
         snr_value = loaded_data_gsnr[self.route_props.connection_index][slot_index][path_index]
@@ -750,7 +751,7 @@ class SnrMeasurements:
         """
         from fusion.utils.data import sort_nested_dict_values
 
-        bw_mapping = {"64-QAM": 800, "32-QAM": 700, "16-QAM": 600, "8-QAM": 500, "QPSK": 400, "BPSK": 200}
+        bw_mapping = self.snr_props.bandwidth_mapping_dict[self.engine_props_dict["bw_per_slot"]]
 
         gsnr_path_ase_nli = 0
         gsnr_link_ase_nli_db = []
@@ -903,7 +904,7 @@ class SnrMeasurements:
                     raise ValueError("bandwidth must be initialized for GSNR response calculation")
                 if self.engine_props_dict["fixed_grid"]:
                     if not self.spectrum_props.slicing_flag:
-                        if bw_mapping[self.spectrum_props.modulation] >= int(self.sdn_props.bandwidth):
+                        if bw_mapping[self.spectrum_props.modulation] >= parse_bandwidth(self.sdn_props.bandwidth):
                             bw_resp = bw_mapping[self.spectrum_props.modulation]
                         else:
                             resp = False
@@ -913,7 +914,7 @@ class SnrMeasurements:
                     if self.spectrum_props.slicing_flag:
                         bw_resp = 0
                     else:
-                        bw_resp = int(self.sdn_props.bandwidth)
+                        bw_resp = parse_bandwidth(self.sdn_props.bandwidth)
 
         return resp, gsnr_db, bw_resp
 
@@ -1216,7 +1217,7 @@ class SnrMeasurements:
                     raise ValueError("bandwidth must be initialized for GSNR response calculation")
                 if self.engine_props_dict["fixed_grid"]:
                     if not self.spectrum_props.slicing_flag:
-                        if bw_mapping[self.spectrum_props.modulation] >= int(self.sdn_props.bandwidth):
+                        if bw_mapping[self.spectrum_props.modulation] >= parse_bandwidth(self.sdn_props.bandwidth):
                             bw_resp = bw_mapping[self.spectrum_props.modulation]
                         else:
                             resp = False
@@ -1226,7 +1227,7 @@ class SnrMeasurements:
                     if self.spectrum_props.slicing_flag:
                         bw_resp = 0
                     else:
-                        bw_resp = int(self.sdn_props.bandwidth)
+                        bw_resp = parse_bandwidth(self.sdn_props.bandwidth)
 
         # Dynamic modulation selection for slicing with dynamic lightpaths
         if _is_dyn:
@@ -1273,7 +1274,7 @@ class SnrMeasurements:
         if self.spectrum_props.slicing_flag:
             bw_resp = None
         else:
-            bw_resp = int(self.sdn_props.bandwidth)
+            bw_resp = parse_bandwidth(self.sdn_props.bandwidth)
         return response, xt_path_db, bw_resp
     
     # -------------------------------------------------------------------------
@@ -1327,8 +1328,8 @@ class SnrMeasurements:
         # Calculate lightpath bandwidth from modulation format
         lp_bandwidth = 0.0
         if self.spectrum_props.modulation is not None:
-            if self.spectrum_props.modulation in self.snr_props.bandwidth_mapping_dict:
-                lp_bandwidth = float(self.snr_props.bandwidth_mapping_dict[self.spectrum_props.modulation])
+            if self.spectrum_props.modulation in self.snr_props.bandwidth_mapping_dict[self.engine_props_dict["bw_per_slot"]]:
+                lp_bandwidth = float(self.snr_props.bandwidth_mapping_dict[self.engine_props_dict["bw_per_slot"]][self.spectrum_props.modulation])
             elif (
                 self.sdn_props.modulation_formats_dict is not None
                 and self.spectrum_props.modulation in self.sdn_props.modulation_formats_dict
@@ -1554,6 +1555,169 @@ class SnrMeasurements:
 
         return total_snr
 
+    def calculate_hcf_snr_link(self,
+        n_ch: int,
+        n_span: int,
+        l_span_km: float,
+        r_ch_tbaud: float,
+        delta_f_hz: float,
+        center_frequency_hz: float,
+    ) ->  tuple[float, float]:
+        """
+        Calculate SNR for a Hollow-Core Fiber (HCF/NANF) link using
+        Eqs. (2)-(7) from: DOI: https://doi.org/10.1109/JLT.2021.3140114 
+
+        
+
+        Parameters
+        ----------
+        n_ch : int
+            Number of WDM channels.
+        n_span : int
+            Number of identical, loss-compensated fiber spans.
+        l_span_km : float
+            Length of each span [km].
+        r_ch_tbaud : float
+            Channel symbol rate [TBaud].
+        delta_f_hz : float
+            WDM channel spacing [Hz].
+        center_frequency_hz : float
+            Center frequency of the WDM comb [Hz].
+
+        Returns
+        -------
+        tuple[float, float]
+            Dimensionless linear SNR and its reciprocal,
+            (snr_linear, snr_linear_inv).
+        """
+        link_dict = self.snr_props.link_dictionary["hcf"]
+        noise_figure_db = link_dict["noise_figure"]
+        beta2= abs(link_dict["non_linearity"])
+        gamma = link_dict["dispersion"]
+        imi_db_km = link_dict["inter_modal_interference"]
+        r_ch_hz = r_ch_tbaud * 1e12
+        noise_figure_linear = 10.0 ** (noise_figure_db / 10.0)
+        alpha =  link_dict["attenuation"] * np.log(10.0) / (20.0 * 1e3)
+        l_span_m = l_span_km * 1e3
+        gain_minus_one = np.expm1(2.0 * alpha * l_span_m)
+
+        p_ase = (
+            n_span
+            * self.snr_props.planck_constant
+            * center_frequency_hz
+            * noise_figure_linear
+            * r_ch_hz
+            * gain_minus_one
+        )
+        
+
+        eta_prefactor = (
+            n_span
+            * 4.0
+            * gamma**2
+            / (
+                27.0
+                * np.pi
+                * beta2
+                * alpha
+                * r_ch_hz**2
+            )
+        )
+
+        asinh_argument = (
+            (np.pi**2 * beta2 / (4.0 * alpha))
+            * r_ch_hz**2
+            * n_ch**(2 * r_ch_hz / delta_f_hz)
+        )
+
+        eta = eta_prefactor * np.arcsinh(asinh_argument)
+        
+        if self.engine_props_dict["optimized_power"]:
+            p_ch_w = (p_ase / (2.0 * eta)) ** (1.0 / 3.0)
+        else:
+            p_ch_w = self.engine_props_dict["input_power"]
+            
+        p_nli = eta * p_ch_w**3
+
+
+        total_length_km = n_span * l_span_km
+
+        if imi_db_km is None:
+            kappa = 0.0
+            p_imi = 0.0
+        else:
+            kappa = 10.0 ** (imi_db_km / 10.0)
+            p_imi = kappa * p_ch_w * total_length_km
+
+        total_noise = p_ase + p_nli + p_imi
+
+        snr_linear = p_ch_w / total_noise
+        snr_linear_inv = 1 / snr_linear
+        
+
+        return snr_linear, snr_linear_inv
+
+
+    def check_gsnr_hcf(self):
+        """
+        Calculate and check the GSNR of a lightpath using the hollow-core fiber (HCF) model.
+
+        The model accounts for ASE noise, nonlinear interference (NLI), and
+        intermodal interference (IMI). Currently supports fixed-grid networks only.
+
+        :return: Whether the GSNR threshold is met, GSNR in dB, and supported bit rate.
+        :rtype: tuple[bool, float, int]
+        """
+        # Ensure the HCF model is used only with fixed-grid networks
+        if not self.engine_props_dict["fixed_grid"]:
+            raise ValueError(
+                "Hollow-core fiber support is currently implemented only for fixed-grid networks."
+            )
+        
+        # Calculate the total number of WDM channels across all configured bands
+        n_ch = 0
+        for band in self.engine_props_dict["band_list"]:
+            n_ch += self.engine_props_dict[band + "_band"]
+        
+        # Calculate the total number of spans along the selected lightpath
+        n_span = 0
+        for link_num in range(0, len(self.spectrum_props.path_list) - 1):
+            source = self.spectrum_props.path_list[link_num]
+            dest = self.spectrum_props.path_list[link_num + 1]
+            self.link_id = self.sdn_props.network_spectrum_dict[(source, dest)]["link_num"]
+            self.snr_props.link_dictionary = self.engine_props_dict["topology_info"]["links"][self.link_id]["fiber"]
+            link_info = self.engine_props_dict["topology_info"]["links"][self.link_id]
+            self.snr_props.length = link_info["span_length"]
+            n_span += math.ceil(link_info["length"] / self.snr_props.length)
+            bw_per_slot = self.engine_props_dict["bw_per_slot"]
+            freq_start = link_info["frequency_start_c"]
+            center_frequency_hz = freq_start + self.spectrum_props.start_slot * bw_per_slot * 10**9
+            
+        # Retrieve the modulation format and its supported bit rate
+        modulation = self.spectrum_props.modulation
+        bit_rate = self.snr_props.bandwidth_mapping_dict[
+            bw_per_slot
+        ][modulation]
+
+        # Calculate the symbol rate in TBaud, assuming dual polarization
+        r_ch_tbaud = bit_rate / (
+            2 * self.snr_props.bits_per_symbol[modulation] * 1000
+        )
+        
+        # Calculate the HCF GSNR using the accumulated number of spans
+        snr_linear, snr_linear_inv = self.calculate_hcf_snr_link(n_ch, n_span, l_span_km = self.snr_props.length, r_ch_tbaud = r_ch_tbaud, 
+                                                                 delta_f_hz = bw_per_slot * 10**9, center_frequency_hz = center_frequency_hz)
+        
+        # Convert the calculated GSNR from linear scale to dB
+        snr_db = 10.0 * np.log10(snr_linear)
+        
+        # Check whether the GSNR satisfies the selected modulation threshold
+        resp = snr_db >= self.snr_props.req_snr[modulation]
+        
+        return resp, snr_db, bit_rate
+            
+    
+    
     def handle_snr_dynamic_slicing(self, path_index: int) -> tuple[bool | str, float, float]:
         """
         Controls the methods of this class.
@@ -1568,6 +1732,8 @@ class SnrMeasurements:
         self.number_of_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
         if self.engine_props_dict["snr_type"] == "snr_e2e_external_resources":
             modulation_format, bandwidth, snr_value = self.check_snr_ext_slicing(path_index)
+        elif self.engine_props_dict["snr_type"] == "gsnr" and self.engine_props_dict["hollow_core_fiber"]:
+            gsnr_result, snr_value, bandwidth = self.check_gsnr_hcf()
         elif self.engine_props_dict["snr_type"] == "gsnr":
             # GSNR (Generalized SNR) for dynamic slicing
             if self.engine_props_dict["band_list"] == ["c"]:

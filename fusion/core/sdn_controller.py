@@ -18,6 +18,7 @@ from fusion.core.snr_measurements import SnrMeasurements
 from fusion.core.spectrum_assignment import SpectrumAssignment
 from fusion.modules.ml import get_ml_obs
 from fusion.modules.spectrum.light_path_slicing import LightPathSlicingManager
+from fusion.utils.bandwidth import parse_bandwidth
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -77,9 +78,12 @@ class SDNController:
                 logger.warning("Missing data for throughput calculation")
                 return
 
-            duration = self.sdn_props.depart - self.sdn_props.arrive  # seconds
-            bandwidth = int(self.sdn_props.bandwidth)  # Gbps
-            data_transferred = bandwidth * duration  # Gbps·s
+            # Permanent designs report carried Gbps, dynamic runs report Gbps-seconds.
+            duration = (
+                self.sdn_props.depart - self.sdn_props.arrive if self.engine_props.get("traffic_type", "dynamic") == "dynamic" else 1.0
+            )
+            bandwidth = parse_bandwidth(self.sdn_props.bandwidth)  # Gbps
+            data_transferred = bandwidth * duration  # Gbps-seconds for dynamic traffic
 
             for source, dest in zip(self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False):
                 self.sdn_props.network_spectrum_dict[(source, dest)]["throughput"] += data_transferred
@@ -554,12 +558,12 @@ class SDNController:
             # Only restore remaining bandwidth for sliced/partial requests (v5 behavior)
             # For non-sliced requests, remaining_bw should stay None/0 since no bandwidth was served
             if self.sdn_props.is_sliced or self.sdn_props.was_partially_groomed:
-                bw_to_restore = int(float(self.sdn_props.bandwidth_list[idx]))
+                bw_to_restore = parse_bandwidth(float(self.sdn_props.bandwidth_list[idx]))
                 if self.sdn_props.remaining_bw is None or self.sdn_props.remaining_bw == 0:
                     self.sdn_props.remaining_bw = bw_to_restore
                 else:
                     # Handle remaining_bw being str/float type
-                    current_remaining = int(float(self.sdn_props.remaining_bw))
+                    current_remaining = parse_bandwidth(float(self.sdn_props.remaining_bw))
                     self.sdn_props.remaining_bw = current_remaining + bw_to_restore
 
             # Remove from all tracking lists (with safety check for list length)
@@ -600,7 +604,7 @@ class SDNController:
         :param remaining_bw: Remaining bandwidth that could not be allocated
         :type remaining_bw: int
         """
-        if self.sdn_props.bandwidth is not None and remaining_bw != int(self.sdn_props.bandwidth):
+        if self.sdn_props.bandwidth is not None and remaining_bw != parse_bandwidth(self.sdn_props.bandwidth):
             # Rollback newly established lightpaths (skip_validation since never served traffic)
             was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
             if isinstance(was_new_lps, list):
@@ -628,10 +632,12 @@ class SDNController:
 
         if getattr(self.sdn_props, "was_partially_groomed", False):
             if self.sdn_props.bandwidth is not None:
-                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(map(int, self.sdn_props.bandwidth_list))
+                self.sdn_props.remaining_bw = parse_bandwidth(self.sdn_props.bandwidth) - sum(
+                    map(parse_bandwidth, self.sdn_props.bandwidth_list)
+                )
         else:
             if self.sdn_props.bandwidth is not None:
-                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
+                self.sdn_props.remaining_bw = parse_bandwidth(self.sdn_props.bandwidth)
 
         self.sdn_props.was_new_lp_established = []
 
@@ -656,7 +662,7 @@ class SDNController:
         # Previously = 1 caused over-counting when slicing recovered from SNR recheck failures
         self.sdn_props.number_of_transponders = 0
 
-        if self.sdn_props.bandwidth is not None and remaining_bandwidth != int(self.sdn_props.bandwidth):
+        if self.sdn_props.bandwidth is not None and remaining_bandwidth != parse_bandwidth(self.sdn_props.bandwidth):
             # Release all newly established lightpaths for this request (skip_validation since never served traffic)
             was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
             if isinstance(was_new_lps, list) and self.sdn_props.path_list:
@@ -699,9 +705,11 @@ class SDNController:
         # Reset remaining_bw to match v5 behavior
         if self.sdn_props.bandwidth is not None:
             if self.sdn_props.was_partially_groomed:
-                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(map(int, self.sdn_props.bandwidth_list))
+                self.sdn_props.remaining_bw = parse_bandwidth(self.sdn_props.bandwidth) - sum(
+                    map(parse_bandwidth, self.sdn_props.bandwidth_list)
+                )
             else:
-                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
+                self.sdn_props.remaining_bw = parse_bandwidth(self.sdn_props.bandwidth)
 
         self.sdn_props.was_new_lp_established = []
 

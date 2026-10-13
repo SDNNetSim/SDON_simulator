@@ -6,6 +6,8 @@ import numpy as np
 
 from fusion.analysis.network_analysis import NetworkAnalyzer
 from fusion.core.properties import SNAP_KEYS_LIST, SDNProps, StatsProps
+from fusion.utils.bandwidth import bandwidth_key as normalize_bandwidth
+from fusion.utils.bandwidth import parse_bandwidth
 from fusion.utils.logging_config import get_logger
 from fusion.utils.network import find_path_length
 
@@ -356,7 +358,7 @@ class SimStats:
                     bandwidth = sdn_data.lightpath_bandwidth_list[i]  # Use lightpath bandwidth
                     band = sdn_data.band_list[i]
                     # Ensure the nested dict structure exists - convert float to int to match dict keys
-                    bandwidth_key = str(int(float(bandwidth))) if bandwidth is not None else None
+                    bandwidth_key = normalize_bandwidth(bandwidth) if bandwidth is not None else None
                     mod_dict = self.stats_props.modulations_used_dict
                     bw_dict = mod_dict.get(bandwidth_key)
                     if bandwidth_key and isinstance(bw_dict, dict):
@@ -560,8 +562,8 @@ class SimStats:
         if not sdn_data.was_routed:
             self.blocked_requests += 1
             if sdn_data.bandwidth is not None:
-                self.bit_rate_blocked += int(sdn_data.bandwidth)
-                self.bit_rate_request += int(sdn_data.bandwidth)
+                self.bit_rate_blocked += parse_bandwidth(sdn_data.bandwidth)
+                self.bit_rate_request += parse_bandwidth(sdn_data.bandwidth)
             if sdn_data.block_reason is not None and sdn_data.block_reason in self.stats_props.block_reasons_dict:
                 block_reason = sdn_data.block_reason
                 current_val = self.stats_props.block_reasons_dict[block_reason]
@@ -577,18 +579,18 @@ class SimStats:
             # Skip stats tracking for fully groomed requests (v5 behavior)
             if sdn_data.was_groomed:
                 if sdn_data.bandwidth is not None:
-                    self.bit_rate_request += int(sdn_data.bandwidth)
+                    self.bit_rate_request += parse_bandwidth(sdn_data.bandwidth)
                 return
 
             # Track bit rate for requests
             if sdn_data.bandwidth is not None:
-                self.bit_rate_request += int(sdn_data.bandwidth)
+                self.bit_rate_request += parse_bandwidth(sdn_data.bandwidth)
 
             # Track blocked bandwidth for partial allocations (slicing or grooming)
             # This applies regardless of grooming setting
             remaining_bw = getattr(sdn_data, "remaining_bw", None)
             if remaining_bw is not None and remaining_bw != "0":
-                self.bit_rate_blocked += int(remaining_bw)
+                self.bit_rate_blocked += parse_bandwidth(remaining_bw)
                 was_new_lps = getattr(sdn_data, "was_new_lp_established", [])
                 if not was_new_lps:
                     return
@@ -662,8 +664,8 @@ class SimStats:
                         remaining_bw = 0
                     if sdn_data.bandwidth is None:
                         raise ValueError("bandwidth must be set for demand realization tracking")
-                    original_bw = int(sdn_data.bandwidth)
-                    served_bw = original_bw - int(remaining_bw)
+                    original_bw = parse_bandwidth(sdn_data.bandwidth)
+                    served_bw = original_bw - parse_bandwidth(remaining_bw)
                     realization_ratio = served_bw / original_bw
                     self.stats_props.demand_realization_ratio[demand_bw_key].append(realization_ratio)
                     self.stats_props.demand_realization_ratio["overall"].append(realization_ratio)
@@ -682,7 +684,7 @@ class SimStats:
         for lp_id in utilization_dict:
             lp_info = utilization_dict[lp_id]
             # Convert to int first to match initialization keys (e.g., '600' not '600.0')
-            bit_rate_key = str(int(float(lp_info["bit_rate"])))
+            bit_rate_key = normalize_bandwidth(lp_info["bit_rate"])
             band = lp_info["band"]
             core = lp_info["core"]
             utilization = lp_info["utilization"]
@@ -828,7 +830,9 @@ class SimStats:
                 else:
                     request_dist = self.engine_props.get("request_distribution", {})
                     if bw in request_dist:
-                        total_bw_requests = request_dist[bw] * self.engine_props["num_requests"]
+                        total_bw_requests = self.engine_props.get("request_counts", {}).get(
+                            bw, request_dist[bw] * self.engine_props["num_requests"]
+                        )
                         if total_bw_requests > 0:
                             ratio_dict["ratio_full_served"] = num_full_served / total_bw_requests
                         else:
@@ -1453,8 +1457,8 @@ class SimStats:
 
         # Track bandwidth blocking
         if hasattr(request, "bandwidth_gbps"):
-            self.bit_rate_blocked += int(request.bandwidth_gbps)
-            self.bit_rate_request += int(request.bandwidth_gbps)
+            self.bit_rate_blocked += parse_bandwidth(request.bandwidth_gbps)
+            self.bit_rate_request += parse_bandwidth(request.bandwidth_gbps)
 
             # Track by bandwidth class
             bw_class = str(request.bandwidth_gbps)
@@ -1502,12 +1506,12 @@ class SimStats:
         # Skip further stats tracking for fully groomed requests (v5 behavior)
         if result.is_groomed and not result.is_partially_groomed:
             if hasattr(request, "bandwidth_gbps"):
-                self.bit_rate_request += int(request.bandwidth_gbps)
+                self.bit_rate_request += parse_bandwidth(request.bandwidth_gbps)
             return
 
         # Track bit rate for requests
         if hasattr(request, "bandwidth_gbps"):
-            self.bit_rate_request += int(request.bandwidth_gbps)
+            self.bit_rate_request += parse_bandwidth(request.bandwidth_gbps)
 
         # Match legacy behavior: early return if remaining bandwidth but no new LPs created
         # (partial grooming succeeded but new allocation failed)
@@ -1543,10 +1547,10 @@ class SimStats:
         if self.engine_props.get("can_partially_serve"):
             bandwidth_key = str(request.bandwidth_gbps) if hasattr(request, "bandwidth_gbps") else None
             if bandwidth_key and bandwidth_key in self.stats_props.demand_realization_ratio:
-                original_bw = int(request.bandwidth_gbps)
+                original_bw = parse_bandwidth(request.bandwidth_gbps)
                 # Calculate served bandwidth from allocation result
                 if result.total_bandwidth_allocated_gbps:
-                    served_bw = int(result.total_bandwidth_allocated_gbps)
+                    served_bw = parse_bandwidth(result.total_bandwidth_allocated_gbps)
                 else:
                     served_bw = original_bw
                 realization_ratio = served_bw / original_bw if original_bw > 0 else 0
@@ -1909,7 +1913,7 @@ class SimStats:
 
         # Track by bandwidth key if provided
         if bandwidth_gbps is not None:
-            bandwidth_key = str(int(bandwidth_gbps))
+            bandwidth_key = normalize_bandwidth(bandwidth_gbps)
             bw_dict = mod_dict.get(bandwidth_key)
             if isinstance(bw_dict, dict):
                 if modulation in bw_dict:
